@@ -1,7 +1,28 @@
+import os
+from pathlib import Path
 from typing import Any, Dict, Tuple
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+
+def _resolve_model_path(model_path: str) -> str:
+    path = Path(model_path)
+    if path.is_file():
+        return str(path)
+    if path.is_dir():
+        if (path / "config.json").exists():
+            return str(path)
+        snapshots = path / "snapshots"
+        if snapshots.exists() and snapshots.is_dir():
+            candidates = []
+            for child in snapshots.iterdir():
+                if (child / "config.json").exists():
+                    candidates.append(child)
+            if candidates:
+                latest = max(candidates, key=lambda p: p.stat().st_mtime)
+                return str(latest)
+    return model_path
 
 
 def load_model_and_tokenizer(
@@ -10,9 +31,10 @@ def load_model_and_tokenizer(
     device: str,
     trust_remote_code: bool = True,
 ) -> Tuple[Any, Any]:
-    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=trust_remote_code)
+    resolved_path = _resolve_model_path(model_path)
+    tokenizer = AutoTokenizer.from_pretrained(resolved_path, trust_remote_code=trust_remote_code)
     model = AutoModelForCausalLM.from_pretrained(
-        model_path,
+        resolved_path,
         torch_dtype=dtype,
         low_cpu_mem_usage=True,
         trust_remote_code=trust_remote_code,
