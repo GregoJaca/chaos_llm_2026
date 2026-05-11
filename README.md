@@ -78,3 +78,19 @@ tokens.npz contains:
 
 - Equidistant perturbations are constructed as a regular simplex in a subspace. This requires num_conditions <= subspace_dim.
 - Adaptive stop compares each generated token to the baseline and stops at the first mismatch.
+
+## Analysis
+
+Edit analysis.yaml, then run:
+
+```
+set PYTHONPATH=src
+python -m chaos_llm.analyze --config analysis.yaml
+```
+
+Linux:
+
+```
+export PYTHONPATH=src
+python -m chaos_llm.analyze --config analysis.yaml
+```

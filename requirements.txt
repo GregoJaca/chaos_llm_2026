@@ -3,3 +3,4 @@ pyyaml
 tqdm
 transformers>=4.44.0
 torch
+matplotlib
