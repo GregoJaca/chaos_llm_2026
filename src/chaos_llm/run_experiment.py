@@ -29,6 +29,7 @@ def run_prompt(
 ) -> None:
     input_ids = tokenizer(prompt["text"], return_tensors="pt").input_ids.to(device)
     attention_mask = build_attention_mask(input_ids)
+    prompt_ids_cpu = input_ids[0].detach().cpu().numpy()
 
     with torch.no_grad():
         base_embeds = model.get_input_embeddings()(input_ids).to(dtype=dtype)
@@ -81,8 +82,16 @@ def run_prompt(
             gen_kwargs=gen_kwargs,
         )
         baseline_ids_cpu = baseline_ids[0].detach().cpu().numpy()
-        if not include_prompt_tokens:
-            baseline_ids_cpu = baseline_ids_cpu[prompt_len:]
+        if include_prompt_tokens:
+            if baseline_ids_cpu.shape[0] < prompt_len or not np.array_equal(
+                baseline_ids_cpu[:prompt_len], prompt_ids_cpu
+            ):
+                baseline_ids_cpu = np.concatenate([prompt_ids_cpu, baseline_ids_cpu])
+        else:
+            if baseline_ids_cpu.shape[0] >= prompt_len and np.array_equal(
+                baseline_ids_cpu[:prompt_len], prompt_ids_cpu
+            ):
+                baseline_ids_cpu = baseline_ids_cpu[prompt_len:]
         baseline_text = None
         if save_text:
             baseline_text = tokenizer.decode(
@@ -122,8 +131,16 @@ def run_prompt(
                 )
 
                 seq = output_ids[0].detach().cpu().numpy()
-                if not include_prompt_tokens:
-                    seq = seq[prompt_len:]
+                if include_prompt_tokens:
+                    if seq.shape[0] < prompt_len or not np.array_equal(
+                        seq[:prompt_len], prompt_ids_cpu
+                    ):
+                        seq = np.concatenate([prompt_ids_cpu, seq])
+                else:
+                    if seq.shape[0] >= prompt_len and np.array_equal(
+                        seq[:prompt_len], prompt_ids_cpu
+                    ):
+                        seq = seq[prompt_len:]
                 perturbed_ids.append(seq)
                 if save_text:
                     text = tokenizer.decode(
