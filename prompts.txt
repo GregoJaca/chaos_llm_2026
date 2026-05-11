@@ -1,1 +1,1 @@
-baseline_prompt	Write a short paragraph about the dynamics of a pendulum.
+interstellar_travel	Provide a comprehensive technical review of current and proposed propulsion systems for interstellar travel. Compare chemical rockets, nuclear propulsion, laser sails, antimatter drives, and other theoretical concepts in terms of energy requirements, achievable speeds, technological feasibility, and projected timelines for development. Include discussion of major projects in the history of the field.
