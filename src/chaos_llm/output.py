@@ -58,3 +58,20 @@ def save_tokens_npz(
         divergence_index=np.array(divergence_index, dtype=np.int32),
         prompt_len=np.array(prompt_len, dtype=np.int32),
     )
+
+
+def save_text_json(
+    path: str,
+    baseline_text: str,
+    perturbed_texts: List[str],
+    prompt_text: str,
+    include_prompt_tokens: bool,
+) -> None:
+    payload = {
+        "include_prompt_tokens": include_prompt_tokens,
+        "prompt_text": prompt_text,
+        "baseline_text": baseline_text,
+        "perturbed_texts": perturbed_texts,
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, ensure_ascii=False)

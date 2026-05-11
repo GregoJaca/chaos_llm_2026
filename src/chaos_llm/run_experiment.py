@@ -9,7 +9,7 @@ from tqdm import tqdm
 from chaos_llm.config import load_config, jsonable_cfg, resolve_device, resolve_dtype
 from chaos_llm.generation import generate_baseline, generate_with_perturbation
 from chaos_llm.modeling import apply_attention_overrides, build_generation_kwargs, load_model_and_tokenizer
-from chaos_llm.output import make_run_dir, save_config_snapshot, save_tokens_npz
+from chaos_llm.output import make_run_dir, save_config_snapshot, save_text_json, save_tokens_npz
 from chaos_llm.perturbations import build_simplex, iter_simplex_perturbations, select_subspace_indices
 from chaos_llm.prompt_loader import load_prompts
 from chaos_llm.utils import cleanup, set_seed
@@ -58,6 +58,10 @@ def run_prompt(
     adaptive_stop = bool(cfg["generation"]["adaptive_stop"])
 
     include_prompt_tokens = bool(cfg["output"].get("include_prompt_tokens", True))
+    save_text = bool(cfg["output"].get("save_text", False))
+    text_filename = str(cfg["output"].get("text_filename", "texts.json"))
+    text_skip_special = bool(cfg["output"].get("text_skip_special_tokens", True))
+    text_clean_spaces = bool(cfg["output"].get("text_clean_up_spaces", True))
     prompt_len_saved = int(prompt_len if include_prompt_tokens else 0)
 
     output_dir = cfg["paths"]["output_dir"]
@@ -79,6 +83,13 @@ def run_prompt(
         baseline_ids_cpu = baseline_ids[0].detach().cpu().numpy()
         if not include_prompt_tokens:
             baseline_ids_cpu = baseline_ids_cpu[prompt_len:]
+        baseline_text = None
+        if save_text:
+            baseline_text = tokenizer.decode(
+                baseline_ids_cpu.tolist(),
+                skip_special_tokens=text_skip_special,
+                clean_up_tokenization_spaces=text_clean_spaces,
+            )
         baseline_ids_device = baseline_ids if adaptive_stop else None
         if not adaptive_stop:
             del baseline_ids
@@ -88,6 +99,7 @@ def run_prompt(
             run_dir = make_run_dir(output_dir, int(sliding_window), float(magnitude), prompt["name"])
 
             perturbed_ids: List[np.ndarray] = []
+            perturbed_texts: List[str] = []
             divergence_index: List[int] = []
 
             iterator = iter_simplex_perturbations(
@@ -113,6 +125,13 @@ def run_prompt(
                 if not include_prompt_tokens:
                     seq = seq[prompt_len:]
                 perturbed_ids.append(seq)
+                if save_text:
+                    text = tokenizer.decode(
+                        seq.tolist(),
+                        skip_special_tokens=text_skip_special,
+                        clean_up_tokenization_spaces=text_clean_spaces,
+                    )
+                    perturbed_texts.append(text)
                 divergence_index.append(div_idx)
 
                 del delta, perturbed_embeds, output_ids
@@ -135,8 +154,16 @@ def run_prompt(
                 pad_token_id=int(cfg["output"]["pad_token_id"]),
                 prompt_len=int(prompt_len_saved),
             )
+            if save_text:
+                save_text_json(
+                    path=os.path.join(run_dir, text_filename),
+                    baseline_text=baseline_text or "",
+                    perturbed_texts=perturbed_texts,
+                    prompt_text=prompt["text"],
+                    include_prompt_tokens=include_prompt_tokens,
+                )
 
-            del perturbed_ids, divergence_index
+            del perturbed_ids, divergence_index, perturbed_texts
             cleanup()
 
         if baseline_ids_device is not None:

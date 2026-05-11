@@ -50,6 +50,9 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["output"].setdefault("pad_token_id", -1)
     cfg["output"].setdefault("save_text", False)
     cfg["output"].setdefault("include_prompt_tokens", True)
+    cfg["output"].setdefault("text_filename", "texts.json")
+    cfg["output"].setdefault("text_skip_special_tokens", True)
+    cfg["output"].setdefault("text_clean_up_spaces", True)
 
     return cfg
 

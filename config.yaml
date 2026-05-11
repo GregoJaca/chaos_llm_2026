@@ -34,5 +34,8 @@ generation:
 
 output:
   pad_token_id: -1  # padding for variable-length storage
-  save_text: true  # not used in current pipeline
+  save_text: true  # save decoded text outputs to JSON
   include_prompt_tokens: true  # include prompt tokens in saved sequences
+  text_filename: texts.json  # name of text output file per run
+  text_skip_special_tokens: true  # skip special tokens in decoding
+  text_clean_up_spaces: true  # clean up spaces in decoded text

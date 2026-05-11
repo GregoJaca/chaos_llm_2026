@@ -48,15 +48,11 @@ python run_experiment.py --config config.yaml
 ```
 
 Linux:
-
-```
 python run_experiment.py --config config.yaml
 ```
 
-## Outputs
-
-Each run creates a folder named:
-
+If output.save_text is true, each run also writes a JSON file (see output.text_filename)
+with baseline and perturbed decoded text.
 ```
 run_{sliding_window}_{perturbation}_{prompt_name}
 ```
@@ -91,6 +87,14 @@ Print token ids (and optionally token strings) from a run folder:
 
 ```
 python print_tokens.py --run-dir run_4096_0.0004_interstellar_travel --max-tokens 80 --config config.yaml
+```
+
+## Export text without re-running
+
+Decode an existing tokens.npz into a text JSON file:
+
+```
+python export_text.py --run-dir run_4096_0.0004_interstellar_travel --config config.yaml
 ```
 
 With token string decoding:
