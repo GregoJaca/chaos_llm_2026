@@ -77,7 +77,8 @@ def run_prompt(
 
         baseline_ids = generate_baseline(
             model,
-            input_ids=input_ids,
+            input_ids=None,
+            inputs_embeds=base_embeds,
             attention_mask=attention_mask,
             gen_kwargs=gen_kwargs,
         )

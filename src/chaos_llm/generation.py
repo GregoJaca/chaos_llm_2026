@@ -32,13 +32,17 @@ class BaselineDivergenceCriteria(StoppingCriteria):
 
 def generate_baseline(
     model: Any,
-    input_ids: torch.Tensor,
+    input_ids: Optional[torch.Tensor],
+    inputs_embeds: Optional[torch.Tensor],
     attention_mask: torch.Tensor,
     gen_kwargs: Dict[str, Any],
 ) -> torch.Tensor:
+    if input_ids is None and inputs_embeds is None:
+        raise ValueError("Either input_ids or inputs_embeds must be provided")
     with torch.no_grad():
         baseline_ids = model.generate(
             input_ids=input_ids,
+            inputs_embeds=inputs_embeds,
             attention_mask=attention_mask,
             **gen_kwargs,
         )
