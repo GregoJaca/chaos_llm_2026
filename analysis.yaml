@@ -1,6 +1,6 @@
 paths:
-  input_dir: results
-  output_dir: analysis_outputs
+  input_dir: outputs  # folder with run_* outputs
+  output_dir: analysis_outputs  # where analysis artifacts go
   run_list: null  # list of run folder names or absolute paths
 
 prompt_filter:
@@ -8,30 +8,32 @@ prompt_filter:
   exclude: null  # list of prompt names to exclude
 
 divergence:
-  any_pair: true
-  baseline_per_sequence: true
-  include_baseline_in_any_pair: false
+  any_pair: true  # first index where any tokens differ across sequences
+  baseline_per_sequence: true  # divergence per sequence vs baseline
+  pairwise: true  # divergence for every pair of sequences
+  pairwise_max_pairs: null  # limit number of pairs (deterministic order)
+  include_baseline_in_any_pair: false  # include baseline in any_pair set
   index_reference: generated  # generated | absolute
-  no_divergence_value: -1
-  exclude_no_divergence_from_plots: true
-  primary_metric: baseline_per_sequence  # any_pair | baseline_per_sequence
+  no_divergence_value: -1  # value when no divergence found
+  exclude_no_divergence_from_plots: true  # drop -1 values in plots
+  primary_metric: baseline_per_sequence  # any_pair | baseline_per_sequence | pairwise
 
 summary:
-  quantiles: [0.05, 0.25, 0.5, 0.75, 0.95]
+  quantiles: [0.05, 0.25, 0.5, 0.75, 0.95]  # quantiles to report
 
 plots:
-  enabled: true
+  enabled: true  # master toggle
   formats: [png]  # add pdf later if needed
-  dpi: 300
-  bins: 60
-  per_run: true
-  per_prompt: true
-  title_prefix: "Divergence"
-  grid: false
-  color_map: tab10
+  dpi: 300  # figure dpi
+  bins: 60  # histogram bins
+  per_run: true  # per run histograms
+  per_prompt: true  # aggregated per prompt histograms
+  title_prefix: "Divergence"  # plot title prefix
+  grid: false  # background grid
+  color_map: tab10  # reserved for future multi-series plots
   xlim: null  # example: [0, 2000]
   ylim: null
   label_no_divergence: "no divergence"
 
 performance:
-  mmap_mode: r
+  mmap_mode: r  # memory-map mode for loading npz

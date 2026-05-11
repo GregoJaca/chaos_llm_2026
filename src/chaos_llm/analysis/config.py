@@ -31,6 +31,8 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     cfg["divergence"].setdefault("any_pair", True)
     cfg["divergence"].setdefault("baseline_per_sequence", True)
+    cfg["divergence"].setdefault("pairwise", False)
+    cfg["divergence"].setdefault("pairwise_max_pairs", None)
     cfg["divergence"].setdefault("include_baseline_in_any_pair", False)
     cfg["divergence"].setdefault("index_reference", "generated")
     cfg["divergence"].setdefault("no_divergence_value", -1)
@@ -59,8 +61,8 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
 def validate_config(cfg: Dict[str, Any]) -> None:
     primary = cfg["divergence"]["primary_metric"]
-    if primary not in ("any_pair", "baseline_per_sequence"):
-        raise ValueError("divergence.primary_metric must be any_pair or baseline_per_sequence")
+    if primary not in ("any_pair", "baseline_per_sequence", "pairwise"):
+        raise ValueError("divergence.primary_metric must be any_pair, baseline_per_sequence, or pairwise")
 
     index_ref = cfg["divergence"]["index_reference"]
     if index_ref not in ("generated", "absolute"):

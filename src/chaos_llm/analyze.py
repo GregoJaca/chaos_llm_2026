@@ -7,7 +7,7 @@ import numpy as np
 
 from chaos_llm.analysis.config import load_analysis_config
 from chaos_llm.analysis.data import discover_runs, load_run_metadata, load_tokens
-from chaos_llm.analysis.divergence import divergence_any_pair, divergence_vs_baseline
+from chaos_llm.analysis.divergence import divergence_any_pair, divergence_pairwise, divergence_vs_baseline
 from chaos_llm.analysis.plots import apply_style, plot_histogram
 
 
@@ -96,6 +96,16 @@ def main() -> None:
                 index_reference=cfg["divergence"]["index_reference"],
             )
 
+        pairwise_divergence = None
+        if cfg["divergence"]["pairwise"]:
+            pairwise_divergence = divergence_pairwise(
+                perturbed_ids=perturbed_ids,
+                lengths=lengths,
+                prompt_len=prompt_len,
+                index_reference=cfg["divergence"]["index_reference"],
+                max_pairs=cfg["divergence"]["pairwise_max_pairs"],
+            )
+
         window, mag, prompt_len_meta = _extract_runtime(meta)
         prompt_name = meta.get("prompt", {}).get("name", "unknown")
         run_name = os.path.basename(run_dir)
@@ -129,6 +139,24 @@ def main() -> None:
 
             per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
 
+        if pairwise_divergence is not None:
+            values = pairwise_divergence
+            row["pairwise_num_pairs"] = int(values.shape[0])
+            no_div = cfg["divergence"]["no_divergence_value"]
+            keep = values != no_div
+            filtered = values[keep]
+            row["pairwise_no_divergence"] = int((~keep).sum())
+            if filtered.size:
+                row["pairwise_mean"] = float(filtered.mean())
+                row["pairwise_std"] = float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0
+                row["pairwise_median"] = float(np.median(filtered))
+                for q in cfg["summary"]["quantiles"]:
+                    row[f"pairwise_q{int(q*100):02d}"] = float(np.quantile(filtered, q))
+            else:
+                row["pairwise_mean"] = ""
+                row["pairwise_std"] = ""
+                row["pairwise_median"] = ""
+
         summary_rows.append(row)
 
         if cfg["plots"]["enabled"] and cfg["plots"]["per_run"] and baseline_divergence is not None:
@@ -138,6 +166,25 @@ def main() -> None:
             if plot_values.size:
                 title = f"{cfg['plots']['title_prefix']} - {run_name}"
                 output_base = os.path.join(output_dir, "figures", f"hist_{run_name}")
+                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                plot_histogram(
+                    values=plot_values,
+                    title=title,
+                    xlabel="divergence index",
+                    output_paths=output_paths,
+                    bins=int(cfg["plots"]["bins"]),
+                    grid=bool(cfg["plots"]["grid"]),
+                    xlim=cfg["plots"]["xlim"],
+                    ylim=cfg["plots"]["ylim"],
+                )
+
+        if cfg["plots"]["enabled"] and cfg["plots"]["per_run"] and pairwise_divergence is not None:
+            plot_values = pairwise_divergence
+            if cfg["divergence"]["exclude_no_divergence_from_plots"]:
+                plot_values = plot_values[plot_values != cfg["divergence"]["no_divergence_value"]]
+            if plot_values.size:
+                title = f"{cfg['plots']['title_prefix']} Pairwise - {run_name}"
+                output_base = os.path.join(output_dir, "figures", f"hist_pairwise_{run_name}")
                 output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                 plot_histogram(
                     values=plot_values,

@@ -44,15 +44,13 @@ If no name is provided, a name like prompt_0 is assigned.
 From the repo root:
 
 ```
-set PYTHONPATH=src
-python -m chaos_llm.run_experiment --config config.yaml
+python run_experiment.py --config config.yaml
 ```
 
 Linux:
 
 ```
-export PYTHONPATH=src
-python -m chaos_llm.run_experiment --config config.yaml
+python run_experiment.py --config config.yaml
 ```
 
 ## Outputs
@@ -68,7 +66,7 @@ Inside each run folder:
 - tokens.npz: baseline and perturbed token id sequences
 
 tokens.npz contains:
-- baseline_ids: 1D int array (prompt + generated tokens)
+- baseline_ids: 1D int array (prompt + generated tokens if enabled)
 - perturbed_ids: 2D int array with padding
 - perturbed_lengths: 1D int array of true lengths
 - divergence_index: 1D int array, -1 if no divergence before stop
@@ -84,13 +82,30 @@ tokens.npz contains:
 Edit analysis.yaml, then run:
 
 ```
-set PYTHONPATH=src
-python -m chaos_llm.analyze --config analysis.yaml
+python run_analysis.py --config analysis.yaml
+```
+
+## Inspect tokens
+
+Print token ids (and optionally token strings) from a run folder:
+
+```
+python print_tokens.py --run-dir outputs/run_4096_0.0004_interstellar_travel --max-tokens 80
+```
+
+With token string decoding:
+
+```
+python print_tokens.py --run-dir outputs/run_4096_0.0004_interstellar_travel --decode --config config.yaml
 ```
 
 Linux:
 
 ```
-export PYTHONPATH=src
-python -m chaos_llm.analyze --config analysis.yaml
+python run_analysis.py --config analysis.yaml
 ```
+
+## Environment
+
+If you use VS Code, the repo includes a .env file that sets PYTHONPATH=src.
+The wrapper scripts above also handle PYTHONPATH automatically.

@@ -1,3 +1,4 @@
+import os
 from typing import Dict, Iterable, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
@@ -42,5 +43,6 @@ def plot_histogram(
         ax.set_ylim(ylim)
 
     for path in output_paths:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
         fig.savefig(path, bbox_inches="tight")
     plt.close(fig)

@@ -57,6 +57,9 @@ def run_prompt(
     gen_kwargs = build_generation_kwargs(cfg, tokenizer)
     adaptive_stop = bool(cfg["generation"]["adaptive_stop"])
 
+    include_prompt_tokens = bool(cfg["output"].get("include_prompt_tokens", True))
+    prompt_len_saved = int(prompt_len if include_prompt_tokens else 0)
+
     output_dir = cfg["paths"]["output_dir"]
     os.makedirs(output_dir, exist_ok=True)
 
@@ -74,6 +77,8 @@ def run_prompt(
             gen_kwargs=gen_kwargs,
         )
         baseline_ids_cpu = baseline_ids[0].detach().cpu().numpy()
+        if not include_prompt_tokens:
+            baseline_ids_cpu = baseline_ids_cpu[prompt_len:]
         baseline_ids_device = baseline_ids if adaptive_stop else None
         if not adaptive_stop:
             del baseline_ids
@@ -104,7 +109,10 @@ def run_prompt(
                     adaptive_stop=adaptive_stop,
                 )
 
-                perturbed_ids.append(output_ids[0].detach().cpu().numpy())
+                seq = output_ids[0].detach().cpu().numpy()
+                if not include_prompt_tokens:
+                    seq = seq[prompt_len:]
+                perturbed_ids.append(seq)
                 divergence_index.append(div_idx)
 
                 del delta, perturbed_embeds, output_ids
@@ -125,7 +133,7 @@ def run_prompt(
                 perturbed_ids=perturbed_ids,
                 divergence_index=divergence_index,
                 pad_token_id=int(cfg["output"]["pad_token_id"]),
-                prompt_len=int(prompt_len),
+                prompt_len=int(prompt_len_saved),
             )
 
             del perturbed_ids, divergence_index

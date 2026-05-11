@@ -1,5 +1,6 @@
 .venv/
 __pycache__/
 outputs/
+analysis_outputs/
 *.npz
 .pytest_cache/

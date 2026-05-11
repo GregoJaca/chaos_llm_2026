@@ -49,6 +49,7 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     cfg["output"].setdefault("pad_token_id", -1)
     cfg["output"].setdefault("save_text", False)
+    cfg["output"].setdefault("include_prompt_tokens", True)
 
     return cfg
 
