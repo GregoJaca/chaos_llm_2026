@@ -42,6 +42,21 @@ def _format_outputs(base_path: str, formats: List[str]) -> List[str]:
     return [f"{root}.{ext}" for ext in formats]
 
 
+def _select_primary_values(
+    primary_metric: str,
+    any_pair_value: Optional[int],
+    baseline_divergence: Optional[np.ndarray],
+    pairwise_divergence: Optional[np.ndarray],
+) -> Tuple[Optional[np.ndarray], str]:
+    if primary_metric == "baseline_per_sequence" and baseline_divergence is not None:
+        return baseline_divergence, "baseline"
+    if primary_metric == "pairwise" and pairwise_divergence is not None:
+        return pairwise_divergence, "pairwise"
+    if primary_metric == "any_pair" and any_pair_value is not None:
+        return np.array([any_pair_value], dtype=np.int32), "any_pair"
+    return None, "unknown"
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Analyze chaos-llm outputs")
     parser.add_argument("--config", required=True, help="Path to analysis.yaml")
@@ -137,7 +152,8 @@ def main() -> None:
                 row["baseline_std"] = ""
                 row["baseline_median"] = ""
 
-            per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
+            if cfg["divergence"]["primary_metric"] == "baseline_per_sequence":
+                per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
 
         if pairwise_divergence is not None:
             values = pairwise_divergence
@@ -157,34 +173,24 @@ def main() -> None:
                 row["pairwise_std"] = ""
                 row["pairwise_median"] = ""
 
+            if cfg["divergence"]["primary_metric"] == "pairwise":
+                per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
+
         summary_rows.append(row)
 
-        if cfg["plots"]["enabled"] and cfg["plots"]["per_run"] and baseline_divergence is not None:
-            plot_values = baseline_divergence
+        if cfg["plots"]["enabled"] and cfg["plots"]["per_run"]:
+            plot_values, label = _select_primary_values(
+                cfg["divergence"]["primary_metric"],
+                any_pair_value,
+                baseline_divergence,
+                pairwise_divergence,
+            )
             if cfg["divergence"]["exclude_no_divergence_from_plots"]:
-                plot_values = plot_values[plot_values != cfg["divergence"]["no_divergence_value"]]
-            if plot_values.size:
-                title = f"{cfg['plots']['title_prefix']} - {run_name}"
-                output_base = os.path.join(output_dir, "figures", f"hist_{run_name}")
-                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                plot_histogram(
-                    values=plot_values,
-                    title=title,
-                    xlabel="divergence index",
-                    output_paths=output_paths,
-                    bins=int(cfg["plots"]["bins"]),
-                    grid=bool(cfg["plots"]["grid"]),
-                    xlim=cfg["plots"]["xlim"],
-                    ylim=cfg["plots"]["ylim"],
-                )
-
-        if cfg["plots"]["enabled"] and cfg["plots"]["per_run"] and pairwise_divergence is not None:
-            plot_values = pairwise_divergence
-            if cfg["divergence"]["exclude_no_divergence_from_plots"]:
-                plot_values = plot_values[plot_values != cfg["divergence"]["no_divergence_value"]]
-            if plot_values.size:
-                title = f"{cfg['plots']['title_prefix']} Pairwise - {run_name}"
-                output_base = os.path.join(output_dir, "figures", f"hist_pairwise_{run_name}")
+                if plot_values is not None:
+                    plot_values = plot_values[plot_values != cfg["divergence"]["no_divergence_value"]]
+            if plot_values is not None and plot_values.size:
+                title = f"{cfg['plots']['title_prefix']} ({label}) - {run_name}"
+                output_base = os.path.join(output_dir, "figures", f"hist_{label}_{run_name}")
                 output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                 plot_histogram(
                     values=plot_values,
@@ -207,8 +213,9 @@ def main() -> None:
         for prompt_name, values in per_prompt_values.items():
             if not values:
                 continue
-            title = f"{cfg['plots']['title_prefix']} - {prompt_name}"
-            output_base = os.path.join(output_dir, "figures", f"hist_prompt_{prompt_name}")
+            label = cfg["divergence"]["primary_metric"]
+            title = f"{cfg['plots']['title_prefix']} ({label}) - {prompt_name}"
+            output_base = os.path.join(output_dir, "figures", f"hist_prompt_{label}_{prompt_name}")
             output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
             plot_histogram(
                 values=np.array(values, dtype=np.int32),

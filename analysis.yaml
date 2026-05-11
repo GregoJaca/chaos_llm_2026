@@ -16,7 +16,7 @@ divergence:
   index_reference: generated  # generated | absolute
   no_divergence_value: -1  # value when no divergence found
   exclude_no_divergence_from_plots: true  # drop -1 values in plots
-  primary_metric: baseline_per_sequence  # any_pair | baseline_per_sequence | pairwise
+  primary_metric: pairwise  # any_pair | baseline_per_sequence | pairwise
 
 summary:
   quantiles: [0.05, 0.25, 0.5, 0.75, 0.95]  # quantiles to report

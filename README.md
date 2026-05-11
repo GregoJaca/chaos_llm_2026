@@ -90,19 +90,22 @@ python run_analysis.py --config analysis.yaml
 Print token ids (and optionally token strings) from a run folder:
 
 ```
-python print_tokens.py --run-dir outputs/run_4096_0.0004_interstellar_travel --max-tokens 80
+python print_tokens.py --run-dir run_4096_0.0004_interstellar_travel --max-tokens 80 --config config.yaml
 ```
 
 With token string decoding:
 
 ```
-python print_tokens.py --run-dir outputs/run_4096_0.0004_interstellar_travel --decode --config config.yaml
+python print_tokens.py --run-dir run_4096_0.0004_interstellar_travel --decode --config config.yaml
 ```
 
-Linux:
+## Tests
+
+Run the unit tests:
 
 ```
-python run_analysis.py --config analysis.yaml
+python -m unittest tests.test_divergence
+python -m unittest tests.test_analysis_e2e
 ```
 
 ## Environment
