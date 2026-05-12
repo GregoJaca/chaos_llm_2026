@@ -1,0 +1,898 @@
+       % ****** Start of file aipsamp.tex ******
+%
+%   This file is part of the AIP files in the AIP distribution for REVTeX 4.
+%   Version 4.1 of REVTeX, October 2009
+%
+%   Copyright (c) 2009 American Institute of Physics.
+%
+%   See the AIP README file for restrictions and more information.
+%
+% TeX'ing this file requires that you have AMS-LaTeX 2.0 installed
+% as well as the rest of the prerequisites for REVTeX 4.1
+% 
+% It also requires running BibTeX. The commands are as follows:
+%
+%  1)  latex  aipsamp
+%  2)  bibtex aipsamp
+%  3)  latex  aipsamp
+%  4)  latex  aipsamp
+%
+% Use this file as a source of example code for your aip document.
+% Use the file aiptemplate.tex as a template for your document.
+\documentclass[aip%
+ aip,
+% jmp,
+% bmf,
+% sd,
+% rsi,
+ amsmath,amssymb,
+%preprint,%
+ reprint,%
+%author-year,%
+%author-numerical,%
+% Conference Proceedings
+]{revtex4-1}
+
+\usepackage{graphicx}% Include figure files
+\usepackage{dcolumn}% Align table columns on decimal point
+\usepackage{bm}% bold math
+%\usepackage[mathlines]{lineno}% Enable numbering of text and display math
+%\linenumbers\relax % Commence numbering lines
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage{etoolbox}
+\usepackage{float}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\usepackage{soul}
+\usepackage{ulem}
+\usepackage[most]{tcolorbox}
+\newtcolorbox{promptblock}{
+  colback=gray!5,
+  colframe=black!60,
+  boxrule=0.5pt,
+  arc=2pt,
+  left=6pt,
+  right=6pt,
+  top=6pt,
+  bottom=6pt,
+  fonttitle=\bfseries,
+  title=Prompt
+}
+
+\usepackage[
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+]{hyperref}
+
+
+% Some colors to use for edits. Please select one and use that color
+% for adding your own part/questions/remarks, so we know, what comes from who
+% Kristof - orange
+% Grego - magenta
+% Janos - red
+\usepackage[dvipsnames]{xcolor}
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\orange}[1]{\textcolor{orange}{#1}}
+\newcommand{\purple}[1]{\textcolor{purple}{#1}}
+\newcommand{\mage}[1]{\textcolor{magenta}{#1}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+
+%% Apr 2021: AIP requests that the corresponding 
+%% email to be moved after the affiliations
+\makeatletter
+\def\@email#1#2{%
+ \endgroup
+ \patchcmd{\titleblock@produce}
+  {\frontmatter@RRAPformat}
+  {\frontmatter@RRAPformat{\produce@RRAP{*#1\href{mailto:#2}{#2}}}\frontmatter@RRAPformat}
+  {}{}
+}%
+\makeatother
+\begin{document}
+
+\preprint{AIP/123-QED}
+
+\title[Chaos in reason]{Chaos in reason:\\How chain-of-thought LLM can look for an answer}
+
+% Force line breaks with \\
+\author{Gregorio Jaca}
+\affiliation{Department of Theoretical Physics, Institute of Physics, Budapest University of Technology and Economics, Műegyetem rkp. 3, Budapest, H-1111, Hungary}%Lines break automatically or can be forced with \\
+\author{János Török}%
+\affiliation{Department of Theoretical Physics, Institute of Physics, Budapest University of Technology and Economics, Műegyetem rkp. 3, Budapest, H-1111, Hungary}
+\email{torok.janos@ttk.bme.hu}
+
+
+\author{Kristóf Benedek}
+\affiliation{Department of Theoretical Physics, Institute of Physics, Budapest University of Technology and Economics, Műegyetem rkp. 3, Budapest, H-1111, Hungary}
+\affiliation{Institute of Technical Physics and Materials Science, HUN-REN Centre for Energy Research, Konkoly-Thege Miklós út 29-33, P.O. Box 49, Budapest, H-1525, Hungary}%
+% \email{kristof.benedek@edu.bme.hu}
+
+\date{\today}% It is always \today, today,
+             %  but any date may be explicitly specified
+
+\begin{abstract}
+Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions and a positive maximum Lyapunov exponent, with consistent results across different distance metrics. Recurrence plots show structural similarities between LLMs and canonical chaotic systems such as the Lorenz attractor, while dimension analysis reveals fractal structures in the hidden state space, particularly pronounced in the last layers. We propose that the nonlinear coupling induced by attention mechanisms plays a key role in driving this chaotic behavior. 
+\end{abstract}
+
+\maketitle
+
+
+\section{Introduction: How does IT think?}\label{sec:intro}
+%In 2017, with the article \textit{"Attention is all you need"}~\cite{attention}, the transformer architecture was published and this opened the door toward the AI boom, that happened in 2022. In the same year, a paper was published by Jason Wei et al from Google Research~\cite{wei2023chainofthoughtpromptingelicitsreasoning}, and it laid down the foundations for the reasoning/chain-of-thought (CoT) models, which, quoting their abstract, "explores how generating a chain of thought - a series of intermediate reasoning steps - significantly improves the ability of large language models to perform complex reasoning". When talking about humans, reasoning is built upon logic, a study of correct reasoning, stemming both from philosophy and mathematics, and having a several-thousand-year history.}
+Since the introduction of the transformer architecture with Attention Is All You Need in 2017 \cite{attention}, large language models (LLMs) have rapidly evolved into highly capable systems, culminating in their widespread adoption and public impact beginning in 2022. These models exhibit striking emergent abilities, particularly in reasoning-intensive tasks. A notable milestone was the observation that prompting models to generate intermediate reasoning steps-so-called chain-of-thought (CoT) reasoning-substantially improves performance on complex problems \cite{wei2023chainofthoughtpromptingelicitsreasoning}. This discovery raised fundamental questions about the nature of reasoning in artificial systems and the mechanisms by which such behavior arises.
+
+In human cognition, reasoning is traditionally associated with logical inference, a formal discipline with thousands of years old deep roots in philosophy and mathematics. By contrast, LLMs are trained through large-scale statistical optimization and operate without explicit symbolic rules. This contrast invites a natural question: How is this reasoning perceived by a machine, in particular by an LLM? Does it follow some pattern, or is it stochastic? Does it have a simple or a complex structure? Or is it by any chance chaotic?
+
+From a theoretical standpoint, LLMs can be viewed as high-dimensional nonlinear dynamical systems. At each generation step, the model updates an internal hidden state via a sequence of nonlinear transformations involving self-attention and feedforward layers. The autoregressive generation of tokens corresponds to a discrete-time evolution rule, with the initial prompt acting as an initial condition. Under this interpretation, a generated text sequence after some layers, for instance, in the latent space, can be viewed as a trajectory.
+
+This perspective enables a direct analogy between classical chaotic systems and LLMs, summarized in Table \ref{tab:analogy}. Concepts such as phase space, trajectories, nonlinear coupling, and sensitivity to initial conditions have natural counterparts in the context of machine learning. In particular, the self-attention mechanism introduces strong nonlinear coupling between components of the hidden state, a structural feature reminiscent of the stretching-and-folding mechanisms that underlie chaos in low-dimensional systems.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Chaotic System} & \textbf{LLMs} \\ \midrule
+Phase Space & Embedding / Hidden State Space \\
+State Vector & Hidden State Vector \\
+Phase-Space Trajectory & Sequence of Token Text or Hidden States \\
+Continuous Time Evolution & Discrete Token Generation Step \\
+Differential Equation & Autoregressive Function \\
+Numerical Integration & Forward-Pass Inference \\
+Nonlinear Coupling & Self-Attention Mechanism \\
+Stretching & Attention / MLP Layers \\
+Folding & Normalization Layers \\
+Initial Condition & Initial Prompt Text or Embedding \\
+Measurement Uncertainty & Floating-Point Precision, Quantization \\ \bottomrule
+\end{tabular}
+\caption{Analogies between concepts in chaos theory and LLMs.}
+\label{tab:analogy}
+\end{table}
+
+%It is well known that nowadays LLMs exhibit stable generative behavior: they maintain coherence over long text sequences while allowing for variability in their responses. This tension between stability and sensitivity is reminiscent of chaotic systems in nonlinear dynamics, systems that remain bounded yet display sensitive dependence on initial conditions. Understanding whether the internal evolution of LLM representations exhibits similar characteristics offers a new perspective on both interpretability and model behavior.}
+Modern LLMs are known to exhibit stable generative behavior: they produce fluent, contextually consistent text over long sequences, while simultaneously allowing for variability in their outputs. This coexistence of boundedness and sensitivity is a defining characteristic of chaotic systems in nonlinear dynamics. Chaotic systems evolve within a constrained region of phase space yet display exponential sensitivity to perturbations in their initial conditions, quantified by positive Lyapunov exponents. The similarity is suggestive: small changes in prompts, embeddings, or numerical precision can lead to qualitatively different generation steps, reasoning steps, despite the overall coherence of the model’s behavior.
+
+Understanding whether the internal evolution of LLM representations exhibits genuine signatures of chaos is therefore of both theoretical and practical interest. From a scientific perspective, it offers a principled framework for interpreting model behavior beyond purely statistical descriptions. From an engineering standpoint, it may shed light on issues such as reproducibility, robustness, and controllability in large-scale generative models.
+
+In this work, we apply tools from nonlinear dynamics and chaos theory to the analysis of LLMs. By examining both token-level outputs and hidden-state trajectories, we investigate sensitivity to initial conditions, Lyapunov spectra, recurrence structures, and effective dimensionality of the latent space. Our results suggest that key hallmarks of chaotic dynamics are present in LLMs, with particularly rich structure emerging in the deeper layers of the network. We further argue that the nonlinear coupling induced by self-attention plays a central role in shaping this behavior.
+
+\section{Previous work}\label{sec:prev_work}
+
+The application of dynamical systems theory to modern neural networks is a relatively unexplored field, but might shed light to questions regarding interpretability and reproducibility. While early work primarily examined low-dimensional recurrent networks, recent studies have begun to analyze Transformer architectures and large language models (LLMs) through the lens of nonlinear dynamics, providing the foundation for the present work.
+
+\paragraph{Chaotic Dynamics in Transformers and LLMs.}
+Some recent studies explicitly characterize Transformers as nonlinear dynamical systems. Li \textit{et al.}~\cite{li2025cognitive_activation} argue that reasoning in LLMs arises from chaotic information extraction processes and introduce quasi-Lyapunov exponents to quantify layerwise sensitivity to perturbations. Geshkovski \textit{et al.}~\cite{geshkovski2025mathematicalperspectivetransformers} formalize self-attention as a nonlinear coupling mechanism between token representations, establishing a mathematical basis for dynamical interpretations of attention.
+
+Analytically tractable models further support this view. Dynamical mean-field analyses of simplified self-attention networks~\cite{dynamicalmeanfieldtheoryselfattention} show that even binary-weight Transformers can exhibit non-equilibrium phase transitions and chaotic bifurcations, suggesting that such dynamics arise from architectural structure rather than scale alone. Complementary work by Tomihari \textit{et al.}~\cite{tomihari2025recurrent_self_attention_dynamics} demonstrates that normalization layers regulate the Jacobian spectrum, constraining instability and driving models toward a critical regime with maximum Lyapunov exponents close to zero, suggesting operation \textit{near the edge of chaos: a critical regime where signals neither explode nor vanish, enabling long-range information propagation}.
+
+\paragraph{Sensitivity, Determinism, and Attractors in Generative Models.}
+Recent studies also focus on deterministic inference. He \textit{et al.}~\cite{he2025nondeterminism} show that GPU-level batch variance and floating-point effects can lead to divergent outputs, highlighting the intrinsic sensitivity of autoregressive generation. At a higher level, attractor-like behavior has been observed in generative models. Wang \textit{et al.}~\cite{wang2025unveiling_attractor_cycles} report convergence to periodic attractor cycles in LLM-based paraphrasing, leading to reduced linguistic diversity. Similar phenomena appear in image generation: analyses of CycleGAN models~\cite{cyclegan} reveal chaotic attractors with positive Lyapunov exponents and effective dimensions comparable to the intrinsic dimensionality of the training data. These results illustrate how chaotic dynamics can coexist with bounded generation on a learned manifold.
+
+\paragraph{Dynamical Perspectives on Interpretability.}
+
+Dynamical systems tools have also been used to interpret neural computations. Sussillo and Barak~\cite{sussillo2013} showed that fixed points and local linearization in trained recurrent networks provide interpretable descriptions of network function. More recently, Zhang \textit{et al.}~\cite{zhang2024intelligence_edge_of_chaos} argue that optimal performance emerges at at an optimal complexity level, a regime neither fully ordered nor chaotic or random. Systems with overly ordered or overly chaotic regimes exhibit degraded behavior. In the context of language models, Zhou \textit{et al.}~\cite{zhou2025geometryreasoningflowinglogics} interpret chain-of-thought reasoning as smooth flows in embedding space, aligning naturally with a dynamical view of inference.
+
+\paragraph{Scope of the Present Work.}
+
+While prior studies have identified individual dynamical signatures in Transformers and generative models, a unified chaos-theoretic analysis of LLMs remains limited. The present work complements existing approaches by systematically analyzing both hidden-state trajectories and generated text using multiple diagnostics from nonlinear dynamics, enabling a cohesive characterization of chaotic behavior in large language models.
+
+\section{Preliminaries}
+\label{sec:preliminaries}
+
+This section introduces the concepts from nonlinear dynamics and chaos theory required to interpret large language models (LLMs) as dynamical systems. We then describe the transformer architecture from a latent-state perspective and formalize autoregressive inference as a discrete-time evolution in high-dimensional space. These preliminaries provide the conceptual and mathematical foundation for the methods introduced in Sec.~\ref{sec:methods}.
+
+\subsection{Nonlinear Dynamics and Chaos}
+\label{subsec:nonlinear_dynamics}
+
+A \textbf{dynamical system} describes the evolution of a system’s state over time according to deterministic rules. The state is represented by a vector $\mathbf{x}(t)$ in a \textbf{phase space}, whose coordinates correspond to the system’s degrees of freedom. In continuous time, the evolution is governed by ordinary differential equations,
+\begin{equation}
+\frac{d\mathbf{x}}{dt} = \mathbf{F}(\mathbf{x}),
+\end{equation}
+while in discrete time it is described by iterated maps,
+\begin{equation}
+\mathbf{x}_{t+1} = \mathbf{f}(\mathbf{x}_t).
+\end{equation}
+A system is \textbf{deterministic} if its future evolution is uniquely determined by its current state. The resulting trajectory traces the system’s evolution in phase space, and its geometry encodes the qualitative behavior of the dynamics.
+
+Chaotic systems form a subclass of deterministic nonlinear systems characterized by aperiodic behavior and \textbf{sensitivity to initial conditions}. Two trajectories starting from infinitesimally close initial states, $\mathbf{x}(0)$ and $\mathbf{x}(0)+\boldsymbol{\delta}(0)$, diverge exponentially in time,
+\begin{equation}
+\|\boldsymbol{\delta}(t)\| \approx \|\boldsymbol{\delta}(0)\| e^{\lambda t},
+\end{equation}
+where $\lambda$ is the \textbf{maximal Lyapunov exponent}. A positive maximal Lyapunov exponent is a defining signature of chaos, indicating exponential amplification of arbitrarily small uncertainties.
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.95\linewidth]{figures/recurrence_plots.pdf}
+%     \caption{Exemplary recurrence plots of (A) a periodic motion with one frequency, (B) the chaotic Lorenz system, and (C) of normally distributed white noise.}
+%     \label{fig:rp_examples}
+% \end{figure}
+
+\begin{figure}[H]
+    \centering
+    % Row 1
+    \begin{subfigure}{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_systems/sine_rp.pdf}
+        \caption{}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_systems/lorenz_36_rp.pdf}
+        \caption{}
+    \end{subfigure}
+
+    \vspace{2pt} % Vertical gap between rows
+
+    % Row 2
+    \begin{subfigure}{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_systems/white_noise_rp.pdf}
+        \caption{}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_systems/brownian_rp_0.pdf}
+        \caption{}
+    \end{subfigure}
+
+    \caption{Exemplary recurrence plots of (a) a periodic motion with one frequency, (b) the chaotic Lorenz system, (c) of normally distributed white noise, (d) brownian motion.}
+    \label{fig:rp_examples}
+\end{figure}
+
+
+
+In an $n$-dimensional phase space, a dynamical system admits a Lyapunov spectrum $\{\lambda_1,\dots,\lambda_n\}$, characterizing expansion and contraction along different directions. Chaotic systems simultaneously exhibit stretching ($\lambda_i>0$) and contraction ($\lambda_i<0$), leading to the formation of \textbf{strange attractors}: bounded invariant sets with fractal geometry and non-integer effective dimensionality.
+
+A commonly used measure of attractor geometry is the \textbf{correlation dimension} $D_2$.
+Periodic systems yield integer values, while chaotic attractors exhibit non-integer dimensions reflecting fractal structure.
+
+Another powerful diagnostic is \textbf{recurrence analysis} \cite{MARWAN2007237}, which visualizes the times at which a trajectory revisits neighborhoods in phase space. Periodic, stochastic, and chaotic systems produce qualitatively distinct recurrence plot structures, which can be quantified using \textbf{Recurrence Quantification Analysis (RQA)}.
+
+\subsection{Large Language Models as Dynamical Systems}
+\label{subsec:llms_dynamics}
+
+Large language models are deep neural networks based on the Transformer architecture, trained to model conditional token distributions and used autoregressively during inference. From a latent-space perspective, this autoregressive process naturally defines a discrete-time dynamical system.
+
+Let the model vocabulary be
+\begin{equation}
+\mathcal{V} = \{1,\dots,|\mathcal{V}|\},
+\end{equation}
+and let the learned token embedding map be
+\begin{equation}
+\Phi : \mathcal{V} \rightarrow \mathbb{R}^D,
+\end{equation}
+where $D$ is the hidden dimension. A prompt of length $L_p$ with tokens $(v_1,\dots,v_L)$ is mapped to an initial embedding sequence
+\begin{equation}
+\mathbf{E}_0 = (\mathbf{e}_1,\dots,\mathbf{e}_{L_p}), 
+\qquad 
+\mathbf{e}_i = \Phi(v_i).
+\end{equation}
+
+During inference, the transformer evolves a context window of hidden states of size $L$. Let
+\begin{equation}
+\mathbf{H}_t = (\mathbf{h}_{t-L+1},\dots,\mathbf{h}_t) \in \mathbb{R}^{L \times D}
+\end{equation}
+denote the hidden states available at generation step $t$. The forward pass defines a deterministic update rule,
+\begin{equation}
+\mathbf{H}_{t+1} = F(\mathbf{H}_t),
+\end{equation}
+where $F$ represents the composition of self-attention, feedforward, and normalization layers.
+
+At each step, the context window is updated by discarding the oldest state and appending the newly generated one, inducing a nonlinear discrete-time mapping on a bounded subset of $\mathbb{R}^{L \times D}$. For analysis, we focus on the hidden state of the most recent token,
+\begin{equation}
+\mathbf{h}_t \in \mathbb{R}^D,
+\end{equation}
+and treat the sequence
+\begin{equation}
+\{\mathbf{h}_t\}_{t=1}^T\equiv (h_1, h_2,\ldots,h_T)
+\end{equation}
+as a \textbf{trajectory} in latent space.
+
+Self-attention introduces nonlinear, state-dependent coupling between token representations within the context window, enabling amplification of small perturbations. Feedforward (MLP) layers further contribute to nonlinear transformations, while normalization layers constrain activation magnitudes, ensuring bounded trajectories. This alternation of stretching and folding operations parallels the geometric mechanisms underlying classical chaotic systems.
+
+\subsection{Initial Conditions and Perturbations}
+\label{subsec:init_conditions}
+
+To probe sensitivity to initial conditions, we treat small perturbations of the initial embedding tensor $\mathbf{E}_0$ as nearby initial states of the dynamical system. Given a fixed prompt embedding $\mathbf{E}_0 \in \mathbb{R}^{L \times D}$, we generate perturbed initial conditions
+\begin{equation}
+\mathbf{E}_0^{(k)} = \mathbf{E}_0 + \boldsymbol{\Delta}^{(k)},
+\end{equation}
+where $\boldsymbol{\Delta}^{(k)} \in \mathbb{R}^{L \times D}$ is a random perturbation of fixed norm,
+\begin{equation}
+\|\boldsymbol{\Delta}^{(k)}\| = r.
+\end{equation}
+The perturbations were done in the embedding space, instead of the text space, to be able to control its magnitude.
+Each perturbed embedding is evolved deterministically under the same mapping $F$, yielding an ensemble of nearby trajectories in latent space.
+
+By analyzing the divergence, recurrence structure, and effective dimensionality of these trajectories, we assess whether the internal dynamics of LLMs exhibit signatures of deterministic chaos. The quantitative diagnostics and experimental procedures used for this analysis are described in Sec.~\ref{sec:methods}.
+
+
+\section{Methods}
+\label{sec:methods}
+
+This section describes the methodological framework used to characterize chaotic signatures in large language models (LLMs). Building on the dynamical-systems formalism introduced in Sec.~\ref{sec:preliminaries}, we analyze divergence, recurrence structure, and effective dimensionality of latent-state trajectories. Our analysis combines complementary trajectory distance metrics, Lyapunov exponent estimation, recurrence quantification, and fractal dimension estimation. We conclude by detailing the experimental setup and data acquisition procedures.
+
+\subsection{Trajectory Distance Metrics}
+\label{subsec:trajectory_distance_metrics}
+
+Let
+\begin{equation}
+\mathbf{X} = (\mathbf{x}_1,\dots,\mathbf{x}_n), \qquad
+\mathbf{Y} = (\mathbf{y}_1,\dots,\mathbf{y}_m)
+\end{equation}
+denote two latent-state trajectories, where $\mathbf{x}_i,\mathbf{y}_j \in \mathbb{R}^D$. The length can differ ($n$ and $m$), since an LLM does not return a fixed-length answer; after reaching the token corresponding to the stopping, it ends answer generation. To quantify divergence between trajectories, we employ a suite of complementary distance metrics capturing both local (pointwise) and global (geometric) differences.
+
+There is no canonical distance measure in high-dimensional latent or semantic spaces. Different metrics emphasize different geometric properties, such as orientation, alignment, or global shape. To ensure robustness and to avoid artifacts arising from a specific choice of metric, we therefore employ multiple complementary measures. Similar approaches have been used successfully in the analysis of vector representations of text and embeddings \cite{text2vec,reimers2019sentencebertsentenceembeddingsusing}.
+
+\subsubsection{Vector-wise Metrics}
+\label{sssec:methods_vector_metrics}
+
+Vector-wise metrics compare corresponding points along two trajectories and yield a time series of distances. The primary metric we used is the \textbf{cosine distance},
+\begin{equation}
+d_{\mathrm{cos}}(\mathbf{x},\mathbf{y})
+=
+1 - \frac{\mathbf{x}\cdot\mathbf{y}}{\|\mathbf{x}\|\,\|\mathbf{y}\|},
+\end{equation}
+which measures angular dissimilarity between vectors. Cosine distance is widely used in embedding spaces and is well-suited for normalized hidden states. When vectors are normalized, cosine and Euclidean distances are monotonically related and yield qualitatively similar results.
+
+\subsubsection{Trajectory-wise Metrics}
+\label{sssec:methods_trajectory_metrics}
+
+Trajectory-wise metrics treat trajectories as geometric objects rather than as pointwise-aligned sequences. These metrics yield a single scalar distance between two trajectory segments. To obtain time-resolved divergence curves, we apply them within a sliding window of increasing size (Sec.~\ref{sssec:methods_sliding_window}). Unless otherwise stated, Euclidean distance is used as the base metric between individual points.
+
+\begin{itemize}
+\item \textbf{Dynamic Time Warping (DTW)} \cite{SalvadorChan2007} computes an optimal nonlinear alignment between two sequences. Given a cost matrix $C_{i,j}=\|\mathbf{x}_i-\mathbf{y}_j\|$, the accumulated cost matrix satisfies
+\begin{equation}
+D_{i,j} = C_{i,j} + \min(D_{i-1,j},D_{i,j-1},D_{i-1,j-1}).
+\end{equation}
+
+\item \textbf{Discrete Fréchet Distance} \cite{Denaxas2023,EiterMannila1994} measures the minimal maximum separation between two curves under monotonic reparameterization,
+\begin{equation}
+d_F(X,Y) = \min_{\pi} \max_{(i,j)\in\pi} \|\mathbf{x}_i-\mathbf{y}_j\|,
+\end{equation}
+where $\pi$ ranges over all monotonic couplings of the sampled points.
+
+\item \textbf{Hausdorff Distance} \cite{SciPyDirectedHausdorff} quantifies the maximum mismatch between two point sets,
+{\small
+\begin{equation}
+d_H(X,Y) =
+\max\!\left(
+\sup_{\mathbf{x}\in X}\inf_{\mathbf{y}\in Y}\|\mathbf{x}-\mathbf{y}\|,
+\sup_{\mathbf{y}\in Y}\inf_{\mathbf{x}\in X}\|\mathbf{x}-\mathbf{y}\|
+\right).
+\end{equation}
+}
+
+
+\item \textbf{Cross-Correlation Dissimilarity.}
+This metric compares internal self-similarity structures. For each trajectory, a cosine self-similarity matrix $S_X$ is computed and flattened. The dissimilarity is defined as
+\begin{equation}
+d = 1 - \rho
+=
+1 - \frac{\operatorname{cov}(S_X^{\mathrm{flat}},S_Y^{\mathrm{flat}})}
+{\sigma_{S_X^{\mathrm{flat}}}\sigma_{S_Y^{\mathrm{flat}}}},
+\end{equation}
+where $\rho$ is the Pearson correlation coefficient.
+\end{itemize}
+
+\subsubsection{Sliding Window Analysis}
+\label{sssec:methods_sliding_window}
+
+Trajectory-wise metrics yield a single scalar distance for a pair of trajectories. To obtain a timeseries of the divergence, we apply each metric within a sliding window that advances synchronously along both trajectories. Each window produces a scalar distance value, yielding a distance time series.
+
+The use of sliding windows reflects the finite context window of autoregressive LLM inference, where the current state depends on a bounded history of previous states. For cosine distance, an optional windowed variant is used in which vectors within each window are averaged prior to pointwise comparison.
+
+\subsection{Lyapunov Exponent Estimation}
+\label{subsec:methods_lyapu}
+
+To quantify sensitivity to initial conditions, we estimate maximal Lyapunov exponents from the divergence of nearby trajectories in latent space. A central challenge is that hidden-state trajectories are bounded due to normalization and extremely large number of dimensions, implying that inter-trajectory Euclidean distances inevitably saturate and generally extremely fast. Consequently, Lyapunov exponents can only be estimated from the initial, pre-saturation regime of divergence.
+
+For each prompt, we generate an ensemble of perturbed trajectories as described in Sec.~\ref{subsec:init_conditions}. Distances are computed between corresponding hidden states of the final transformer layer or of the sentence embedding vectors using cosine distance. Because the effective dynamical state is distributed across the context window, we apply a sliding window of size $w=16$ (results were robust for $w\in\{8,32\}$). This yields a time series of distances $d(t)$.
+
+For each trajectory pair, we should fit an exponential growth model,
+\begin{equation}
+d(t) \approx d_0 \, e^{\lambda t},
+\end{equation}
+over a contiguous interval starting at the first generated token and ending before saturation. In a chaotic system we should observe positive Lyapunov exponents. However as we will see it is very difficult to get any fir with reasonably high coefficient fo determination.
+
+\subsection{Recurrence Analysis}
+\label{subsec:recurrence_analysis_methods}
+
+To characterize the geometric and temporal structure of trajectories, we employ recurrence analysis. Given a trajectory $\{\mathbf{x}_i\}_{i=1}^N$, we construct a recurrence matrix by thresholding the pairwise distance matrix,
+\begin{equation}
+R_{i,j}(\epsilon)
+=
+\Theta\!\left(\epsilon - d(\mathbf{x}_i,\mathbf{x}_j)\right),
+\end{equation}
+where $d(\cdot,\cdot)$ denotes the chosen distance metric and $\epsilon$ is a recurrence threshold.
+
+Recurrence plots provide a qualitative visualization of dynamical structure, while quantitative measures are obtained via Recurrence Quantification Analysis (RQA). We compute standard RQA metrics: recurrence rate (RR), determinism (DET), laminarity (LAM), and entropy (ENT). To ensure comparability across trajectories and representations, thresholds are selected such that the recurrence rate is held fixed, rather than fixing $\epsilon$ directly. This procedure controls for differences in scale and metric choice.
+
+\subsection{Dimensionality Estimation}
+\label{subsec:dimensionality_methods}
+
+We estimate the correlation dimension $D_2$ of trajectories using the Grassberger--Procaccia algorithm \cite{GRASSBERGER1983189}. The correlation integral,
+\begin{equation}
+C(\epsilon)
+=
+\frac{1}{N(N-1)}
+\sum_{i\neq j}
+\Theta\!\left(\epsilon-\|\mathbf{x}_i-\mathbf{x}_j\|\right),
+\end{equation}
+measures the probability that two points on the trajectory are separated by less than $\epsilon$. For sufficiently small $\epsilon$, the correlation integral scales as
+\begin{equation}
+C(\epsilon) \sim \epsilon^{D_2}.
+\end{equation}
+The correlation dimension is obtained from the slope of the linear region in a log--log plot of $C(\epsilon)$ versus $\epsilon$. This method allows us to distinguish low-dimensional structured dynamics from high-dimensional stochastic behavior.
+\mage{Let's later emphasize that this means low-dimensional dynamics withing the high dimensional embedding space}
+
+\subsection{Experimental Setup}
+\label{subsec:experiments}
+
+All experiments were conducted using the \texttt{DeepSeek-R1-Distill-Qwen-1.5B} model \cite{deepseek2025r1distillqwen1.5b}. Inference was performed on a Tesla T4 GPU using greedy decoding (temperature $T=0$) to ensure deterministic generation. The context window length was set to 3096 tokens. Hidden states were extracted after each transformer block, yielding tensors of shape (layers, tokens, hidden dimension).
+
+Perturbation magnitudes were chosen empirically to preserve topical coherence while inducing measurable divergence, with $r\in[2.5\times10^{-4},5\times10^{-4}]$ (for more details c.f. \ref{sec:experiments}).
+
+Alongside hidden-state trajectories, we analyze trajectories constructed from sentence-level embeddings of the generated text. Generated outputs are segmented into sentences, each mapped to a fixed-dimensional vector using a pretrained sentence encoder, and treated as a trajectory in semantic space. Because sentence embeddings aggregate information over multiple tokens, they provide smoother, lower-noise representations than single-token hidden states.
+
+Applying the same divergence and recurrence analyses reveals qualitatively similar signatures of sensitivity to initial conditions and recurrence structure in both spaces. This indicates that the observed behavior is not specific to a particular internal representation. Unless otherwise stated, results shown in the main text use the \texttt{all-mpnet-base-v2} encoder
+\footnote{I think we could replace that appendix with a footnote saying: We compared the results using three different embedding models: all-mpnet-base-v2, intfloat/e5-large-v2, and facebook/contriever, with no significant differences between them.}.
+
+\section{Results}
+\label{sec:results}
+This section presents empirical evidence that the internal dynamics of LLMs exhibit key signatures associated with deterministic chaos. We first analyze trajectory divergence and Lyapunov exponents, then characterize recurrence structure, and finally investigate the effective dimensionality of hidden-state trajectories across layers.
+
+\subsection{Trajectory Divergence and Lyapunov Exponents}
+\label{res:lyapunov}
+
+We next examine the qualitative structure of the distance–time curves obtained from sentence-embedding trajectories. From a finite-time perspective, the slope of the logarithmic distance growth in the pre-saturation regime provides an estimate of the maximal Lyapunov exponent,
+\begin{equation}
+    \lambda_\mathrm{max}\simeq\frac{1}{\Delta t}\frac{d}{dt}\log[d(t)]
+\end{equation}
+where $d(t)$ is the trajectory separation measured in embedding space. 
+
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/lyapunov/hidden_states/interstellar_test_EASTER/cos_distance_time_series_pair_0_1.png}
+        \caption{Cross-correlation dissimilarity}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/lyapunov/hidden_states/interstellar_test_EASTER/lyapunov_time_series_pair_0_1.png}
+    \end{subfigure}
+    \\[0.5em]
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/lyapunov/hidden_states/interstellar_test_EASTER/cos_distance_time_series_mean.png}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/lyapunov/hidden_states/interstellar_test_EASTER/lyapunov_time_series_mean.png}
+        \caption{Cosine Distance and Lyapunov timeseries}
+    \end{subfigure}
+    \caption{Cosine Distance of the hidden states and Lyapunov timeseries.  The maximal Lyapunov exponent is negative for the initial part, which corresponds to the tokens being the same, and the hidden state distance decreasing, although the perturbation remains latent in the hidden states. Eventually the selected token is different between the two trajectories, making the distance quickly increase and the lyapunov exponent to become positive. This triggers the trajectories to quickly diverge.\mage{Most (90\%) pairs look like the one shown but there are outliers and the mean looks pretty bad. There are many outliers. I tried a bunch of things, like aligning the curves based on their saturation midpoint, filtering out . My large problem here is that having a lyapunov timeseries is not such a great metric bc it is a timeseries and not a single scalar (or spectrum) that describes the system. Having a single lyapunov exponent was great bc it described a system. We could even look at how the lyapunov exponent depended on some parameter like the attention window size. Here having a whole timeseries makes it much harder to say anything at all. also doing averages is super hard and I couldn't really figure it out although I tried a million things. (also I understand that the single lyapunov exponent didn't really work bc of how the distance curve look like (not exponential)). but it's much nicer to have a single scalar measure. I'm just a bit frustrated that it's not coming together nicely. Also the other thing that frustrates me is that these are not very robust results. you get different looking curves if I use a different window size for the analysis. also it doesn't work at all with the sentence embedders (bc the output text is the literal same in the beginning and the distance is literal 0, and then it suddenly increases step function like. Still i dont want to be too negative, if you think that the top row looks nice, I can try to filter the outliers and work with these, but idk.}.}
+    \label{fig:cos_dist_lyapunov_timeseries}
+\end{figure}
+
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/lyapunov/hidden_states/interstellar_test_EASTER/cos_distance_time_series_pair_0_6.png}
+        \caption{Cross-correlation dissimilarity}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/lyapunov/hidden_states/interstellar_test_EASTER/lyapunov_time_series_pair_0_6.png}
+    \end{subfigure}
+    \\[0.5em]
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/lyapunov/hidden_states/interstellar_test_EASTER/cos_distance_time_series_pair_2_3.png}
+        \caption{Cross-correlation dissimilarity}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/lyapunov/hidden_states/interstellar_test_EASTER/lyapunov_time_series_pair_2_3.png}
+    \end{subfigure}
+    \caption{\mage{Some outliers. this sort of completely different curves are around 10\% of the pairs}.}
+    \label{fig:cos_dist_lyapunov_timeseries}
+\end{figure}
+
+% \begin{figure}[H]
+%     \centering
+%     \includegraphics[width=0.95\linewidth]{figures_pdf/lyapunov/hidden_states/interstellar_test_EASTER/midpoint_index_distribution.png}
+%     \caption{\mage{If you're interested: the distribution of the index of the saturation midpoint (aprox how long it takes to start diverging.)}.}
+%     \label{fig:rp_examples}
+% \end{figure}
+
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/time_jump/first_jump_index_distribution.png}
+        \caption{First jump}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/time_jump/second_jump_index_distribution.png}
+        \caption{second jump (harder to measure)}
+    \end{subfigure}
+    \caption{If you're interested: the distribution of the index of the saturation midpoint (aprox how long it takes to start diverging.)}
+    \label{fig:jump_time}
+\end{figure}
+
+However, we do not observe a smooth increase of the distance but instead it is always characterized by large jumps. This phenomenology is consistent with the standard picture of sensitivity to initial conditions in discrete-space chaotic systems. In such systems, nearby trajectories typically remain close while evolving within locally weakly expanding regions of phase space, but separate rapidly once they encounter directions associated with positive local Lyapunov exponents. The observed jump-like divergence in hidden-state space therefore provides qualitative support for the positive maximal Lyapunov exponents reported above.
+
+When the same analysis is performed using sentence-embedding trajectories constructed from the generated text, the qualitative two-regime structure remains, but the transition to large separation becomes noticeably smoother as show in Fig.~\ref{fig:distance_embed}. Rather than abrupt bursts, the distance curves exhibit a more gradual growth phase prior to saturation. This is due the the implicit coarse-graining of the sentence level attention.  This has important implications as it shows that the LLMs do not encode the distant future in the actual tokes but rather that is discovered on the fly, which in the end, may result in a completely different path due to small noise in the initial conditions.
+
+
+The geometry of the embedding space offers a natural interpretation of the observed two-regime structure. LLM sentence embeddings occupy a highly nonuniform manifold: most of the ambient space is sparsely populated, while model outputs concentrate in semantically meaningful clusters\cite{butusov2019effects}. As a result, trajectories spend extended periods within a local semantic basin, producing low-amplitude fluctuations in pairwise distance. Intermittently, the dynamics carry the system across basin boundaries; because these transitions traverse relatively empty regions of embedding space, small token-level perturbations can project onto strongly expanding directions, producing the large separation events observed in the divergence curves.
+
+The consistency of this behavior across distance metrics indicates that it reflects intrinsic properties of the underlying high-dimensional dynamics rather than artifacts of a particular distance definition. Different metrics nevertheless weight the separation process differently-some emphasizing onset time and others extremal deviation-highlighting the utility of complementary probes when estimating Lyapunov growth in discrete, high-dimensional generative systems.
+
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/cross_corr_pearson_0_2_window_size_16.pdf}
+        \caption{Cross-correlation dissimilarity}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/dtw_timeseries_0_2_window_size_16.pdf}
+        \caption{DTW}
+    \end{subfigure}
+    \\[0.5em]
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/frechet_timeseries_0_2_window_size_16.pdf}
+        \caption{Fréchet}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/hausdorff_timeseries_0_2_window_size_16.pdf}
+        \caption{Hausdorff}
+    \end{subfigure}
+    \caption{Divergence between a pair of hidden-state trajectories measured using different distance metrics. Some metrics exhibit gradual divergence (panels (b), (d)), while others show abrupt, step-like separation (panels (a), (c))corresponding to the first differing token.}
+    \label{fig:distance_hidden}
+\end{figure}
+
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/sentence/20260213-160750-ca7292/plots/cross_corr_pearson_0_2_window_size_16.pdf}
+        \caption{Cross-correlation dissimilarity}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/sentence/20260213-160750-ca7292/plots/dtw_timeseries_0_2_window_size_16.pdf}
+        \caption{DTW}
+    \end{subfigure}
+    \\[0.5em]
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/sentence/20260213-160750-ca7292/plots/frechet_timeseries_0_2_window_size_16.pdf}
+        \caption{Fréchet}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/sentence/20260213-160750-ca7292/plots/hausdorff_timeseries_0_2_window_size_16.pdf}
+        \caption{Hausdorff}
+    \end{subfigure}
+    \caption{Divergence between sentence embedding trajectories measured using different distance metrics. In the case of cross correlation distance, the fluctuation increases dramatically, while for other metrics, we experience a normalization effect (notice that the scale of the Y axis is much smaller on panels (b), (c), and (d) than on Fig~\ref{fig:distance_hidden}).}
+    \label{fig:distance_embed}
+\end{figure}
+
+
+
+\subsection{Recurrence Plots}
+\label{subsec:rp_results}
+
+Recurrence plots (RPs) provide a geometric visualization of hidden-state trajectories and reveal complex temporal structure reminiscent of classical chaotic systems such as the Lorenz attractor~\cite{DeterministicNonperiodicFlow} (see Fig.~\ref{fig:rp_examples}). To examine how this structure develops across the network, we constructed recurrence plots both for the representations after the first and last layers of the model.
+
+%Recurrence plots (RPs) reveal rich structure in hidden-state trajectories and show striking qualitative similarities to classical chaotic systems such as the Lorenz attractor~\cite{DeterministicNonperiodicFlow} (cf. Fig.~\ref{fig:rp_examples}). Figure~\ref{fig:rp_comparison_layers} compares recurrence plots across layers and prompts, demonstrating that recurrence structure becomes more pronounced in deeper layers.
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_first_rr_0.03.pdf}
+        \caption{Prompt 1, first layer}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_last_rr_0.03.pdf}
+        \caption{Prompt 1, last layer}
+    \end{subfigure}
+    \\[0.5em]
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_first_rr_0.03.pdf}
+        \caption{Prompt 2, first layer}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_last_rr_0.03.pdf}
+        \caption{Prompt 2, last layer}
+    \end{subfigure}
+    \caption{Recurrence plots for different prompts and transformer layers using cosine distance. Chaotic features such as diagonal line structures become more pronounced in deeper layers (cf. panel (b)). The recurrence rate was fixed to $0.03$.}
+    \label{fig:rp_comparison_layers}
+\end{figure}
+
+Interestingly, the recurrence plots of the first-layer representations display patterns closer to those expected from stochastic signals. The plots contain relatively few coherent diagonal structures and consist largely of isolated recurrence points. Such patterns indicate that neighboring trajectory segments do not remain similar for extended periods, suggesting dynamics dominated by local fluctuations rather than deterministic structure. This behavior is consistent with the role of early layers, which primarily encode token-level embeddings and local lexical information. As different tokens at this level have only their base representation vector, words put after each other look more like a random walk. In extremely high dimensions this means uncorrelated large distance.
+
+In contrast, recurrence plots of deeper layers reveal substantially richer geometric organization. As the words obtain components related to the meaning of the text they get more and more similar for prolonged amount of time. A prominent feature across prompts and layers is thus the presence of numerous short diagonal line segments with varying lengths. In recurrence analysis, such fragmented diagonals indicate that nearby trajectory segments remain similar only for finite intervals before separating, a signature consistent with sensitivity to initial conditions and positive Lyapunov exponents. The abundance of diagonals with a broad length distribution is therefore compatible with the chaotic dynamics suggested by the divergence analysis.
+
+In some cases the recurrence plots also display quasi-periodic stripe or grid-like patterns. Inspection of the corresponding outputs shows that these structures arise when the model generates strongly regular textual formats, such as enumerated suggestions or repeated recommendation templates. These patterns produce recurrent passages through similar regions of hidden-state space, giving rise to the periodic structures visible in the recurrence matrix.
+
+Another robust feature observed across trajectories is the presence of block-like structures along the main diagonal. These blocks correspond to intervals during which the trajectory remains confined to a relatively localized region of state space before abruptly transitioning to a different region. In the context of language generation, such transitions frequently coincide with shifts in the semantic focus of the generated text.
+%Recurrence Quantification Analysis (Table~\ref{tab:rqa}) confirms these qualitative observations. Later layers exhibit higher determinism, laminarity, and longer diagonal and vertical structures, indicating increased temporal organization and nonlinear dependence.
+
+%A particularly informative feature of the RPs is the presence of block structures. In several cases, an initial dense block corresponds to the Chain-of-Thought reasoning segment, suggesting that reasoning occurs in a low-dimensional subspace. Other block patterns correlate with structured outputs such as enumerations or lists, illustrating the utility of recurrence analysis for identifying functional phases in generation.
+
+%The dense block corresponding to the reasoning is especially pronounced in the last layers, where it appears as a dynamically distinct region separated from the remainder of the trajectory. Although the reasoning segment often overlaps semantically with the subsequent answer—frequently reusing terminology and discussing similar concepts—it occupies a clearly distinguishable region of hidden-state space in deeper layers.
+
+%\mage{ (we could say more things here, because this is an interesting result, but I want to be correct here) (A non-trivial thing here is that (if i am correct when i say that "reasoning block is more prominent in the last layers) reasoning can happen in a lower dimensional subspace of the last layers, while it can be a not so lower dimensional subspace in the first layers. the first layers are just the raw embeddings, while in the last layers the model incorporated the knowledge that this is the reasoning part. i couldnt explain this very clearly sorry. what is very interesting is that: while the reasoning block talks about the same topics as the main text (even uses the same words/things for many things), in the last layers this block is obviously distinguishable from the main text.}
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[t]{0.225\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_2_rr_0.05.pdf}
+        \caption{Prompt a}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_3_rr_0.05.pdf}
+        \caption{Prompt b}
+    \end{subfigure}
+    \\[0.5em]
+    \begin{subfigure}[t]{0.225\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_0_rr_0.05.pdf}
+        \caption{Prompt c}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_6_rr_0.05.pdf}
+        \caption{Prompt d}
+    \end{subfigure}
+    \caption{Recurrence plots obtained for different prompts, evaluated at the last layer. Panel (a) exhibits fractal-like behavior, with short diagonal lines, which can be interpreted as a state at the edge of chaos. The recurrence rate was fixed to $0.05$.}
+    \label{fig:rp_interesting}
+\end{figure}
+
+%Figure~\ref{fig:rp_comparison_layers} compares recurrence plots across layers and prompts and shows that recurrence structure becomes progressively more pronounced in deeper layers. This trend is supported by the Recurrence Quantification Analysis results summarized in Table~\ref{tab:rqa}. Later layers exhibit higher determinism, laminarity, and longer diagonal and vertical structures, indicating stronger temporal organization and nonlinear dependence in the hidden-state dynamics.
+
+%The block structures also reveal distinct functional phases of generation. In several trajectories, an initial dense block corresponds to the Chain-of-Thought reasoning segment, suggesting that reasoning unfolds within a relatively constrained region of hidden-state space. In deeper layers this block becomes particularly well defined and appears dynamically separated from the remainder of the trajectory. Although the reasoning segment often shares semantic content with the final answer, the recurrence structure indicates that the underlying representations occupy distinct regions of state space.
+
+%Taken together, these observations suggest that as representations propagate through the network, the model organizes different functional stages of generation into dynamically distinct regimes. Early layers largely reflect lexical and embedding-level variability with stochastic-like recurrence structure, whereas deeper layers exhibit structured recurrence patterns characteristic of deterministic nonlinear dynamics. In this sense, the layerwise evolution of the recurrence structure resembles a transition from noise-dominated dynamics toward organized nonlinear dynamics in the deeper parts of the network, enabling the model to separate phases such as reasoning, topic transitions, and structured output generation within its internal state space.
+
+% G: re-do RQA part :)
+%This separation suggests that, as representations propagate through the network, the model organizes different functional phases of generation into distinct dynamical regimes. In particular, the reasoning phase appears to evolve within a more constrained, lower-dimensional subspace of the last-layer representation space. The first layers largely reflect raw token embeddings and local lexical structure, while deeper layers incorporate higher-level contextual and functional information, enabling the model to dynamically differentiate between "reasoning" and "answer" modes.
+
+\begin{table}[H]
+\tiny
+\centering
+\begin{ruledtabular}
+\begin{tabular}{lccccccc}
+\toprule
+Name & RR & DET & L$_{\max}$ & ENT$_\mathrm{diag}$ & LAM & V$_{\max}$ & ENT$_\mathrm{vert}$ \\
+\midrule
+Prompt 1, first layer & 0.0104 & 0.4097 & 93 & 1.3277 & 0.0160 & 2 & 0.0000 \\
+Prompt 1, last layer  & 0.0137 & 0.4247 & 72 & 1.1857 & 0.1336 & 5 & 0.5429 \\
+Prompt 2, first layer & 0.0127 & 0.2941 & 23 & 1.3155 & 0.0000 & 0 & 0.0000 \\
+Prompt 2, last layer  & 0.0139 & 0.4174 & 24 & 1.2225 & 0.1929 & 11 & 0.4682 \\
+\bottomrule
+\end{tabular}
+\end{ruledtabular}
+\caption{Recurrence quantification analysis (RQA) results.}
+\label{tab:rqa}
+\end{table}
+
+%\orange{These observations illustrate how recurrence analysis can reveal functional segmentation of the generation process directly in latent space, providing a dynamical perspective on internal reasoning behavior beyond surface-level text analysis.}
+
+\subsection{Dimensionality}
+\label{subsec:dimensionality}
+
+Finally, we investigate the effective dimensionality of hidden-state trajectories using correlation dimension estimates. Figure~\ref{fig:dim_first_last} compares random vectors with trajectories from the first and last layers. While first-layer representations closely resemble random vectors-apart from repeated token effects the last-layer trajectories exhibit scaling behavior consistent with low-dimensional deterministic chaos.
+
+While the extracted correlation dimension depends on the choice of distance metric, the qualitative behavior of the correlation sum is robust across metrics. We  therefore interpret the correlation dimension not as a precise estimate of the fractal dimension of the attractor, but as an indicator of deterministic structure and effective dimensionality.
+
+\begin{figure*}
+    \centering
+
+    % --- Top row ---
+    \begin{subfigure}[t]{0.3\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/dimension/random.png}
+        \caption{Random}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.3\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/dimension/childhood_personality_development/cosine_sim_first_first.png}
+        \caption{First layer}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.3\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/dimension/childhood_personality_development/cosine_sim_last_last.png}
+        \caption{Last layer}
+    \end{subfigure}
+    % \medskip
+
+    % --- Bottom row ---
+    
+
+    \caption{Correlation dimension estimates for a random vector set and for first- and last-layer hidden-state trajectories.}
+    \label{fig:dim_first_last}
+\end{figure*}
+
+Under probabilistic sampling (Fig.~\ref{fig:dim_first_last_temperature}), the scaling structure observed in deterministic generation is disrupted at the last layer, while the first layer remains largely unaffected. This further supports the conclusion that chaotic dynamics primarily emerge in deeper layers and are suppressed when stochasticity dominates token selection.
+
+\begin{figure}[h]
+    \centering
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures/dimension/temperature06_childhood/cosine_sim_first_first_T06.png}
+        \caption{First layer}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures/dimension/temperature06_childhood/cosine_sim_last_last_T06.png}
+        \caption{Last layer}
+    \end{subfigure}
+    \caption{Correlation dimension plots under probabilistic sampling ($T=0.6$).}
+    \label{fig:dim_first_last_temperature}
+\end{figure}
+
+Overall, these results indicate that early layers of the model behave similarly to high-dimensional random embeddings, while deeper layers organize trajectories onto structured, low-dimensional manifolds exhibiting sensitivity to initial conditions. This layer-wise transition is consistent with the emergence of deterministic chaotic dynamics in the final stages of text generation.
+
+\section{Conclusions and Discussion}
+\label{sec:conclusions}
+
+In this work, we investigated the internal dynamics of a large language model through the framework of nonlinear dynamics and chaos theory. By interpreting autoregressive generation as a high-dimensional discrete-time dynamical system and analyzing trajectories in both hidden-state and semantic embedding spaces via sentence embedders, we sought to determine whether the evolution of representations within Transformer-based LLMs with CoT exhibits signatures of deterministic chaos.
+
+Our results provide consistent evidence for the possibility of such behavior. Across multiple distance metrics-capturing fundamentally different geometric notions such as alignment, extremal deviation, temporal warping, and global self-similarity and across different representational spaces, we observed qualitatively robust patterns of trajectory divergence, recurrence, and boundedness. This invariance with respect to metric choice and representation strongly suggests that the observed phenomena reflect intrinsic properties of the internal dynamics of the model, rather than artifacts of a particular analytical tool.
+
+A central finding of this study is that the effective dynamical state of an LLM cannot be adequately captured by a single hidden-state vector. Although the next-token prediction depends explicitly on the last-layer hidden state of the current token, our analysis shows that distances computed on sequences of individual hidden states are often noisy and poorly correlated with semantic divergence. This motivated the use of sliding-window representations and sentence-level embeddings, which implicitly incorporate information from a finite history of tokens. From a dynamical systems perspective, this places LLMs closer to the class of \emph{delay systems}, in which state evolution depends on a window of past states rather than on an instantaneous configuration. The success of these approaches reflects the architectural reality of Transformers, whose transition function depends on the entire context window via self-attention.
+
+Notably, divergence patterns extracted from hidden-state trajectories and from sentence embedding trajectories were strikingly similar. This is not a trivial observation: LLM hidden states are not explicitly trained to form a semantically interpretable metric space, whereas sentence embedding models are optimized precisely for this purpose. The agreement between these two representations indicates that, at least in later layers, distances in hidden-state space encode meaningful semantic and dynamical information. This alignment further supports the view that chaotic-like behavior is a genuine property of the model’s internal representation dynamics.
+
+From a nonlinear dynamics standpoint, our findings support an interpretation of LLMs as high-dimensional, nonlinear systems operating near the \textbf{edge of chaos}. We observe positive maximal Lyapunov exponents, indicating sensitivity to initial conditions; structured but non-periodic recurrence plots reminiscent of canonical chaotic systems; and dimensionality estimates consistent with trajectories evolving on a lower-dimensional, fractal-like manifold rather than exploring the full embedding space. Architecturally, this regime naturally arises from the interplay between components that promote expansion and coupling-most notably self-attention and nonlinear feedforward layers-and components that enforce boundedness and contraction, such as normalization layers. The resulting balance between divergence and confinement is a hallmark of chaotic attractors.
+
+Such a dynamical regime may help explain the dual capability of LLMs to maintain long-range coherence while remaining highly flexible and responsive to small input variations. Systems operating near the edge of chaos are known to maximize information propagation~\cite{info_edge_chaos}, \cite{LANGTON199012}, computational expressivity, and sensitivity without losing global stability, properties that resonate strongly with the observed behavior of modern language models.
+
+At the same time, this study highlights the challenges of applying classical chaos analysis techniques in extremely high-dimensional, discrete, and partially stochastic settings. Concepts such as Lyapunov spectra and fractal dimension must be interpreted with care, and their estimation requires methodological adaptations. Rather than treating these quantities as precise invariants, we emphasize their value as comparative and diagnostic tools for probing structure, sensitivity, and organization across layers, decoding regimes, and representations.
+
+Our analysis was limited to a single distilled decoder-only model. While we expect many of the observed phenomena to generalize across architectures and scales, architectural features-such as Chain-of-Thought prompting, attention patterns, normalization schemes, and context length-clearly leave identifiable signatures in the dynamics, for instance, in recurrence plots. Future work should therefore systematically investigate how chaotic characteristics vary with model size, training regime, and architectural choices. Comparing encoder-only, decoder-only, and encoder–decoder models may clarify the role of causal versus bidirectional attention, while varying context length and normalization strategies could reveal which components most strongly regulate dynamical stability.
+
+
+More broadly, our results suggest that tools from nonlinear dynamics provide a promising and largely unexplored framework for understanding the internal behavior of large language models. By bridging modern machine learning architectures with the theory of complex systems, this perspective opens new avenues for interpretability, robustness analysis, and the study of emergent computation in artificial neural networks.
+
+\begin{acknowledgments}
+Support from the Hungarian National Research, Development and Innovation Office NKFIH (TKP2021-NVA-02 and TKP2021-EGA-02) is acknowledged.
+Kristóf Benedek acknowledges the support from the Doctoral Excellence Fellowship Programme (DCEP), founded by the National Research Development and Innovation Fund of the Ministry of Culture and Innovation and the Budapest University of Technology and Economics. 
+Results were obtained by using the HPC cluster of the Budapest University of Technology and Economics, Department of Theoretical Physics.
+\end{acknowledgments}
+
+\section*{Data Availability Statement}
+
+The data that support the findings of this study are available from the corresponding author upon reasonable request.
+
+\section*{References}
+% \nocite{*}
+\bibliography{aipsamp}% Produces the bibliography via BibTeX.
+\newpage
+
+\appendix
+% \section{Supplementary Methods and Technical Details}
+% \label{sec:appendix}
+
+% This appendix provides additional methodological details that support the main analysis but are not essential for the conceptual flow of the paper. These include the definition of a trajectory-structure distance based on principal components, implementation details for the sliding-window Hausdorff distance, a geometric interpretation of normalization layers as folding mechanisms, and a comparison of sentence embedding models used for text-based analyses.
+
+\section{Sliding-Windows}
+\label{sec:sliding_appendix}
+
+\begin{figure*}
+    \centering
+    % First row: Hidden state space
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/divergence_sliding_window_sweep/childhood_0_0.0004_layer_-1/cos_timeseries_0_2_window_size_1.pdf}
+        \caption{Hidden state, window size 1}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/divergence_sliding_window_sweep/childhood_0_0.0004_layer_-1/cos_timeseries_0_2_window_size_4.pdf}
+        \caption{Hidden state, window size 4}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/divergence_sliding_window_sweep/childhood_0_0.0004_layer_-1/cos_timeseries_0_2_window_size_16.pdf}
+        \caption{Hidden state, window size 16}
+    \end{subfigure}
+    % Second row: Sentence embedding space
+    \\[0.5em]
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/divergence_sliding_window_sweep/childhood_0_0.0004_sentence/cos_timeseries_0_2_window_size_1.pdf}
+        \caption{Embedding, window size 1}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/divergence_sliding_window_sweep/childhood_0_0.0004_sentence/cos_timeseries_0_2_window_size_4.pdf}
+        \caption{Embedding, window size 4}
+    \end{subfigure}
+    \begin{subfigure}[b]{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures_pdf/divergence_sliding_window_sweep/childhood_0_0.0004_sentence/cos_timeseries_0_2_window_size_16.pdf}
+        \caption{Embedding, window size 16}
+    \end{subfigure}
+    \caption{Divergence between two trajectories using Hausdorff distance, for different sliding window sizes. Top row: hidden state space. Bottom row: sentence embedding space.}
+    \label{fig:sliding_window_compare}
+\end{figure*}
+
+Figure \ref{fig:sliding_window_compare} illustrates the divergence between two nearby trajectories measured using the Hausdorff distance for different sliding window sizes. In the hidden-state space (top row), the window-free case (window size 1) exhibits strong high-frequency fluctuations, indicating substantial measurement noise. Increasing the window size progressively smooths the divergence curve and reveals a more coherent growth trend. In contrast, trajectories constructed in sentence embedding space (bottom row) display substantially reduced noise even without windowing, with comparatively minor qualitative changes as the window size increases.
+
+This behavior indicates that the hidden state associated with a single token primarily encodes information local to that token, rather than a complete summary of the full contextual history. Although each hidden state is influenced by preceding tokens through self-attention, it does not constitute a sufficient representation of the system’s effective state when considered in isolation. By contrast, sentence embeddings aggregate semantic information over longer spans of text, leading to inherently smoother trajectory representations.
+
+These observations imply that the effective dynamical state of an LLM during inference is distributed across the entire context window rather than being localized in the hidden state of the most recent token alone. Consequently, analyses based solely on instantaneous hidden states correspond to studying a projection of the full system dynamics. Incorporating sliding windows partially reconstructs the underlying state by accounting for temporal dependencies, rendering the dynamics closer to those of a delay-coordinate system. This interpretation is consistent with viewing autoregressive LLM inference as a high-dimensional system with memory, rather than a Markovian process in the space of single-token hidden states.
+
+\section{Dimensionality of the LLM Vocabulary}
+\label{sec:appendix_vocab_dim}
+
+As a complementary analysis, we estimate the correlation dimension of the model’s embedding (and unembedding) matrix, which represents the vocabulary as a static point cloud in $\mathbb{R}^D$ rather than a trajectory. This analysis benefits from a large number of points (approximately $1.5\times10^5$) without requiring inference.
+
+The estimated correlation dimension of the vocabulary embedding is substantially lower than that of random vectors in the same ambient dimension and differs from the dimensions observed for hidden-state trajectories. This suggests that the learned vocabulary occupies a structured, low-dimensional manifold within the embedding space. However, trajectories generated by the model do not correspond to simple random walks on this manifold; instead, they are produced by nonlinear transformations that generate novel latent states not present in the vocabulary itself.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/dimension/vocab/vocab_full.png}
+    \caption{Correlation dimension of the LLM's embedding matrix.}
+    \label{fig:embedding_dim}
+\end{figure}
+
+% \section{Sentence Embedding Model Comparison}
+% \label{sec:sentence_embedding_comparison}
+
+% In addition to analyzing hidden-state trajectories, we performed complementary analyses on trajectories obtained from sentence-level embeddings of generated text. Sentence embeddings were computed using three pretrained models:
+% \begin{itemize}
+% \item \texttt{all-mpnet-base-v2},
+% \item \texttt{intfloat/e5-large-v2},
+% \item \texttt{facebook/contriever}.
+% \end{itemize}
+
+% Each model maps a sentence to a fixed-dimensional vector embedding. Generated text was segmented into sentences, embedded independently, and treated as a trajectory in embedding space. Distance metrics and recurrence analyses were then applied in the same manner as for hidden-state trajectories.
+
+% All three embedding models yielded qualitatively consistent results across distance metrics, recurrence plots, and divergence behavior. Minor quantitative differences were observed, primarily due to differences in embedding dimensionality and training objectives. For clarity and reproducibility, results presented in the main text use \texttt{all-mpnet-base-v2}, while full comparative results are omitted.
+
+% \orange{K: We should put here in the appendix some comparative figures visualizing the results of different embedders.}
+% \mage{G: There are no noticeable differences. In the paper I'd argue that our method is robust and gives us overall the same results when using either of these sentence embedders, and that these results are qualitatively the same as when using the hidden states. (Because we use some unconventional methods, it is worth emphasizing that the methods we use are robust.) }
+
+\section{Experiments' details}
+\label{sec:experiments}
+
+For this study, we used the following experimental setup:
+\begin{itemize}
+    \item \textbf{Model:} deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B \cite{deepseek2025r1distillqwen1.5b} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms_dynamics} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.}
+    \item \textbf{Temperature:} 0 (to ensure determinism)
+    \item \textbf{Sampling:} greedy (to ensure determinism)
+    \item \textbf{Context Window:} 3096 tokens
+    \item \textbf{Initial Perturbation Magnitude:} 0.00035 or 0.0004 
+    \item \textbf{Vocabulary Size:} 151936
+    \item \textbf{Hidden/Embedding Dimension:} 1536
+    \item \textbf{Attention Heads:} 12
+    \item \textbf{Hidden Layers:} 28
+\end{itemize}
+
+\mage{on my TDK I received a criticism because the value for Initial Perturbation Magnitude: 0.00035 or 0.0004 was rather arbitrary. And it's true, I handpicked it because it was at a nice range. For smaller perturbations, the trajectories remain close and never diverge. For larger values, they immediatly diverge, and the exponential diveregence can't be obvserved. The range I picked was the nicest one to observe the interesting chaotic dynamics. I what I did is totally reasonable, but I still got a critique for it, and the paper reviewers could also raise an issue bc of this. If anyone comes up with a nice justification for this arbitrary choice of parameters, you're welcome to write it.}
+
+\orange{I think we can leave it here. If the reviewers have issues with it, we will modify it.}
+
+\section{Example prompts}
+\label{sec:ex_prompt}
+
+\begin{promptblock}
+Provide a comprehensive technical review of current and proposed propulsion systems for interstellar travel. Compare chemical rockets, nuclear propulsion, laser sails, antimatter drives, and other theoretical concepts in terms of energy requirements, achievable speeds, technological feasibility, and projected timelines for development. Include discussion of major projects in the history of the field.
+\end{promptblock}
+
+
+
+\begin{promptblock}
+Examine how childhood experiences shape personality development. Discuss various influences including family environment, education, friendships, and significant life events. Explain psychological concepts like attachment theory and nature vs. nurture in accessible terms. Provide examples of how positive and negative experiences can affect adult personality traits and behaviors.
+\end{promptblock}
+
+
+\end{document}
+%
+% ****** End of file aipsamp.tex ******
