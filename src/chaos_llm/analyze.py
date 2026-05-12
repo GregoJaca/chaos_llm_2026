@@ -8,7 +8,7 @@ import numpy as np
 from chaos_llm.analysis.config import load_analysis_config
 from chaos_llm.analysis.data import discover_runs, load_run_metadata, load_tokens
 from chaos_llm.analysis.divergence import divergence_any_pair, divergence_pairwise, divergence_vs_baseline
-from chaos_llm.analysis.plots import apply_style, plot_histogram
+from chaos_llm.analysis.plots import apply_style, plot_dependency_curves, plot_histogram
 
 
 def _filter_prompts(meta: Dict[str, Any], include: Optional[List[str]], exclude: Optional[List[str]]) -> bool:
@@ -39,6 +39,13 @@ def _write_summary(path: str, rows: List[Dict[str, Any]], fieldnames: List[str])
 
 def _format_outputs(base_path: str, formats: List[str]) -> List[str]:
     return [f"{base_path}.{ext}" for ext in formats]
+
+
+def _to_float(value: str) -> Optional[float]:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _select_primary_values(
@@ -77,6 +84,7 @@ def main() -> None:
 
     summary_rows: List[Dict[str, Any]] = []
     per_prompt_values: Dict[str, List[int]] = {}
+    per_run_stats: List[Dict[str, Any]] = []
 
     for run_dir in runs:
         meta = load_run_metadata(run_dir)
@@ -156,6 +164,20 @@ def main() -> None:
             if cfg["divergence"]["primary_metric"] == "baseline_per_sequence":
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
 
+            if cfg["divergence"]["primary_metric"] == "baseline_per_sequence":
+                per_run_stats.append(
+                    {
+                        "prompt": prompt_name,
+                        "sliding_window": _to_float(window),
+                        "perturbation_magnitude": _to_float(mag),
+                        "metric": "baseline",
+                        "mean": float(filtered.mean()) if filtered.size else None,
+                        "median": float(np.median(filtered)) if filtered.size else None,
+                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
+                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                    }
+                )
+
         if pairwise_divergence is not None:
             values = pairwise_divergence
             row["pairwise_num_pairs"] = int(values.shape[0])
@@ -176,6 +198,20 @@ def main() -> None:
 
             if cfg["divergence"]["primary_metric"] == "pairwise":
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
+
+            if cfg["divergence"]["primary_metric"] == "pairwise":
+                per_run_stats.append(
+                    {
+                        "prompt": prompt_name,
+                        "sliding_window": _to_float(window),
+                        "perturbation_magnitude": _to_float(mag),
+                        "metric": "pairwise",
+                        "mean": float(filtered.mean()) if filtered.size else None,
+                        "median": float(np.median(filtered)) if filtered.size else None,
+                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
+                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                    }
+                )
 
         summary_rows.append(row)
 
@@ -228,6 +264,115 @@ def main() -> None:
                 xlim=cfg["plots"]["xlim"],
                 ylim=cfg["plots"]["ylim"],
             )
+
+    dep_cfg = cfg["plots"].get("dependencies", {})
+    if cfg["plots"]["enabled"] and dep_cfg.get("enabled", True):
+        metrics = dep_cfg.get("metrics", ["mean"])
+        error_bars = dep_cfg.get("error_bars", "std")
+        per_prompt = dep_cfg.get("per_prompt", True)
+        x_axes = dep_cfg.get("x_axis", ["sliding_window", "perturbation_magnitude"])
+
+        def build_series(
+            x_key: str,
+            line_key: str,
+            prompt_name: Optional[str],
+            metric_name: str,
+            use_error: bool,
+            linestyle: str,
+        ) -> Dict[str, Dict[str, List[float]]]:
+            series: Dict[str, Dict[str, List[float]]] = {}
+            for row in per_run_stats:
+                if row.get("metric") != cfg["divergence"]["primary_metric"]:
+                    continue
+                if prompt_name is not None and row.get("prompt") != prompt_name:
+                    continue
+                x_val = row.get(x_key)
+                line_val = row.get(line_key)
+                y_val = row.get(metric_name)
+                y_err = row.get(error_bars) if use_error else None
+                if x_val is None or line_val is None:
+                    continue
+                label = f"{line_key}={line_val} ({metric_name})"
+                series.setdefault(label, {"x": [], "y": [], "yerr": [], "linestyle": linestyle})
+                series[label]["x"].append(x_val)
+                series[label]["y"].append(y_val)
+                if use_error:
+                    series[label]["yerr"].append(y_err)
+
+            for label, data in series.items():
+                points = list(zip(data["x"], data["y"], data["yerr"]))
+                points = [p for p in points if p[1] is not None]
+                points.sort(key=lambda p: p[0])
+                data["x"] = [p[0] for p in points]
+                data["y"] = [p[1] for p in points]
+                if use_error:
+                    data["yerr"] = [p[2] for p in points]
+                else:
+                    data.pop("yerr", None)
+            return series
+
+        prompts = sorted({row["prompt"] for row in per_run_stats})
+        if not per_prompt:
+            prompts = [None]
+
+        for prompt_name in prompts:
+            suffix = f"_{prompt_name}" if prompt_name else ""
+
+            if "sliding_window" in x_axes:
+                series: Dict[str, Dict[str, List[float]]] = {}
+                for metric in metrics:
+                    use_error = metric == "mean" and error_bars in ("std", "var")
+                    linestyle = "-" if metric == "mean" else "--"
+                    series.update(
+                        build_series(
+                            "sliding_window",
+                            "perturbation_magnitude",
+                            prompt_name,
+                            metric,
+                            use_error,
+                            linestyle,
+                        )
+                    )
+                title = f"{cfg['plots']['title_prefix']} (mean/median){suffix}"
+                output_base = os.path.join(output_dir, "figures", f"dep_window_mean_median{suffix}")
+                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                plot_dependency_curves(
+                    series=series,
+                    title=title,
+                    xlabel="sliding window",
+                    ylabel="divergence index",
+                    output_paths=output_paths,
+                    grid=bool(cfg["plots"]["grid"]),
+                    color_map=str(cfg["plots"]["color_map"]),
+                )
+
+            if "perturbation_magnitude" in x_axes:
+                series = {}
+                for metric in metrics:
+                    use_error = metric == "mean" and error_bars in ("std", "var")
+                    linestyle = "-" if metric == "mean" else "--"
+                    series.update(
+                        build_series(
+                            "perturbation_magnitude",
+                            "sliding_window",
+                            prompt_name,
+                            metric,
+                            use_error,
+                            linestyle,
+                        )
+                    )
+                title = f"{cfg['plots']['title_prefix']} (mean/median){suffix}"
+                output_base = os.path.join(output_dir, "figures", f"dep_magnitude_mean_median{suffix}")
+                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                plot_dependency_curves(
+                    series=series,
+                    title=title,
+                    xlabel="perturbation magnitude",
+                    ylabel="divergence index",
+                    output_paths=output_paths,
+                    grid=bool(cfg["plots"]["grid"]),
+                    color_map=str(cfg["plots"]["color_map"]),
+                )
 
 
 if __name__ == "__main__":

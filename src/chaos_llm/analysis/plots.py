@@ -46,3 +46,48 @@ def plot_histogram(
         os.makedirs(os.path.dirname(path), exist_ok=True)
         fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
+
+
+def plot_dependency_curves(
+    series: Dict[str, Dict[str, List[float]]],
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    output_paths: List[str],
+    grid: bool,
+    color_map: str,
+) -> None:
+    fig, ax = plt.subplots(figsize=(7.5, 4.5))
+    cmap = plt.get_cmap(color_map)
+
+    for idx, (label, data) in enumerate(series.items()):
+        x_vals = data["x"]
+        y_vals = data["y"]
+        y_err = data.get("yerr")
+        linestyle = data.get("linestyle", "-")
+        color = cmap(idx % cmap.N)
+        if y_err is not None:
+            ax.errorbar(
+                x_vals,
+                y_vals,
+                yerr=y_err,
+                marker="o",
+                linestyle=linestyle,
+                label=label,
+                color=color,
+            )
+        else:
+            ax.plot(x_vals, y_vals, marker="o", linestyle=linestyle, label=label, color=color)
+
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if grid:
+        ax.grid(True, linestyle=":", alpha=0.5)
+    if series:
+        ax.legend(frameon=False)
+
+    for path in output_paths:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)

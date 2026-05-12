@@ -54,6 +54,12 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["plots"].setdefault("xlim", None)
     cfg["plots"].setdefault("ylim", None)
     cfg["plots"].setdefault("label_no_divergence", "no divergence")
+    cfg["plots"].setdefault("dependencies", {})
+    cfg["plots"]["dependencies"].setdefault("enabled", True)
+    cfg["plots"]["dependencies"].setdefault("metrics", ["mean", "median"])
+    cfg["plots"]["dependencies"].setdefault("error_bars", "std")
+    cfg["plots"]["dependencies"].setdefault("per_prompt", True)
+    cfg["plots"]["dependencies"].setdefault("x_axis", ["sliding_window", "perturbation_magnitude"])
 
     cfg["performance"].setdefault("mmap_mode", "r")
 
