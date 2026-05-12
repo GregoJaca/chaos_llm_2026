@@ -38,8 +38,7 @@ def _write_summary(path: str, rows: List[Dict[str, Any]], fieldnames: List[str])
 
 
 def _format_outputs(base_path: str, formats: List[str]) -> List[str]:
-    root, _ = os.path.splitext(base_path)
-    return [f"{root}.{ext}" for ext in formats]
+    return [f"{base_path}.{ext}" for ext in formats]
 
 
 def _select_primary_values(
