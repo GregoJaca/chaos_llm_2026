@@ -13,8 +13,8 @@ prompts:
   encoding: utf-8
 
 perturbation:
-  num_conditions: 4  # number of equidistant initial conditions
-  magnitude_list: [0.0004]  # perturbation magnitudes
+  num_conditions: 100  # number of equidistant initial conditions
+  magnitude_list: [0.0004, 0.00045]  # perturbation magnitudes
   apply_to_first_n_tokens: null  # set an int to restrict perturbations to first N tokens
   subspace_mode: random  # random | first
   subspace_seed: 42  # RNG seed for subspace selection
@@ -24,7 +24,7 @@ attention:
   use_sliding_window: true  # toggle sliding window behavior
 
 generation:
-  max_new_tokens: 2000  # max generated tokens
+  max_new_tokens: 400  # max generated tokens
   adaptive_stop: false  # stop at divergence vs baseline
   do_sample: false  # greedy decoding
   temperature: 0.0  # ignored for greedy

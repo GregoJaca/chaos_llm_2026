@@ -12,6 +12,7 @@ divergence:
   baseline_per_sequence: true  # divergence per sequence vs baseline
   pairwise: true  # divergence for every pair of sequences
   pairwise_max_pairs: null  # limit number of pairs (deterministic order)
+  exclude_baseline: true  # ignore baseline for any baseline-dependent metrics
   include_baseline_in_any_pair: false  # include baseline in any_pair set
   index_reference: generated  # generated | absolute
   no_divergence_value: -1  # value when no divergence found

@@ -79,6 +79,8 @@ Edit analysis.yaml, then run:
 
 ```
 python run_analysis.py --config analysis.yaml
+
+nohup python -m chaos_llm.run_experiment --config config.yaml > run_experiment.out 2>&1 &
 ```
 
 ## Inspect tokens

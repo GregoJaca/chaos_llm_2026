@@ -90,19 +90,21 @@ def main() -> None:
         lengths = tokens["perturbed_lengths"]
         prompt_len = int(tokens.get("prompt_len", meta.get("runtime", {}).get("prompt_len", 0)))
 
+        exclude_baseline = bool(cfg["divergence"].get("exclude_baseline", False))
+
         any_pair_value = None
         if cfg["divergence"]["any_pair"]:
             any_pair_value = divergence_any_pair(
                 perturbed_ids=perturbed_ids,
                 lengths=lengths,
                 prompt_len=prompt_len,
-                include_baseline=cfg["divergence"]["include_baseline_in_any_pair"],
-                baseline_ids=baseline_ids,
+                include_baseline=cfg["divergence"]["include_baseline_in_any_pair"] and not exclude_baseline,
+                baseline_ids=None if exclude_baseline else baseline_ids,
                 index_reference=cfg["divergence"]["index_reference"],
             )
 
         baseline_divergence = None
-        if cfg["divergence"]["baseline_per_sequence"]:
+        if cfg["divergence"]["baseline_per_sequence"] and not exclude_baseline:
             baseline_divergence = divergence_vs_baseline(
                 perturbed_ids=perturbed_ids,
                 lengths=lengths,

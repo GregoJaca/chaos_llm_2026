@@ -33,6 +33,7 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["divergence"].setdefault("baseline_per_sequence", True)
     cfg["divergence"].setdefault("pairwise", False)
     cfg["divergence"].setdefault("pairwise_max_pairs", None)
+    cfg["divergence"].setdefault("exclude_baseline", False)
     cfg["divergence"].setdefault("include_baseline_in_any_pair", False)
     cfg["divergence"].setdefault("index_reference", "generated")
     cfg["divergence"].setdefault("no_divergence_value", -1)
