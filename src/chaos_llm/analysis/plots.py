@@ -91,3 +91,33 @@ def plot_dependency_curves(
         os.makedirs(os.path.dirname(path), exist_ok=True)
         fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
+
+
+def plot_time_series(
+    x: np.ndarray,
+    mean: np.ndarray,
+    median: np.ndarray,
+    std: Optional[np.ndarray],
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    output_paths: List[str],
+    grid: bool,
+) -> None:
+    fig, ax = plt.subplots(figsize=(7.5, 4.5))
+    ax.plot(x, mean, color="#1f77b4", label="mean")
+    ax.plot(x, median, color="#ff7f0e", linestyle="--", label="median")
+    if std is not None:
+        ax.fill_between(x, mean - std, mean + std, color="#1f77b4", alpha=0.2)
+
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if grid:
+        ax.grid(True, linestyle=":", alpha=0.5)
+    ax.legend(frameon=False)
+
+    for path in output_paths:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)

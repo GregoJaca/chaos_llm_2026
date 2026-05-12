@@ -24,6 +24,7 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg.setdefault("attention", {})
     cfg.setdefault("generation", {})
     cfg.setdefault("output", {})
+    cfg.setdefault("logits", {})
 
     cfg["project"].setdefault("seed", 0)
     cfg["project"].setdefault("device", "auto")
@@ -53,6 +54,12 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["output"].setdefault("text_filename", "texts.json")
     cfg["output"].setdefault("text_skip_special_tokens", True)
     cfg["output"].setdefault("text_clean_up_spaces", True)
+
+    cfg["logits"].setdefault("enabled", False)
+    cfg["logits"].setdefault("top_k", 10)
+    cfg["logits"].setdefault("methods", ["kl_divergence", "js_divergence", "cos_dist", "cos_sim"])
+    cfg["logits"].setdefault("max_steps", None)
+    cfg["logits"].setdefault("filename", "logits_metrics.npz")
 
     return cfg
 

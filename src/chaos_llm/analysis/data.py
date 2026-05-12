@@ -6,7 +6,10 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 import numpy as np
 
 
-_RUN_RE = re.compile(r"^run_(?P<window>[^_]+)_(?P<mag>[^_]+)_(?P<prompt>.+)$")
+_RUN_RE = re.compile(
+    r"^run_(?P<window>[^_]+)_(?P<mag>[^_]+)_(?P<prompt>.+)_seed_(?P<seed>[^_]+)$"
+)
+_RUN_RE_LEGACY = re.compile(r"^run_(?P<window>[^_]+)_(?P<mag>[^_]+)_(?P<prompt>.+)$")
 
 
 def discover_runs(input_dir: str, run_list: Optional[List[str]]) -> List[str]:
@@ -38,12 +41,14 @@ def load_run_metadata(run_dir: str) -> Dict[str, Any]:
         return data
 
     name = os.path.basename(run_dir)
-    match = _RUN_RE.match(name)
+    match = _RUN_RE.match(name) or _RUN_RE_LEGACY.match(name)
     meta = {"runtime": {}, "prompt": {"name": "unknown"}}
     if match:
         meta["runtime"]["sliding_window"] = match.group("window")
         meta["runtime"]["perturbation_magnitude"] = match.group("mag")
         meta["prompt"]["name"] = match.group("prompt")
+        if "seed" in match.groupdict():
+            meta["project"] = {"seed": match.group("seed")}
     return meta
 
 

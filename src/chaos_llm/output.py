@@ -21,10 +21,10 @@ def sanitize_name(name: str) -> str:
     return "".join(out) or "prompt"
 
 
-def make_run_dir(base_dir: str, sliding_window: int, magnitude: float, prompt_name: str) -> str:
+def make_run_dir(base_dir: str, sliding_window: int, magnitude: float, prompt_name: str, seed: int) -> str:
     prompt_name = sanitize_name(prompt_name)
     mag_str = _format_float(magnitude)
-    run_name = f"run_{sliding_window}_{mag_str}_{prompt_name}"
+    run_name = f"run_{sliding_window}_{mag_str}_{prompt_name}_seed_{seed}"
     path = os.path.join(base_dir, run_name)
     os.makedirs(path, exist_ok=True)
     return path
@@ -75,3 +75,23 @@ def save_text_json(
     }
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, indent=2, ensure_ascii=False)
+
+
+def save_logits_npz(
+    path: str,
+    metrics: Dict[str, List[np.ndarray]],
+    pad_value: float = float("nan"),
+) -> None:
+    arrays = {}
+    lengths = {}
+    for name, sequences in metrics.items():
+        seq_lengths = np.array([len(seq) for seq in sequences], dtype=np.int32)
+        max_len = int(seq_lengths.max()) if len(seq_lengths) else 0
+        padded = np.full((len(sequences), max_len), pad_value, dtype=np.float32)
+        for i, seq in enumerate(sequences):
+            if len(seq):
+                padded[i, : len(seq)] = seq
+        arrays[name] = padded
+        lengths[f"{name}_lengths"] = seq_lengths
+
+    np.savez_compressed(path, **arrays, **lengths)

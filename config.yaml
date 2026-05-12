@@ -1,5 +1,5 @@
 project:
-  seed: 42  # RNG seed
+  seed: 42  # RNG seed (included in run folder name)
   device: auto  # auto | cuda | cpu
   dtype: float16  # float16 | bfloat16 | float32 (int8/int4 require quantization libs)
 
@@ -14,7 +14,7 @@ prompts:
 
 perturbation:
   num_conditions: 100  # number of equidistant initial conditions
-  magnitude_list: [0.0003, 0.0002]  # perturbation magnitudes
+  magnitude_list: [0.0]  # perturbation magnitudes
   apply_to_first_n_tokens: null  # set an int to restrict perturbations to first N tokens
   subspace_mode: random  # random | first
   subspace_seed: 42  # RNG seed for subspace selection
@@ -39,3 +39,10 @@ output:
   text_filename: texts.json  # name of text output file per run
   text_skip_special_tokens: true  # skip special tokens in decoding
   text_clean_up_spaces: true  # clean up spaces in decoded text
+
+logits:
+  enabled: false  # compute logit divergence vs baseline
+  top_k: 10  # top-k logits to compare (baseline support)
+  methods: [kl_divergence, js_divergence, cos_dist, cos_sim]  # metrics to compute
+  max_steps: null  # limit logit steps (null = use max_new_tokens)
+  filename: logits_metrics.npz  # output filename per run

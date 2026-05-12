@@ -7,9 +7,14 @@ import torch
 from tqdm import tqdm
 
 from chaos_llm.config import load_config, jsonable_cfg, resolve_device, resolve_dtype
-from chaos_llm.generation import generate_baseline, generate_with_perturbation
+from chaos_llm.generation import (
+    generate_baseline,
+    generate_baseline_topk,
+    generate_with_perturbation,
+    generate_with_perturbation_topk,
+)
 from chaos_llm.modeling import apply_attention_overrides, build_generation_kwargs, load_model_and_tokenizer
-from chaos_llm.output import make_run_dir, save_config_snapshot, save_text_json, save_tokens_npz
+from chaos_llm.output import make_run_dir, save_config_snapshot, save_logits_npz, save_text_json, save_tokens_npz
 from chaos_llm.perturbations import build_simplex, iter_simplex_perturbations, select_subspace_indices
 from chaos_llm.prompt_loader import load_prompts
 from chaos_llm.utils import cleanup, set_seed
@@ -64,6 +69,12 @@ def run_prompt(
     text_skip_special = bool(cfg["output"].get("text_skip_special_tokens", True))
     text_clean_spaces = bool(cfg["output"].get("text_clean_up_spaces", True))
     prompt_len_saved = int(prompt_len if include_prompt_tokens else 0)
+    logits_cfg = cfg.get("logits", {})
+    logits_enabled = bool(logits_cfg.get("enabled", False))
+    logits_top_k = int(logits_cfg.get("top_k", 10))
+    logits_methods = [str(m) for m in logits_cfg.get("methods", [])]
+    logits_max_steps = logits_cfg.get("max_steps", None)
+    logits_filename = str(logits_cfg.get("filename", "logits_metrics.npz"))
 
     output_dir = cfg["paths"]["output_dir"]
     os.makedirs(output_dir, exist_ok=True)
@@ -75,14 +86,27 @@ def run_prompt(
             use_sliding_window=bool(cfg["attention"]["use_sliding_window"]),
         )
 
-        baseline_ids = generate_baseline(
-            model,
-            input_ids=None,
-            inputs_embeds=base_embeds,
-            attention_mask=attention_mask,
-            gen_kwargs=gen_kwargs,
-        )
-        baseline_ids_cpu = baseline_ids[0].detach().cpu().numpy()
+        baseline_topk_logits = None
+        baseline_topk_indices = None
+        if logits_enabled:
+            baseline_generated, baseline_topk_logits, baseline_topk_indices = generate_baseline_topk(
+                model,
+                inputs_embeds=base_embeds,
+                attention_mask=attention_mask,
+                gen_kwargs=gen_kwargs,
+                top_k=logits_top_k,
+                max_steps=logits_max_steps,
+            )
+            baseline_ids_cpu = baseline_generated.detach().cpu().numpy()
+        else:
+            baseline_ids = generate_baseline(
+                model,
+                input_ids=None,
+                inputs_embeds=base_embeds,
+                attention_mask=attention_mask,
+                gen_kwargs=gen_kwargs,
+            )
+            baseline_ids_cpu = baseline_ids[0].detach().cpu().numpy()
         if include_prompt_tokens:
             if baseline_ids_cpu.shape[0] < prompt_len or not np.array_equal(
                 baseline_ids_cpu[:prompt_len], prompt_ids_cpu
@@ -100,17 +124,30 @@ def run_prompt(
                 skip_special_tokens=text_skip_special,
                 clean_up_tokenization_spaces=text_clean_spaces,
             )
-        baseline_ids_device = baseline_ids if adaptive_stop else None
-        if not adaptive_stop:
+        baseline_ids_device = None
+        baseline_generated_only = None
+        if adaptive_stop:
+            if logits_enabled:
+                baseline_generated_only = baseline_ids_cpu[prompt_len:] if include_prompt_tokens else baseline_ids_cpu
+            else:
+                baseline_ids_device = baseline_ids
+        if not adaptive_stop and not logits_enabled:
             del baseline_ids
             cleanup()
 
         for magnitude in cfg["perturbation"]["magnitude_list"]:
-            run_dir = make_run_dir(output_dir, int(sliding_window), float(magnitude), prompt["name"])
+            run_dir = make_run_dir(
+                output_dir,
+                int(sliding_window),
+                float(magnitude),
+                prompt["name"],
+                int(cfg["project"]["seed"]),
+            )
 
             perturbed_ids: List[np.ndarray] = []
             perturbed_texts: List[str] = []
             divergence_index: List[int] = []
+            logit_metrics: Dict[str, List[np.ndarray]] = {m: [] for m in logits_methods}
 
             iterator = iter_simplex_perturbations(
                 base_embeds=base_embeds,
@@ -121,17 +158,34 @@ def run_prompt(
 
             for delta in tqdm(iterator, total=num_conditions, desc=run_dir):
                 perturbed_embeds = base_embeds + delta
-                output_ids, div_idx = generate_with_perturbation(
-                    model,
-                    inputs_embeds=perturbed_embeds,
-                    attention_mask=attention_mask,
-                    gen_kwargs=gen_kwargs,
-                    baseline_ids=baseline_ids_device,
-                    prompt_len=prompt_len,
-                    adaptive_stop=adaptive_stop,
-                )
-
-                seq = output_ids[0].detach().cpu().numpy()
+                if logits_enabled:
+                    output_ids, div_idx, metrics = generate_with_perturbation_topk(
+                        model,
+                        inputs_embeds=perturbed_embeds,
+                        attention_mask=attention_mask,
+                        gen_kwargs=gen_kwargs,
+                        baseline_topk_logits=baseline_topk_logits or [],
+                        baseline_topk_indices=baseline_topk_indices or [],
+                        methods=logits_methods,
+                        prompt_len=prompt_len,
+                        adaptive_stop=adaptive_stop,
+                        baseline_ids=baseline_generated_only,
+                        max_steps=logits_max_steps,
+                    )
+                    for name, values in metrics.items():
+                        logit_metrics[name].append(np.array(values, dtype=np.float32))
+                    seq = output_ids.detach().cpu().numpy()
+                else:
+                    output_ids, div_idx = generate_with_perturbation(
+                        model,
+                        inputs_embeds=perturbed_embeds,
+                        attention_mask=attention_mask,
+                        gen_kwargs=gen_kwargs,
+                        baseline_ids=baseline_ids_device,
+                        prompt_len=prompt_len,
+                        adaptive_stop=adaptive_stop,
+                    )
+                    seq = output_ids[0].detach().cpu().numpy()
                 if include_prompt_tokens:
                     if seq.shape[0] < prompt_len or not np.array_equal(
                         seq[:prompt_len], prompt_ids_cpu
@@ -172,6 +226,11 @@ def run_prompt(
                 pad_token_id=int(cfg["output"]["pad_token_id"]),
                 prompt_len=int(prompt_len_saved),
             )
+            if logits_enabled and logits_methods:
+                save_logits_npz(
+                    path=os.path.join(run_dir, logits_filename),
+                    metrics=logit_metrics,
+                )
             if save_text:
                 save_text_json(
                     path=os.path.join(run_dir, text_filename),
@@ -181,11 +240,13 @@ def run_prompt(
                     include_prompt_tokens=include_prompt_tokens,
                 )
 
-            del perturbed_ids, divergence_index, perturbed_texts
+            del perturbed_ids, divergence_index, perturbed_texts, logit_metrics
             cleanup()
 
         if baseline_ids_device is not None:
             del baseline_ids_device
+        baseline_topk_logits = None
+        baseline_topk_indices = None
         cleanup()
 
     del base_embeds, input_ids, attention_mask

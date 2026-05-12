@@ -42,5 +42,20 @@ plots:
     per_prompt: true  # separate plot per prompt
     x_axis: [sliding_window, perturbation_magnitude]  # which x-axes to generate
 
+agreement_curves:
+  enabled: true  # generate agreement rate curves
+  modes: [all_pairs, baseline]  # all_pairs | baseline
+  per_run: true  # plot per run
+  per_prompt: true  # aggregate across runs per prompt
+  max_steps: null  # limit steps (null = full length)
+
+logit_divergence:
+  enabled: true  # plot logit divergence curves if available
+  filename: logits_metrics.npz  # logits output filename per run
+  methods: [kl_divergence, js_divergence, cos_dist, cos_sim]  # which metrics to plot
+  per_run: true  # plot per run
+  per_prompt: true  # aggregate per prompt
+  max_steps: null  # limit steps (null = full length)
+
 performance:
   mmap_mode: r  # memory-map mode for loading npz

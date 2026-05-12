@@ -48,13 +48,20 @@ python run_experiment.py --config config.yaml
 ```
 
 Linux:
+
+```
 python run_experiment.py --config config.yaml
 ```
 
 If output.save_text is true, each run also writes a JSON file (see output.text_filename)
 with baseline and perturbed decoded text.
+
+If logits.enabled is true, each run also writes logits metrics (see logits.filename).
+
+Each run creates a folder named:
+
 ```
-run_{sliding_window}_{perturbation}_{prompt_name}
+run_{sliding_window}_{perturbation}_{prompt_name}_seed_{seed}
 ```
 
 Inside each run folder:
@@ -79,16 +86,16 @@ Edit analysis.yaml, then run:
 
 ```
 python run_analysis.py --config analysis.yaml
-
-nohup python -m chaos_llm.run_experiment --config config.yaml > run_experiment.out 2>&1 &
 ```
+
+Agreement curves and logit divergence curves are controlled in analysis.yaml.
 
 ## Inspect tokens
 
 Print token ids (and optionally token strings) from a run folder:
 
 ```
-python print_tokens.py --run-dir run_4096_0.0004_interstellar_travel --max-tokens 80 --config config.yaml
+python print_tokens.py --run-dir run_4096_0.0004_interstellar_travel_seed_42 --max-tokens 80 --config config.yaml
 ```
 
 ## Export text without re-running
@@ -96,13 +103,13 @@ python print_tokens.py --run-dir run_4096_0.0004_interstellar_travel --max-token
 Decode an existing tokens.npz into a text JSON file:
 
 ```
-python export_text.py --run-dir run_4096_0.0004_interstellar_travel --config config.yaml
+python export_text.py --run-dir run_4096_0.0004_interstellar_travel_seed_42 --config config.yaml
 ```
 
 With token string decoding:
 
 ```
-python print_tokens.py --run-dir run_4096_0.0004_interstellar_travel --decode --config config.yaml
+python print_tokens.py --run-dir run_4096_0.0004_interstellar_travel_seed_42 --decode --config config.yaml
 ```
 
 ## Tests
@@ -112,6 +119,7 @@ Run the unit tests:
 ```
 python -m unittest tests.test_divergence
 python -m unittest tests.test_analysis_e2e
+python -m unittest tests.test_agreement
 ```
 
 ## Environment
