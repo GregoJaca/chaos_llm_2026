@@ -21,8 +21,6 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg.setdefault("summary", {})
     cfg.setdefault("plots", {})
     cfg.setdefault("performance", {})
-    cfg.setdefault("agreement_curves", {})
-    cfg.setdefault("logit_divergence", {})
 
     cfg["paths"].setdefault("input_dir", "results")
     cfg["paths"].setdefault("output_dir", "analysis_outputs")
@@ -58,25 +56,12 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["plots"].setdefault("label_no_divergence", "no divergence")
     cfg["plots"].setdefault("dependencies", {})
     cfg["plots"]["dependencies"].setdefault("enabled", True)
-    cfg["plots"]["dependencies"].setdefault("metrics", ["mean", "median"])
+    cfg["plots"]["dependencies"].setdefault("metrics", ["mean", "median", "mode"])
     cfg["plots"]["dependencies"].setdefault("error_bars", "std")
     cfg["plots"]["dependencies"].setdefault("per_prompt", True)
     cfg["plots"]["dependencies"].setdefault("x_axis", ["sliding_window", "perturbation_magnitude"])
 
     cfg["performance"].setdefault("mmap_mode", "r")
-
-    cfg["agreement_curves"].setdefault("enabled", True)
-    cfg["agreement_curves"].setdefault("modes", ["all_pairs", "baseline"])
-    cfg["agreement_curves"].setdefault("per_run", True)
-    cfg["agreement_curves"].setdefault("per_prompt", True)
-    cfg["agreement_curves"].setdefault("max_steps", None)
-
-    cfg["logit_divergence"].setdefault("enabled", True)
-    cfg["logit_divergence"].setdefault("filename", "logits_metrics.npz")
-    cfg["logit_divergence"].setdefault("methods", ["kl_divergence", "js_divergence", "cos_dist", "cos_sim"])
-    cfg["logit_divergence"].setdefault("per_run", True)
-    cfg["logit_divergence"].setdefault("per_prompt", True)
-    cfg["logit_divergence"].setdefault("max_steps", None)
 
     return cfg
 

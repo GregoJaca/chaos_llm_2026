@@ -8,9 +8,7 @@ import numpy as np
 from chaos_llm.analysis.config import load_analysis_config
 from chaos_llm.analysis.data import discover_runs, load_run_metadata, load_tokens
 from chaos_llm.analysis.divergence import divergence_any_pair, divergence_pairwise, divergence_vs_baseline
-from chaos_llm.analysis.agreement import agreement_all_pairs, agreement_with_baseline
-from chaos_llm.analysis.logits import aggregate_time_series, load_logit_metrics
-from chaos_llm.analysis.plots import apply_style, plot_dependency_curves, plot_histogram, plot_time_series
+from chaos_llm.analysis.plots import apply_style, plot_dependency_curves, plot_histogram
 
 
 def _filter_prompts(meta: Dict[str, Any], include: Optional[List[str]], exclude: Optional[List[str]]) -> bool:
@@ -50,6 +48,17 @@ def _to_float(value: str) -> Optional[float]:
         return None
 
 
+def _mode(values: np.ndarray) -> Optional[float]:
+    if values.size == 0:
+        return None
+    uniques, counts = np.unique(values, return_counts=True)
+    if uniques.size == 0:
+        return None
+    max_count = counts.max()
+    candidates = uniques[counts == max_count]
+    return float(candidates.min())
+
+
 def _select_primary_values(
     primary_metric: str,
     any_pair_value: Optional[int],
@@ -63,19 +72,6 @@ def _select_primary_values(
     if primary_metric == "any_pair" and any_pair_value is not None:
         return np.array([any_pair_value], dtype=np.int32), "any_pair"
     return None, "unknown"
-
-
-def _aggregate_curves(curves: List[np.ndarray]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    if not curves:
-        return np.array([], dtype=np.float32), np.array([], dtype=np.float32), np.array([], dtype=np.float32)
-    max_len = max(len(c) for c in curves)
-    padded = np.full((len(curves), max_len), np.nan, dtype=np.float32)
-    for i, c in enumerate(curves):
-        padded[i, : len(c)] = c
-    mean = np.nanmean(padded, axis=0)
-    median = np.nanmedian(padded, axis=0)
-    std = np.nanstd(padded, axis=0, ddof=1)
-    return mean, median, std
 
 
 def main() -> None:
@@ -100,9 +96,6 @@ def main() -> None:
     summary_rows: List[Dict[str, Any]] = []
     per_prompt_values: Dict[str, List[int]] = {}
     per_run_stats: List[Dict[str, Any]] = []
-    summary_groups: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
-    agreement_pool: Dict[str, Dict[str, List[np.ndarray]]] = {"baseline": {}, "all_pairs": {}}
-    logits_pool: Dict[str, Dict[str, List[Tuple[np.ndarray, np.ndarray]]]] = {}
 
     for run_dir in runs:
         meta = load_run_metadata(run_dir)
@@ -152,24 +145,15 @@ def main() -> None:
         prompt_name = meta.get("prompt", {}).get("name", "unknown")
         run_name = os.path.basename(run_dir)
 
-        group_key = (prompt_name, window, mag)
-        group = summary_groups.setdefault(
-            group_key,
-            {
-                "prompt": prompt_name,
-                "sliding_window": window,
-                "perturbation_magnitude": mag,
-                "prompt_len": prompt_len,
-                "num_sequences": int(perturbed_ids.shape[0]),
-                "any_pair_values": [],
-                "baseline_values": [],
-                "pairwise_values": [],
-                "runs": 0,
-            },
-        )
-        group["runs"] += 1
-        if any_pair_value is not None:
-            group["any_pair_values"].append(int(any_pair_value))
+        row: Dict[str, Any] = {
+            "run": run_name,
+            "prompt": prompt_name,
+            "sliding_window": window,
+            "perturbation_magnitude": mag,
+            "prompt_len": prompt_len,
+            "num_sequences": int(perturbed_ids.shape[0]),
+            "any_pair_divergence": any_pair_value if any_pair_value is not None else "",
+        }
 
         if baseline_divergence is not None:
             values = baseline_divergence
@@ -181,17 +165,32 @@ def main() -> None:
                 row["baseline_mean"] = float(filtered.mean())
                 row["baseline_std"] = float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0
                 row["baseline_median"] = float(np.median(filtered))
+                row["baseline_mode"] = _mode(filtered)
                 for q in cfg["summary"]["quantiles"]:
                     row[f"baseline_q{int(q*100):02d}"] = float(np.quantile(filtered, q))
             else:
                 row["baseline_mean"] = ""
                 row["baseline_std"] = ""
                 row["baseline_median"] = ""
-
-            group["baseline_values"].extend(filtered.tolist())
+                row["baseline_mode"] = ""
 
             if cfg["divergence"]["primary_metric"] == "baseline_per_sequence":
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
+
+            if cfg["divergence"]["primary_metric"] == "baseline_per_sequence":
+                per_run_stats.append(
+                    {
+                        "prompt": prompt_name,
+                        "sliding_window": _to_float(window),
+                        "perturbation_magnitude": _to_float(mag),
+                        "metric": "baseline",
+                        "mean": float(filtered.mean()) if filtered.size else None,
+                        "median": float(np.median(filtered)) if filtered.size else None,
+                        "mode": _mode(filtered),
+                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
+                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                    }
+                )
 
         if pairwise_divergence is not None:
             values = pairwise_divergence
@@ -204,17 +203,34 @@ def main() -> None:
                 row["pairwise_mean"] = float(filtered.mean())
                 row["pairwise_std"] = float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0
                 row["pairwise_median"] = float(np.median(filtered))
+                row["pairwise_mode"] = _mode(filtered)
                 for q in cfg["summary"]["quantiles"]:
                     row[f"pairwise_q{int(q*100):02d}"] = float(np.quantile(filtered, q))
             else:
                 row["pairwise_mean"] = ""
                 row["pairwise_std"] = ""
                 row["pairwise_median"] = ""
-
-            group["pairwise_values"].extend(filtered.tolist())
+                row["pairwise_mode"] = ""
 
             if cfg["divergence"]["primary_metric"] == "pairwise":
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
+
+            if cfg["divergence"]["primary_metric"] == "pairwise":
+                per_run_stats.append(
+                    {
+                        "prompt": prompt_name,
+                        "sliding_window": _to_float(window),
+                        "perturbation_magnitude": _to_float(mag),
+                        "metric": "pairwise",
+                        "mean": float(filtered.mean()) if filtered.size else None,
+                        "median": float(np.median(filtered)) if filtered.size else None,
+                        "mode": _mode(filtered),
+                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
+                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                    }
+                )
+
+        summary_rows.append(row)
 
         if cfg["plots"]["enabled"] and cfg["plots"]["per_run"]:
             plot_values, label = _select_primary_values(
@@ -241,150 +257,8 @@ def main() -> None:
                     ylim=cfg["plots"]["ylim"],
                 )
 
-        agreement_cfg = cfg.get("agreement_curves", {})
-        if agreement_cfg.get("enabled", False):
-            modes = agreement_cfg.get("modes", [])
-            max_steps = agreement_cfg.get("max_steps", None)
-            if "baseline" in modes and not exclude_baseline:
-                steps, rates = agreement_with_baseline(
-                    perturbed_ids=perturbed_ids,
-                    lengths=lengths,
-                    baseline_ids=baseline_ids,
-                    prompt_len=prompt_len,
-                    max_steps=max_steps,
-                )
-                agreement_pool["baseline"].setdefault(prompt_name, []).append(rates)
-                if agreement_cfg.get("per_run", True):
-                    output_base = os.path.join(output_dir, "figures", f"agree_baseline_{run_name}")
-                    output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                    plot_time_series(
-                        x=steps,
-                        mean=rates,
-                        median=rates,
-                        std=None,
-                        title=f"Agreement (baseline) - {run_name}",
-                        xlabel="generated step",
-                        ylabel="agreement rate",
-                        output_paths=output_paths,
-                        grid=bool(cfg["plots"]["grid"]),
-                    )
-
-            if "all_pairs" in modes:
-                steps, rates = agreement_all_pairs(
-                    perturbed_ids=perturbed_ids,
-                    lengths=lengths,
-                    prompt_len=prompt_len,
-                    max_steps=max_steps,
-                )
-                agreement_pool["all_pairs"].setdefault(prompt_name, []).append(rates)
-                if agreement_cfg.get("per_run", True):
-                    output_base = os.path.join(output_dir, "figures", f"agree_all_pairs_{run_name}")
-                    output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                    plot_time_series(
-                        x=steps,
-                        mean=rates,
-                        median=rates,
-                        std=None,
-                        title=f"Agreement (all pairs) - {run_name}",
-                        xlabel="generated step",
-                        ylabel="agreement rate",
-                        output_paths=output_paths,
-                        grid=bool(cfg["plots"]["grid"]),
-                    )
-
-        logit_cfg = cfg.get("logit_divergence", {})
-        if logit_cfg.get("enabled", False):
-            filename = str(logit_cfg.get("filename", "logits_metrics.npz"))
-            methods = [str(m) for m in logit_cfg.get("methods", [])]
-            max_steps = logit_cfg.get("max_steps", None)
-            try:
-                logit_data = load_logit_metrics(run_dir, filename, cfg["performance"]["mmap_mode"])
-            except FileNotFoundError:
-                logit_data = None
-
-            if logit_data is not None:
-                for method in methods:
-                    if method not in logit_data:
-                        continue
-                    values = logit_data[method]
-                    lengths_key = f"{method}_lengths"
-                    lengths_arr = logit_data.get(lengths_key, None)
-                    steps, mean, median, std = aggregate_time_series(values, lengths_arr, max_steps)
-                    logits_pool.setdefault(method, {}).setdefault(prompt_name, []).append((values, lengths_arr))
-                    if logit_cfg.get("per_run", True):
-                        output_base = os.path.join(output_dir, "figures", f"logits_{method}_{run_name}")
-                        output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                        plot_time_series(
-                            x=steps,
-                            mean=mean,
-                            median=median,
-                            std=std,
-                            title=f"Logit divergence ({method}) - {run_name}",
-                            xlabel="generated step",
-                            ylabel="divergence",
-                            output_paths=output_paths,
-                            grid=bool(cfg["plots"]["grid"]),
-                        )
-
-    if not summary_groups:
+    if not summary_rows:
         raise ValueError("No runs matched the prompt filters")
-
-    for group in summary_groups.values():
-        row: Dict[str, Any] = {
-            "prompt": group["prompt"],
-            "sliding_window": group["sliding_window"],
-            "perturbation_magnitude": group["perturbation_magnitude"],
-            "prompt_len": group["prompt_len"],
-            "num_sequences": group["num_sequences"],
-            "num_runs": group["runs"],
-        }
-
-        any_vals = np.array(group["any_pair_values"], dtype=np.int32)
-        if any_vals.size:
-            row["any_pair_mean"] = float(any_vals.mean())
-            row["any_pair_median"] = float(np.median(any_vals))
-
-        base_vals = np.array(group["baseline_values"], dtype=np.int32)
-        if base_vals.size:
-            row["baseline_mean"] = float(base_vals.mean())
-            row["baseline_std"] = float(base_vals.std(ddof=1)) if base_vals.size > 1 else 0.0
-            row["baseline_median"] = float(np.median(base_vals))
-
-        pair_vals = np.array(group["pairwise_values"], dtype=np.int32)
-        if pair_vals.size:
-            row["pairwise_mean"] = float(pair_vals.mean())
-            row["pairwise_std"] = float(pair_vals.std(ddof=1)) if pair_vals.size > 1 else 0.0
-            row["pairwise_median"] = float(np.median(pair_vals))
-
-        summary_rows.append(row)
-
-        primary = cfg["divergence"]["primary_metric"]
-        if primary == "baseline_per_sequence" and base_vals.size:
-            per_run_stats.append(
-                {
-                    "prompt": group["prompt"],
-                    "sliding_window": _to_float(group["sliding_window"]),
-                    "perturbation_magnitude": _to_float(group["perturbation_magnitude"]),
-                    "metric": "baseline",
-                    "mean": float(base_vals.mean()),
-                    "median": float(np.median(base_vals)),
-                    "std": float(base_vals.std(ddof=1)) if base_vals.size > 1 else 0.0,
-                    "var": float(base_vals.var(ddof=1)) if base_vals.size > 1 else 0.0,
-                }
-            )
-        if primary == "pairwise" and pair_vals.size:
-            per_run_stats.append(
-                {
-                    "prompt": group["prompt"],
-                    "sliding_window": _to_float(group["sliding_window"]),
-                    "perturbation_magnitude": _to_float(group["perturbation_magnitude"]),
-                    "metric": "pairwise",
-                    "mean": float(pair_vals.mean()),
-                    "median": float(np.median(pair_vals)),
-                    "std": float(pair_vals.std(ddof=1)) if pair_vals.size > 1 else 0.0,
-                    "var": float(pair_vals.var(ddof=1)) if pair_vals.size > 1 else 0.0,
-                }
-            )
 
     fieldnames = sorted({key for row in summary_rows for key in row.keys()})
     _write_summary(os.path.join(output_dir, "summary.csv"), summary_rows, fieldnames)
@@ -407,59 +281,6 @@ def main() -> None:
                 xlim=cfg["plots"]["xlim"],
                 ylim=cfg["plots"]["ylim"],
             )
-
-    if cfg.get("agreement_curves", {}).get("enabled", False):
-        for mode, per_prompt in agreement_pool.items():
-            if not cfg["agreement_curves"].get("per_prompt", True):
-                continue
-            for prompt_name, curves in per_prompt.items():
-                mean, median, std = _aggregate_curves(curves)
-                steps = np.arange(len(mean), dtype=np.int32)
-                output_base = os.path.join(output_dir, "figures", f"agree_{mode}_prompt_{prompt_name}")
-                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                plot_time_series(
-                    x=steps,
-                    mean=mean,
-                    median=median,
-                    std=std,
-                    title=f"Agreement ({mode}) - {prompt_name}",
-                    xlabel="generated step",
-                    ylabel="agreement rate",
-                    output_paths=output_paths,
-                    grid=bool(cfg["plots"]["grid"]),
-                )
-
-    if cfg.get("logit_divergence", {}).get("enabled", False):
-        if cfg["logit_divergence"].get("per_prompt", True):
-            max_steps = cfg["logit_divergence"].get("max_steps", None)
-            for method, prompt_map in logits_pool.items():
-                for prompt_name, items in prompt_map.items():
-                    arrays = []
-                    lengths = []
-                    for values, lengths_arr in items:
-                        arrays.append(values)
-                        if lengths_arr is None:
-                            lengths.append(np.full((values.shape[0],), values.shape[1], dtype=np.int32))
-                        else:
-                            lengths.append(lengths_arr)
-                    if not arrays:
-                        continue
-                    values_all = np.vstack(arrays)
-                    lengths_all = np.concatenate(lengths) if lengths else None
-                    steps, mean, median, std = aggregate_time_series(values_all, lengths_all, max_steps)
-                    output_base = os.path.join(output_dir, "figures", f"logits_{method}_prompt_{prompt_name}")
-                    output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                    plot_time_series(
-                        x=steps,
-                        mean=mean,
-                        median=median,
-                        std=std,
-                        title=f"Logit divergence ({method}) - {prompt_name}",
-                        xlabel="generated step",
-                        ylabel="divergence",
-                        output_paths=output_paths,
-                        grid=bool(cfg["plots"]["grid"]),
-                    )
 
     dep_cfg = cfg["plots"].get("dependencies", {})
     if cfg["plots"]["enabled"] and dep_cfg.get("enabled", True):
@@ -518,7 +339,7 @@ def main() -> None:
                 series: Dict[str, Dict[str, List[float]]] = {}
                 for metric in metrics:
                     use_error = metric == "mean" and error_bars in ("std", "var")
-                    linestyle = "-" if metric == "mean" else "--"
+                    linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
                     series.update(
                         build_series(
                             "sliding_window",
@@ -529,8 +350,8 @@ def main() -> None:
                             linestyle,
                         )
                     )
-                title = f"{cfg['plots']['title_prefix']} (mean/median){suffix}"
-                output_base = os.path.join(output_dir, "figures", f"dep_window_mean_median{suffix}")
+                title = f"{cfg['plots']['title_prefix']} (mean/median/mode){suffix}"
+                output_base = os.path.join(output_dir, "figures", f"dep_window_mean_median_mode{suffix}")
                 output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                 plot_dependency_curves(
                     series=series,
@@ -546,7 +367,7 @@ def main() -> None:
                 series = {}
                 for metric in metrics:
                     use_error = metric == "mean" and error_bars in ("std", "var")
-                    linestyle = "-" if metric == "mean" else "--"
+                    linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
                     series.update(
                         build_series(
                             "perturbation_magnitude",
@@ -557,8 +378,8 @@ def main() -> None:
                             linestyle,
                         )
                     )
-                title = f"{cfg['plots']['title_prefix']} (mean/median){suffix}"
-                output_base = os.path.join(output_dir, "figures", f"dep_magnitude_mean_median{suffix}")
+                title = f"{cfg['plots']['title_prefix']} (mean/median/mode){suffix}"
+                output_base = os.path.join(output_dir, "figures", f"dep_magnitude_mean_median_mode{suffix}")
                 output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                 plot_dependency_curves(
                     series=series,
