@@ -38,9 +38,20 @@ plots:
   dependencies:
     enabled: true  # generate parameter-dependence plots
     metrics: [mean, median, mode]  # which metrics to plot
-    error_bars: std  # std | var | none
+    error_bars: none  # std | var | none
     per_prompt: true  # separate plot per prompt
     x_axis: [sliding_window, perturbation_magnitude]  # which x-axes to generate
+
+agreement:
+  enabled: true
+  baseline: false
+  all_pairs: true
+  max_steps: null
+
+logits:
+  enabled: true
+  filename: logits_metrics.npz
+  max_steps: null
 
 performance:
   mmap_mode: r  # memory-map mode for loading npz

@@ -63,6 +63,17 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
     cfg["performance"].setdefault("mmap_mode", "r")
 
+    cfg.setdefault("agreement", {})
+    cfg["agreement"].setdefault("enabled", False)
+    cfg["agreement"].setdefault("baseline", True)
+    cfg["agreement"].setdefault("all_pairs", True)
+    cfg["agreement"].setdefault("max_steps", None)
+
+    cfg.setdefault("logits", {})
+    cfg["logits"].setdefault("enabled", False)
+    cfg["logits"].setdefault("filename", "logits_metrics.npz")
+    cfg["logits"].setdefault("max_steps", None)
+
     return cfg
 
 

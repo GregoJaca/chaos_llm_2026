@@ -8,7 +8,9 @@ import numpy as np
 from chaos_llm.analysis.config import load_analysis_config
 from chaos_llm.analysis.data import discover_runs, load_run_metadata, load_tokens
 from chaos_llm.analysis.divergence import divergence_any_pair, divergence_pairwise, divergence_vs_baseline
-from chaos_llm.analysis.plots import apply_style, plot_dependency_curves, plot_histogram
+from chaos_llm.analysis.agreement import agreement_all_pairs, agreement_with_baseline
+from chaos_llm.analysis.logits import aggregate_time_series, load_logit_metrics
+from chaos_llm.analysis.plots import apply_style, plot_dependency_curves, plot_histogram, plot_time_series
 
 
 def _filter_prompts(meta: Dict[str, Any], include: Optional[List[str]], exclude: Optional[List[str]]) -> bool:
@@ -257,6 +259,50 @@ def main() -> None:
                     ylim=cfg["plots"]["ylim"],
                 )
 
+        if cfg["agreement"]["enabled"]:
+            if cfg["agreement"]["baseline"]:
+                steps, rates = agreement_with_baseline(
+                    perturbed_ids, lengths, baseline_ids, prompt_len, cfg["agreement"]["max_steps"]
+                )
+                output_base = os.path.join(output_dir, "figures", f"agreement_baseline_{run_name}")
+                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                plot_time_series(
+                    steps, rates, rates, None,
+                    f"Agreement with Baseline - {run_name}", "step", "agreement rate",
+                    output_paths, bool(cfg["plots"]["grid"])
+                )
+
+            if cfg["agreement"]["all_pairs"]:
+                steps, rates = agreement_all_pairs(
+                    perturbed_ids, lengths, prompt_len, cfg["agreement"]["max_steps"]
+                )
+                output_base = os.path.join(output_dir, "figures", f"agreement_all_pairs_{run_name}")
+                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                plot_time_series(
+                    steps, rates, rates, None,
+                    f"Agreement All-Pairs - {run_name}", "step", "agreement rate",
+                    output_paths, bool(cfg["plots"]["grid"])
+                )
+
+        if cfg["logits"]["enabled"]:
+            try:
+                logit_metrics = load_logit_metrics(
+                    run_dir, cfg["logits"]["filename"], cfg["performance"]["mmap_mode"]
+                )
+                for name, values in logit_metrics.items():
+                    steps, mean, median, std = aggregate_time_series(
+                        values, lengths, cfg["logits"]["max_steps"]
+                    )
+                    output_base = os.path.join(output_dir, "figures", f"logits_{name}_{run_name}")
+                    output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                    plot_time_series(
+                        steps, mean, median, std,
+                        f"Logit {name} - {run_name}", "step", name,
+                        output_paths, bool(cfg["plots"]["grid"])
+                    )
+            except FileNotFoundError:
+                pass
+
     if not summary_rows:
         raise ValueError("No runs matched the prompt filters")
 
@@ -296,12 +342,16 @@ def main() -> None:
             metric_name: str,
             use_error: bool,
             linestyle: str,
-        ) -> Dict[str, Dict[str, List[float]]]:
-            series: Dict[str, Dict[str, List[float]]] = {}
+            filter_key: Optional[str] = None,
+            filter_val: Optional[Any] = None,
+        ) -> Dict[str, Dict[str, Any]]:
+            series: Dict[str, Dict[str, Any]] = {}
             for row in per_run_stats:
                 if row.get("metric") != cfg["divergence"]["primary_metric"]:
                     continue
                 if prompt_name is not None and row.get("prompt") != prompt_name:
+                    continue
+                if filter_key is not None and row.get(filter_key) != filter_val:
                     continue
                 x_val = row.get(x_key)
                 line_val = row.get(line_key)
@@ -317,7 +367,11 @@ def main() -> None:
                     series[label]["yerr"].append(y_err)
 
             for label, data in series.items():
-                points = list(zip(data["x"], data["y"], data["yerr"]))
+                if use_error:
+                    points = list(zip(data["x"], data["y"], data["yerr"]))
+                else:
+                    points = list(zip(data["x"], data["y"]))
+
                 points = [p for p in points if p[1] is not None]
                 points.sort(key=lambda p: p[0])
                 data["x"] = [p[0] for p in points]
@@ -329,6 +383,8 @@ def main() -> None:
             return series
 
         prompts = sorted({row["prompt"] for row in per_run_stats})
+        magnitudes = sorted({row["perturbation_magnitude"] for row in per_run_stats if row["perturbation_magnitude"] is not None})
+        windows = sorted({row["sliding_window"] for row in per_run_stats if row["sliding_window"] is not None})
         if not per_prompt:
             prompts = [None]
 
@@ -363,6 +419,37 @@ def main() -> None:
                     color_map=str(cfg["plots"]["color_map"]),
                 )
 
+                # Individual plots per magnitude
+                for mag in magnitudes:
+                    series = {}
+                    for metric in metrics:
+                        use_error = metric == "mean" and error_bars in ("std", "var")
+                        linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
+                        series.update(
+                            build_series(
+                                "sliding_window",
+                                "perturbation_magnitude",
+                                prompt_name,
+                                metric,
+                                use_error,
+                                linestyle,
+                                filter_key="perturbation_magnitude",
+                                filter_val=mag,
+                            )
+                        )
+                    title = f"{cfg['plots']['title_prefix']} (metrics) - mag {mag}{suffix}"
+                    output_base = os.path.join(output_dir, "figures", f"dep_window_mag_{mag}{suffix}")
+                    output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                    plot_dependency_curves(
+                        series=series,
+                        title=title,
+                        xlabel="sliding window",
+                        ylabel="divergence index",
+                        output_paths=output_paths,
+                        grid=bool(cfg["plots"]["grid"]),
+                        color_map=str(cfg["plots"]["color_map"]),
+                    )
+
             if "perturbation_magnitude" in x_axes:
                 series = {}
                 for metric in metrics:
@@ -390,6 +477,37 @@ def main() -> None:
                     grid=bool(cfg["plots"]["grid"]),
                     color_map=str(cfg["plots"]["color_map"]),
                 )
+
+                # Individual plots per window
+                for win in windows:
+                    series = {}
+                    for metric in metrics:
+                        use_error = metric == "mean" and error_bars in ("std", "var")
+                        linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
+                        series.update(
+                            build_series(
+                                "perturbation_magnitude",
+                                "sliding_window",
+                                prompt_name,
+                                metric,
+                                use_error,
+                                linestyle,
+                                filter_key="sliding_window",
+                                filter_val=win,
+                            )
+                        )
+                    title = f"{cfg['plots']['title_prefix']} (metrics) - window {win}{suffix}"
+                    output_base = os.path.join(output_dir, "figures", f"dep_mag_window_{win}{suffix}")
+                    output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                    plot_dependency_curves(
+                        series=series,
+                        title=title,
+                        xlabel="perturbation magnitude",
+                        ylabel="divergence index",
+                        output_paths=output_paths,
+                        grid=bool(cfg["plots"]["grid"]),
+                        color_map=str(cfg["plots"]["color_map"]),
+                    )
 
 
 if __name__ == "__main__":
