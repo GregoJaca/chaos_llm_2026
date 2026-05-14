@@ -156,57 +156,105 @@ def run_prompt(
                 subspace_indices=subspace_indices,
             )
 
-            for delta in tqdm(iterator, total=num_conditions, desc=run_dir):
-                perturbed_embeds = base_embeds + delta
-                if logits_enabled:
-                    output_ids, div_idx, metrics = generate_with_perturbation_topk(
-                        model,
-                        inputs_embeds=perturbed_embeds,
-                        attention_mask=attention_mask,
-                        gen_kwargs=gen_kwargs,
-                        baseline_topk_logits=baseline_topk_logits or [],
-                        baseline_topk_indices=baseline_topk_indices or [],
-                        methods=logits_methods,
-                        prompt_len=prompt_len,
-                        adaptive_stop=adaptive_stop,
-                        baseline_ids=baseline_generated_only,
-                        max_steps=logits_max_steps,
-                    )
-                    for name, values in metrics.items():
-                        logit_metrics[name].append(np.array(values, dtype=np.float32))
-                    seq = output_ids.detach().cpu().numpy()
-                else:
-                    output_ids, div_idx = generate_with_perturbation(
-                        model,
-                        inputs_embeds=perturbed_embeds,
-                        attention_mask=attention_mask,
-                        gen_kwargs=gen_kwargs,
-                        baseline_ids=baseline_ids_device,
-                        prompt_len=prompt_len,
-                        adaptive_stop=adaptive_stop,
-                    )
-                    seq = output_ids[0].detach().cpu().numpy()
-                if include_prompt_tokens:
-                    if seq.shape[0] < prompt_len or not np.array_equal(
-                        seq[:prompt_len], prompt_ids_cpu
-                    ):
-                        seq = np.concatenate([prompt_ids_cpu, seq])
-                else:
-                    if seq.shape[0] >= prompt_len and np.array_equal(
-                        seq[:prompt_len], prompt_ids_cpu
-                    ):
-                        seq = seq[prompt_len:]
-                perturbed_ids.append(seq)
-                if save_text:
-                    text = tokenizer.decode(
-                        seq.tolist(),
-                        skip_special_tokens=text_skip_special,
-                        clean_up_tokenization_spaces=text_clean_spaces,
-                    )
-                    perturbed_texts.append(text)
-                divergence_index.append(div_idx)
+            # Determine batch size. Fallback to 1 if using adaptive_stop or logits (which require sequential logic)
+            batch_size = int(cfg.get("generation", {}).get("batch_size", 64))
+            if adaptive_stop or logits_enabled:
+                batch_size = 1
+                
+            deltas = list(iterator)
 
-                del delta, perturbed_embeds, output_ids
+            for i in tqdm(range(0, len(deltas), batch_size), desc=run_dir):
+                batch_deltas = deltas[i:i+batch_size]
+                delta_batch = torch.cat(batch_deltas, dim=0) # [B, seq_len, embed_dim]
+                perturbed_embeds = base_embeds.expand(len(batch_deltas), -1, -1) + delta_batch
+                batch_attention_mask = attention_mask.expand(len(batch_deltas), -1)
+
+                if logits_enabled or adaptive_stop:
+                    # Sequential fallback
+                    for b in range(len(batch_deltas)):
+                        if logits_enabled:
+                            output_ids, div_idx, metrics = generate_with_perturbation_topk(
+                                model,
+                                inputs_embeds=perturbed_embeds[b:b+1],
+                                attention_mask=attention_mask,
+                                gen_kwargs=gen_kwargs,
+                                baseline_topk_logits=baseline_topk_logits or [],
+                                baseline_topk_indices=baseline_topk_indices or [],
+                                methods=logits_methods,
+                                prompt_len=prompt_len,
+                                adaptive_stop=adaptive_stop,
+                                baseline_ids=baseline_generated_only,
+                                max_steps=logits_max_steps,
+                            )
+                            for name, values in metrics.items():
+                                logit_metrics[name].append(np.array(values, dtype=np.float32))
+                            seq = output_ids.detach().cpu().numpy()
+                        else:
+                            output_ids, div_idx = generate_with_perturbation(
+                                model,
+                                inputs_embeds=perturbed_embeds[b:b+1],
+                                attention_mask=attention_mask,
+                                gen_kwargs=gen_kwargs,
+                                baseline_ids=baseline_ids_device,
+                                prompt_len=prompt_len,
+                                adaptive_stop=adaptive_stop,
+                            )
+                            seq = output_ids[0].detach().cpu().numpy()
+                            
+                        if include_prompt_tokens:
+                            if seq.shape[0] < prompt_len or not np.array_equal(
+                                seq[:prompt_len], prompt_ids_cpu
+                            ):
+                                seq = np.concatenate([prompt_ids_cpu, seq])
+                        else:
+                            if seq.shape[0] >= prompt_len and np.array_equal(
+                                seq[:prompt_len], prompt_ids_cpu
+                            ):
+                                seq = seq[prompt_len:]
+                        perturbed_ids.append(seq)
+                        if save_text:
+                            text = tokenizer.decode(
+                                seq.tolist(),
+                                skip_special_tokens=text_skip_special,
+                                clean_up_tokenization_spaces=text_clean_spaces,
+                            )
+                            perturbed_texts.append(text)
+                        divergence_index.append(div_idx)
+                else:
+                    # Batched generation
+                    output_ids, _ = generate_with_perturbation(
+                        model,
+                        inputs_embeds=perturbed_embeds,
+                        attention_mask=batch_attention_mask,
+                        gen_kwargs=gen_kwargs,
+                        baseline_ids=None,
+                        prompt_len=prompt_len,
+                        adaptive_stop=False,
+                    )
+                    
+                    for b in range(len(batch_deltas)):
+                        seq = output_ids[b].detach().cpu().numpy()
+                        if include_prompt_tokens:
+                            if seq.shape[0] < prompt_len or not np.array_equal(
+                                seq[:prompt_len], prompt_ids_cpu
+                            ):
+                                seq = np.concatenate([prompt_ids_cpu, seq])
+                        else:
+                            if seq.shape[0] >= prompt_len and np.array_equal(
+                                seq[:prompt_len], prompt_ids_cpu
+                            ):
+                                seq = seq[prompt_len:]
+                        perturbed_ids.append(seq)
+                        if save_text:
+                            text = tokenizer.decode(
+                                seq.tolist(),
+                                skip_special_tokens=text_skip_special,
+                                clean_up_tokenization_spaces=text_clean_spaces,
+                            )
+                            perturbed_texts.append(text)
+                        divergence_index.append(-1) # No divergence index tracked in batched mode
+                
+                del batch_deltas, delta_batch, perturbed_embeds, batch_attention_mask, output_ids
                 cleanup()
 
             config_snapshot = jsonable_cfg(cfg)
