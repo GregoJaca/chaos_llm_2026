@@ -158,7 +158,7 @@ def run_prompt(
 
             # Determine batch size. Fallback to 1 if using adaptive_stop or logits (which require sequential logic)
             batch_size = int(cfg.get("generation", {}).get("batch_size", 64))
-            if adaptive_stop or logits_enabled:
+            if adaptive_stop and not logits_enabled:
                 batch_size = 1
                 
             deltas = list(iterator)
@@ -221,7 +221,19 @@ def run_prompt(
                             adaptive_stop=adaptive_stop,
                         )
                         seq = output_ids[0].detach().cpu().numpy()
-                        # ... (rest of processing)
+                        if include_prompt_tokens:
+                            if seq.shape[0] < prompt_len or not np.array_equal(seq[:prompt_len], prompt_ids_cpu):
+                                seq = np.concatenate([prompt_ids_cpu, seq])
+                        else:
+                            if seq.shape[0] >= prompt_len and np.array_equal(seq[:prompt_len], prompt_ids_cpu):
+                                seq = seq[prompt_len:]
+                        
+                        perturbed_ids.append(seq)
+                        if save_text:
+                            text = tokenizer.decode(seq.tolist(), skip_special_tokens=text_skip_special, clean_up_tokenization_spaces=text_clean_spaces)
+                            perturbed_texts.append(text)
+                        
+                        divergence_index.append(div_idx)
                         del output_ids, seq
                     cleanup()
                 else:
