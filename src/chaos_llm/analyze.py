@@ -256,6 +256,13 @@ def main() -> None:
                     )
                 elif row.get("pairwise_no_divergence", 0) > 0:
                     stable_val = cfg["divergence"].get("stable_divergence_value")
+                    if stable_val == "auto":
+                        max_gen = int(meta["generation"]["max_new_tokens"])
+                        if cfg["divergence"]["index_reference"] == "absolute":
+                            stable_val = float(prompt_len + max_gen)
+                        else:
+                            stable_val = float(max_gen)
+
                     if stable_val is not None:
                         per_run_stats.append({
                             "prompt": prompt_name,
