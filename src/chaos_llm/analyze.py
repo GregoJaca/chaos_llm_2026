@@ -180,19 +180,41 @@ def main() -> None:
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
 
             if cfg["divergence"]["primary_metric"] == "baseline_per_sequence":
-                per_run_stats.append(
-                    {
-                        "prompt": prompt_name,
-                        "sliding_window": _to_float(window),
-                        "perturbation_magnitude": _to_float(mag),
-                        "metric": "baseline",
-                        "mean": float(filtered.mean()) if filtered.size else None,
-                        "median": float(np.median(filtered)) if filtered.size else None,
-                        "mode": _mode(filtered),
-                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
-                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
-                    }
-                )
+                if filtered.size:
+                    per_run_stats.append(
+                        {
+                            "prompt": prompt_name,
+                            "sliding_window": _to_float(window),
+                            "perturbation_magnitude": _to_float(mag),
+                            "metric": "baseline",
+                            "mean": float(filtered.mean()),
+                            "median": float(np.median(filtered)),
+                            "mode": _mode(filtered),
+                            "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
+                            "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                        }
+                    )
+                elif row.get("baseline_no_divergence", 0) > 0:
+                    stable_val = cfg["divergence"].get("stable_divergence_value")
+                    if stable_val == "auto":
+                        max_gen = int(meta["generation"]["max_new_tokens"])
+                        if cfg["divergence"]["index_reference"] == "absolute":
+                            stable_val = float(prompt_len + max_gen)
+                        else:
+                            stable_val = float(max_gen)
+
+                    if stable_val is not None:
+                        per_run_stats.append({
+                            "prompt": prompt_name,
+                            "sliding_window": _to_float(window),
+                            "perturbation_magnitude": _to_float(mag),
+                            "metric": "baseline",
+                            "mean": float(stable_val),
+                            "median": float(stable_val),
+                            "mode": float(stable_val),
+                            "std": 0.0,
+                            "var": 0.0,
+                        })
 
         if pairwise_divergence is not None:
             values = pairwise_divergence
@@ -218,19 +240,34 @@ def main() -> None:
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
 
             if cfg["divergence"]["primary_metric"] == "pairwise":
-                per_run_stats.append(
-                    {
-                        "prompt": prompt_name,
-                        "sliding_window": _to_float(window),
-                        "perturbation_magnitude": _to_float(mag),
-                        "metric": "pairwise",
-                        "mean": float(filtered.mean()) if filtered.size else None,
-                        "median": float(np.median(filtered)) if filtered.size else None,
-                        "mode": _mode(filtered),
-                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
-                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
-                    }
-                )
+                if filtered.size:
+                    per_run_stats.append(
+                        {
+                            "prompt": prompt_name,
+                            "sliding_window": _to_float(window),
+                            "perturbation_magnitude": _to_float(mag),
+                            "metric": "pairwise",
+                            "mean": float(filtered.mean()),
+                            "median": float(np.median(filtered)),
+                            "mode": _mode(filtered),
+                            "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
+                            "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                        }
+                    )
+                elif row.get("pairwise_no_divergence", 0) > 0:
+                    stable_val = cfg["divergence"].get("stable_divergence_value")
+                    if stable_val is not None:
+                        per_run_stats.append({
+                            "prompt": prompt_name,
+                            "sliding_window": _to_float(window),
+                            "perturbation_magnitude": _to_float(mag),
+                            "metric": "pairwise",
+                            "mean": float(stable_val),
+                            "median": float(stable_val),
+                            "mode": float(stable_val),
+                            "std": 0.0,
+                            "var": 0.0,
+                        })
 
         summary_rows.append(row)
 
