@@ -126,40 +126,41 @@ def generate_baseline_topk(
     topk_indices: List[torch.Tensor] = []
 
     for step in range(max_new_tokens):
-        if step == 0:
-            outputs = model(
-                inputs_embeds=inputs_embeds,
-                attention_mask=attention_mask,
-                use_cache=True,
-                return_dict=True,
-            )
-        else:
-            outputs = model(
-                input_ids=next_input_ids,
-                attention_mask=attention_mask,
-                past_key_values=past,
-                use_cache=True,
-                return_dict=True,
-            )
-        past = outputs.past_key_values
-        logits = outputs.logits[:, -1, :]
-        values, indices = torch.topk(logits, k=min(top_k, logits.shape[-1]), dim=-1)
-        topk_logits.append(values[0].detach().cpu())
-        topk_indices.append(indices[0].detach().cpu())
+        with torch.no_grad():
+            if step == 0:
+                outputs = model(
+                    inputs_embeds=inputs_embeds,
+                    attention_mask=attention_mask,
+                    use_cache=True,
+                    return_dict=True,
+                )
+            else:
+                outputs = model(
+                    input_ids=next_input_ids,
+                    attention_mask=attention_mask,
+                    past_key_values=past,
+                    use_cache=True,
+                    return_dict=True,
+                )
+            past = outputs.past_key_values
+            logits = outputs.logits[:, -1, :]
+            values, indices = torch.topk(logits, k=min(top_k, logits.shape[-1]), dim=-1)
+            topk_logits.append(values[0].detach().cpu())
+            topk_indices.append(indices[0].detach().cpu())
 
-        next_token = torch.argmax(logits, dim=-1)
-        generated.append(int(next_token.item()))
+            next_token = torch.argmax(logits, dim=-1)
+            generated.append(int(next_token.item()))
 
-        if eos_token_id is not None and int(next_token.item()) == int(eos_token_id):
-            break
+            if eos_token_id is not None and int(next_token.item()) == int(eos_token_id):
+                break
 
-        next_input_ids = next_token.unsqueeze(0)
-        attention_mask = torch.cat([attention_mask, torch.ones_like(next_input_ids)], dim=1)
-        
-        # Explicit cleanup to free GPU memory
-        del outputs, logits, values, indices
-        if step % 50 == 0:
-            torch.cuda.empty_cache()
+            next_input_ids = next_token.unsqueeze(0)
+            attention_mask = torch.cat([attention_mask, torch.ones_like(next_input_ids)], dim=1)
+            
+            # Explicit cleanup to free GPU memory
+            del outputs, logits, values, indices
+            if step % 50 == 0:
+                torch.cuda.empty_cache()
 
     return torch.tensor(generated, device=inputs_embeds.device), topk_logits, topk_indices
 
@@ -190,60 +191,61 @@ def generate_with_perturbation_topk(
     divergence_index = -1
 
     for step in range(max_new_tokens):
-        if step == 0:
-            outputs = model(
-                inputs_embeds=inputs_embeds,
-                attention_mask=attention_mask,
-                use_cache=True,
-                return_dict=True,
-            )
-        else:
-            outputs = model(
-                input_ids=next_input_ids,
-                attention_mask=attention_mask,
-                past_key_values=past,
-                use_cache=True,
-                return_dict=True,
-            )
-        past = outputs.past_key_values
-        logits = outputs.logits[:, -1, :]
+        with torch.no_grad():
+            if step == 0:
+                outputs = model(
+                    inputs_embeds=inputs_embeds,
+                    attention_mask=attention_mask,
+                    use_cache=True,
+                    return_dict=True,
+                )
+            else:
+                outputs = model(
+                    input_ids=next_input_ids,
+                    attention_mask=attention_mask,
+                    past_key_values=past,
+                    use_cache=True,
+                    return_dict=True,
+                )
+            past = outputs.past_key_values
+            logits = outputs.logits[:, -1, :]
 
-        if step < len(baseline_topk_logits):
-            base_logits = baseline_topk_logits[step].to(logits.device)
-            base_indices = baseline_topk_indices[step].to(logits.device)
-            pert_logits = logits[0, base_indices]
-            p = _safe_softmax(base_logits)
-            q = _safe_softmax(pert_logits)
+            if step < len(baseline_topk_logits):
+                base_logits = baseline_topk_logits[step].to(logits.device)
+                base_indices = baseline_topk_indices[step].to(logits.device)
+                pert_logits = logits[0, base_indices]
+                p = _safe_softmax(base_logits)
+                q = _safe_softmax(pert_logits)
 
-            if "kl_divergence" in methods:
-                metrics["kl_divergence"].append(_kl_divergence(p, q))
-            if "js_divergence" in methods:
-                metrics["js_divergence"].append(_js_divergence(p, q))
-            if "cos_sim" in methods or "cos_dist" in methods:
-                cos_sim = _cosine_sim(base_logits, pert_logits)
-                if "cos_sim" in methods:
-                    metrics["cos_sim"].append(cos_sim)
-                if "cos_dist" in methods:
-                    metrics["cos_dist"].append(1.0 - cos_sim)
+                if "kl_divergence" in methods:
+                    metrics["kl_divergence"].append(_kl_divergence(p, q))
+                if "js_divergence" in methods:
+                    metrics["js_divergence"].append(_js_divergence(p, q))
+                if "cos_sim" in methods or "cos_dist" in methods:
+                    cos_sim = _cosine_sim(base_logits, pert_logits)
+                    if "cos_sim" in methods:
+                        metrics["cos_sim"].append(cos_sim)
+                    if "cos_dist" in methods:
+                        metrics["cos_dist"].append(1.0 - cos_sim)
 
-        next_token = torch.argmax(logits, dim=-1)
-        generated.append(int(next_token.item()))
+            next_token = torch.argmax(logits, dim=-1)
+            generated.append(int(next_token.item()))
 
-        if adaptive_stop and baseline_ids is not None:
-            if step < len(baseline_ids):
-                if int(next_token.item()) != int(baseline_ids[step]):
-                    divergence_index = step
-                    break
+            if adaptive_stop and baseline_ids is not None:
+                if step < len(baseline_ids):
+                    if int(next_token.item()) != int(baseline_ids[step]):
+                        divergence_index = step
+                        break
 
-        if eos_token_id is not None and int(next_token.item()) == int(eos_token_id):
-            break
+            if eos_token_id is not None and int(next_token.item()) == int(eos_token_id):
+                break
 
-        next_input_ids = next_token.unsqueeze(0)
-        attention_mask = torch.cat([attention_mask, torch.ones_like(next_input_ids)], dim=1)
+            next_input_ids = next_token.unsqueeze(0)
+            attention_mask = torch.cat([attention_mask, torch.ones_like(next_input_ids)], dim=1)
 
-        # Explicit cleanup
-        del outputs, logits
-        if step % 50 == 0:
-            torch.cuda.empty_cache()
+            # Explicit cleanup
+            del outputs, logits
+            if step % 50 == 0:
+                torch.cuda.empty_cache()
 
     return torch.tensor(generated, device=inputs_embeds.device), divergence_index, metrics
