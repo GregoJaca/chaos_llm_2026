@@ -153,6 +153,7 @@ def generate_baseline_topk(
         if eos_token_id is not None and int(next_token.item()) == int(eos_token_id):
             break
 
+        next_input_ids = next_token.unsqueeze(0)
         attention_mask = torch.cat([attention_mask, torch.ones_like(next_input_ids)], dim=1)
         
         # Explicit cleanup to free GPU memory
@@ -237,6 +238,7 @@ def generate_with_perturbation_topk(
         if eos_token_id is not None and int(next_token.item()) == int(eos_token_id):
             break
 
+        next_input_ids = next_token.unsqueeze(0)
         attention_mask = torch.cat([attention_mask, torch.ones_like(next_input_ids)], dim=1)
 
         # Explicit cleanup
