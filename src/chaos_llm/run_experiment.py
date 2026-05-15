@@ -220,6 +220,8 @@ def run_prompt(
                             )
                             perturbed_texts.append(text)
                         divergence_index.append(div_idx)
+                        del output_ids, seq
+                    cleanup()
                 else:
                     # Batched generation
                     output_ids, _ = generate_with_perturbation(
@@ -253,8 +255,11 @@ def run_prompt(
                             )
                             perturbed_texts.append(text)
                         divergence_index.append(-1) # No divergence index tracked in batched mode
+                    
+                    del output_ids
+                    cleanup()
                 
-                del batch_deltas, delta_batch, perturbed_embeds, batch_attention_mask, output_ids
+                del batch_deltas, delta_batch, perturbed_embeds, batch_attention_mask
                 cleanup()
 
             config_snapshot = jsonable_cfg(cfg)

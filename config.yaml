@@ -43,7 +43,7 @@ output:
   text_clean_up_spaces: true  # clean up spaces in decoded text
 
 logits:
-  enabled: false  # compute logit divergence vs baseline
+  enabled: true  # compute logit divergence vs baseline
   top_k: 10  # top-k logits to compare (baseline support)
   methods: [kl_divergence, js_divergence, cos_dist]  # metrics to compute
   max_steps: null  # limit logit steps (null = use max_new_tokens)

@@ -153,8 +153,12 @@ def generate_baseline_topk(
         if eos_token_id is not None and int(next_token.item()) == int(eos_token_id):
             break
 
-        next_input_ids = next_token.unsqueeze(0)
         attention_mask = torch.cat([attention_mask, torch.ones_like(next_input_ids)], dim=1)
+        
+        # Explicit cleanup to free GPU memory
+        del outputs, logits, values, indices
+        if step % 50 == 0:
+            torch.cuda.empty_cache()
 
     return torch.tensor(generated, device=inputs_embeds.device), topk_logits, topk_indices
 
@@ -233,7 +237,11 @@ def generate_with_perturbation_topk(
         if eos_token_id is not None and int(next_token.item()) == int(eos_token_id):
             break
 
-        next_input_ids = next_token.unsqueeze(0)
         attention_mask = torch.cat([attention_mask, torch.ones_like(next_input_ids)], dim=1)
+
+        # Explicit cleanup
+        del outputs, logits
+        if step % 50 == 0:
+            torch.cuda.empty_cache()
 
     return torch.tensor(generated, device=inputs_embeds.device), divergence_index, metrics
