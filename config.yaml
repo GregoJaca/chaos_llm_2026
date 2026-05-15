@@ -44,7 +44,7 @@ output:
 
 logits:
   enabled: true  # compute logit divergence vs baseline
-  top_k: 10  # top-k logits to compare (baseline support)
+  top_k: 5  # top-k logits to compare (baseline support)
   methods: [kl_divergence, js_divergence, cos_dist]  # metrics to compute
   max_steps: null  # limit logit steps (null = use max_new_tokens)
   filename: logits_metrics.npz  # output filename per run

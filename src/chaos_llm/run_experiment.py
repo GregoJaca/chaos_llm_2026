@@ -169,57 +169,59 @@ def run_prompt(
                 perturbed_embeds = base_embeds.expand(len(batch_deltas), -1, -1) + delta_batch
                 batch_attention_mask = attention_mask.expand(len(batch_deltas), -1)
 
-                if logits_enabled or adaptive_stop:
-                    # Sequential fallback
-                    for b in range(len(batch_deltas)):
-                        if logits_enabled:
-                            output_ids, div_idx, metrics = generate_with_perturbation_topk(
-                                model,
-                                inputs_embeds=perturbed_embeds[b:b+1],
-                                attention_mask=attention_mask,
-                                gen_kwargs=gen_kwargs,
-                                baseline_topk_logits=baseline_topk_logits or [],
-                                baseline_topk_indices=baseline_topk_indices or [],
-                                methods=logits_methods,
-                                prompt_len=prompt_len,
-                                adaptive_stop=adaptive_stop,
-                                baseline_ids=baseline_generated_only,
-                                max_steps=logits_max_steps,
-                            )
-                            for name, values in metrics.items():
-                                logit_metrics[name].append(np.array(values, dtype=np.float32))
-                            seq = output_ids.detach().cpu().numpy()
-                        else:
-                            output_ids, div_idx = generate_with_perturbation(
-                                model,
-                                inputs_embeds=perturbed_embeds[b:b+1],
-                                attention_mask=attention_mask,
-                                gen_kwargs=gen_kwargs,
-                                baseline_ids=baseline_ids_device,
-                                prompt_len=prompt_len,
-                                adaptive_stop=adaptive_stop,
-                            )
-                            seq = output_ids[0].detach().cpu().numpy()
-                            
+                if logits_enabled:
+                    # Use the new batched top-k generation
+                    output_ids, div_indices, metrics = generate_with_perturbation_topk(
+                        model,
+                        inputs_embeds=perturbed_embeds,
+                        attention_mask=batch_attention_mask,
+                        gen_kwargs=gen_kwargs,
+                        baseline_topk_logits=baseline_topk_logits or [],
+                        baseline_topk_indices=baseline_topk_indices or [],
+                        methods=logits_methods,
+                        prompt_len=prompt_len,
+                        adaptive_stop=adaptive_stop,
+                        baseline_ids=baseline_generated_only,
+                        max_steps=logits_max_steps,
+                    )
+                    
+                    # metrics[name] is List of [B] -> convert to B items of [steps]
+                    for name, step_values in metrics.items():
+                        batch_vals = np.stack(step_values, axis=1) # [B, steps]
+                        for b_idx in range(batch_vals.shape[0]):
+                            logit_metrics[name].append(batch_vals[b_idx])
+                    
+                    for b_idx in range(output_ids.shape[0]):
+                        seq = output_ids[b_idx].detach().cpu().numpy()
+                        # handle prompt inclusion
                         if include_prompt_tokens:
-                            if seq.shape[0] < prompt_len or not np.array_equal(
-                                seq[:prompt_len], prompt_ids_cpu
-                            ):
+                            if seq.shape[0] < prompt_len or not np.array_equal(seq[:prompt_len], prompt_ids_cpu):
                                 seq = np.concatenate([prompt_ids_cpu, seq])
                         else:
-                            if seq.shape[0] >= prompt_len and np.array_equal(
-                                seq[:prompt_len], prompt_ids_cpu
-                            ):
+                            if seq.shape[0] >= prompt_len and np.array_equal(seq[:prompt_len], prompt_ids_cpu):
                                 seq = seq[prompt_len:]
+                        
                         perturbed_ids.append(seq)
                         if save_text:
-                            text = tokenizer.decode(
-                                seq.tolist(),
-                                skip_special_tokens=text_skip_special,
-                                clean_up_tokenization_spaces=text_clean_spaces,
-                            )
+                            text = tokenizer.decode(seq.tolist(), skip_special_tokens=text_skip_special, clean_up_tokenization_spaces=text_clean_spaces)
                             perturbed_texts.append(text)
-                        divergence_index.append(div_idx)
+                        
+                        divergence_index.append(int(div_indices[b_idx]))
+                
+                elif adaptive_stop:
+                    # Sequential fallback for adaptive stop without logits (could be batched too but keeping it simple)
+                    for b in range(len(batch_deltas)):
+                        output_ids, div_idx = generate_with_perturbation(
+                            model,
+                            inputs_embeds=perturbed_embeds[b:b+1],
+                            attention_mask=attention_mask,
+                            gen_kwargs=gen_kwargs,
+                            baseline_ids=baseline_ids_device,
+                            prompt_len=prompt_len,
+                            adaptive_stop=adaptive_stop,
+                        )
+                        seq = output_ids[0].detach().cpu().numpy()
+                        # ... (rest of processing)
                         del output_ids, seq
                     cleanup()
                 else:

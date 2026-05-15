@@ -84,25 +84,31 @@ def generate_with_perturbation(
 
 
 def _safe_softmax(logits: torch.Tensor) -> torch.Tensor:
-    logits = logits - logits.max()
+    # logits shape: [B, K]
+    logits = logits - logits.max(dim=-1, keepdim=True).values
     exp = torch.exp(logits)
-    return exp / exp.sum()
+    return exp / exp.sum(dim=-1, keepdim=True)
 
 
-def _kl_divergence(p: torch.Tensor, q: torch.Tensor) -> float:
+def _kl_divergence(p: torch.Tensor, q: torch.Tensor) -> torch.Tensor:
+    # p, q shape: [B, K]
     eps = 1e-12
     p = torch.clamp(p, eps, 1.0)
     q = torch.clamp(q, eps, 1.0)
-    return float(torch.sum(p * torch.log(p / q)).item())
+    return torch.sum(p * torch.log(p / q), dim=-1)
 
 
-def _js_divergence(p: torch.Tensor, q: torch.Tensor) -> float:
+def _js_divergence(p: torch.Tensor, q: torch.Tensor) -> torch.Tensor:
+    # p, q shape: [B, K]
     m = 0.5 * (p + q)
     return 0.5 * _kl_divergence(p, m) + 0.5 * _kl_divergence(q, m)
 
 
-def _cosine_sim(a: torch.Tensor, b: torch.Tensor) -> float:
-    return float(F.cosine_similarity(a, b, dim=0).item())
+def _cosine_sim(a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+    # a: [K] or [B, K], b: [B, K]
+    if a.dim() == 1:
+        a = a.unsqueeze(0)
+    return F.cosine_similarity(a, b, dim=-1)
 
 
 def generate_baseline_topk(
@@ -177,7 +183,8 @@ def generate_with_perturbation_topk(
     adaptive_stop: bool,
     baseline_ids: Optional[np.ndarray],
     max_steps: Optional[int],
-) -> Tuple[torch.Tensor, int, Dict[str, List[float]]]:
+) -> Tuple[torch.Tensor, np.ndarray, Dict[str, List[np.ndarray]]]:
+    batch_size = inputs_embeds.shape[0]
     max_new_tokens = int(gen_kwargs["max_new_tokens"])
     if max_steps is not None:
         max_new_tokens = min(max_new_tokens, int(max_steps))
@@ -186,9 +193,11 @@ def generate_with_perturbation_topk(
 
     past = None
     next_input_ids = None
-    generated: List[int] = []
-    metrics: Dict[str, List[float]] = {m: [] for m in methods}
-    divergence_index = -1
+    generated: List[torch.Tensor] = []
+    # metrics[method] will be a list of arrays, each array is [batch_size]
+    metrics: Dict[str, List[np.ndarray]] = {m: [] for m in methods}
+    divergence_index = np.full((batch_size,), -1, dtype=np.int32)
+    finished = torch.zeros(batch_size, dtype=torch.bool, device=inputs_embeds.device)
 
     for step in range(max_new_tokens):
         with torch.no_grad():
@@ -208,39 +217,46 @@ def generate_with_perturbation_topk(
                     return_dict=True,
                 )
             past = outputs.past_key_values
-            logits = outputs.logits[:, -1, :]
+            logits = outputs.logits[:, -1, :] # [B, V]
 
             if step < len(baseline_topk_logits):
-                base_logits = baseline_topk_logits[step].to(logits.device)
-                base_indices = baseline_topk_indices[step].to(logits.device)
-                pert_logits = logits[0, base_indices]
-                p = _safe_softmax(base_logits)
-                q = _safe_softmax(pert_logits)
+                base_logits = baseline_topk_logits[step].to(logits.device) # [K]
+                base_indices = baseline_topk_indices[step].to(logits.device) # [K]
+                
+                # Extract perturbed logits at the same indices as baseline top-k
+                pert_logits = logits[:, base_indices] # [B, K]
+                
+                p = _safe_softmax(base_logits.unsqueeze(0)) # [1, K]
+                q = _safe_softmax(pert_logits) # [B, K]
 
                 if "kl_divergence" in methods:
-                    metrics["kl_divergence"].append(_kl_divergence(p, q))
+                    metrics["kl_divergence"].append(_kl_divergence(p, q).detach().cpu().numpy())
                 if "js_divergence" in methods:
-                    metrics["js_divergence"].append(_js_divergence(p, q))
+                    metrics["js_divergence"].append(_js_divergence(p, q).detach().cpu().numpy())
                 if "cos_sim" in methods or "cos_dist" in methods:
-                    cos_sim = _cosine_sim(base_logits, pert_logits)
+                    cos_sim = _cosine_sim(base_logits, pert_logits) # [B]
                     if "cos_sim" in methods:
-                        metrics["cos_sim"].append(cos_sim)
+                        metrics["cos_sim"].append(cos_sim.detach().cpu().numpy())
                     if "cos_dist" in methods:
-                        metrics["cos_dist"].append(1.0 - cos_sim)
+                        metrics["cos_dist"].append((1.0 - cos_sim).detach().cpu().numpy())
 
-            next_token = torch.argmax(logits, dim=-1)
-            generated.append(int(next_token.item()))
+            next_token = torch.argmax(logits, dim=-1) # [B]
+            generated.append(next_token.unsqueeze(1))
 
             if adaptive_stop and baseline_ids is not None:
                 if step < len(baseline_ids):
-                    if int(next_token.item()) != int(baseline_ids[step]):
-                        divergence_index = step
-                        break
+                    # Check which sequences just diverged
+                    diverged_now = (next_token != int(baseline_ids[step])) & (~finished)
+                    divergence_index[diverged_now.cpu().numpy()] = step
+                    finished |= diverged_now
 
-            if eos_token_id is not None and int(next_token.item()) == int(eos_token_id):
+            if eos_token_id is not None:
+                finished |= (next_token == int(eos_token_id))
+            
+            if finished.all():
                 break
 
-            next_input_ids = next_token.unsqueeze(0)
+            next_input_ids = next_token.unsqueeze(1)
             attention_mask = torch.cat([attention_mask, torch.ones_like(next_input_ids)], dim=1)
 
             # Explicit cleanup
@@ -248,4 +264,7 @@ def generate_with_perturbation_topk(
             if step % 50 == 0:
                 torch.cuda.empty_cache()
 
-    return torch.tensor(generated, device=inputs_embeds.device), divergence_index, metrics
+    # stack generated tokens into [B, seq_len]
+    all_generated = torch.cat(generated, dim=1)
+    
+    return all_generated, divergence_index, metrics
