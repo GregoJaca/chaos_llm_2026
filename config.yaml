@@ -1,7 +1,7 @@
 project:
   seed: 69  # RNG seed (included in run folder name)
   device: auto  # auto | cuda | cpu
-  dtype: float16  # float16 | bfloat16 | float32 (int8/int4 require quantization libs)
+  dtype: bfloat16  # float16 | bfloat16 | float32 (int8/int4 require quantization libs)
 
 paths:
   model_path: ../models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B  # model or HF cache path
@@ -14,13 +14,14 @@ prompts:
 
 perturbation:
   num_conditions: 250  # number of equidistant initial conditions
-  magnitude_list: [0.001]  # perturbation magnitudes
+  magnitude_list: [0.0006]  # perturbation magnitudes
   apply_to_first_n_tokens: null  # set an int to restrict perturbations to first N tokens
   subspace_mode: random  # random | first
   subspace_seed: 69  # RNG seed for subspace selection
 
 attention:
-  sliding_window_list: [0, 1, 10, 50, 100, 200, 500, 1000, 2000]  # attention window sizes
+  # sliding_window_list: [0, 1, 10, 50, 100, 200, 500, 1000, 2000]  # attention window sizes
+  sliding_window_list: [220, 240, 260, 280]  # attention window sizes
   # sliding_window_list: [0, 1, 10, 20, 35, 50, 65, 80, 100, 125, 150, 200, 500, 1000]  # attention window sizes
   use_sliding_window: true  # toggle sliding window behavior
 

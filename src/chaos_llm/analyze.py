@@ -12,7 +12,7 @@ from chaos_llm.analysis.agreement import agreement_all_pairs, agreement_with_bas
 from chaos_llm.analysis.logits import aggregate_time_series, load_logit_metrics
 from chaos_llm.analysis.plots import (
     apply_style, plot_dependency_curves, plot_histogram, 
-    plot_time_series, plot_fan_curves, plot_survival_curves
+    plot_time_series, plot_survival_curves
 )
 
 
@@ -427,7 +427,8 @@ def main() -> None:
                 yscale=cfg["survival"]["yscale"]
             )
 
-        if cfg["plots"]["enabled"] and cfg["plots"]["per_run"]:
+        hist_cfg = cfg["plots"].get("histograms", {})
+        if cfg["plots"]["enabled"] and hist_cfg.get("enabled", True) and hist_cfg.get("per_run", True):
             plot_values, label = _select_primary_values(
                 cfg["divergence"]["primary_metric"],
                 any_pair_value,
@@ -505,7 +506,8 @@ def main() -> None:
     fieldnames = sorted({key for row in summary_rows for key in row.keys()})
     _write_summary(os.path.join(output_dir, "summary.csv"), summary_rows, fieldnames)
 
-    if cfg["plots"]["enabled"] and cfg["plots"]["per_prompt"]:
+    hist_cfg = cfg["plots"].get("histograms", {})
+    if cfg["plots"]["enabled"] and hist_cfg.get("enabled", True) and hist_cfg.get("per_prompt", True):
         for prompt_name, values in per_prompt_values.items():
             if not values:
                 continue
@@ -530,6 +532,8 @@ def main() -> None:
         error_bars = dep_cfg.get("error_bars", "std")
         per_prompt = dep_cfg.get("per_prompt", True)
         x_axes = dep_cfg.get("x_axis", ["sliding_window", "perturbation_magnitude"])
+        x_scales = dep_cfg.get("x_scale", ["linear"])
+        y_scales = dep_cfg.get("y_scale", ["linear"])
 
         def build_series(
             x_key: str,
@@ -617,82 +621,40 @@ def main() -> None:
                     if mode_name and not dep_cfg.get("inverse"):
                         continue
 
-                    series = {}
-                    for metric in metrics:
-                        use_error = metric == "mean" and error_bars in ("std", "var")
-                        linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
-                        series.update(
-                            build_series(
-                                "sliding_window",
-                                "perturbation_magnitude",
-                                prompt_name,
-                                metric,
-                                use_error,
-                                linestyle,
-                                metric_type=mode_name
-                            )
-                        )
-                    title = f"{cfg['plots']['title_prefix']} (mean/median/mode){suffix}{filename_suffix}"
-                    output_base = os.path.join(output_dir, "figures", f"dep_window_mean_median_mode{suffix}{filename_suffix}")
-                    output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                    plot_dependency_curves(
-                        series=series,
-                        title=title,
-                        xlabel="sliding window",
-                        ylabel=ylabel,
-                        output_paths=output_paths,
-                        grid=bool(cfg["plots"]["grid"]),
-                        color_map=str(cfg["plots"]["color_map"]),
-                    )
-                    if dep_cfg.get("fan_plot") and "median" in metrics:
-                        fan_series = build_series(
-                            "sliding_window", "perturbation_magnitude", prompt_name, "median",
-                            False, "-", metric_type=mode_name, is_fan=True
-                        )
-                        title = f"{cfg['plots']['title_prefix']} Instability Profile{suffix}{filename_suffix}"
-                        output_base = os.path.join(output_dir, "figures", f"dep_window_fan{suffix}{filename_suffix}")
-                        output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                        plot_fan_curves(
-                            series=fan_series,
-                            title=title,
-                            xlabel="sliding window",
-                            ylabel=ylabel,
-                            output_paths=output_paths,
-                            grid=bool(cfg["plots"]["grid"]),
-                            color_map=str(cfg["plots"]["color_map"]),
-                        )
-
-                    # Individual plots per magnitude
-                    for mag in magnitudes:
-                        series = {}
-                        for metric in metrics:
-                            use_error = metric == "mean" and error_bars in ("std", "var")
-                            linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
-                            series.update(
-                                build_series(
-                                    "sliding_window",
-                                    "perturbation_magnitude",
-                                    prompt_name,
-                                    metric,
-                                    use_error,
-                                    linestyle,
-                                    filter_key="perturbation_magnitude",
-                                    filter_val=mag,
-                                    metric_type=mode_name
+                    for x_scale in x_scales:
+                        for y_scale in y_scales:
+                            series = {}
+                            for metric in metrics:
+                                use_error = (metric == "mean" and error_bars in ("std", "var")) or (metric == "median" and error_bars == "fan")
+                                linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
+                                series.update(
+                                    build_series(
+                                        "sliding_window",
+                                        "perturbation_magnitude",
+                                        prompt_name,
+                                        metric,
+                                        use_error,
+                                        linestyle,
+                                        metric_type=mode_name,
+                                        is_fan=(error_bars == "fan")
+                                    )
                                 )
+                            
+                            scale_suffix = f"_{x_scale}_{y_scale}"
+                            title = f"{cfg['plots']['title_prefix']} (window dependence){suffix}{filename_suffix} [{x_scale}/{y_scale}]"
+                            output_base = os.path.join(output_dir, "figures", f"dep_window{suffix}{filename_suffix}{scale_suffix}")
+                            output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                            plot_dependency_curves(
+                                series=series,
+                                title=title,
+                                xlabel="sliding window",
+                                ylabel=ylabel,
+                                output_paths=output_paths,
+                                grid=bool(cfg["plots"]["grid"]),
+                                color_map=str(cfg["plots"]["color_map"]),
+                                xscale=x_scale,
+                                yscale=y_scale,
                             )
-                        title = f"{cfg['plots']['title_prefix']} (metrics) - mag {mag}{suffix}{filename_suffix}"
-                        output_base = os.path.join(output_dir, "figures", f"dep_window_mag_{mag}{suffix}{filename_suffix}")
-                        output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                        plot_dependency_curves(
-                            series=series,
-                            title=title,
-                            xlabel="sliding window",
-                            ylabel=ylabel,
-                            output_paths=output_paths,
-                            grid=bool(cfg["plots"]["grid"]),
-                            color_map=str(cfg["plots"]["color_map"]),
-                        )
 
             if "perturbation_magnitude" in x_axes:
                 for mode_name, ylabel, filename_suffix in [
@@ -702,65 +664,40 @@ def main() -> None:
                     if mode_name and not dep_cfg.get("inverse"):
                         continue
                     
-                    series = {}
-                    for metric in metrics:
-                        use_error = metric == "mean" and error_bars in ("std", "var")
-                        linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
-                        series.update(
-                            build_series(
-                                "perturbation_magnitude",
-                                "sliding_window",
-                                prompt_name,
-                                metric,
-                                use_error,
-                                linestyle,
-                                metric_type=mode_name
-                            )
-                        )
-                    title = f"{cfg['plots']['title_prefix']} (mean/median/mode){suffix}{filename_suffix}"
-                    output_base = os.path.join(output_dir, "figures", f"dep_magnitude_mean_median_mode{suffix}{filename_suffix}")
-                    output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                    plot_dependency_curves(
-                        series=series,
-                        title=title,
-                        xlabel="perturbation magnitude",
-                        ylabel=ylabel,
-                        output_paths=output_paths,
-                        grid=bool(cfg["plots"]["grid"]),
-                        color_map=str(cfg["plots"]["color_map"]),
-                    )
-
-                    # Individual plots per window
-                    for win in windows:
-                        series = {}
-                        for metric in metrics:
-                            use_error = metric == "mean" and error_bars in ("std", "var")
-                            linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
-                            series.update(
-                                build_series(
-                                    "perturbation_magnitude",
-                                    "sliding_window",
-                                    prompt_name,
-                                    metric,
-                                    use_error,
-                                    linestyle,
-                                    filter_key="sliding_window",
-                                    filter_val=win,
-                                    metric_type=mode_name
+                    for x_scale in x_scales:
+                        for y_scale in y_scales:
+                            series = {}
+                            for metric in metrics:
+                                use_error = (metric == "mean" and error_bars in ("std", "var")) or (metric == "median" and error_bars == "fan")
+                                linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
+                                series.update(
+                                    build_series(
+                                        "perturbation_magnitude",
+                                        "sliding_window",
+                                        prompt_name,
+                                        metric,
+                                        use_error,
+                                        linestyle,
+                                        metric_type=mode_name,
+                                        is_fan=(error_bars == "fan")
+                                    )
                                 )
+                            
+                            scale_suffix = f"_{x_scale}_{y_scale}"
+                            title = f"{cfg['plots']['title_prefix']} (magnitude dependence){suffix}{filename_suffix} [{x_scale}/{y_scale}]"
+                            output_base = os.path.join(output_dir, "figures", f"dep_magnitude{suffix}{filename_suffix}{scale_suffix}")
+                            output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                            plot_dependency_curves(
+                                series=series,
+                                title=title,
+                                xlabel="perturbation magnitude",
+                                ylabel=ylabel,
+                                output_paths=output_paths,
+                                grid=bool(cfg["plots"]["grid"]),
+                                color_map=str(cfg["plots"]["color_map"]),
+                                xscale=x_scale,
+                                yscale=y_scale,
                             )
-                        title = f"{cfg['plots']['title_prefix']} (metrics) - window {win}{suffix}{filename_suffix}"
-                        output_base = os.path.join(output_dir, "figures", f"dep_mag_window_{win}{suffix}{filename_suffix}")
-                        output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                        plot_dependency_curves(
-                            series=series,
-                            title=title,
-                            xlabel="perturbation magnitude",
-                            ylabel=ylabel,
-                            output_paths=output_paths,
-                            grid=bool(cfg["plots"]["grid"]),
-                            color_map=str(cfg["plots"]["color_map"]),
-                        )
 
 
     # Combined survival plots

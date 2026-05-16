@@ -28,8 +28,10 @@ plots:
   formats: [png]  # add pdf later if needed
   dpi: 300  # figure dpi
   bins: 60  # histogram bins
-  per_run: true  # per run histograms
-  per_prompt: false  # aggregated per prompt histograms
+  histograms:
+    enabled: true
+    per_run: true  # per run histograms
+    per_prompt: false  # aggregated per prompt histograms
   title_prefix: "Divergence"  # plot title prefix
   grid: false  # background grid
   color_map: tab10  # reserved for future multi-series plots
@@ -38,16 +40,17 @@ plots:
   label_no_divergence: "no divergence"
   dependencies:
     enabled: true  # generate parameter-dependence plots
-    metrics: [mean, median]  # which metrics to plot
-    error_bars: none  # std | var | none
+    metrics: [median]  # which metrics to plot
+    error_bars: none  # std | var | fan | none
+    x_scale: [linear, log] # linear | log
+    y_scale: [linear, log]
     per_prompt: false  # separate plot per prompt
     x_axis: [sliding_window]  # which x-axes to generate
     inverse: true  # if true, also plot 1/divergence (stability -> 0)
-    fan_plot: true  # plot percentile bands (fan plot) for dependency
 
 survival:
   enabled: true
-  plot_individual: true
+  plot_individual: false
   plot_together: true
   yscale: linear  # linear | log
 
