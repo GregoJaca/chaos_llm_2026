@@ -19,6 +19,7 @@ divergence:
   exclude_no_divergence_from_plots: true  # drop -1 values in plots
   primary_metric: pairwise  # any_pair | baseline_per_sequence | pairwise
   stable_divergence_value: .inf  # auto | number | null
+  exclude_prompt: true  # if true, divergence index is relative to generation start
 
 summary:
   quantiles: [0.05, 0.25, 0.5, 0.75, 0.95]  # quantiles to report

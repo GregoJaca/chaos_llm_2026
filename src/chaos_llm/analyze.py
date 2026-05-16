@@ -134,6 +134,7 @@ def main() -> None:
         perturbed_ids = tokens["perturbed_ids"]
         lengths = tokens["perturbed_lengths"]
         prompt_len = int(tokens.get("prompt_len", meta.get("runtime", {}).get("prompt_len", 0)))
+        skip_len = prompt_len if cfg["divergence"]["exclude_prompt"] else 0
 
         exclude_baseline = bool(cfg["divergence"].get("exclude_baseline", False))
 
@@ -142,7 +143,7 @@ def main() -> None:
             any_pair_value = divergence_any_pair(
                 perturbed_ids=perturbed_ids,
                 lengths=lengths,
-                prompt_len=prompt_len,
+                prompt_len=skip_len,
                 include_baseline=cfg["divergence"]["include_baseline_in_any_pair"] and not exclude_baseline,
                 baseline_ids=None if exclude_baseline else baseline_ids,
                 index_reference=cfg["divergence"]["index_reference"],
@@ -154,7 +155,7 @@ def main() -> None:
                 perturbed_ids=perturbed_ids,
                 lengths=lengths,
                 baseline_ids=baseline_ids,
-                prompt_len=prompt_len,
+                prompt_len=skip_len,
                 index_reference=cfg["divergence"]["index_reference"],
             )
 
@@ -163,7 +164,7 @@ def main() -> None:
             pairwise_divergence = divergence_pairwise(
                 perturbed_ids=perturbed_ids,
                 lengths=lengths,
-                prompt_len=prompt_len,
+                prompt_len=skip_len,
                 index_reference=cfg["divergence"]["index_reference"],
                 max_pairs=cfg["divergence"]["pairwise_max_pairs"],
             )
@@ -718,10 +719,11 @@ def main() -> None:
                 baseline_ids = tokens["baseline_ids"]
                 lengths = tokens["perturbed_lengths"]
                 prompt_len = int(tokens.get("prompt_len", meta.get("runtime", {}).get("prompt_len", 0)))
+                skip_len = prompt_len if cfg["divergence"]["exclude_prompt"] else 0
                 max_gen = int(meta["generation"]["max_new_tokens"])
                 
                 div_indices = divergence_vs_baseline(
-                    perturbed_ids, lengths, baseline_ids, prompt_len, cfg["divergence"]["index_reference"]
+                    perturbed_ids, lengths, baseline_ids, skip_len, cfg["divergence"]["index_reference"]
                 )
                 # Treat no-divergence as inf
                 div_indices = div_indices.astype(float)

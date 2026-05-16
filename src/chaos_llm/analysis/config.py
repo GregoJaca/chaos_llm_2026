@@ -40,6 +40,7 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["divergence"].setdefault("exclude_no_divergence_from_plots", True)
     cfg["divergence"].setdefault("primary_metric", "baseline_per_sequence")
     cfg["divergence"].setdefault("stable_divergence_value", "auto")
+    cfg["divergence"].setdefault("exclude_prompt", True)
 
     cfg["summary"].setdefault("quantiles", [0.05, 0.25, 0.5, 0.75, 0.95])
 
