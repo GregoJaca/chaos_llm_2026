@@ -61,6 +61,7 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["plots"]["dependencies"].setdefault("error_bars", "std")
     cfg["plots"]["dependencies"].setdefault("per_prompt", True)
     cfg["plots"]["dependencies"].setdefault("x_axis", ["sliding_window", "perturbation_magnitude"])
+    cfg["plots"]["dependencies"].setdefault("inverse", False)
 
     cfg["performance"].setdefault("mmap_mode", "r")
 
@@ -69,11 +70,13 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["agreement"].setdefault("baseline", True)
     cfg["agreement"].setdefault("all_pairs", True)
     cfg["agreement"].setdefault("max_steps", None)
+    cfg["agreement"].setdefault("yscale", "linear")
 
     cfg.setdefault("logits", {})
     cfg["logits"].setdefault("enabled", False)
     cfg["logits"].setdefault("filename", "logits_metrics.npz")
     cfg["logits"].setdefault("max_steps", None)
+    cfg["logits"].setdefault("yscale", "linear")
 
     return cfg
 

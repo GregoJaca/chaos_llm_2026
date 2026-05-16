@@ -194,6 +194,22 @@ def main() -> None:
                             "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
                         }
                     )
+                    if cfg["plots"]["dependencies"].get("inverse"):
+                        full_vals = baseline_divergence.astype(float)
+                        no_div = cfg["divergence"]["no_divergence_value"]
+                        full_vals[baseline_divergence == no_div] = np.inf
+                        inv_vals = 1.0 / full_vals
+                        per_run_stats.append({
+                            "prompt": prompt_name,
+                            "sliding_window": _to_float(window),
+                            "perturbation_magnitude": _to_float(mag),
+                            "metric": "baseline_inverse",
+                            "mean": float(inv_vals.mean()),
+                            "median": float(np.median(inv_vals)),
+                            "mode": _mode(inv_vals),
+                            "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
+                            "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
+                        })
                 elif row.get("baseline_no_divergence", 0) > 0:
                     stable_val = cfg["divergence"].get("stable_divergence_value")
                     if stable_val == "auto":
@@ -215,6 +231,22 @@ def main() -> None:
                             "std": 0.0,
                             "var": 0.0,
                         })
+                        if cfg["plots"]["dependencies"].get("inverse"):
+                            # If stable_val is None or auto, inverse is 0. 
+                            # If stable_val is a number, inverse is 1/stable_val.
+                            inv_mean = 1.0 / float(stable_val) if (stable_val is not None and stable_val != 0) else 0.0
+                            if stable_val == float('inf'): inv_mean = 0.0
+                            per_run_stats.append({
+                                "prompt": prompt_name,
+                                "sliding_window": _to_float(window),
+                                "perturbation_magnitude": _to_float(mag),
+                                "metric": "baseline_inverse",
+                                "mean": inv_mean,
+                                "median": inv_mean,
+                                "mode": inv_mean,
+                                "std": 0.0,
+                                "var": 0.0,
+                            })
 
         if pairwise_divergence is not None:
             values = pairwise_divergence
@@ -238,8 +270,6 @@ def main() -> None:
 
             if cfg["divergence"]["primary_metric"] == "pairwise":
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
-
-            if cfg["divergence"]["primary_metric"] == "pairwise":
                 if filtered.size:
                     per_run_stats.append(
                         {
@@ -254,6 +284,22 @@ def main() -> None:
                             "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
                         }
                     )
+                    if cfg["plots"]["dependencies"].get("inverse"):
+                        # Use inf for stable runs in the inverse calculation
+                        full_vals = values.astype(float)
+                        full_vals[values == no_div] = np.inf
+                        inv_vals = 1.0 / full_vals
+                        per_run_stats.append({
+                            "prompt": prompt_name,
+                            "sliding_window": _to_float(window),
+                            "perturbation_magnitude": _to_float(mag),
+                            "metric": "pairwise_inverse",
+                            "mean": float(inv_vals.mean()),
+                            "median": float(np.median(inv_vals)),
+                            "mode": _mode(inv_vals),
+                            "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
+                            "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
+                        })
                 elif row.get("pairwise_no_divergence", 0) > 0:
                     stable_val = cfg["divergence"].get("stable_divergence_value")
                     if stable_val == "auto":
@@ -275,6 +321,20 @@ def main() -> None:
                             "std": 0.0,
                             "var": 0.0,
                         })
+                        if cfg["plots"]["dependencies"].get("inverse"):
+                            inv_mean = 1.0 / float(stable_val) if (stable_val is not None and stable_val != 0) else 0.0
+                            if stable_val == float('inf'): inv_mean = 0.0
+                            per_run_stats.append({
+                                "prompt": prompt_name,
+                                "sliding_window": _to_float(window),
+                                "perturbation_magnitude": _to_float(mag),
+                                "metric": "pairwise_inverse",
+                                "mean": inv_mean,
+                                "median": inv_mean,
+                                "mode": inv_mean,
+                                "std": 0.0,
+                                "var": 0.0,
+                            })
 
         summary_rows.append(row)
 
@@ -313,7 +373,8 @@ def main() -> None:
                 plot_time_series(
                     steps, rates, rates, None,
                     f"Agreement with Baseline - {run_name}", "step", "agreement rate",
-                    output_paths, bool(cfg["plots"]["grid"])
+                    output_paths, bool(cfg["plots"]["grid"]),
+                    yscale=cfg["agreement"]["yscale"]
                 )
 
             if cfg["agreement"]["all_pairs"]:
@@ -325,7 +386,8 @@ def main() -> None:
                 plot_time_series(
                     steps, rates, rates, None,
                     f"Agreement All-Pairs - {run_name}", "step", "agreement rate",
-                    output_paths, bool(cfg["plots"]["grid"])
+                    output_paths, bool(cfg["plots"]["grid"]),
+                    yscale=cfg["agreement"]["yscale"]
                 )
 
         if cfg["logits"]["enabled"]:
@@ -342,7 +404,8 @@ def main() -> None:
                     plot_time_series(
                         steps, mean, median, std,
                         f"Logit {name} - {run_name}", "step", name,
-                        output_paths, bool(cfg["plots"]["grid"])
+                        output_paths, bool(cfg["plots"]["grid"]),
+                        yscale=cfg["logits"]["yscale"]
                     )
             except FileNotFoundError:
                 pass
@@ -388,10 +451,12 @@ def main() -> None:
             linestyle: str,
             filter_key: Optional[str] = None,
             filter_val: Optional[Any] = None,
+            metric_type: Optional[str] = None, # override metric type (e.g. baseline_inverse)
         ) -> Dict[str, Dict[str, Any]]:
+            target_metric = metric_type or cfg["divergence"]["primary_metric"]
             series: Dict[str, Dict[str, Any]] = {}
             for row in per_run_stats:
-                if row.get("metric") != cfg["divergence"]["primary_metric"]:
+                if row.get("metric") != target_metric:
                     continue
                 if prompt_name is not None and row.get("prompt") != prompt_name:
                     continue
@@ -436,35 +501,13 @@ def main() -> None:
             suffix = f"_{prompt_name}" if prompt_name else ""
 
             if "sliding_window" in x_axes:
-                series: Dict[str, Dict[str, List[float]]] = {}
-                for metric in metrics:
-                    use_error = metric == "mean" and error_bars in ("std", "var")
-                    linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
-                    series.update(
-                        build_series(
-                            "sliding_window",
-                            "perturbation_magnitude",
-                            prompt_name,
-                            metric,
-                            use_error,
-                            linestyle,
-                        )
-                    )
-                title = f"{cfg['plots']['title_prefix']} (mean/median/mode){suffix}"
-                output_base = os.path.join(output_dir, "figures", f"dep_window_mean_median_mode{suffix}")
-                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                plot_dependency_curves(
-                    series=series,
-                    title=title,
-                    xlabel="sliding window",
-                    ylabel="divergence index",
-                    output_paths=output_paths,
-                    grid=bool(cfg["plots"]["grid"]),
-                    color_map=str(cfg["plots"]["color_map"]),
-                )
+                for mode_name, ylabel, filename_suffix in [
+                    (None, "divergence index", ""),
+                    (f"{cfg['divergence']['primary_metric']}_inverse", "inverse divergence index", "_inverse")
+                ]:
+                    if mode_name and not dep_cfg.get("inverse"):
+                        continue
 
-                # Individual plots per magnitude
-                for mag in magnitudes:
                     series = {}
                     for metric in metrics:
                         use_error = metric == "mean" and error_bars in ("std", "var")
@@ -477,53 +520,62 @@ def main() -> None:
                                 metric,
                                 use_error,
                                 linestyle,
-                                filter_key="perturbation_magnitude",
-                                filter_val=mag,
+                                metric_type=mode_name
                             )
                         )
-                    title = f"{cfg['plots']['title_prefix']} (metrics) - mag {mag}{suffix}"
-                    output_base = os.path.join(output_dir, "figures", f"dep_window_mag_{mag}{suffix}")
+                    title = f"{cfg['plots']['title_prefix']} (mean/median/mode){suffix}{filename_suffix}"
+                    output_base = os.path.join(output_dir, "figures", f"dep_window_mean_median_mode{suffix}{filename_suffix}")
                     output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                     plot_dependency_curves(
                         series=series,
                         title=title,
                         xlabel="sliding window",
-                        ylabel="divergence index",
+                        ylabel=ylabel,
                         output_paths=output_paths,
                         grid=bool(cfg["plots"]["grid"]),
                         color_map=str(cfg["plots"]["color_map"]),
                     )
 
-            if "perturbation_magnitude" in x_axes:
-                series = {}
-                for metric in metrics:
-                    use_error = metric == "mean" and error_bars in ("std", "var")
-                    linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
-                    series.update(
-                        build_series(
-                            "perturbation_magnitude",
-                            "sliding_window",
-                            prompt_name,
-                            metric,
-                            use_error,
-                            linestyle,
+                    # Individual plots per magnitude
+                    for mag in magnitudes:
+                        series = {}
+                        for metric in metrics:
+                            use_error = metric == "mean" and error_bars in ("std", "var")
+                            linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
+                            series.update(
+                                build_series(
+                                    "sliding_window",
+                                    "perturbation_magnitude",
+                                    prompt_name,
+                                    metric,
+                                    use_error,
+                                    linestyle,
+                                    filter_key="perturbation_magnitude",
+                                    filter_val=mag,
+                                    metric_type=mode_name
+                                )
+                            )
+                        title = f"{cfg['plots']['title_prefix']} (metrics) - mag {mag}{suffix}{filename_suffix}"
+                        output_base = os.path.join(output_dir, "figures", f"dep_window_mag_{mag}{suffix}{filename_suffix}")
+                        output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                        plot_dependency_curves(
+                            series=series,
+                            title=title,
+                            xlabel="sliding window",
+                            ylabel=ylabel,
+                            output_paths=output_paths,
+                            grid=bool(cfg["plots"]["grid"]),
+                            color_map=str(cfg["plots"]["color_map"]),
                         )
-                    )
-                title = f"{cfg['plots']['title_prefix']} (mean/median/mode){suffix}"
-                output_base = os.path.join(output_dir, "figures", f"dep_magnitude_mean_median_mode{suffix}")
-                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                plot_dependency_curves(
-                    series=series,
-                    title=title,
-                    xlabel="perturbation magnitude",
-                    ylabel="divergence index",
-                    output_paths=output_paths,
-                    grid=bool(cfg["plots"]["grid"]),
-                    color_map=str(cfg["plots"]["color_map"]),
-                )
 
-                # Individual plots per window
-                for win in windows:
+            if "perturbation_magnitude" in x_axes:
+                for mode_name, ylabel, filename_suffix in [
+                    (None, "divergence index", ""),
+                    (f"{cfg['divergence']['primary_metric']}_inverse", "inverse divergence index", "_inverse")
+                ]:
+                    if mode_name and not dep_cfg.get("inverse"):
+                        continue
+                    
                     series = {}
                     for metric in metrics:
                         use_error = metric == "mean" and error_bars in ("std", "var")
@@ -536,22 +588,53 @@ def main() -> None:
                                 metric,
                                 use_error,
                                 linestyle,
-                                filter_key="sliding_window",
-                                filter_val=win,
+                                metric_type=mode_name
                             )
                         )
-                    title = f"{cfg['plots']['title_prefix']} (metrics) - window {win}{suffix}"
-                    output_base = os.path.join(output_dir, "figures", f"dep_mag_window_{win}{suffix}")
+                    title = f"{cfg['plots']['title_prefix']} (mean/median/mode){suffix}{filename_suffix}"
+                    output_base = os.path.join(output_dir, "figures", f"dep_magnitude_mean_median_mode{suffix}{filename_suffix}")
                     output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                     plot_dependency_curves(
                         series=series,
                         title=title,
                         xlabel="perturbation magnitude",
-                        ylabel="divergence index",
+                        ylabel=ylabel,
                         output_paths=output_paths,
                         grid=bool(cfg["plots"]["grid"]),
                         color_map=str(cfg["plots"]["color_map"]),
                     )
+
+                    # Individual plots per window
+                    for win in windows:
+                        series = {}
+                        for metric in metrics:
+                            use_error = metric == "mean" and error_bars in ("std", "var")
+                            linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
+                            series.update(
+                                build_series(
+                                    "perturbation_magnitude",
+                                    "sliding_window",
+                                    prompt_name,
+                                    metric,
+                                    use_error,
+                                    linestyle,
+                                    filter_key="sliding_window",
+                                    filter_val=win,
+                                    metric_type=mode_name
+                                )
+                            )
+                        title = f"{cfg['plots']['title_prefix']} (metrics) - window {win}{suffix}{filename_suffix}"
+                        output_base = os.path.join(output_dir, "figures", f"dep_mag_window_{win}{suffix}{filename_suffix}")
+                        output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                        plot_dependency_curves(
+                            series=series,
+                            title=title,
+                            xlabel="perturbation magnitude",
+                            ylabel=ylabel,
+                            output_paths=output_paths,
+                            grid=bool(cfg["plots"]["grid"]),
+                            color_map=str(cfg["plots"]["color_map"]),
+                        )
 
 
 if __name__ == "__main__":

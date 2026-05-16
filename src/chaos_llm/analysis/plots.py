@@ -103,6 +103,7 @@ def plot_time_series(
     ylabel: str,
     output_paths: List[str],
     grid: bool,
+    yscale: str = "linear",
 ) -> None:
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     ax.plot(x, mean, color="#1f77b4", label="mean")
@@ -110,6 +111,7 @@ def plot_time_series(
     if std is not None:
         ax.fill_between(x, mean - std, mean + std, color="#1f77b4", alpha=0.2)
 
+    ax.set_yscale(yscale)
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)

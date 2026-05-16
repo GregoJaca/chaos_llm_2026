@@ -20,8 +20,8 @@ perturbation:
   subspace_seed: 69  # RNG seed for subspace selection
 
 attention:
-  # sliding_window_list: [0, 1, 20, 35, 50, 80, 500]  # attention window sizes
-  sliding_window_list: [0, 1, 10, 20, 35, 50, 65, 80, 100, 125, 150, 200, 500, 1000]  # attention window sizes
+  sliding_window_list: [300, 2000]  # attention window sizes
+  # sliding_window_list: [0, 1, 10, 20, 35, 50, 65, 80, 100, 125, 150, 200, 500, 1000]  # attention window sizes
   use_sliding_window: true  # toggle sliding window behavior
 
 generation:
@@ -43,7 +43,7 @@ output:
   text_clean_up_spaces: true  # clean up spaces in decoded text
 
 logits:
-  enabled: true  # compute logit divergence vs baseline
+  enabled: false  # compute logit divergence vs baseline
   top_k: 5  # top-k logits to compare (baseline support)
   methods: [kl_divergence, js_divergence, cos_dist]  # metrics to compute
   max_steps: null  # limit logit steps (null = use max_new_tokens)
