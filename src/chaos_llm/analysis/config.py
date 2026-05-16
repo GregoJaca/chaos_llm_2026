@@ -62,6 +62,13 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["plots"]["dependencies"].setdefault("per_prompt", True)
     cfg["plots"]["dependencies"].setdefault("x_axis", ["sliding_window", "perturbation_magnitude"])
     cfg["plots"]["dependencies"].setdefault("inverse", False)
+    cfg["plots"]["dependencies"].setdefault("fan_plot", False)
+
+    cfg.setdefault("survival", {})
+    cfg["survival"].setdefault("enabled", False)
+    cfg["survival"].setdefault("plot_individual", True)
+    cfg["survival"].setdefault("plot_together", True)
+    cfg["survival"].setdefault("yscale", "linear")
 
     cfg["performance"].setdefault("mmap_mode", "r")
 

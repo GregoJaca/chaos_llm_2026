@@ -1,7 +1,7 @@
 import argparse
 import csv
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Set
 
 import numpy as np
 
@@ -10,7 +10,10 @@ from chaos_llm.analysis.data import discover_runs, load_run_metadata, load_token
 from chaos_llm.analysis.divergence import divergence_any_pair, divergence_pairwise, divergence_vs_baseline
 from chaos_llm.analysis.agreement import agreement_all_pairs, agreement_with_baseline
 from chaos_llm.analysis.logits import aggregate_time_series, load_logit_metrics
-from chaos_llm.analysis.plots import apply_style, plot_dependency_curves, plot_histogram, plot_time_series
+from chaos_llm.analysis.plots import (
+    apply_style, plot_dependency_curves, plot_histogram, 
+    plot_time_series, plot_fan_curves, plot_survival_curves
+)
 
 
 def _filter_prompts(meta: Dict[str, Any], include: Optional[List[str]], exclude: Optional[List[str]]) -> bool:
@@ -59,6 +62,28 @@ def _mode(values: np.ndarray) -> Optional[float]:
     max_count = counts.max()
     candidates = uniques[counts == max_count]
     return float(candidates.min())
+
+
+def _harmonic_mean(vals: np.ndarray) -> float:
+    if not vals.size: return 0.0
+    # treat inf as 0 in the sum of reciprocals
+    reciprocals = 1.0 / vals.astype(float)
+    reciprocals[np.isinf(vals)] = 0.0
+    s = reciprocals.sum()
+    return float(vals.size / s) if s > 0 else float('inf')
+
+
+def _calculate_survival(values: np.ndarray, max_steps: int) -> Tuple[np.ndarray, np.ndarray]:
+    """Calculate survival curve: fraction of non-diverged sequences vs step."""
+    # values: (num_sequences,) containing divergence indices
+    # sequences that never diverge have values like np.inf or max_gen
+    steps = np.arange(max_steps + 1)
+    survival = np.zeros(max_steps + 1)
+    for t in steps:
+        # alive if divergence index > t
+        alive = (values > t).sum()
+        survival[t] = alive / values.size
+    return steps, survival
 
 
 def _select_primary_values(
@@ -168,6 +193,9 @@ def main() -> None:
                 row["baseline_std"] = float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0
                 row["baseline_median"] = float(np.median(filtered))
                 row["baseline_mode"] = _mode(filtered)
+                h_vals = baseline_divergence.astype(float)
+                h_vals[baseline_divergence == no_div] = np.inf
+                row["baseline_harmonic_mean"] = _harmonic_mean(h_vals)
                 for q in cfg["summary"]["quantiles"]:
                     row[f"baseline_q{int(q*100):02d}"] = float(np.quantile(filtered, q))
             else:
@@ -192,6 +220,10 @@ def main() -> None:
                             "mode": _mode(filtered),
                             "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
                             "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                            "q05": float(np.quantile(filtered, 0.05)),
+                            "q25": float(np.quantile(filtered, 0.25)),
+                            "q75": float(np.quantile(filtered, 0.75)),
+                            "q95": float(np.quantile(filtered, 0.95)),
                         }
                     )
                     if cfg["plots"]["dependencies"].get("inverse"):
@@ -209,6 +241,10 @@ def main() -> None:
                             "mode": _mode(inv_vals),
                             "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
                             "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
+                            "q05": float(np.quantile(inv_vals, 0.05)),
+                            "q25": float(np.quantile(inv_vals, 0.25)),
+                            "q75": float(np.quantile(inv_vals, 0.75)),
+                            "q95": float(np.quantile(inv_vals, 0.95)),
                         })
                 elif row.get("baseline_no_divergence", 0) > 0:
                     stable_val = cfg["divergence"].get("stable_divergence_value")
@@ -260,6 +296,9 @@ def main() -> None:
                 row["pairwise_std"] = float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0
                 row["pairwise_median"] = float(np.median(filtered))
                 row["pairwise_mode"] = _mode(filtered)
+                h_vals = values.astype(float)
+                h_vals[values == no_div] = np.inf
+                row["pairwise_harmonic_mean"] = _harmonic_mean(h_vals)
                 for q in cfg["summary"]["quantiles"]:
                     row[f"pairwise_q{int(q*100):02d}"] = float(np.quantile(filtered, q))
             else:
@@ -282,6 +321,10 @@ def main() -> None:
                             "mode": _mode(filtered),
                             "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
                             "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                            "q05": float(np.quantile(filtered, 0.05)),
+                            "q25": float(np.quantile(filtered, 0.25)),
+                            "q75": float(np.quantile(filtered, 0.75)),
+                            "q95": float(np.quantile(filtered, 0.95)),
                         }
                     )
                     if cfg["plots"]["dependencies"].get("inverse"):
@@ -299,6 +342,10 @@ def main() -> None:
                             "mode": _mode(inv_vals),
                             "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
                             "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
+                            "q05": float(np.quantile(inv_vals, 0.05)),
+                            "q25": float(np.quantile(inv_vals, 0.25)),
+                            "q75": float(np.quantile(inv_vals, 0.75)),
+                            "q95": float(np.quantile(inv_vals, 0.95)),
                         })
                 elif row.get("pairwise_no_divergence", 0) > 0:
                     stable_val = cfg["divergence"].get("stable_divergence_value")
@@ -336,7 +383,49 @@ def main() -> None:
                                 "var": 0.0,
                             })
 
+        if any_pair_value is not None and cfg["divergence"]["primary_metric"] == "any_pair":
+            per_run_stats.append({
+                "prompt": prompt_name,
+                "sliding_window": _to_float(window),
+                "perturbation_magnitude": _to_float(mag),
+                "metric": "any_pair",
+                "mean": float(any_pair_value),
+                "median": float(any_pair_value),
+                "mode": float(any_pair_value),
+                "std": 0.0,
+                "var": 0.0,
+                "q05": float(any_pair_value),
+                "q25": float(any_pair_value),
+                "q75": float(any_pair_value),
+                "q95": float(any_pair_value),
+            })
+
         summary_rows.append(row)
+
+        primary_vals, _ = _select_primary_values(
+            cfg["divergence"]["primary_metric"],
+            any_pair_value,
+            baseline_divergence,
+            pairwise_divergence,
+        )
+        if cfg["survival"]["enabled"] and cfg["survival"]["plot_individual"] and primary_vals is not None:
+            # Treat no-divergence as inf for survival calc
+            s_vals = primary_vals.astype(float)
+            s_vals[primary_vals == cfg["divergence"]["no_divergence_value"]] = np.inf
+            steps, survival = _calculate_survival(s_vals, int(meta["generation"]["max_new_tokens"]))
+            title = f"Trajectory Survival - {prompt_name} (mag={mag}, window={window})"
+            output_base = os.path.join(output_dir, "figures", f"survival_run_{window}_{mag}_{prompt_name}")
+            output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+            plot_survival_curves(
+                series={"survival": {"x": steps, "y": survival}},
+                title=title,
+                xlabel="token step",
+                ylabel="fraction of stable sequences",
+                output_paths=output_paths,
+                grid=bool(cfg["plots"]["grid"]),
+                color_map=str(cfg["plots"]["color_map"]),
+                yscale=cfg["survival"]["yscale"]
+            )
 
         if cfg["plots"]["enabled"] and cfg["plots"]["per_run"]:
             plot_values, label = _select_primary_values(
@@ -451,7 +540,8 @@ def main() -> None:
             linestyle: str,
             filter_key: Optional[str] = None,
             filter_val: Optional[Any] = None,
-            metric_type: Optional[str] = None, # override metric type (e.g. baseline_inverse)
+            metric_type: Optional[str] = None,
+            is_fan: bool = False,
         ) -> Dict[str, Dict[str, Any]]:
             target_metric = metric_type or cfg["divergence"]["primary_metric"]
             series: Dict[str, Dict[str, Any]] = {}
@@ -466,29 +556,48 @@ def main() -> None:
                 line_val = row.get(line_key)
                 y_val = row.get(metric_name)
                 y_err = row.get(error_bars) if use_error else None
+                
                 if x_val is None or line_val is None:
                     continue
+                
                 label = f"{line_key}={line_val} ({metric_name})"
-                series.setdefault(label, {"x": [], "y": [], "yerr": [], "linestyle": linestyle})
-                series[label]["x"].append(x_val)
-                series[label]["y"].append(y_val)
-                if use_error:
-                    series[label]["yerr"].append(y_err)
+                if is_fan:
+                    series.setdefault(label, {"x": [], "y_median": [], "y_q05": [], "y_q25": [], "y_q75": [], "y_q95": []})
+                    series[label]["x"].append(x_val)
+                    series[label]["y_median"].append(y_val)
+                    series[label]["y_q05"].append(row.get("q05", y_val))
+                    series[label]["y_q25"].append(row.get("q25", y_val))
+                    series[label]["y_q75"].append(row.get("q75", y_val))
+                    series[label]["y_q95"].append(row.get("q95", y_val))
+                else:
+                    series.setdefault(label, {"x": [], "y": [], "yerr": [], "linestyle": linestyle})
+                    series[label]["x"].append(x_val)
+                    series[label]["y"].append(y_val)
+                    if use_error:
+                        series[label]["yerr"].append(y_err)
 
             for label, data in series.items():
-                if use_error:
-                    points = list(zip(data["x"], data["y"], data["yerr"]))
+                if is_fan:
+                    keys = ["y_median", "y_q05", "y_q25", "y_q75", "y_q95"]
+                    points = list(zip(data["x"], *[data[k] for k in keys]))
+                    points.sort(key=lambda p: p[0])
+                    data["x"] = [p[0] for p in points]
+                    for i, k in enumerate(keys):
+                        data[k] = [p[i+1] for p in points]
                 else:
-                    points = list(zip(data["x"], data["y"]))
+                    if use_error:
+                        points = list(zip(data["x"], data["y"], data["yerr"]))
+                    else:
+                        points = list(zip(data["x"], data["y"]))
 
-                points = [p for p in points if p[1] is not None]
-                points.sort(key=lambda p: p[0])
-                data["x"] = [p[0] for p in points]
-                data["y"] = [p[1] for p in points]
-                if use_error:
-                    data["yerr"] = [p[2] for p in points]
-                else:
-                    data.pop("yerr", None)
+                    points = [p for p in points if p[1] is not None]
+                    points.sort(key=lambda p: p[0])
+                    data["x"] = [p[0] for p in points]
+                    data["y"] = [p[1] for p in points]
+                    if use_error:
+                        data["yerr"] = [p[2] for p in points]
+                    else:
+                        data.pop("yerr", None)
             return series
 
         prompts = sorted({row["prompt"] for row in per_run_stats})
@@ -535,6 +644,23 @@ def main() -> None:
                         grid=bool(cfg["plots"]["grid"]),
                         color_map=str(cfg["plots"]["color_map"]),
                     )
+                    if dep_cfg.get("fan_plot") and "median" in metrics:
+                        fan_series = build_series(
+                            "sliding_window", "perturbation_magnitude", prompt_name, "median",
+                            False, "-", metric_type=mode_name, is_fan=True
+                        )
+                        title = f"{cfg['plots']['title_prefix']} Instability Profile{suffix}{filename_suffix}"
+                        output_base = os.path.join(output_dir, "figures", f"dep_window_fan{suffix}{filename_suffix}")
+                        output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                        plot_fan_curves(
+                            series=fan_series,
+                            title=title,
+                            xlabel="sliding window",
+                            ylabel=ylabel,
+                            output_paths=output_paths,
+                            grid=bool(cfg["plots"]["grid"]),
+                            color_map=str(cfg["plots"]["color_map"]),
+                        )
 
                     # Individual plots per magnitude
                     for mag in magnitudes:
@@ -635,6 +761,56 @@ def main() -> None:
                             grid=bool(cfg["plots"]["grid"]),
                             color_map=str(cfg["plots"]["color_map"]),
                         )
+
+
+    # Combined survival plots
+    if cfg["survival"]["enabled"] and cfg["survival"]["plot_together"]:
+        # group by (prompt, magnitude) -> series {window_label -> (steps, survival)}
+        groups: Dict[str, Dict[str, Any]] = {}
+        
+        for run_dir in runs:
+            meta = load_run_metadata(run_dir)
+            if not _filter_prompts(meta, include, exclude): continue
+            
+            window, mag, _ = _extract_runtime(meta)
+            prompt_name = meta.get("prompt", {}).get("name", "unknown")
+            
+            try:
+                tokens = load_tokens(run_dir, cfg["performance"]["mmap_mode"])
+                perturbed_ids = tokens["perturbed_ids"]
+                baseline_ids = tokens["baseline_ids"]
+                lengths = tokens["perturbed_lengths"]
+                prompt_len = int(tokens.get("prompt_len", meta.get("runtime", {}).get("prompt_len", 0)))
+                max_gen = int(meta["generation"]["max_new_tokens"])
+                
+                div_indices = divergence_vs_baseline(
+                    perturbed_ids, lengths, baseline_ids, prompt_len, cfg["divergence"]["index_reference"]
+                )
+                # Treat no-divergence as inf
+                div_indices = div_indices.astype(float)
+                div_indices[div_indices == cfg["divergence"]["no_divergence_value"]] = np.inf
+                
+                steps, survival = _calculate_survival(div_indices, max_gen)
+                
+                group_key = f"{prompt_name}_mag_{mag}"
+                groups.setdefault(group_key, {})
+                groups[group_key][f"window={window}"] = {"x": steps, "y": survival}
+            except FileNotFoundError:
+                continue
+                
+        for group_key, series in groups.items():
+            output_base = os.path.join(output_dir, "figures", f"survival_together_{group_key}")
+            output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+            plot_survival_curves(
+                series=series,
+                title=f"Combined Trajectory Survival (mag={mag})",
+                xlabel="token step",
+                ylabel="fraction of stable sequences",
+                output_paths=output_paths,
+                grid=bool(cfg["plots"]["grid"]),
+                color_map=str(cfg["plots"]["color_map"]),
+                yscale=cfg["survival"]["yscale"]
+            )
 
 
 if __name__ == "__main__":

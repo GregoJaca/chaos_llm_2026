@@ -43,9 +43,16 @@ plots:
     per_prompt: false  # separate plot per prompt
     x_axis: [sliding_window]  # which x-axes to generate
     inverse: true  # if true, also plot 1/divergence (stability -> 0)
+    fan_plot: true  # plot percentile bands (fan plot) for dependency
+
+survival:
+  enabled: true
+  plot_individual: true
+  plot_together: true
+  yscale: linear  # linear | log
 
 agreement:
-  enabled: true
+  enabled: false
   baseline: false
   all_pairs: true
   max_steps: null

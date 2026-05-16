@@ -123,3 +123,75 @@ def plot_time_series(
         os.makedirs(os.path.dirname(path), exist_ok=True)
         fig.savefig(path, bbox_inches="tight")
     plt.close(fig)
+
+
+def plot_fan_curves(
+    series: Dict[str, Dict[str, Any]],
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    output_paths: List[str],
+    grid: bool,
+    color_map: str,
+) -> None:
+    fig, ax = plt.subplots(figsize=(7.5, 4.5))
+    cmap = plt.get_cmap(color_map)
+
+    for idx, (label, data) in enumerate(series.items()):
+        x = data["x"]
+        y_median = data["y_median"]
+        color = cmap(idx % cmap.N)
+
+        # Plot median
+        ax.plot(x, y_median, marker="o", label=label, color=color, linewidth=2)
+
+        # Plot fan bands
+        if "y_q25" in data and "y_q75" in data:
+            ax.fill_between(x, data["y_q25"], data["y_q75"], color=color, alpha=0.3)
+        if "y_q05" in data and "y_q95" in data:
+            ax.fill_between(x, data["y_q05"], data["y_q95"], color=color, alpha=0.1)
+
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if grid:
+        ax.grid(True, linestyle=":", alpha=0.5)
+    if series:
+        ax.legend(frameon=False)
+
+    for path in output_paths:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+
+
+def plot_survival_curves(
+    series: Dict[str, Dict[str, Any]],
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    output_paths: List[str],
+    grid: bool,
+    color_map: str,
+    yscale: str = "linear",
+) -> None:
+    fig, ax = plt.subplots(figsize=(7.5, 4.5))
+    cmap = plt.get_cmap(color_map)
+
+    for idx, (label, data) in enumerate(series.items()):
+        color = cmap(idx % cmap.N)
+        ax.plot(data["x"], data["y"], label=label, color=color)
+
+    ax.set_yscale(yscale)
+    ax.set_title(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if grid:
+        ax.grid(True, linestyle=":", alpha=0.5)
+    if series:
+        ax.legend(frameon=False)
+
+    for path in output_paths:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
