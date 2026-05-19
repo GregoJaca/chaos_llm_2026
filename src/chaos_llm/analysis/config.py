@@ -62,6 +62,7 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["plots"]["dependencies"].setdefault("enabled", True)
     cfg["plots"]["dependencies"].setdefault("metrics", ["mean", "median", "mode"])
     cfg["plots"]["dependencies"].setdefault("error_bars", "std")
+    cfg["plots"]["dependencies"].setdefault("fan_quantiles", [0.05, 0.25, 0.75, 0.95])
     cfg["plots"]["dependencies"].setdefault("per_prompt", True)
     cfg["plots"]["dependencies"].setdefault("x_axis", ["sliding_window", "perturbation_magnitude"])
     cfg["plots"]["dependencies"].setdefault("inverse", False)

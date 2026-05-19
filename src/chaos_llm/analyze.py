@@ -210,29 +210,28 @@ def main() -> None:
 
             if cfg["divergence"]["primary_metric"] == "baseline_per_sequence":
                 if filtered.size:
-                    per_run_stats.append(
-                        {
-                            "prompt": prompt_name,
-                            "sliding_window": _to_float(window),
-                            "perturbation_magnitude": _to_float(mag),
-                            "metric": "baseline",
-                            "mean": float(filtered.mean()),
-                            "median": float(np.median(filtered)),
-                            "mode": _mode(filtered),
-                            "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
-                            "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
-                            "q05": float(np.quantile(filtered, 0.05)),
-                            "q25": float(np.quantile(filtered, 0.25)),
-                            "q75": float(np.quantile(filtered, 0.75)),
-                            "q95": float(np.quantile(filtered, 0.95)),
-                        }
-                    )
+                    # Calculate all quantiles needed for summary and fans
+                    needed_q = set(cfg["summary"]["quantiles"]) | set(cfg["plots"]["dependencies"].get("fan_quantiles", []))
+                    stats_entry = {
+                        "prompt": prompt_name,
+                        "sliding_window": _to_float(window),
+                        "perturbation_magnitude": _to_float(mag),
+                        "metric": "baseline",
+                        "mean": float(filtered.mean()),
+                        "median": float(np.median(filtered)),
+                        "mode": _mode(filtered),
+                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
+                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                    }
+                    for q in needed_q:
+                        stats_entry[f"q{int(q*100):02d}"] = float(np.quantile(filtered, q))
+                    per_run_stats.append(stats_entry)
                     if cfg["plots"]["dependencies"].get("inverse"):
                         full_vals = baseline_divergence.astype(float)
                         no_div = cfg["divergence"]["no_divergence_value"]
                         full_vals[baseline_divergence == no_div] = np.inf
                         inv_vals = 1.0 / full_vals
-                        per_run_stats.append({
+                        inv_stats = {
                             "prompt": prompt_name,
                             "sliding_window": _to_float(window),
                             "perturbation_magnitude": _to_float(mag),
@@ -242,11 +241,10 @@ def main() -> None:
                             "mode": _mode(inv_vals),
                             "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
                             "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
-                            "q05": float(np.quantile(inv_vals, 0.05)),
-                            "q25": float(np.quantile(inv_vals, 0.25)),
-                            "q75": float(np.quantile(inv_vals, 0.75)),
-                            "q95": float(np.quantile(inv_vals, 0.95)),
-                        })
+                        }
+                        for q in needed_q:
+                            inv_stats[f"q{int(q*100):02d}"] = float(np.quantile(inv_vals, q))
+                        per_run_stats.append(inv_stats)
                 elif row.get("baseline_no_divergence", 0) > 0:
                     stable_val = cfg["divergence"].get("stable_divergence_value")
                     if stable_val == "auto":
@@ -311,29 +309,28 @@ def main() -> None:
             if cfg["divergence"]["primary_metric"] == "pairwise":
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
                 if filtered.size:
-                    per_run_stats.append(
-                        {
-                            "prompt": prompt_name,
-                            "sliding_window": _to_float(window),
-                            "perturbation_magnitude": _to_float(mag),
-                            "metric": "pairwise",
-                            "mean": float(filtered.mean()),
-                            "median": float(np.median(filtered)),
-                            "mode": _mode(filtered),
-                            "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
-                            "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
-                            "q05": float(np.quantile(filtered, 0.05)),
-                            "q25": float(np.quantile(filtered, 0.25)),
-                            "q75": float(np.quantile(filtered, 0.75)),
-                            "q95": float(np.quantile(filtered, 0.95)),
-                        }
-                    )
+                    needed_q = set(cfg["summary"]["quantiles"]) | set(cfg["plots"]["dependencies"].get("fan_quantiles", []))
+                    stats_entry = {
+                        "prompt": prompt_name,
+                        "sliding_window": _to_float(window),
+                        "perturbation_magnitude": _to_float(mag),
+                        "metric": "pairwise",
+                        "mean": float(filtered.mean()),
+                        "median": float(np.median(filtered)),
+                        "mode": _mode(filtered),
+                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
+                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                    }
+                    for q in needed_q:
+                        stats_entry[f"q{int(q*100):02d}"] = float(np.quantile(filtered, q))
+                    per_run_stats.append(stats_entry)
                     if cfg["plots"]["dependencies"].get("inverse"):
                         # Use inf for stable runs in the inverse calculation
                         full_vals = values.astype(float)
                         full_vals[values == no_div] = np.inf
                         inv_vals = 1.0 / full_vals
-                        per_run_stats.append({
+                        inv_vals = 1.0 / full_vals
+                        inv_stats = {
                             "prompt": prompt_name,
                             "sliding_window": _to_float(window),
                             "perturbation_magnitude": _to_float(mag),
@@ -343,11 +340,10 @@ def main() -> None:
                             "mode": _mode(inv_vals),
                             "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
                             "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
-                            "q05": float(np.quantile(inv_vals, 0.05)),
-                            "q25": float(np.quantile(inv_vals, 0.25)),
-                            "q75": float(np.quantile(inv_vals, 0.75)),
-                            "q95": float(np.quantile(inv_vals, 0.95)),
-                        })
+                        }
+                        for q in needed_q:
+                            inv_stats[f"q{int(q*100):02d}"] = float(np.quantile(inv_vals, q))
+                        per_run_stats.append(inv_stats)
                 elif row.get("pairwise_no_divergence", 0) > 0:
                     stable_val = cfg["divergence"].get("stable_divergence_value")
                     if stable_val == "auto":
@@ -567,13 +563,13 @@ def main() -> None:
                 
                 label = f"{line_key}={line_val} ({metric_name})"
                 if is_fan:
-                    series.setdefault(label, {"x": [], "y_median": [], "y_q05": [], "y_q25": [], "y_q75": [], "y_q95": []})
+                    fan_qs = cfg["plots"]["dependencies"].get("fan_quantiles", [0.05, 0.25, 0.75, 0.95])
+                    series.setdefault(label, {"x": [], "y_median": [], "fans": {}})
                     series[label]["x"].append(x_val)
                     series[label]["y_median"].append(y_val)
-                    series[label]["y_q05"].append(row.get("q05", y_val))
-                    series[label]["y_q25"].append(row.get("q25", y_val))
-                    series[label]["y_q75"].append(row.get("q75", y_val))
-                    series[label]["y_q95"].append(row.get("q95", y_val))
+                    for q in fan_qs:
+                        q_key = f"q{int(q*100):02d}"
+                        series[label]["fans"].setdefault(q_key, []).append(row.get(q_key, y_val))
                 else:
                     series.setdefault(label, {"x": [], "y": [], "yerr": [], "linestyle": linestyle})
                     series[label]["x"].append(x_val)
@@ -583,12 +579,13 @@ def main() -> None:
 
             for label, data in series.items():
                 if is_fan:
-                    keys = ["y_median", "y_q05", "y_q25", "y_q75", "y_q95"]
-                    points = list(zip(data["x"], *[data[k] for k in keys]))
+                    keys = list(data["fans"].keys())
+                    points = list(zip(data["x"], data["y_median"], *[data["fans"][k] for k in keys]))
                     points.sort(key=lambda p: p[0])
                     data["x"] = [p[0] for p in points]
+                    data["y_median"] = [p[1] for p in points]
                     for i, k in enumerate(keys):
-                        data[k] = [p[i+1] for p in points]
+                        data["fans"][k] = [p[i+2] for p in points]
                 else:
                     if use_error:
                         points = list(zip(data["x"], data["y"], data["yerr"]))

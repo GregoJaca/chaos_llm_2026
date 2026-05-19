@@ -1,6 +1,6 @@
 paths:
-  input_dir: outputs  # folder with run_* outputs
-  output_dir: analysis_outputs  # where analysis artifacts go
+  input_dir: outputs_microsoft  # folder with run_* outputs
+  output_dir: analysis_outputs_microsoft  # where analysis artifacts go
   run_list: null  # list of run folder names or absolute paths
 
 prompt_filter:
@@ -30,7 +30,7 @@ plots:
   dpi: 300  # figure dpi
   bins: 60  # histogram bins
   histograms:
-    enabled: true
+    enabled: false
     per_run: true  # per run histograms
     per_prompt: false  # aggregated per prompt histograms
   title_prefix: "Divergence"  # plot title prefix
@@ -41,8 +41,9 @@ plots:
   label_no_divergence: "no divergence"
   dependencies:
     enabled: true  # generate parameter-dependence plots
-    metrics: [median]  # which metrics to plot
+    metrics: [mean, median]  # which metrics to plot
     error_bars: none  # std | var | fan | none
+    fan_quantiles: [0.25, 0.75] # quantiles for the fan plot
     x_scale: [linear, log] # linear | log
     y_scale: [linear, log]
     per_prompt: false  # separate plot per prompt

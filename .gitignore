@@ -4,3 +4,4 @@ outputs/
 analysis_outputs/
 *.npz
 .pytest_cache/
+run_10_0.0006_interstellar_travel_seed_69/*

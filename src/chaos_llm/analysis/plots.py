@@ -77,10 +77,15 @@ def plot_dependency_curves(
             ax.errorbar(x_vals, y_vals, yerr=y_err, fmt='none', color=color, capsize=3, alpha=0.5)
             
         # Fan bands (percentiles)
-        if "y_q25" in data and "y_q75" in data:
-            ax.fill_between(x_vals, data["y_q25"], data["y_q75"], color=color, alpha=0.3)
-        if "y_q05" in data and "y_q95" in data:
-            ax.fill_between(x_vals, data["y_q05"], data["y_q95"], color=color, alpha=0.1)
+        if "fans" in data and data["fans"]:
+            fan_dict = data["fans"]
+            keys = sorted(fan_dict.keys()) # e.g. ["q05", "q25", "q75", "q95"]
+            num_bands = len(keys) // 2
+            for i in range(num_bands):
+                low_key = keys[i]
+                high_key = keys[-(i+1)]
+                alpha = 0.1 + (i / num_bands) * 0.2 # progressive alpha
+                ax.fill_between(x_vals, fan_dict[low_key], fan_dict[high_key], color=color, alpha=alpha)
 
     ax.set_xscale(xscale)
     ax.set_yscale(yscale)
@@ -91,7 +96,9 @@ def plot_dependency_curves(
         for data in series.values():
             y = data.get("y") or data.get("y_median")
             if y is not None: all_y.extend(np.array(y).flatten())
-            if "y_q05" in data: all_y.extend(np.array(data["y_q05"]).flatten())
+            if "fans" in data:
+                for f_vals in data["fans"].values():
+                    all_y.extend(np.array(f_vals).flatten())
             if "yerr" in data and y is not None:
                 all_y.extend((np.array(y) - np.array(data["yerr"])).flatten())
         
@@ -100,7 +107,6 @@ def plot_dependency_curves(
         if pos_y.size > 0:
             ymin = pos_y.min()
             ymax = pos_y.max()
-            # If the range is very large or values are very small, ensure we see them
             ax.set_ylim(ymin * 0.8, ymax * 1.2)
 
     ax.set_title(title)
