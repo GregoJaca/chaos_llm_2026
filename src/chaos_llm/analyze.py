@@ -66,8 +66,11 @@ def _mode(values: np.ndarray) -> Optional[float]:
 
 def _harmonic_mean(vals: np.ndarray) -> float:
     if not vals.size: return 0.0
+    if np.any(vals == 0.0):
+        return 0.0
     # treat inf as 0 in the sum of reciprocals
-    reciprocals = 1.0 / vals.astype(float)
+    with np.errstate(divide='ignore'):
+        reciprocals = 1.0 / vals.astype(float)
     reciprocals[np.isinf(vals)] = 0.0
     s = reciprocals.sum()
     return float(vals.size / s) if s > 0 else float('inf')
@@ -230,7 +233,10 @@ def main() -> None:
                         full_vals = baseline_divergence.astype(float)
                         no_div = cfg["divergence"]["no_divergence_value"]
                         full_vals[baseline_divergence == no_div] = np.inf
-                        inv_vals = 1.0 / full_vals
+                        shift = 1.0 if cfg["divergence"]["index_reference"] != "absolute" else 0.0
+                        denominator = full_vals + shift
+                        denominator[denominator == 0.0] = 1.0
+                        inv_vals = 1.0 / denominator
                         inv_stats = {
                             "prompt": prompt_name,
                             "sliding_window": _to_float(window),
@@ -268,8 +274,12 @@ def main() -> None:
                         })
                         if cfg["plots"]["dependencies"].get("inverse"):
                             # If stable_val is None or auto, inverse is 0. 
-                            # If stable_val is a number, inverse is 1/stable_val.
-                            inv_mean = 1.0 / float(stable_val) if (stable_val is not None and stable_val != 0) else 0.0
+                            # If stable_val is a number, inverse is 1/stable_val (potentially shifted).
+                            shift = 1.0 if cfg["divergence"]["index_reference"] != "absolute" else 0.0
+                            stable_denom = float(stable_val) + shift
+                            if stable_denom == 0.0:
+                                stable_denom = 1.0
+                            inv_mean = 1.0 / stable_denom if stable_val is not None else 0.0
                             if stable_val == float('inf'): inv_mean = 0.0
                             per_run_stats.append({
                                 "prompt": prompt_name,
@@ -328,8 +338,10 @@ def main() -> None:
                         # Use inf for stable runs in the inverse calculation
                         full_vals = values.astype(float)
                         full_vals[values == no_div] = np.inf
-                        inv_vals = 1.0 / full_vals
-                        inv_vals = 1.0 / full_vals
+                        shift = 1.0 if cfg["divergence"]["index_reference"] != "absolute" else 0.0
+                        denominator = full_vals + shift
+                        denominator[denominator == 0.0] = 1.0
+                        inv_vals = 1.0 / denominator
                         inv_stats = {
                             "prompt": prompt_name,
                             "sliding_window": _to_float(window),
@@ -366,7 +378,11 @@ def main() -> None:
                             "var": 0.0,
                         })
                         if cfg["plots"]["dependencies"].get("inverse"):
-                            inv_mean = 1.0 / float(stable_val) if (stable_val is not None and stable_val != 0) else 0.0
+                            shift = 1.0 if cfg["divergence"]["index_reference"] != "absolute" else 0.0
+                            stable_denom = float(stable_val) + shift
+                            if stable_denom == 0.0:
+                                stable_denom = 1.0
+                            inv_mean = 1.0 / stable_denom if stable_val is not None else 0.0
                             if stable_val == float('inf'): inv_mean = 0.0
                             per_run_stats.append({
                                 "prompt": prompt_name,
@@ -421,7 +437,8 @@ def main() -> None:
                 output_paths=output_paths,
                 grid=bool(cfg["plots"]["grid"]),
                 color_map=str(cfg["plots"]["color_map"]),
-                yscale=cfg["survival"]["yscale"]
+                yscale=cfg["survival"]["yscale"],
+                xscale=cfg["survival"]["xscale"]
             )
 
         hist_cfg = cfg["plots"].get("histograms", {})
@@ -461,7 +478,8 @@ def main() -> None:
                     steps, rates, rates, None,
                     f"Agreement with Baseline - {run_name}", "step", "agreement rate",
                     output_paths, bool(cfg["plots"]["grid"]),
-                    yscale=cfg["agreement"]["yscale"]
+                    yscale=cfg["agreement"]["yscale"],
+                    xscale=cfg["agreement"]["xscale"]
                 )
 
             if cfg["agreement"]["all_pairs"]:
@@ -474,7 +492,8 @@ def main() -> None:
                     steps, rates, rates, None,
                     f"Agreement All-Pairs - {run_name}", "step", "agreement rate",
                     output_paths, bool(cfg["plots"]["grid"]),
-                    yscale=cfg["agreement"]["yscale"]
+                    yscale=cfg["agreement"]["yscale"],
+                    xscale=cfg["agreement"]["xscale"]
                 )
 
         if cfg["logits"]["enabled"]:
@@ -492,7 +511,8 @@ def main() -> None:
                         steps, mean, median, std,
                         f"Logit {name} - {run_name}", "step", name,
                         output_paths, bool(cfg["plots"]["grid"]),
-                        yscale=cfg["logits"]["yscale"]
+                        yscale=cfg["logits"]["yscale"],
+                        xscale=cfg["logits"]["xscale"]
                     )
             except FileNotFoundError:
                 pass
@@ -745,7 +765,8 @@ def main() -> None:
                 output_paths=output_paths,
                 grid=bool(cfg["plots"]["grid"]),
                 color_map=str(cfg["plots"]["color_map"]),
-                yscale=cfg["survival"]["yscale"]
+                yscale=cfg["survival"]["yscale"],
+                xscale=cfg["survival"]["xscale"]
             )
 
 

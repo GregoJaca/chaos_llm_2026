@@ -134,6 +134,7 @@ def plot_time_series(
     output_paths: List[str],
     grid: bool,
     yscale: str = "linear",
+    xscale: str = "linear",
 ) -> None:
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     ax.plot(x, mean, color="#1f77b4", label="mean")
@@ -142,6 +143,7 @@ def plot_time_series(
         ax.fill_between(x, mean - std, mean + std, color="#1f77b4", alpha=0.2)
 
     ax.set_yscale(yscale)
+    ax.set_xscale(xscale)
     ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -166,6 +168,7 @@ def plot_survival_curves(
     grid: bool,
     color_map: str,
     yscale: str = "linear",
+    xscale: str = "linear",
 ) -> None:
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     cmap = plt.get_cmap(color_map)
@@ -175,6 +178,7 @@ def plot_survival_curves(
         ax.plot(data["x"], data["y"], label=label, color=color)
 
     ax.set_yscale(yscale)
+    ax.set_xscale(xscale)
     if yscale == "log":
         all_y = []
         for data in series.values():

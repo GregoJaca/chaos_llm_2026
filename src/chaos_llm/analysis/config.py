@@ -74,6 +74,7 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["survival"].setdefault("plot_individual", True)
     cfg["survival"].setdefault("plot_together", True)
     cfg["survival"].setdefault("yscale", "linear")
+    cfg["survival"].setdefault("xscale", "linear")
 
     cfg["performance"].setdefault("mmap_mode", "r")
 
@@ -83,12 +84,14 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["agreement"].setdefault("all_pairs", True)
     cfg["agreement"].setdefault("max_steps", None)
     cfg["agreement"].setdefault("yscale", "linear")
+    cfg["agreement"].setdefault("xscale", "linear")
 
     cfg.setdefault("logits", {})
     cfg["logits"].setdefault("enabled", False)
     cfg["logits"].setdefault("filename", "logits_metrics.npz")
     cfg["logits"].setdefault("max_steps", None)
     cfg["logits"].setdefault("yscale", "linear")
+    cfg["logits"].setdefault("xscale", "linear")
 
     return cfg
 

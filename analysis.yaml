@@ -55,6 +55,7 @@ survival:
   plot_individual: false
   plot_together: true
   yscale: linear  # linear | log
+  xscale: log  # linear | log
 
 agreement:
   enabled: false
@@ -62,12 +63,14 @@ agreement:
   all_pairs: true
   max_steps: null
   yscale: log   # linear | log
+  xscale: linear  # linear | log
 
 logits:
   enabled: false
   filename: logits_metrics.npz
   max_steps: null
   yscale: linear   # linear | log
+  xscale: linear  # linear | log
 
 performance:
   mmap_mode: r  # memory-map mode for loading npz

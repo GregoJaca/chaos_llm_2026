@@ -6,3 +6,5 @@ analysis_outputs/
 .pytest_cache/
 run_10_0.0006_interstellar_travel_seed_69/*
 outputs_deepseek/*
+analysis_outputs_microsoft/*
+outputs_microsoft/*
