@@ -5,7 +5,7 @@ project:
 
 paths:
   # model_path: ../models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B  # model or HF cache path
-  model_path: "../models--microsoft--Phi-4-mini-instruct" # "../microsoft/Phi-4-mini-instruct" # Qwen/Qwen2.5-3B-Instruct
+  model_path: "microsoft/Phi-4-mini-instruct"
   prompts_path: prompts.txt  # prompt file
   output_dir: outputs_microsoft  # run output root
 
