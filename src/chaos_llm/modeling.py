@@ -6,24 +6,29 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 
-def _resolve_model_path(model_path: str) -> Tuple[str, Optional[str]]:
+def _resolve_model_path(model_path: str) -> Tuple[str, bool]:
     path = Path(model_path)
     
-    # 1. If it's a file, return it directly
+    # 1. If it's a file, return its absolute path
     if path.is_file():
-        return str(path), None
+        return str(path.resolve()), True
         
-    # 2. If it's a directory containing config.json directly, load it directly
+    # 2. If it's a directory containing config.json directly, return its absolute path
     if path.is_dir() and (path / "config.json").exists():
-        return str(path), None
+        return str(path.resolve()), True
         
     # 3. If it's a HF cache folder itself (e.g. models--microsoft--Phi-4-mini-instruct)
     if path.is_dir() and path.name.startswith("models--"):
-        parts = path.name.split("--")
-        if len(parts) >= 2:
-            repo_id = f"{parts[1]}/{'--'.join(parts[2:])}" if len(parts) >= 3 else parts[1]
-            return repo_id, str(path.parent.resolve())
-            
+        snapshots = path / "snapshots"
+        if snapshots.exists() and snapshots.is_dir():
+            candidates = []
+            for child in snapshots.iterdir():
+                if (child / "config.json").exists():
+                    candidates.append(child)
+            if candidates:
+                latest = max(candidates, key=lambda p: p.stat().st_mtime)
+                return str(latest.resolve()), True
+                
     # 4. If they wrote a relative path targeting a repo ID under a cache folder (e.g. "../microsoft/Phi-4-mini-instruct")
     parts = path.parts
     if len(parts) >= 2:
@@ -32,16 +37,32 @@ def _resolve_model_path(model_path: str) -> Tuple[str, Optional[str]]:
         prefix = Path(*parts[:-2])
         cache_dir_path = prefix / cache_folder_name
         if cache_dir_path.is_dir():
-            return f"{namespace}/{model_name}", str(prefix.resolve())
-            
+            snapshots = cache_dir_path / "snapshots"
+            if snapshots.exists() and snapshots.is_dir():
+                candidates = []
+                for child in snapshots.iterdir():
+                    if (child / "config.json").exists():
+                        candidates.append(child)
+                if candidates:
+                    latest = max(candidates, key=lambda p: p.stat().st_mtime)
+                    return str(latest.resolve()), True
+                    
     if len(parts) >= 1:
         model_name = parts[-1]
         cache_folder_name = f"models--{model_name}"
         prefix = Path(*parts[:-1])
         cache_dir_path = prefix / cache_folder_name
         if cache_dir_path.is_dir():
-            return model_name, str(prefix.resolve())
-            
+            snapshots = cache_dir_path / "snapshots"
+            if snapshots.exists() and snapshots.is_dir():
+                candidates = []
+                for child in snapshots.iterdir():
+                    if (child / "config.json").exists():
+                        candidates.append(child)
+                if candidates:
+                    latest = max(candidates, key=lambda p: p.stat().st_mtime)
+                    return str(latest.resolve()), True
+                    
     # 5. Otherwise, check standard snapshot directories or return the path as-is
     if path.is_dir():
         snapshots = path / "snapshots"
@@ -52,9 +73,12 @@ def _resolve_model_path(model_path: str) -> Tuple[str, Optional[str]]:
                     candidates.append(child)
             if candidates:
                 latest = max(candidates, key=lambda p: p.stat().st_mtime)
-                return str(latest), None
+                return str(latest.resolve()), True
                 
-    return model_path, None
+    if path.is_dir():
+        return str(path.resolve()), True
+        
+    return model_path, False
 
 
 def load_model_and_tokenizer(
@@ -63,11 +87,10 @@ def load_model_and_tokenizer(
     device: str,
     trust_remote_code: bool = True,
 ) -> Tuple[Any, Any]:
-    resolved_path, cache_dir = _resolve_model_path(model_path)
+    resolved_path, is_local = _resolve_model_path(model_path)
     
     kwargs = {"trust_remote_code": trust_remote_code}
-    if cache_dir is not None:
-        kwargs["cache_dir"] = cache_dir
+    if is_local:
         kwargs["local_files_only"] = True
         
     tokenizer = AutoTokenizer.from_pretrained(resolved_path, **kwargs)
