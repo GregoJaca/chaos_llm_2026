@@ -68,6 +68,7 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["plots"]["dependencies"].setdefault("inverse", False)
     cfg["plots"]["dependencies"].setdefault("x_scale", ["linear"])
     cfg["plots"]["dependencies"].setdefault("y_scale", ["linear"])
+    cfg["plots"]["dependencies"].setdefault("plot_separate_magnitude", False)
 
     cfg.setdefault("survival", {})
     cfg["survival"].setdefault("enabled", False)

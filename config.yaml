@@ -29,7 +29,7 @@ attention:
 
 generation:
   max_new_tokens: 1000  # max generated tokens
-  batch_size: 32  # batched generation size
+  batch_size: 24  # batched generation size
   adaptive_stop: false  # stop at divergence vs baseline
   do_sample: false  # greedy decoding
   temperature: 0.0  # ignored for greedy

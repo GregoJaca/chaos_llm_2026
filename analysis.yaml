@@ -49,6 +49,7 @@ plots:
     per_prompt: false  # separate plot per prompt
     x_axis: [sliding_window]  # which x-axes to generate
     inverse: true  # if true, also plot 1/divergence (stability -> 0)
+    plot_separate_magnitude: true  # separate plot per magnitude
 
 survival:
   enabled: true
