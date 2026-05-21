@@ -28,8 +28,8 @@ attention:
   use_sliding_window: true 
 
 generation:
-  max_new_tokens: 1000  # max generated tokens
-  batch_size: 24  # batched generation size
+  max_new_tokens: 500 # 1000  # max generated tokens
+  batch_size: 36  # batched generation size
   adaptive_stop: false  # stop at divergence vs baseline
   do_sample: false  # greedy decoding
   temperature: 0.0  # ignored for greedy
