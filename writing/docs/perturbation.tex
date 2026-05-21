@@ -1,0 +1,55 @@
+\subsubsection{Initial Condition Generation}
+\label{subsec:init_cond_gen}
+
+To evaluate the sensitivity to initial conditions (SIC) in the model's dynamics, we generate an ensemble of trajectories starting from close starting points in the embedding space. We begin with a single prompt, tokenize it, and retrieve its initial embedding tensor $\mathbf{E}_0 \in \mathbb{R}^{L \times D}$, where $L$ is the prompt length and $D$ is the hidden dimension. Let $M = L \times D$ denote the total dimension of the flattened embedding space. 
+
+Instead of adding isotropic random noise, we generate a set of $N$ perturbed initial conditions $\{\mathbf{E}_i\}_{i=1}^N$ located at the vertices of a regular simplex of radius $r$ centered at $\mathbf{E}_0$ within a selected $N$-dimensional subspace. This regular simplex design ensures that all perturbations have an identical Euclidean norm of $r$, are mutually equidistant, and average to zero (i.e., their centroid is exactly $\mathbf{E}_0$). This avoids directional bias in the sensitivity analysis.
+
+To construct the simplex, we first generate its vertices in an $N$-dimensional space by projecting the standard basis vectors:
+\begin{equation}
+\mathbf{v}'_i = \mathbf{e}_i - \frac{1}{N}\mathbf{1}, \quad i \in \{1, \dots, N\}
+\end{equation}
+where $\mathbf{e}_i \in \mathbb{R}^N$ is the $i$-th standard basis vector and $\mathbf{1} \in \mathbb{R}^N$ is the vector of all ones. The vertices are then normalized to unit length:
+\begin{equation}
+\mathbf{v}_i = \frac{\mathbf{v}'_i}{\|\mathbf{v}'_i\|_2}
+\end{equation}
+
+Next, we select a subset of $N$ indices $S = \{s_1, \dots, s_N\} \subset \{1, \dots, M\}$ from the flattened embedding tensor, either using the first $N$ coordinates or choosing them randomly without replacement. For each vertex $\mathbf{v}_i$, we construct a perturbation vector $\Delta_i \in \mathbb{R}^M$ defined by:
+\begin{equation}
+(\Delta_i)_j = \begin{cases} 
+r (\mathbf{v}_i)_k & \text{if } j = s_k \in S \\
+0 & \text{otherwise}
+\end{cases}
+\end{equation}
+The perturbed initial embedding tensors are then obtained by adding the reshaped perturbation vectors:
+\begin{equation}
+\mathbf{E}_i = \mathbf{E}_0 + \text{reshape}(\Delta_i, L \times D)
+\end{equation}
+We then feed each perturbed initial condition into the model to generate the corresponding trajectory. The complete procedure is detailed in Algorithm~\ref{alg:simplex_perturbation}.
+
+\begin{algorithm}[H]
+\caption{Regular Simplex Initial Condition Generation}
+\label{alg:simplex_perturbation}
+\begin{algorithmic}[1]
+\REQUIRE Base embedding $\mathbf{E}_0 \in \mathbb{R}^{L \times D}$, number of perturbed states $N$, perturbation radius $r$, subspace selection mode
+\ENSURE Perturbed initial embeddings $\{\mathbf{E}_1, \dots, \mathbf{E}_N\}$
+\STATE $M \leftarrow L \times D$
+\STATE Construct projection matrix $\mathbf{V}' \leftarrow \mathbf{I}_N - \frac{1}{N}\mathbf{J}_N$ \COMMENT{$\mathbf{J}_N$ is the $N \times N$ all-ones matrix}
+\FOR{$i = 1$ \TO $N$}
+    \STATE $\mathbf{v}_i \leftarrow \mathbf{V}'_i / \|\mathbf{V}'_i\|_2$ \COMMENT{Normalize vertex to unit length}
+\ENDFOR
+\IF{mode is ``first''}
+    \STATE $S \leftarrow \{1, \dots, N\}$
+\ELSE
+    \STATE $S \leftarrow \text{sample } N \text{ unique indices from } \{1, \dots, M\} \text{ without replacement}$
+\ENDIF
+\FOR{$i = 1$ \TO $N$}
+    \STATE Initialize $\Delta_i \in \mathbb{R}^M$ with all zeros
+    \FOR{$k = 1$ \TO $N$}
+        \STATE $\Delta_{i, s_k} \leftarrow r \cdot v_{i, k}$
+    \ENDFOR
+    \STATE $\mathbf{E}_i \leftarrow \mathbf{E}_0 + \text{reshape}(\Delta_i, L \times D)$
+\ENDFOR
+\RETURN $\{\mathbf{E}_1, \dots, \mathbf{E}_N\}$
+\end{algorithmic}
+\end{algorithm}
