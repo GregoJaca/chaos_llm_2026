@@ -14,15 +14,15 @@ prompts:
   encoding: utf-8
 
 perturbation:
-  num_conditions: 150  # number of equidistant initial conditions
-  magnitude_list: [0.00002]  # perturbation magnitudes
+  num_conditions: 100  # number of equidistant initial conditions
+  magnitude_list: [0.000005, 0]  # perturbation magnitudes
   apply_to_first_n_tokens: null  # set an int to restrict perturbations to first N tokens
   subspace_mode: random  # random | first
   subspace_seed: 69  # RNG seed for subspace selection
 
 attention:
   # sliding_window_list: [30, 50, 65]  # XXX for 0.0003
-  sliding_window_list: [5, 10, 20, 35, 50, 65, 80, 150, 1000]  # attention window sizes
+  sliding_window_list: [10, 25, 50, 65, 80, 150, 1000]  # attention window sizes
   # sliding_window_list: [4, 8, 9, 70]  # attention window sizes
   use_sliding_window: true 
 
