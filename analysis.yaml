@@ -9,14 +9,14 @@ prompt_filter:
 
 divergence:
   any_pair: true  # first index where any tokens differ across sequences
-  baseline_per_sequence: true  # divergence per sequence vs baseline
+  baseline_per_sequence: false  # divergence per sequence vs baseline
   pairwise: true  # divergence for every pair of sequences
   pairwise_max_pairs: null  # limit number of pairs (deterministic order)
   exclude_baseline: true  # ignore baseline for any baseline-dependent metrics
   include_baseline_in_any_pair: false  # include baseline in any_pair set
   index_reference: generated  # generated | absolute
   no_divergence_value: -1  # value when no divergence found
-  exclude_no_divergence_from_plots: true  # drop -1 values in plots
+  exclude_no_divergence_from_plots: false  # drop -1 values in plots
   primary_metric: pairwise  # any_pair | baseline_per_sequence | pairwise
   stable_divergence_value: .inf  # auto | number | null
   exclude_prompt: true  # if true, divergence index is relative to generation start
@@ -30,7 +30,7 @@ plots:
   dpi: 300  # figure dpi
   bins: 100  # histogram bins
   histograms:
-    enabled: true
+    enabled: false
     per_run: false  # per run histograms
     per_prompt: false  # aggregated per prompt histograms
   title_prefix: "Divergence"  # plot title prefix
@@ -41,18 +41,20 @@ plots:
   label_no_divergence: "no divergence"
   dependencies:
     enabled: true  # generate parameter-dependence plots
-    metrics: [median]  # which metrics to plot
+    metrics: [median, harmonic_mean]  # which metrics to plot
     error_bars: none  # std | var | fan | none
     fan_quantiles: [0.25, 0.75] # quantiles for the fan plot
-    x_scale: [linear, log] # linear | log
+    x_scale: [log] # linear | log
     y_scale: [linear]
     per_prompt: false  # separate plot per prompt
     x_axis: [sliding_window]  # which x-axes to generate
-    inverse: true  # if true, also plot 1/divergence (stability -> 0)
+    inverse: false  # if true, also plot 1/divergence (stability -> 0)
     plot_separate_magnitude: true  # separate plot per magnitude
+    split_y_for_stable: true  # use discontinuous/split y-axis for stable points
+    include_stable_in_stats: true  # include stable sequences in aggregation stats
 
 survival:
-  enabled: true
+  enabled: false
   plot_individual: false
   plot_together: true
   yscale: linear  # linear | log

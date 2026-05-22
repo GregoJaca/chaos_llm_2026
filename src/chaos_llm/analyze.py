@@ -212,23 +212,49 @@ def main() -> None:
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
 
             if cfg["divergence"]["primary_metric"] == "baseline_per_sequence":
-                if filtered.size:
-                    # Calculate all quantiles needed for summary and fans
+                include_stable = cfg["plots"]["dependencies"].get("include_stable_in_stats", False)
+                stable_val = cfg["divergence"].get("stable_divergence_value")
+                if stable_val == "auto":
+                    max_gen = int(meta["generation"]["max_new_tokens"])
+                    if cfg["divergence"]["index_reference"] == "absolute":
+                        stable_val = float(prompt_len + max_gen)
+                    else:
+                        stable_val = float(max_gen)
+                elif stable_val is None:
+                    stable_val = np.inf
+                else:
+                    stable_val = float(stable_val)
+
+                if include_stable:
+                    stat_vals = baseline_divergence.astype(float)
+                    stat_vals[baseline_divergence == no_div] = stable_val
+                else:
+                    stat_vals = baseline_divergence[baseline_divergence != no_div].astype(float)
+
+                if stat_vals.size:
                     needed_q = set(cfg["summary"]["quantiles"]) | set(cfg["plots"]["dependencies"].get("fan_quantiles", []))
+                    has_inf = np.any(np.isinf(stat_vals))
+                    val_mean = float(stat_vals.mean()) if not has_inf else float('inf')
+                    val_std = float(stat_vals.std(ddof=1)) if (stat_vals.size > 1 and not has_inf) else 0.0
+                    val_var = float(stat_vals.var(ddof=1)) if (stat_vals.size > 1 and not has_inf) else 0.0
+                    val_harmonic = _harmonic_mean(stat_vals)
+
                     stats_entry = {
                         "prompt": prompt_name,
                         "sliding_window": _to_float(window),
                         "perturbation_magnitude": _to_float(mag),
                         "metric": "baseline",
-                        "mean": float(filtered.mean()),
-                        "median": float(np.median(filtered)),
-                        "mode": _mode(filtered),
-                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
-                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                        "mean": val_mean,
+                        "median": float(np.median(stat_vals)),
+                        "harmonic_mean": val_harmonic,
+                        "mode": _mode(stat_vals),
+                        "std": val_std,
+                        "var": val_var,
                     }
                     for q in needed_q:
-                        stats_entry[f"q{int(q*100):02d}"] = float(np.quantile(filtered, q))
+                        stats_entry[f"q{int(q*100):02d}"] = float(np.quantile(stat_vals, q))
                     per_run_stats.append(stats_entry)
+
                     if cfg["plots"]["dependencies"].get("inverse"):
                         full_vals = baseline_divergence.astype(float)
                         no_div = cfg["divergence"]["no_divergence_value"]
@@ -244,6 +270,7 @@ def main() -> None:
                             "metric": "baseline_inverse",
                             "mean": float(inv_vals.mean()),
                             "median": float(np.median(inv_vals)),
+                            "harmonic_mean": _harmonic_mean(inv_vals),
                             "mode": _mode(inv_vals),
                             "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
                             "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
@@ -268,13 +295,12 @@ def main() -> None:
                             "metric": "baseline",
                             "mean": float(stable_val),
                             "median": float(stable_val),
+                            "harmonic_mean": float(stable_val),
                             "mode": float(stable_val),
                             "std": 0.0,
                             "var": 0.0,
                         })
                         if cfg["plots"]["dependencies"].get("inverse"):
-                            # If stable_val is None or auto, inverse is 0. 
-                            # If stable_val is a number, inverse is 1/stable_val (potentially shifted).
                             shift = 1.0 if cfg["divergence"]["index_reference"] != "absolute" else 0.0
                             stable_denom = float(stable_val) + shift
                             if stable_denom == 0.0:
@@ -288,6 +314,7 @@ def main() -> None:
                                 "metric": "baseline_inverse",
                                 "mean": inv_mean,
                                 "median": inv_mean,
+                                "harmonic_mean": inv_mean,
                                 "mode": inv_mean,
                                 "std": 0.0,
                                 "var": 0.0,
@@ -318,24 +345,50 @@ def main() -> None:
 
             if cfg["divergence"]["primary_metric"] == "pairwise":
                 per_prompt_values.setdefault(prompt_name, []).extend(filtered.tolist())
-                if filtered.size:
+                include_stable = cfg["plots"]["dependencies"].get("include_stable_in_stats", False)
+                stable_val = cfg["divergence"].get("stable_divergence_value")
+                if stable_val == "auto":
+                    max_gen = int(meta["generation"]["max_new_tokens"])
+                    if cfg["divergence"]["index_reference"] == "absolute":
+                        stable_val = float(prompt_len + max_gen)
+                    else:
+                        stable_val = float(max_gen)
+                elif stable_val is None:
+                    stable_val = np.inf
+                else:
+                    stable_val = float(stable_val)
+
+                if include_stable:
+                    stat_vals = pairwise_divergence.astype(float)
+                    stat_vals[pairwise_divergence == no_div] = stable_val
+                else:
+                    stat_vals = pairwise_divergence[pairwise_divergence != no_div].astype(float)
+
+                if stat_vals.size:
                     needed_q = set(cfg["summary"]["quantiles"]) | set(cfg["plots"]["dependencies"].get("fan_quantiles", []))
+                    has_inf = np.any(np.isinf(stat_vals))
+                    val_mean = float(stat_vals.mean()) if not has_inf else float('inf')
+                    val_std = float(stat_vals.std(ddof=1)) if (stat_vals.size > 1 and not has_inf) else 0.0
+                    val_var = float(stat_vals.var(ddof=1)) if (stat_vals.size > 1 and not has_inf) else 0.0
+                    val_harmonic = _harmonic_mean(stat_vals)
+
                     stats_entry = {
                         "prompt": prompt_name,
                         "sliding_window": _to_float(window),
                         "perturbation_magnitude": _to_float(mag),
                         "metric": "pairwise",
-                        "mean": float(filtered.mean()),
-                        "median": float(np.median(filtered)),
-                        "mode": _mode(filtered),
-                        "std": float(filtered.std(ddof=1)) if filtered.size > 1 else 0.0,
-                        "var": float(filtered.var(ddof=1)) if filtered.size > 1 else 0.0,
+                        "mean": val_mean,
+                        "median": float(np.median(stat_vals)),
+                        "harmonic_mean": val_harmonic,
+                        "mode": _mode(stat_vals),
+                        "std": val_std,
+                        "var": val_var,
                     }
                     for q in needed_q:
-                        stats_entry[f"q{int(q*100):02d}"] = float(np.quantile(filtered, q))
+                        stats_entry[f"q{int(q*100):02d}"] = float(np.quantile(stat_vals, q))
                     per_run_stats.append(stats_entry)
+
                     if cfg["plots"]["dependencies"].get("inverse"):
-                        # Use inf for stable runs in the inverse calculation
                         full_vals = values.astype(float)
                         full_vals[values == no_div] = np.inf
                         shift = 1.0 if cfg["divergence"]["index_reference"] != "absolute" else 0.0
@@ -349,6 +402,7 @@ def main() -> None:
                             "metric": "pairwise_inverse",
                             "mean": float(inv_vals.mean()),
                             "median": float(np.median(inv_vals)),
+                            "harmonic_mean": _harmonic_mean(inv_vals),
                             "mode": _mode(inv_vals),
                             "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
                             "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
@@ -373,6 +427,7 @@ def main() -> None:
                             "metric": "pairwise",
                             "mean": float(stable_val),
                             "median": float(stable_val),
+                            "harmonic_mean": float(stable_val),
                             "mode": float(stable_val),
                             "std": 0.0,
                             "var": 0.0,
@@ -391,6 +446,7 @@ def main() -> None:
                                 "metric": "pairwise_inverse",
                                 "mean": inv_mean,
                                 "median": inv_mean,
+                                "harmonic_mean": inv_mean,
                                 "mode": inv_mean,
                                 "std": 0.0,
                                 "var": 0.0,
@@ -404,6 +460,7 @@ def main() -> None:
                 "metric": "any_pair",
                 "mean": float(any_pair_value),
                 "median": float(any_pair_value),
+                "harmonic_mean": float(any_pair_value),
                 "mode": float(any_pair_value),
                 "std": 0.0,
                 "var": 0.0,
@@ -645,10 +702,17 @@ def main() -> None:
                             mag_loops = magnitudes if separate_mag else [None]
                             
                             for mag_val in mag_loops:
-                                series = {}
                                 for metric in metrics:
+                                    series = {}
                                     use_error = (metric == "mean" and error_bars in ("std", "var")) or (metric == "median" and error_bars == "fan")
-                                    linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
+                                    if metric == "mean":
+                                        linestyle = "-"
+                                    elif metric == "median":
+                                        linestyle = "--"
+                                    elif metric == "harmonic_mean":
+                                        linestyle = "-."
+                                    else:
+                                        linestyle = ":"
                                     
                                     filter_key = "perturbation_magnitude" if separate_mag else None
                                     filter_val = mag_val if separate_mag else None
@@ -667,25 +731,26 @@ def main() -> None:
                                             is_fan=(error_bars == "fan")
                                         )
                                     )
-                                
-                                scale_suffix = f"_{x_scale}_{y_scale}"
-                                mag_suffix = f"_mag_{mag_val}" if separate_mag else ""
-                                mag_title_part = f" (mag={mag_val})" if separate_mag else ""
-                                
-                                title = f"{cfg['plots']['title_prefix']} (window dependence){suffix}{filename_suffix}{mag_title_part} [{x_scale}/{y_scale}]"
-                                output_base = os.path.join(output_dir, "figures", f"dep_window{mag_suffix}{suffix}{filename_suffix}{scale_suffix}")
-                                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                                plot_dependency_curves(
-                                    series=series,
-                                    title=title,
-                                    xlabel="sliding window",
-                                    ylabel=ylabel,
-                                    output_paths=output_paths,
-                                    grid=bool(cfg["plots"]["grid"]),
-                                    color_map=str(cfg["plots"]["color_map"]),
-                                    xscale=x_scale,
-                                    yscale=y_scale,
-                                )
+                                    
+                                    scale_suffix = f"_{x_scale}_{y_scale}"
+                                    mag_suffix = f"_mag_{mag_val}" if separate_mag else ""
+                                    mag_title_part = f" (mag={mag_val})" if separate_mag else ""
+                                    
+                                    title = f"{cfg['plots']['title_prefix']} ({metric}) (window dependence){suffix}{filename_suffix}{mag_title_part} [{x_scale}/{y_scale}]"
+                                    output_base = os.path.join(output_dir, "figures", f"dep_window_{metric}{mag_suffix}{suffix}{filename_suffix}{scale_suffix}")
+                                    output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                                    plot_dependency_curves(
+                                        series=series,
+                                        title=title,
+                                        xlabel="sliding window",
+                                        ylabel=ylabel,
+                                        output_paths=output_paths,
+                                        grid=bool(cfg["plots"]["grid"]),
+                                        color_map=str(cfg["plots"]["color_map"]),
+                                        xscale=x_scale,
+                                        yscale=y_scale,
+                                        split_y_for_stable=bool(dep_cfg.get("split_y_for_stable", False)),
+                                    )
 
             if "perturbation_magnitude" in x_axes:
                 for mode_name, ylabel, filename_suffix in [
@@ -697,10 +762,17 @@ def main() -> None:
                     
                     for x_scale in x_scales:
                         for y_scale in y_scales:
-                            series = {}
                             for metric in metrics:
+                                series = {}
                                 use_error = (metric == "mean" and error_bars in ("std", "var")) or (metric == "median" and error_bars == "fan")
-                                linestyle = "-" if metric == "mean" else ("--" if metric == "median" else ":")
+                                if metric == "mean":
+                                    linestyle = "-"
+                                elif metric == "median":
+                                    linestyle = "--"
+                                elif metric == "harmonic_mean":
+                                    linestyle = "-."
+                                else:
+                                    linestyle = ":"
                                 series.update(
                                     build_series(
                                         "perturbation_magnitude",
@@ -713,22 +785,23 @@ def main() -> None:
                                         is_fan=(error_bars == "fan")
                                     )
                                 )
-                            
-                            scale_suffix = f"_{x_scale}_{y_scale}"
-                            title = f"{cfg['plots']['title_prefix']} (magnitude dependence){suffix}{filename_suffix} [{x_scale}/{y_scale}]"
-                            output_base = os.path.join(output_dir, "figures", f"dep_magnitude{suffix}{filename_suffix}{scale_suffix}")
-                            output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
-                            plot_dependency_curves(
-                                series=series,
-                                title=title,
-                                xlabel="perturbation magnitude",
-                                ylabel=ylabel,
-                                output_paths=output_paths,
-                                grid=bool(cfg["plots"]["grid"]),
-                                color_map=str(cfg["plots"]["color_map"]),
-                                xscale=x_scale,
-                                yscale=y_scale,
-                            )
+                                
+                                scale_suffix = f"_{x_scale}_{y_scale}"
+                                title = f"{cfg['plots']['title_prefix']} ({metric}) (magnitude dependence){suffix}{filename_suffix} [{x_scale}/{y_scale}]"
+                                output_base = os.path.join(output_dir, "figures", f"dep_magnitude_{metric}{suffix}{filename_suffix}{scale_suffix}")
+                                output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                                plot_dependency_curves(
+                                    series=series,
+                                    title=title,
+                                    xlabel="perturbation magnitude",
+                                    ylabel=ylabel,
+                                    output_paths=output_paths,
+                                    grid=bool(cfg["plots"]["grid"]),
+                                    color_map=str(cfg["plots"]["color_map"]),
+                                    xscale=x_scale,
+                                    yscale=y_scale,
+                                    split_y_for_stable=bool(dep_cfg.get("split_y_for_stable", False)),
+                                )
 
 
     # Combined survival plots
