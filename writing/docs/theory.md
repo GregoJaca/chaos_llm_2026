@@ -193,4 +193,28 @@ Lipschitz constant $L$ is the supremum (the absolute global maximum) of the spec
 
 
 
+------------------
+power law perturbation
 
+
+
+#### A. Why the Distance scales as a Power Law of $r$ with Exponent 1
+In the linear regime (where $r$ is small), a perturbation $\delta \mathbf{x}_0$ propagates to layer $\ell$ through the linear tangent map (the product of layer Jacobians):
+$$\delta \mathbf{x}_{\ell} \approx \mathbf{T}_{0 \to \ell} \delta \mathbf{x}_0$$
+Since your initial simplex perturbation has a radius of $r$ ($\delta \mathbf{x}_0 = r \hat{\mathbf{u}}$ where $\hat{\mathbf{u}}$ is a unit vector):
+$$\|\delta \mathbf{x}_{\ell}\|_2 \approx r \|\mathbf{T}_{0 \to \ell} \hat{\mathbf{u}}\|_2 = A(\ell) \cdot r$$
+Thus, the distance at any layer $\ell$ is strictly proportional to $r^1$. On a log-log scale:
+$$\log d(\ell) = \log A(\ell) + 1 \cdot \log r$$
+This is a straight line of slope 1. It is a fundamental property of **linearized dynamical systems**.
+
+
+BUT BUT BUT this is not the jacobian of MLP, etc.... this is the jacobian of the whole layer
+
+
+#### B. Why the Power Law breaks down at small $r$ (the floor at $10^{-5}$ to $10^{-4}$)
+
+FP16 has $10$ bits of mantissa.
+For values in the range $[1.0, 2.0]$, the spacing (machine epsilon) is: $$\Delta x = 2^{-10} \approx 9.77 \times 10^{-4}$$
+For values in the range $[0.5, 1.0]$, the exponent drops by 1, so the spacing is exactly half of that: $$\Delta x = 2^{-11} \approx 4.88 \times 10^{-4}$$
+
+Since the activation values in the model's hidden states and embeddings are typically concentrated between $0.5$ and $1.0$, the minimum possible step size the hardware can represent is exactly $4.88 \times 10^{-4}$ (which matches your $5 \times 10^{-4}$ floor perfectly)!
