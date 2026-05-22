@@ -14,22 +14,23 @@ prompts:
   encoding: utf-8
 
 perturbation:
-  num_conditions: 100  # number of equidistant initial conditions
+  num_conditions: 1000  # number of equidistant initial conditions
   magnitude_list: [0.0001] # [0.00002]  # perturbation magnitudes
   apply_to_first_n_tokens: null  # set an int to restrict perturbations to first N tokens
   subspace_mode: random  # random | first
-  subspace_seed: 69  # RNG seed for subspace selection
+  subspace_seed: 42  # RNG seed for subspace selection
 
 attention:
 
-  sliding_window_list: [40, 45, 55, 60, 70, 85] 
+  sliding_window_list: [10, 30, 40, 45, 50, 55, 60, 70, 85, 100, 200, 1000] 
+  # sliding_window_list: [10, 20, 35, 40, 45, 50, 55, 60, 70, 85, 100, 200, 500, 1000] 
   # sliding_window_list: [10, 25, 50, 65, 80, 150, 1000] 
   # sliding_window_list: [4, 8, 9, 70]  # attention window sizes
   use_sliding_window: true 
 
 generation:
   max_new_tokens: 1000 # 1000  # max generated tokens
-  batch_size: 32  # batched generation size
+  batch_size: 36  # batched generation size
   adaptive_stop: false  # stop at divergence vs baseline
   do_sample: false  # greedy decoding
   temperature: 0.0  # ignored for greedy
