@@ -31,7 +31,7 @@ plots:
   bins: 100  # histogram bins
   histograms:
     enabled: true
-    per_run: true  # per run histograms
+    per_run: false  # per run histograms
     per_prompt: false  # aggregated per prompt histograms
   title_prefix: "Divergence"  # plot title prefix
   grid: false  # background grid
