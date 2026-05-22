@@ -14,7 +14,7 @@ prompts:
   encoding: utf-8
 
 perturbation:
-  num_conditions: 100  # number of equidistant initial conditions
+  num_conditions: 150  # number of equidistant initial conditions
   magnitude_list: [0.00002]  # perturbation magnitudes
   apply_to_first_n_tokens: null  # set an int to restrict perturbations to first N tokens
   subspace_mode: random  # random | first
