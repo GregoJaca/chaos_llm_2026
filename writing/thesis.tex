@@ -3,9 +3,9 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc} % Use T1 encoding
 \usepackage{mathptmx} % Use Times New Roman font
-\usepackage[margin=2cm]{geometry} % Set margins to 2 cm
+\usepackage[margin=3cm]{geometry} % Set margins to 2 cm
 \usepackage{setspace} % For line spacing
-\setstretch{1.4} % Set line spacing to 1.4
+\setstretch{1.2} % Set line spacing to 1.4
 \usepackage{icomma}
 \usepackage{xcolor}
 \usepackage{bm}
@@ -234,13 +234,13 @@ The visual patterns in a RP provide an insight into the type of dynamics of the 
 \begin{figure}[H]
     \centering
     % Row 1
-    \begin{subfigure}{0.48\linewidth}
+    \begin{subfigure}{0.3\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures_pdf/RP/compare_systems/sine_rp.pdf}
         \caption{}
     \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.48\linewidth}
+    \quad
+    \begin{subfigure}{0.3\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures_pdf/RP/compare_systems/lorenz_36_rp.pdf}
         \caption{}
@@ -249,13 +249,13 @@ The visual patterns in a RP provide an insight into the type of dynamics of the 
     \vspace{2pt} % Vertical gap between rows
 
     % Row 2
-    \begin{subfigure}{0.48\linewidth}
+    \begin{subfigure}{0.3\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures_pdf/RP/compare_systems/white_noise_rp.pdf}
         \caption{}
     \end{subfigure}
-    \hfill
-    \begin{subfigure}{0.48\linewidth}
+    \quad
+    \begin{subfigure}{0.3\linewidth}
         \centering
         \includegraphics[width=\linewidth]{figures_pdf/RP/compare_systems/brownian_rp_0.pdf}
         \caption{}
@@ -517,22 +517,22 @@ We generate a set of $N$ perturbed initial conditions $\{\mathbf{E}_i\}_{i=1}^N$
 We also calculated the divergence using other distance metrics. We see that the trajectories remain extremely close for several steps until they suddenly diverge. In the text, the first words are the same until, at the diverging step, the words turn different and the sentences too, while the general topic remains the same. So the initial perturbation persists in the hidden states, but does not affect token selection until a certain step, where the sampled token by two trajectories is different, which then leads them to quickly diverge.
 The explanation for this is that at each step, the most probable next token is selected. If the perturbation is not large enough, at a given step it will not change the selected token, which keeps both trajectories close. In the text space, and in the sentence embeddings, the perturbation will not be detectable at all, while in the hidden state space, it will remain. After some steps, it might occur that the perturbation, which propagates and possibly amplifies due to the non-linear coupling, induces a different next token to be selected. This causes a big discrete difference with the non-disturbed trajectory, which then strongly influences the next token prediction. This causes trajectories to rapidly diverge once the first different token is predicted.
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.225\textwidth}
+    \begin{subfigure}[t]{0.4\textwidth}
         \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/cross_corr_pearson_0_2_window_size_16.pdf}
         \caption{Cross-correlation dissimilarity}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.225\textwidth}
+    \end{subfigure}\quad
+    \begin{subfigure}[t]{0.4\textwidth}
         \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/dtw_timeseries_0_2_window_size_16.pdf}
         \caption{DTW}
     \end{subfigure}
     \\[0.5em]
-    \begin{subfigure}[t]{0.225\textwidth}
+    \begin{subfigure}[t]{0.4\textwidth}
         \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/frechet_timeseries_0_2_window_size_16.pdf}
         \caption{Fréchet}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.225\textwidth}
+    \end{subfigure}\quad
+    \begin{subfigure}[t]{0.4\textwidth}
         \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/hausdorff_timeseries_0_2_window_size_16.pdf}
         \caption{Hausdorff}
     \end{subfigure}
@@ -549,22 +549,22 @@ The explanation for this is that at each step, the most probable next token is s
 
 Plotting the RPs for trajectories coming from different prompts shows a wide variety of results. Strong similarities can be seen between the RP from the Lorenz \cite{DeterministicNonperiodicFlow} system as seen in Fig. \ref{fig:rp_examples} and some of the RPs obtained from the LLMs hidden states. 
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.225\textwidth}
+    \begin{subfigure}[t]{0.4\textwidth}
         \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_first_rr_0.03.pdf}
         \caption{Prompt 1, first layer}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.225\textwidth}
+    \end{subfigure}\quad
+    \begin{subfigure}[t]{0.4\textwidth}
         \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_last_rr_0.03.pdf}
         \caption{Prompt 1, last layer}
     \end{subfigure}
     \\[0.5em]
-    \begin{subfigure}[t]{0.225\textwidth}
+    \begin{subfigure}[t]{0.4\textwidth}
         \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_first_rr_0.03.pdf}
         \caption{Prompt 2, first layer}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.225\textwidth}
+    \end{subfigure}\quad
+    \begin{subfigure}[t]{0.4\textwidth}
         \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_last_rr_0.03.pdf}
         \caption{Prompt 2, last layer}
     \end{subfigure}
@@ -576,25 +576,25 @@ Plotting the RPs for trajectories coming from different prompts shows a wide var
 % G: not always at the last layer, but also middle layers are quite chaotic
 Chaotic features are more strongly present at the last layers of the model as showed in the RP \ref{fig:rp_comparison_layers} and pointwise dimension \ref{fig:dim_first_last}. This is due to the progressive addition of more nonlinearity and coupling at each layer. 
 
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
-    \begin{subfigure}[t]{0.225\textwidth}
+    \begin{subfigure}[t]{0.4\textwidth}
         \centering
         \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_2_rr_0.05.pdf}
         \caption{Prompt a}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.225\textwidth}
+    \end{subfigure}\quad
+    \begin{subfigure}[t]{0.4\textwidth}
         \centering
         \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_3_rr_0.05.pdf}
         \caption{Prompt b}
     \end{subfigure}
     \\[0.5em]
-    \begin{subfigure}[t]{0.225\textwidth}
+    \begin{subfigure}[t]{0.4\textwidth}
         \centering
         \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_0_rr_0.05.pdf}
         \caption{Prompt c}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.225\textwidth}
+    \end{subfigure}\quad
+    \begin{subfigure}[t]{0.4\textwidth}
         \centering
         \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_6_rr_0.05.pdf}
         \caption{Prompt d}
@@ -617,13 +617,13 @@ Figure \ref{fig:dim_first_last} shows the Correlation Sum for a random set of ve
         \centering
         \includegraphics[width=\linewidth]{plots/dimension/random.png}
         \caption{Random}
-    \end{subfigure}\hfill
+    \end{subfigure}
     \centering
     \begin{subfigure}[b]{0.32\textwidth}
         \centering
         \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first.png}
         \caption{First layer}
-    \end{subfigure}\hfill
+    \end{subfigure}
     \begin{subfigure}[b]{0.32\textwidth}
         \centering
         \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last.png}
@@ -649,13 +649,13 @@ All of the cases analyzed showed two main peaks at values close to 0.6 and 1, fo
         \centering
         \includegraphics[width=\linewidth]{plots/dimension/random_dist.png}
         \caption{Random}
-    \end{subfigure}\hfill
+    \end{subfigure}
     \centering
     \begin{subfigure}[b]{0.32\linewidth}
         \centering
         \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first_dist.png}
         \caption{First layer}
-    \end{subfigure}\hfill
+    \end{subfigure}
     \begin{subfigure}[b]{0.32\linewidth}
         \centering
         \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last_dist.png}
@@ -679,13 +679,13 @@ The first layer hidden states show more resemblance with the randomly generated 
         \centering
         \includegraphics[width=\linewidth]{plots/dimension/temperature06_childhood/cosine_sim_first_first_T06.png}
         \caption{First layer}
-    \end{subfigure}\hfill
+    \end{subfigure}\quad
     \centering
     \begin{subfigure}[b]{0.32\textwidth}
         \centering
         \includegraphics[width=\linewidth]{plots/dimension/temperature06_childhood/cosine_sim_last_last_T06.png}
         \caption{Last layer}
-    \end{subfigure}\hfill
+    \end{subfigure}\quad
 
     \caption{Correlation dimension plots for the first and last layers of the LLM using probabilistic sampling with $T = 0.6$.}
     \label{fig:dim_first_last_temperature}
@@ -841,34 +841,34 @@ It can also be seen how the use of sentence embedders helps identify determinist
     \begin{subfigure}[b]{0.32\textwidth}
         \centering
         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_last_layer/hausdorff_timeseries_0_2_window_size_1.png}
-        \caption{Hidden state, window size 1}
+        \caption{window size 1}
     \end{subfigure}
     \begin{subfigure}[b]{0.32\textwidth}
         \centering
         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_last_layer/hausdorff_timeseries_0_2_window_size_8.png}
-        \caption{Hidden state, window size 8}
+        \caption{window size 8}
     \end{subfigure}
     \begin{subfigure}[b]{0.32\textwidth}
         \centering
         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_last_layer/hausdorff_timeseries_0_2_window_size_16.png}
-        \caption{Hidden state, window size 16}
+        \caption{window size 16}
     \end{subfigure}
     % Second row: Sentence embedding space
     \\[0.5em]
     \begin{subfigure}[b]{0.32\textwidth}
         \centering
         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_2_window_size_1.png}
-        \caption{Embedding, window size 1}
+        \caption{window size 1}
     \end{subfigure}
     \begin{subfigure}[b]{0.32\textwidth}
         \centering
         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_2_window_size_8.png}
-        \caption{Embedding, window size 8}
+        \caption{window size 8}
     \end{subfigure}
     \begin{subfigure}[b]{0.32\textwidth}
         \centering
         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_2_window_size_16.png}
-        \caption{Embedding, window size 16}
+        \caption{window size 16}
     \end{subfigure}
     \caption{Divergence between two trajectories using Hausdorff distance, for different sliding window sizes. Top row: hidden state space. Bottom row: sentence embedding space.}
     \label{fig:sliding_window_compare}
@@ -938,7 +938,7 @@ The reason we did this is because of the large number of data points available (
         \centering
         \includegraphics[width=\linewidth]{plots/dimension/vocab/vocab_full.png}
         % \caption{Correlation Dimension = 1.2}
-    \end{subfigure}\hfill
+    \end{subfigure}\quad
     % \begin{subfigure}[b]{0.48\linewidth}
     %     \centering
     %     \includegraphics[width=\linewidth]{plots/dimension/vocab/vocab_last.png}
