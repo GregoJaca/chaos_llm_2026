@@ -27,6 +27,9 @@
 \usepackage{amsmath} % for the cases environment
 \usepackage{amsfonts} % additional math symbols (if needed)
 \usepackage{graphicx}
+\usepackage{algorithm, algorithmic}
+
+% \usepackage{algpseudocode}
 
 \usepackage[style=numeric,sorting=none,maxbibnames=3,minbibnames=1]{biblatex}
 \addbibresource{lit.bib}
@@ -103,7 +106,7 @@ BME Elméleti Fizika Tanszék
 \\[6cm]
 \includegraphics[scale=0.7]{plots/bme.png}\\[0.2cm]
 \large{\textbf{BME}}\\
-\large{\textbf{2025}}
+\large{\textbf{2026}}
 \vfill
 \end{titlepage}
 
@@ -218,8 +221,7 @@ In general, a dynamical system evolving in an $n$-dimensional phase space posses
 %: if $\lambda_1 > 0$, trajectories diverge in at least one direction, indicating chaos. The remaining exponents characterize contraction (if $\lambda_i < 0$) or neutral behavior (if $\lambda_i = 0$) along other directions. This spectrum reveals that chaotic systems simultaneously exhibit both expansion and contraction in different directions, leading to the formation of strange attractors with fractal structure.
 % Differently put, systems with $\lambda < 0$ converge to stable equilibria, $\lambda = 0$ corresponds to periodic or quasiperiodic motion, and $\lambda > 0$ denotes chaos. This exponential separation is the mathematical origin of the “butterfly effect”.
 
-Despite their practical unpredictability, often the trajectories of dissipative chaotic systems are not random; frequently they are confined to a bounded, lower dimensional subset of phase space, a \textbf{strange attractor}, towards which all close trajectories get asymptotically attracted but without realizing a periodic motion \footnote{In general, if a map contracts volumes in phase space it is called dissipative. A physical system with friction is an example. In contrast, conservative systems cannot have strange attractors because attractors attract all trajectories in a small open set containing it, which contracts the phase space volume.}.
-\footnote{The 'strangeness' partly comes from the fact that trajectories diverge exponentially but remain confined in a zero-volume subset of the phase space. The explanation for this is that they diverge in the direction parallel to the attractor, with positive lyapunov exponent, and get attracted in the direction orthogonal to it, with negaitve lyapunov exponent.}.
+Despite their practical unpredictability, often the trajectories of dissipative chaotic systems are not random; frequently they are confined to a bounded, lower dimensional subset of phase space, a \textbf{strange attractor}, towards which all close trajectories get asymptotically attracted but without realizing a periodic motion \footnote{In general, if a map contracts volumes in phase space it is called dissipative. A physical system with friction is an example. In contrast, conservative systems cannot have strange attractors because attractors attract all trajectories in a small open set containing it, which contracts the phase space volume.}\footnote{The 'strangeness' partly comes from the fact that trajectories diverge exponentially but remain confined in a zero-volume subset of the phase space. The explanation for this is that they diverge in the direction parallel to the attractor, with positive lyapunov exponent, and get attracted in the direction orthogonal to it, with negaitve lyapunov exponent.}.
 Intuitively, such systems combine stretching (which causes divergence) with folding (which confines trajectories), resulting in intricate, fractal-like structures of non-integer dimension. 
 
 The \textbf{correlation dimension ($D_2$)} is a characteristic measure of strange attractors \cite{GRASSBERGER1983189}. This technique can be used to distinguish between deterministic chaos and random noise, and it is closely related, but not equal to the fractal and information dimension \cite{GRASSBERGER1983189}. For purely periodic systems, $D_2 = 1$, while for chaotic systems it takes non-integer values, indicating a fractal attractor structure (see Sec. \ref{subsec:dimensionality_methods}).
@@ -283,7 +285,7 @@ The process begins with tokenization, where input text is broken down into a seq
 \end{equation}
 where $E \in \mathbb{R}^{V \times d}$ is the embedding matrix, $V$ the vocabulary size, $d$ the embedding dimension, and $L$ the sequence length. Embeddings serve as initial representations of tokens in a high-dimensional vector space. 
 
-The embeddings are processed through a stack of Transformer layers. Hidden state refers to the vectors that go through the model's layers \footnote{Embeddings are static, initial vector representations of tokens, while hidden states are dynamic, context-dependent vectors that change as the model processes information through its layers. Embeddings provide an initial meaning for a token, whereas hidden states carry the evolving context, including information from previous tokens in the sequence.}. Each layer is primarily composed of two sub-modules: a multi-head self-attention mechanism and a position-wise feed-forward network called Multi-Layer Perceptron (MLP). The self-attention mechanism is the key source of nonlinearity and contextual understanding, allowing the model to dynamically weigh the importance of all other tokens in the context window, and then update the representation of a single token. Each attention head can be expressed as \cite{attention}:
+The embeddings are processed through a stack of Transformer layers. Hidden state refers to the vectors that go through the model's layers \footnote{Embeddings are static, initial vector representations of tokens, while hidden states are dynamic, context-dependent vectors that change as the model processes information through its layers. Embeddings provide an initial meaning for a token, whereas hidden states carry the evolving context, including information from previous tokens in the sequence.}. Each layer is primarily composed of two sub-modules: a multi-head self-attention mechanism and a position-wise feed-forward network called Multi-Layer Perceptron (MLP). The self-attention mechanism is the key source of nonlinearity and contextual understanding, allowing the model to dynamically weigh the importance of all other tokens in the context window, to update the representation of the current token. Each attention head can be expressed as \cite{attention}:
 
 \begin{equation}
     \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
@@ -307,7 +309,7 @@ During inference, the LLM generates tokens autoregressively, which can be viewed
 \end{equation}
 where $\mathbf{s}_t$ represents the hidden state at step $t$. 
 
-To generate the next token, the hidden state of the last token is passed through a final linear layer, the unembedding, to produce logits over the entire vocabulary, which are then converted to a probability distribution via a softmax function. A decoding strategy is then used to select a token. \textbf{Greedy sampling} deterministically selects the token with the highest probability. In contrast, \textbf{probabilistic sampling} introduces stochasticity, often controlled by a temperature parameter ($T$). Higher temperatures flatten the distribution, making the output more diverse.
+To generate the next token, the hidden state of the last token is passed through a final linear layer, the unembedding, to produce logits over the entire vocabulary, which are then converted to a probability distribution via a softmax function. A decoding strategy is then used to select a token. \textbf{Greedy sampling} deterministically selects the token with the highest probability. In contrast, \textbf{probabilistic sampling} introduces stochasticity, controlled by a temperature parameter ($T$). Higher temperatures flatten the distribution, making the output more diverse.
 
 
 \subsection{Analogy and Limitations}
@@ -476,55 +478,32 @@ Perturbation magnitudes were chosen empirically to preserve topical coherence wh
 \subsubsection{Initial Condition Generation}
 \label{subsec:init_cond_gen}
 
-To evaluate SIC, we generated an ensemble of trajectories from close starting points. We begin with a single prompt, tokenize it, and retrieve its initial embedding tensor $\mathbf{E}_0 \in \mathbb{R}^{L \times D}$, where $L$ is the prompt length and $D$ is the model's hidden dimension. Let $M = L \times D$ denote the dimension of the flattened embedding space. 
+To evaluate SIC, we generated an ensemble of trajectories from close starting points. We begin with a single prompt, tokenize it, and retrieve its initial embedding tensor $\mathbf{E}_0 \in \mathbb{R}^{L \times D}$, where $L$ is the prompt length and $D$ is the model's hidden dimension. 
 
-Instead of adding isotropic random noise, we generate a set of $N$ perturbed initial conditions $\{\mathbf{E}_i\}_{i=1}^N$ located at the vertices of a regular simplex of radius $r$ centered at $\mathbf{E}_0$ within a selected $N$-dimensional subspace. This ensures that all perturbations have an identical Euclidean norm of $r$, and are mutually equidistant. This avoids directional bias in the sensitivity analysis.
+We generate a set of $N$ perturbed initial conditions $\{\mathbf{E}_i\}_{i=1}^N$ located at the vertices of a regular simplex of radius $r$ centered at $\mathbf{E}_0$ within a randomly selected $N$-dimensional subspace. This ensures that all perturbations have an identical Euclidean norm of $r$, and are mutually equidistant, avoiding bias in the sensitivity analysis.
+% Algorithm~\ref{alg:simplex_perturbation}
 
-To construct the simplex, we first generate its vertices in an $N$-dimensional space by projecting the standard basis vectors:
-\begin{equation}
-\mathbf{v}'_i = \mathbf{e}_i - \frac{1}{N}\mathbf{1}, \quad i \in \{1, \dots, N\}
-\end{equation}
-where $\mathbf{e}_i \in \mathbb{R}^N$ is the $i$-th standard basis vector and $\mathbf{1} \in \mathbb{R}^N$ is the vector of all ones. The vertices are then normalized to unit length:
-\begin{equation}
-\mathbf{v}_i = \frac{\mathbf{v}'_i}{\|\mathbf{v}'_i\|_2}
-\end{equation}
-
-Next, we select a subset of $N$ indices $S = \{s_1, \dots, s_N\} \subset \{1, \dots, M\}$ from the flattened embedding tensor, either using the first $N$ coordinates or choosing them randomly without replacement. For each vertex $\mathbf{v}_i$, we construct a perturbation vector $\Delta_i \in \mathbb{R}^M$ defined by:
-\begin{equation}
-(\Delta_i)_j = \begin{cases} 
-r (\mathbf{v}_i)_k & \text{if } j = s_k \in S \\
-0 & \text{otherwise}
-\end{cases}
-\end{equation}
-The perturbed initial embedding tensors are then obtained by adding the reshaped perturbation vectors:
-\begin{equation}
-\mathbf{E}_i = \mathbf{E}_0 + \text{reshape}(\Delta_i, L \times D)
-\end{equation}
-We then feed each perturbed initial condition into the model to generate the corresponding trajectory. The complete procedure is detailed in Algorithm~\ref{alg:simplex_perturbation}. This was done for different intial prompts on different topics.
+% We then feed each perturbed initial condition into the model to generate the corresponding trajectory. The complete procedure is detailed in Algorithm~\ref{alg:simplex_perturbation}. This was done for different initial prompts on different topics.
 
 \begin{algorithm}[H]
 \caption{Regular Simplex Initial Condition Generation}
 \label{alg:simplex_perturbation}
 \begin{algorithmic}[1]
-\REQUIRE Base embedding $\mathbf{E}_0 \in \mathbb{R}^{L \times D}$, number of perturbed states $N$, perturbation radius $r$, subspace selection mode
-\ENSURE Perturbed initial embeddings $\{\mathbf{E}_1, \dots, \mathbf{E}_N\}$
+\REQUIRE Base embedding $\mathbf{E}_0 \in \mathbb{R}^{L \times D}$, state count $N$, radius $r$, random seed $\sigma$
+\ENSURE Perturbed embeddings $\{\mathbf{E}_1, \dots, \mathbf{E}_N\}$
+\STATE Seed pseudorandom number generator with $\sigma$
 \STATE $M \leftarrow L \times D$
-\STATE Construct projection matrix $\mathbf{V}' \leftarrow \mathbf{I}_N - \frac{1}{N}\mathbf{J}_N$ \COMMENT{$\mathbf{J}_N$ is the $N \times N$ all-ones matrix}
+\STATE $S \leftarrow \text{sample } N \text{ unique indices uniformly from } \{1, \dots, M\}$
+\STATE Construct centering matrix $\mathbf{V}' \leftarrow \mathbf{I}_N - \frac{1}{N}\mathbf{J}_N$ \COMMENT{$\mathbf{J}_N$ is the $N \times N$ all-ones matrix}
 \FOR{$i = 1$ \TO $N$}
-    \STATE $\mathbf{v}_i \leftarrow \mathbf{V}'_i / \|\mathbf{V}'_i\|_2$ \COMMENT{Normalize vertex to unit length}
+    \STATE $\mathbf{v}_i \leftarrow \mathbf{V}'_{i, :} / \|\mathbf{V}'_{i, :}\|_2$ \COMMENT{Normalize the $i$-th simplex vertex to unit length}
 \ENDFOR
-\IF{mode is ``first''}
-    \STATE $S \leftarrow \{1, \dots, N\}$
-\ELSE
-    \STATE $S \leftarrow \text{sample } N \text{ unique indices from } \{1, \dots, M\} \text{ without replacement}$
-\ENDIF
 \FOR{$i = 1$ \TO $N$}
-    \STATE Initialize $\Delta_i \in \mathbb{R}^M$ with all zeros
-    \FOR{$k = 1$ \TO $N$}
-        \STATE $\Delta_{i, s_k} \leftarrow r \cdot v_{i, k}$
-    \ENDFOR
+    \STATE Initialize flat perturbation vector $\Delta_i \leftarrow \mathbf{0}_M$
+    \STATE $\Delta_i[S] \leftarrow r \cdot \mathbf{v}_i$ \COMMENT{Inject vertex coordinates into selected subspace}
     \STATE $\mathbf{E}_i \leftarrow \mathbf{E}_0 + \text{reshape}(\Delta_i, L \times D)$
 \ENDFOR
+
 \RETURN $\{\mathbf{E}_1, \dots, \mathbf{E}_N\}$
 \end{algorithmic}
 \end{algorithm}
@@ -538,65 +517,31 @@ We then feed each perturbed initial condition into the model to generate the cor
 We also calculated the divergence using other distance metrics. We see that the trajectories remain extremely close for several steps until they suddenly diverge. In the text, the first words are the same until, at the diverging step, the words turn different and the sentences too, while the general topic remains the same. So the initial perturbation persists in the hidden states, but does not affect token selection until a certain step, where the sampled token by two trajectories is different, which then leads them to quickly diverge.
 The explanation for this is that at each step, the most probable next token is selected. If the perturbation is not large enough, at a given step it will not change the selected token, which keeps both trajectories close. In the text space, and in the sentence embeddings, the perturbation will not be detectable at all, while in the hidden state space, it will remain. After some steps, it might occur that the perturbation, which propagates and possibly amplifies due to the non-linear coupling, induces a different next token to be selected. This causes a big discrete difference with the non-disturbed trajectory, which then strongly influences the next token prediction. This causes trajectories to rapidly diverge once the first different token is predicted.
 
-\begin{figure}[H]
+\begin{figure}[h]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/divergence/childhood_personality_development_0_0.0004_layer22/cross_corr_pearson_0_1.png}
-        \caption{Cross-Correlation Dissimilarity}
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/cross_corr_pearson_0_2_window_size_16.pdf}
+        \caption{Cross-correlation dissimilarity}
     \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/divergence/childhood_personality_development_0_0.0004_layer22/dtw_timeseries_0_1.png}
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/dtw_timeseries_0_2_window_size_16.pdf}
         \caption{DTW}
     \end{subfigure}
     \\[0.5em]
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/divergence/childhood_personality_development_0_0.0004_layer22/frechet_timeseries_0_1.png}
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/frechet_timeseries_0_2_window_size_16.pdf}
         \caption{Fréchet}
     \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/divergence/childhood_personality_development_0_0.0004_layer22/hausdorff_timeseries_0_1.png}
-        \caption{Haussdorf}
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/hausdorff_timeseries_0_2_window_size_16.pdf}
+        \caption{Hausdorff}
     \end{subfigure}
-    \caption{Divergence between a pair of trajectories from hidden states using different metrics.}
+    \caption{Divergence between a pair of hidden-state trajectories measured using different distance metrics. Some metrics exhibit gradual divergence (panels (b), (d)), while others show abrupt, step-like separation (panels (a), (c))corresponding to the first differing token.}
     \label{fig:distance_hidden}
 \end{figure}
 
-\begin{figure}[H]
-    \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/divergence/childhood_personality_development_0_0.0004_embed/cross_corr_pearson_0_1.png}
-        \caption{Cross-Correlation Dissimilarity}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/divergence/childhood_personality_development_0_0.0004_embed/dtw_timeseries_0_1.png}
-        \caption{DTW}
-    \end{subfigure}
-    \\[0.5em]
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/divergence/childhood_personality_development_0_0.0004_embed/frechet_timeseries_0_1.png}
-        \caption{Fréchet}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/divergence/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_1.png}
-        \caption{Haussdorf}
-    \end{subfigure}
-    \caption{Divergence between a pair of trajectories from sentence embeddings using different metrics.}
-    \label{fig:distance_embed}
-\end{figure}
+% Figures \ref{fig:distance_hidden} and show that considering trajectories of hidden states or sentence embeddings, the divergence curves are similar. Some metrics show a discrete, almost step-function-like divergence, like Fréchet in the hidden state space. % 
 
-Figures \ref{fig:distance_hidden} and \ref{fig:distance_embed} show that considering trajectories of hidden states or sentence embeddings, the divergence curves are similar. Some metrics show a discrete, almost step-function-like divergence, like Fréchet in the hidden state space. % 
-
-% It is clear that we do not see an exponential divergence between the trajectories with most metrics, but rather a sudden jump.
-% Some metrics are better at quantifying the divergence, like cross correlation, DTW and Hausdorff, while others, like Fréchet are worse. %  improve
-% In our case, especially when using sentence embeddings, the number of data points until the saturation region was often small (G around 6), making any type of curve fitting difficult.
 
 
 \subsection{RP}
@@ -604,100 +549,59 @@ Figures \ref{fig:distance_hidden} and \ref{fig:distance_embed} show that conside
 
 Plotting the RPs for trajectories coming from different prompts shows a wide variety of results. Strong similarities can be seen between the RP from the Lorenz \cite{DeterministicNonperiodicFlow} system as seen in Fig. \ref{fig:rp_examples} and some of the RPs obtained from the LLMs hidden states. 
 
-\begin{figure}[H]
+\begin{figure}[h]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/RP/interstellar_propulsion_review_recurrence_first_thr_0.3.png}
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_first_rr_0.03.pdf}
         \caption{Prompt 1, first layer}
     \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/RP/interstellar_propulsion_review_recurrence_last_thr_0.3.png}
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_last_rr_0.03.pdf}
         \caption{Prompt 1, last layer}
     \end{subfigure}
     \\[0.5em]
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/RP/quantum_consciousness_hallucination_recurrence_first_thr_0.3.png}
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_first_rr_0.03.pdf}
         \caption{Prompt 2, first layer}
     \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
-        \centering
-        \includegraphics[width=\linewidth]{plots/RP/quantum_consciousness_hallucination_recurrence_last_thr_0.3.png}
+    \begin{subfigure}[t]{0.225\textwidth}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_last_rr_0.03.pdf}
         \caption{Prompt 2, last layer}
     \end{subfigure}
-    \caption{Recurrence plots for different prompts and layers using Cosine Distance.}
-    \label{fig:rp_comparison_layers}           
+    \caption{Recurrence plots for different prompts and transformer layers using cosine distance. Chaotic features such as diagonal line structures become more pronounced in deeper layers (cf. panel (b)). The recurrence threshold was fixed to $0.03$.}
+    \label{fig:rp_comparison_layers}
 \end{figure}
-
-
-\begin{table}[H]
-\centering
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lccccccccc}
-\toprule
-Name & Recurrence Rate & Determinism & Longest Diagonal Line & Entropy of Diagonal Lines & Laminarity & Longest Vertical Line & Entropy of Vertical Lines \\
-\midrule
-Prompt 1, first layer & 0.0104 & 0.4097 & 93.0000 & 1.3277 & 0.0160 & 2.0000 & 0.0000 \\
-Prompt 1, last layer & 0.0137 & 0.4247 & 72.0000 & 1.1857 & 0.1336 & 5.0000 & 0.5429 \\
-Prompt 2, first layer & 0.0127 & 0.2941 & 23.0000 & 1.3155 & 0.0000 & 0.0000 & 0.0000 \\
-Prompt 2, last layer & 0.0139 & 0.4174 & 24.0000 & 1.2225 & 0.1929 & 11.0000 & 0.4682 \\
-\bottomrule
-\end{tabular}%
-}
-\caption{Recurrence quantification analysis results.}
-\label{tab:rqa}
-\end{table}
 
 
 % G: not always at the last layer, but also middle layers are quite chaotic
 Chaotic features are more strongly present at the last layers of the model as showed in the RP \ref{fig:rp_comparison_layers} and pointwise dimension \ref{fig:dim_first_last}. This is due to the progressive addition of more nonlinearity and coupling at each layer. 
 
-\begin{figure}[H]
+\begin{figure}[h]
     \centering
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[t]{0.225\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{plots/RP/launch_pentek_0_0.04/traj_2_recurrence_thr_0.3.png}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_2_rr_0.05.pdf}
         \caption{Prompt a}
     \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[t]{0.225\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{plots/RP/launch_pentek_0_0.04/traj_3_recurrence_thr_0.3.png}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_3_rr_0.05.pdf}
         \caption{Prompt b}
     \end{subfigure}
     \\[0.5em]
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[t]{0.225\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{plots/RP/launch_pentek_0_0.02/traj_1_recurrence_thr_0.3.png}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_0_rr_0.05.pdf}
         \caption{Prompt c}
     \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\textwidth}
+    \begin{subfigure}[t]{0.225\textwidth}
         \centering
-        \includegraphics[width=\linewidth]{plots/RP/launch_pentek_0_0.02/traj_6_recurrence_thr_0.3.png}
+        \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_6_rr_0.05.pdf}
         \caption{Prompt d}
     \end{subfigure}
-    \caption{Examples of recurrence plots obtained for different prompts.}
+    \caption{Recurrence plots obtained for different prompts, evaluated at the last layer. Panel (a) exhibits fractal-like behavior, with short diagonal lines, which can be interpreted as a state at the edge of chaos. The recurrence rate was fixed to $0.05$.}
     \label{fig:rp_interesting}
 \end{figure}
-
-\begin{table}[H]
-\centering
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{lccccccccc}
-\toprule
-Name & Recurrence Rate & Determinism & Longest Diagonal Line & Entropy of Diagonal Lines & Laminarity & Longest Vertical Line & Entropy of Vertical Lines \\
-\midrule
-Prompt a & 0.0498 & 0.4341 & 13.0000 & 1.2627 & 0.4472 & 17.0000 & 1.2769 \\
-Prompt b & 0.0447 & 0.5407 & 88.0000 & 1.8077 & 0.1203 & 13.0000 & 0.5389 \\
-Prompt c & 0.0315 & 0.4875 & 170.0000 & 1.2416 & 0.3485 & 12.0000 & 0.9297 \\
-Prompt d & 0.0260 & 0.4986 & 407.0000 & 1.5316 & 0.2421 & 16.0000 & 0.3053 \\
-\bottomrule
-\end{tabular}%
-}
-\caption{Recurrence quantification analysis results.}
-\label{tab:rqa2}
-\end{table}
 
 The Chain-of-Thought reasoning block, the first tokens generated by the model, can be identified in the RP (dark left bottom block). It suggests the model enters a specific, stable 'reasoning state' before beginning its main output. This is a great example of using RPs to identify functional stages in the generation process. 
 The blocks in the RP, such as in Figure \ref{fig:rp_interesting} (b) correspond to some structured parts of the text, such as making lists.
@@ -1144,8 +1048,31 @@ The eigenvalues $\lambda_i$ of the sub-block Jacobian $J_F$ are strictly shifted
 Crucially, the residual identity branch $I$ perfectly preserves the radial perturbations that the normalization layer's projection matrix $P_{\perp}$ locally annihilated. Because of this, normalization does not geometrically clip the global trajectory. Instead, it provides topological folding via asymptotic starvation: as the global hidden state expands, the normalization scaling factor $S$ grows, passively shrinking the magnitude of the perturbation fed into $F(x)$. This interplay allows exponential sensitivity to initial conditions to persist along the residual stream while forcing the global trajectory to remain bounded within a strange attractor.
 
 
+\subsection{Forward pass across layers}
+\begin{algorithm}[H]
+\caption{Forward Pass of a Pre-LN Transformer Decoder Layer $\ell$}
+\label{alg:transformer_decoder_layer}
+\begin{algorithmic}[1]
+\REQUIRE Input hidden state tensor $\mathbf{x}_\ell \in \mathbb{R}^{T \times d}$, norm weights $\mathbf{w}_{\text{in}}, \mathbf{w}_{\text{post}} \in \mathbb{R}^d$, projection weights for Attention ($W^Q, W^K, W^V, W^O$) and MLP ($W^{\text{gate}}, W^{\text{up}}, W^{\text{down}}$)
+\ENSURE Output updated hidden state tensor $\mathbf{x}_{\ell+1} \in \mathbb{R}^{T \times d}$
 
+\STATE $\mathbf{x}_{\text{resid}} \leftarrow \mathbf{x}_\ell$ \COMMENT{Save residual for attention}
+\STATE $\tilde{\mathbf{x}}_\ell \leftarrow \text{RMSNorm}(\mathbf{x}_\ell; \mathbf{w}_{\text{in}})$ \COMMENT{1. Pre-Attention Normalization}
 
+\STATE $\mathbf{q} \leftarrow \text{RoPE}(\tilde{\mathbf{x}}_\ell W^Q), \quad \mathbf{k} \leftarrow \text{RoPE}(\tilde{\mathbf{x}}_\ell W^K), \quad \mathbf{v} \leftarrow \tilde{\mathbf{x}}_\ell W^V$ \COMMENT{Project queries, keys, values}
+\STATE $\mathbf{a}_\ell \leftarrow \text{Softmax}\left(\frac{\mathbf{q}\mathbf{k}^T}{\sqrt{d_k}} + \mathbf{M}\right)\mathbf{v} \cdot W^O$ \COMMENT{2. Self-Attention (with causal mask $\mathbf{M}$)}
+
+\STATE $\mathbf{x}'_\ell \leftarrow \mathbf{x}_{\text{resid}} + \mathbf{a}_\ell$ \COMMENT{3. First Residual Connection}
+
+\STATE $\mathbf{x}_{\text{resid}}' \leftarrow \mathbf{x}'_\ell$ \COMMENT{Save residual for MLP}
+\STATE $\tilde{\mathbf{x}}'_\ell \leftarrow \text{RMSNorm}(\mathbf{x}'_\ell; \mathbf{w}_{\text{post}})$ \COMMENT{4. Pre-MLP Normalization}
+
+\STATE $\mathbf{m}_\ell \leftarrow \left(\text{SiLU}(\tilde{\mathbf{x}}'_\ell W^{\text{gate}}) \odot (\tilde{\mathbf{x}}'_\ell W^{\text{up}})\right) W^{\text{down}}$ \COMMENT{5. SwiGLU MLP Block}
+\STATE $\mathbf{x}_{\ell+1} \leftarrow \mathbf{x}_{\text{resid}}' + \mathbf{m}_\ell$ \COMMENT{6. Second Residual Connection}
+
+\RETURN $\mathbf{x}_{\ell+1}$
+\end{algorithmic}
+\end{algorithm}
 
 
 
