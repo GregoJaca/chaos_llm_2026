@@ -22,7 +22,8 @@ perturbation:
 
 attention:
 
-  sliding_window_list: [10, 30, 40, 45, 50, 55, 60, 70, 85, 100, 200, 1000] 
+  sliding_window_list: [20, 25, 43] 
+  # sliding_window_list: [10, 30, 40, 45, 50, 55, 60, 70, 85, 100, 200, 1000] 
   # sliding_window_list: [10, 20, 35, 40, 45, 50, 55, 60, 70, 85, 100, 200, 500, 1000] 
   # sliding_window_list: [10, 25, 50, 65, 80, 150, 1000] 
   # sliding_window_list: [4, 8, 9, 70]  # attention window sizes
@@ -30,7 +31,7 @@ attention:
 
 generation:
   max_new_tokens: 1000 # 1000  # max generated tokens
-  batch_size: 36  # batched generation size
+  batch_size: 40  # batched generation size
   adaptive_stop: false  # stop at divergence vs baseline
   do_sample: false  # greedy decoding
   temperature: 0.0  # ignored for greedy
