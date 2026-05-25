@@ -314,7 +314,7 @@
     To generate the next token, the hidden state of the last token is passed through a final linear layer, the unembedding, to produce logits over the entire vocabulary, which are then converted to a probability distribution via a softmax function. A decoding strategy is then used to select a token. \textbf{Greedy sampling} deterministically selects the token with the highest probability. In contrast, \textbf{probabilistic sampling} introduces stochasticity, controlled by a temperature parameter ($T$). Higher temperatures flatten the distribution, making the output more diverse.
 
 
-    \subsection{Analogy and Limitations}
+    \subsection{LLMs and dynamical systems}
     \label{subsec:analogy_limitations}
     We propose viewing the autoregressive operation of a Large Language Model as a \textbf{high-dimensional, discrete-time dynamical system}. Each forward pass defines a nonlinear state-dependent mapping between successive states of the system, where the collection of hidden states in the context window constitutes the trajectory evolving within the model's embedding space. From this perspective, the \textbf{self-attention mechanism} serves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. This acts as the stretching component: small perturbations to one token's hidden state can cause large changes in attention weights, which in turn significantly alter other token representations. The \textbf{normalization layers} (e.g., LayerNorm, RMSNorm) and bounded activation functions act as folding mechanisms, constraining the trajectory within a finite subspace by projecting hidden states onto normalized manifolds (explained in detail in Appendix \ref{subsec:layer_norm}). The alternation of stretching and folding operations across layers yields an evolution that is both bounded and sensitive to initial conditions.
     % GGG check lol
@@ -362,7 +362,7 @@
         In classical systems (e.g., Lorenz equations), coupling occurs between fixed state variables (e.g., $x$, $y$, $z$). In Transformers, coupling occurs across token positions, that is, between distinct instances of the system at different effective "times" within the same context. This results in a higher-order coupling structure where each state variable is itself a vector embedding, leading to emergent behaviors that differ qualitatively from classical variable coupling. % GGG what the fuck do you want to say. if you want to say something say it, but this is word salad.
 
         \item \textbf{Nonstationarity and Weight Freezing.}  
-        The weights of a trained LLM remain static during inference; all apparent "dynamics" arise solely from transformations of the input representations. This differs from physical dynamical systems, whose governing equations continuously evolve in real time (GGG whaaaaaaaat???). Thus, while the forward pass can be viewed as a dynamical process, it does not constitute an autonomous system in the classical sense. % GGG fact check myself
+        The weights of a trained LLM remain static during inference; all apparent "dynamics" arise solely from transformations of the input representations. This differs from physical dynamical systems, whose governing equations continuously evolve in real time (GGG whaaaaaaaat???). Thus, while the forward pass can be viewed as a dynamical process, it does not constitute an autonomous system in the classical sense. % GGG fact check myself % GGG also we can relate it to how even though parameters are fixed, the jacobians and activations etc... depend on the input
 
     \end{itemize}
 
@@ -781,19 +781,7 @@
     
 
 
-    \section{Conclusions and Discussion}
-    \label{sec:conclusions}
-
-    \section{Acknowledgments }
-    \label{sec:acknowledgements}
-
-    I would like to thank my supervisors Dr. János Török, and Kristóf Benedek for their help and support during this work. This work was supported by the National Research, Development and Innovation Fund and by the Ministry of Culture and Innovation of Hungary through the TKP2021-NVA-02 OR TKP2021-EGA-02 funding scheme.
-
-    \newpage
-    \printbibliography
-
-    \section{Appendix}
-    \label{sec:appendix}
+    
 
 
 
@@ -835,7 +823,7 @@
     % The total stretching capacity depends on the magnitudes of the activation vectors $S_x$ and $D_x$.
 
     Due to the $O(N \cdot d_{model}^2)$ memory constraints of storing full sequence Jacobians, the exact token-wise Jacobian $J(x)$ is computed iteratively using vectorized reverse-mode automatic differentiation in PyTorch (\texttt{vmap} and \texttt{jacrev}). 
-    The static weight metrics were computed directly from the model's parameters, while the dynamic activation densities were obtained by manually fetching the intermediate pre and post activation hidden states.
+    The static weight metrics were computed directly from the model's parameters, while the dynamic activation densities were obtained by manually fetching the intermediate pre and post activation hidden states
     \footnote{Because the evaluated architecture uses a SwiGLU MLP rather than a vanilla MLP, the traditional three-term product $\left( \frac{\|W_1\|_F^2}{d} \right) \left( \frac{\|W_2\|_F^2}{d_{ff}} \right) \gamma$ splits into two parallel interacting channels due to the gating mechanism, yielding the exact architectural translation: $\lambda_{\text{predicted}} = \frac{\|W_{\text{down}}\|_F^2}{d_{ff}} \cdot \left[ \left(\frac{\|W_{\text{gate}}\|_F^2}{d} \cdot \bar{D}_x\right) + \left(\frac{\|W_{\text{up}}\|_F^2}{d} \cdot \bar{S}_x\right) \right]$. We accounted for this in the numerical measurement, but left the simpler mathematical derivation in the text.}
     From $J(x)$ and the static weights, we define and extract the following metrics:
 
@@ -876,38 +864,38 @@
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/activation_densities_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{Activation Densities at each layer}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/jacobian_together_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{Jacobian spectral norm $\|J(x)\|_2$ and isotropic expansion $\bar{\lambda}$}
+            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/activation_densities_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{DeepSeek-R1-Distill-Qwen-1.5B}
-        \label{fig:jacobian_deepseek}
+        \caption{Activation Densities at each layer}
+        \label{fig:jacobian_activation}
     \end{figure}
 
     \begin{figure}[H]
         \centering
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/activation_densities_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{Activation Densities at each layer}
+            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/jacobian_together_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/jacobian_together_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{Jacobian spectral norm $\|J(x)\|_2$ and isotropic expansion $\bar{\lambda}$}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{Phi-4-mini-instruct}
-        \label{fig:jacobian_microsoft}
+        \caption{Jacobian spectral norm $\|J(x)\|_2$ and isotropic expansion $\bar{\lambda}$}
+        \label{fig:jacobian_norm_and_lambda}
     \end{figure}
 
     \begin{figure}[H]
         \centering
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
             \caption{DeepSeek-R1-Distill-Qwen-1.5B}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
@@ -915,7 +903,7 @@
             \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
             \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{PFrobenius norms}
+        \caption{Frobenius norms}
         \label{fig:frobenius_static}
     \end{figure}
 
@@ -936,12 +924,11 @@
     Expanding this trace operator into an explicit summation over the intermediate neuron indices $i$ and $j$ yields:
     $$\|J\|_F^2 = \sum_{i=1}^{d_{ff}} \sum_{j=1}^{d_{ff}} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j = \sum_{i=1}^{d_{ff}} (H_2)_{ii} (H_1)_{ii} (\phi'_i)^2 + \sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j$$
 
-    We proceed by applying two mean-field simplifications. 1: We neglect the contribution of the off-diagonal terms. 2: 
-
+    We proceed by applying two mean-field simplifications:
 
     \begin{enumerate}
         \item We neglect the contribution of the off-diagonal terms
-        footnote{We assume the weight matrices $W_1$ and $W_2$ are statistically uncorrelated. In the high-dimensional intermediate limit ($d_{ff} \gg 1$), the cross-terms $(H_2)_{ij} (H_1)_{ji}$ act as zero-mean random variables with alternating signs, causing the off-diagonal sum to destructively interfere and vanish.}:
+        \footnote{We assume the weight matrices $W_1$ and $W_2$ are statistically uncorrelated. In the high-dimensional intermediate limit ($d_{ff} \gg 1$), the cross-terms $(H_2)_{ij} (H_1)_{ji}$ act as zero-mean random variables with alternating signs, causing the off-diagonal sum to destructively interfere and vanish. This is a common assumption done by authors studying untrained neural networks. This is not exactly true in trained models like the ones used in this study. GGG cite someone here? also get back to my measured results GGG}:
         $$\sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j \approx 0$$
         
         \item We assume the norms of the rows of the weight matrices are uniformly distributed. Thus we replace the individual diagonal entries of the Gramian matrices with their uniform average values \footnote{During training, regularization and dropout favour uniformly distributed norms.}:
@@ -949,12 +936,12 @@
     \end{enumerate}
         
     Substituting the concentrated row-norm parameters back into the diagonal sum allows the static weight variances to factor out from the dynamic, state-dependent activation derivatives:
-    $$\|J\|_F^2 \approx \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}^2} \sum_{i=1}^{d_{ff}} (\phi'_i)^2 = \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}} \gamma, $\gamma = \frac{1}{d_{ff}} \sum_{i=1}^{d_{ff}} (\phi'_i)^2$$$
-    
+    $$\|J\|_F^2 \approx \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}^2} \sum_{i=1}^{d_{ff}} (\phi'_i)^2 = \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}} \gamma, \quad \gamma = \frac{1}{d_{ff}} \sum_{i=1}^{d_{ff}} (\phi'_i)^2$$
+
     This yields the closed-form expression for the mean stretching factor:
     $$\overline{\lambda} \approx \left( \frac{\|W_1\|_F^2}{d} \right) \left( \frac{\|W_2\|_F^2}{d_{ff}} \right) \gamma$$
 
-    This formula yields an estimate for $\overline{\lambda}$ that does not require computing the full $J \in \mathbb{R}^{d \times d}$ Jacobian. $\|W_1\|_F^2 and \|W_2\|_F^2$ are static, and $\gamma$ requires evaluating $\phi'(x)$, which has a analytical formula for most LLM architectures.
+    This formula yields an estimate for $\overline{\lambda}$ that does not require computing the full $J \in \mathbb{R}^{d \times d}$ Jacobian. $\|W_1\|_F^2$ and $\|W_2\|_F^2$ are static, and $\gamma$ requires evaluating $\phi'(x)$, which has a analytic form for most LLM architectures.
     % This measure can be useful for monitoring training stability in LLMs. % G
     In order to evaluate this formula, we apply it to our measured data and display the results in Figure \ref{fig:mft}.
 
@@ -982,15 +969,18 @@
 
     \subsubsection{Phase-Space Dynamics of Self-Attention}
 
-    We analyze how a perturbation $\delta X$ in the input sequence propagates through the self-attention mechanism. Let $X \in \mathbb{R}^{N \times D}$ be the input sequence of $N$ tokens. To quantify the average magnitude of these input vectors before attention is applied, we define the \textbf{Hidden State Norm}:
-    $$ \|X\|_{\text{mean}} = \frac{1}{N} \sum_{i=1}^N \|x_i\|_2 $$
-    While Root Mean Square Normalization (RMSNorm) constrains this magnitude to approximately $\sqrt{D}$, the interactions within the attention block rely on these bounded states to dynamically scale perturbations.
+    % We analyze how a perturbation $\delta X$ in the input sequence propagates through the self-attention mechanism. Let $X \in \mathbb{R}^{N \times D}$ be the input sequence of $N$ tokens. To quantify the average magnitude of these input vectors before attention is applied, we define the \textbf{Hidden State Norm}:
+    % $$ \|X\|_{\text{mean}} = \frac{1}{N} \sum_{i=1}^N \|x_i\|_2 $$
+    % While Root Mean Square Normalization (RMSNorm) constrains this magnitude to approximately $\sqrt{D}$, the interactions within the attention block rely on these bounded states to dynamically scale perturbations.
 
-    The self-attention operator computes\footnote{For notational simplicity, derivations are shown for a single attention head. The total output is the sum over $H$ heads ($Y = \sum_h A^{(h)} X W_V^{(h)} W_O^{(h)}$), which generalizes the linear composition without altering the fundamental dynamics.}:
+    Let $X \in \mathbb{R}^{N \times D}$ be the input sequence of $N$ tokens. We analyze how a perturbation $\delta X$ in the input sequence propagates through the self-attention mechanism.
+
+    The self-attention operator computes\footnote{For notational simplicity, derivations are shown for a single attention head. The total output is the sum over $H$ heads ($Y = \sum_h A^{(h)} X W_V^{(h)} W_O^{(h)}$).}:
     $$ Y = A X W_V W_O $$
     where the attention probability matrix $A = \text{softmax}(Z)$ is applied row-wise, and the pre-softmax logits are defined as:
-    $$ Z = \frac{1}{\sqrt{d_k}} X W_Q W_K^T X^T + \mathcal{M} $$
-    where $W_Q, W_K \in \mathbb{R}^{D \times d_k}$, $W_V \in \mathbb{R}^{D \times d_v}$, $W_O \in \mathbb{R}^{d_v \times D}$, and $\mathcal{M}$ is the strict lower-triangular causal mask ($\mathcal{M}_{ij} = 0$ for $i \ge j$, and $-\infty$ otherwise).
+    $$ Z = \frac{1}{\sqrt{d_k}} X W_Q W_K^T X^T + \mathcal{M} \quad A_{i,j} = \frac{\exp(x_i W_{QK} x_j^T + \mathcal{M}_{ij} )}{\sum_{k} \exp(x_i W_{QK} x_k^T)} $$
+
+    where $W_Q, W_K \in \mathbb{R}^{D \times d_k}$, $W_V \in \mathbb{R}^{D \times d_v}$, $W_O \in \mathbb{R}^{d_v \times D}$, and $\mathcal{M}$ is the lower-triangular causal mask ($\mathcal{M}_{ij} = 0$ for $i \ge j$, and $-\infty$ otherwise).
 
     % $A \in \mathbb{R}^{N \times N}$ is the attention probability matrix. For a specific row $i$ and column $j$, the scalar value $A_{i,j}$ (which is between $0$ and $1$) dictates exactly how much of token $j$'s information is mixed into the new representation for token $i$. Because of the causal mask, token $i$ can only attend to tokens $j \le i$.
 
@@ -1002,93 +992,87 @@
 
 
     \paragraph{Static Linear Mixing}
-    The second term evaluates the propagation of the perturbation through the fixed attention weights. We prove that the attention matrix $A$ acts strictly as a variance-reducing operator in this term. Let the linearly projected perturbation be $\delta V = (\delta X) W_V W_O$. The perturbation for the $i$-th token is the $i$-th row of $A \delta V$:
+    The second term evaluates the propagation of the perturbation through the fixed attention weights. We prove that the attention matrix $A$ acts strictly as a variance-reducing operator in this term. Let the linearly projected perturbation be $\delta V = (\delta X) W_V W_O^T$, with its $j$-th row denoted as $\delta v_j$. The resulting perturbation for the $i$-th token is the convex combination:
     \begin{equation}
         (A \delta V)_i = \sum_{j=1}^N A_{i,j} \delta v_j
     \end{equation}
+    \begin{equation}
+       \left\| (A \delta V)_i \right\|_2 = \left\| \sum_{j=1}^N A_{i,j} \delta v_j \right\|_2 \le \sum_{j=1}^N A_{i,j} \|\delta v_j\|_2
+    \end{equation}
+    Because the softmax function ensures $A$ is row-stochastic ($A_{i,j} \ge 0$ and $\sum_j A_{i,j} = 1$), applying the triangle inequality and the induced operator norm yields:
 
-    Because the softmax function ensures $A$ is row-stochastic ($A_{i,j} \ge 0$ and $\sum_j A_{i,j} = 1$), applying the triangle inequality yields:
     \begin{equation}
-        \left\| (A \delta V)_i \right\|_2 = \left\| \sum_{j=1}^N A_{i,j} \delta v_j \right\|_2 \le \sum_{j=1}^N A_{i,j} \|\delta v_j\|_2 \le \max_j \|\delta v_j\|_2
+        \left\| (A \delta V)_i \right\|_2 \le \max_j \|\delta v_j\|_2 \le \left(\max_j \|\delta x_j\|_2\right) \underbrace{\left\| W_V W_O^T \right\|_2}_{\text{Mixing Weight Norm}}
     \end{equation}
-    \begin{equation}
-        \|\delta v_j\|_2 \le \|\delta x_j\|_2 \|W_V W_O^T\|_2
-    \end{equation}
-    \begin{equation}
-        \left\| (A \delta V)_i \right\|_2 \le H \left( \max_j \|\delta x_j\|_2 \right) \underbrace{\left[ \frac{1}{H} \sum_{h=1}^{H} \left\| W_V^{(h)} \left(W_O^{(h)}\right)^T \right\|_2 \right]}_{\text{Mixing Weight Norm}}
-    \end{equation}
-    This inequality establishes that $A$ computes a convex mixture and cannot autonomously amplify the perturbation norm. The absolute expansion of this term is structurally constrained by the bracketed factor, which we define as the static \textbf{Mixing Weight Norm}. Operating entirely independent of the dynamic state $X$, this static norm dictates the maximum capacity for linear perturbation transfer.
 
 
+    This inequality establishes that $A$ computes a convex mixture and cannot autonomously amplify the perturbation norm. The absolute expansion of this term is structurally constrained by the constant projection matrices, which we define as the static \textbf{Mixing Weight Norm}. Operating entirely independent of the dynamic state $X$, this static norm dictates the maximum capacity for linear perturbation transfer.
 
     \paragraph{Nonlinear Routing and Bilinear Coupling}
     The capacity for state-dependent perturbation growth arises from the first term, where the perturbation actively alters the routing matrix ($\delta A$). The differential of the causal pre-softmax logits is:
     \begin{equation}
         \delta Z = \frac{1}{\sqrt{d_k}} \left[ (\delta X) W_Q W_K^T X^T + X W_Q W_K^T (\delta X)^T \right]
     \end{equation}
-    Applying the triangle and sub-multiplicative inequalities bounds the magnitude of this logit perturbation for a single attention head:
+    Applying the triangle and sub-multiplicative inequalities bounds the magnitude of this logit perturbation:
     \begin{equation}
-        \|\delta Z^{(h)}\|_2 \le \frac{2}{\sqrt{d_k}} \|\delta X\|_2 \|X\|_2 \left\| W_Q^{(h)} \left(W_K^{(h)}\right)^T \right\|_2
+        \|\delta Z\|_2 \le \frac{2}{\sqrt{d_k}} \|\delta X\|_2 \|X\|_2 \underbrace{\left\| W_Q W_K^T \right\|_2}_{\text{Routing Weight Norm}}
     \end{equation}
-    Averaging this bound across all $H$ heads isolates the static structural capacity of the network:
-    \begin{equation}
-        \frac{1}{H} \sum_{h=1}^H \|\delta Z^{(h)}\|_2 \le \frac{2}{\sqrt{d_k}} \|\delta X\|_2 \|X\|_2 \underbrace{\left[ \frac{1}{H} \sum_{h=1}^{H} \left\| W_Q^{(h)} \left(W_K^{(h)}\right)^T \right\|_2 \right]}_{\text{Routing Weight Norm}}
-    \end{equation}
+    where we identify the operator norm of the query-key projection as the \textbf{Routing Weight Norm}. 
 
     The differential of the softmax matrix $A$ is determined by its exact Jacobian, denoted here as $J_{sm}(A)$:
     \begin{equation}
         \delta A = A \odot \left( \delta Z - (A \odot \delta Z)\mathbf{1}\mathbf{1}^T \right) = J_{sm}(A) \delta Z
     \end{equation}
-    To determine why this operator drives nonlinear instability, we substitute $\delta Z$ into $\delta A$, and then $\delta A$ into the total routing term $\delta Y_{\text{route}} = (\delta A) X W_V W_O$. This establishes the exact differential mapping $\delta X \mapsto \delta Y_{\text{route}}$:
+    To determine why this operator drives nonlinear instability, we substitute $\delta Z$ into $\delta A$, and then $\delta A$ into the routing term $\delta Y_{\text{route}} = (\delta A) X W_V W_O^T$. 
     \begin{equation} \label{eq:nonlinear_routing_full}
-        \delta Y_{\text{route}} = \left( J_{sm}(A) \left( \frac{1}{\sqrt{d_k}} \left[ (\delta X) W_Q W_K^T X^T + X W_Q W_K^T (\delta X)^T \right] \right) \right) X W_V W_O
+        \delta Y_{\text{route}} = \left( J_{sm}(A) \left( \frac{1}{\sqrt{d_k}} \left[ (\delta X) W_Q W_K^T X^T + X W_Q W_K^T (\delta X)^T \right] \right) \right) X W_V W_O^T
+    \end{equation}
+    Evaluating the global norm of this routing term yields:
+    \begin{equation}
+        \|\delta Y_{\text{route}}\|_2 \le \|\delta A\|_2 \|X\|_2 \left\|W_V W_O^T\right\|_2
+    \end{equation}
+    \begin{equation}
+        \left\| \delta Y_{\text{route}} \right\|_2 \le \frac{2 \|X\|_2^2}{\sqrt{d_k}} \|\delta X\|_2 \|J_{sm}(A)\|_2 \left\|W_V W_O^T\right\|_2 \left\|W_Q W_K^T\right\|_2
     \end{equation}
 
-    \begin{equation}
-    \|\delta Y_{\text{route}}\|_2 \le \sum_{h=1}^H \|\delta A^{(h)}\|_2 \|X\|_2 \left\|W_V^{(h)} (W_O^{(h)})^T\right\|_2
-    \end{equation}
+    It can be seen that $\delta Y_{\text{route}}$ is quadratic with respect to $X$, introducing non-linearity into the Jacobian.
 
-    \begin{equation}
-    \|\delta Y_{\text{route}}\|_2 \le \frac{2 \|X\|_2^2}{\sqrt{d_k}} \|\delta X\|_2 \sum_{h=1}^H \left( \|J_{sm}^{(h)}\|_2 \left\|W_V^{(h)} (W_O^{(h)})^T\right\|_2 \left\|W_Q^{(h)} (W_K^{(h)})^T\right\|_2 \right)
-    \end{equation}
+
+
 
     % G: here we should upper bound, which is not so interesting, but experimentally we show very large jacobian
 
-    
-
-    For a system to be strictly linear, its total differential must map $\delta X \mapsto \delta Y$ via a constant Jacobian matrix that is independent of the operating point $X$. Equation \ref{eq:nonlinear_routing_full} demonstrates that the coefficients projecting $\delta X$ to $\delta Y_{\text{route}}$ explicitly contain the matrix product $(X^T) \dots X$. Because the local Jacobian depends directly on the unperturbed state $X$ via this bilinear coupling, the routing mechanism is fundamentally non-linear. This equips the attention block to act as a state-dependent parametric amplifier, where the magnitude of the state ($\|X\|_2$) dictates the phase-space expansion.
 
 
 
+    \paragraph{Softmax Saturation and Entropy}
+    The expansive capacity of the nonlinear routing term depends on $J_{sm}(A)$. For a given row $a_i$, the Jacobian of the softmax function is $J_{sm}(a_i) = \text{diag}(a_i) - a_i a_i^T$. If a token attends to a single position with absolute confidence, $a_i$ becomes a one-hot vector. Under this condition, $J_{sm}(a_i) = \mathbf{0}$, causing $\delta A = \delta Y_{\text{route}}  = \mathbf{0}$.
 
-    \paragraph{Softmax Saturation and Dynamic Entropy}
-    The expansive capacity of the nonlinear routing term is structurally regulated by the softmax operator. For a given row $a_i$, the Jacobian of the softmax function is $J_{sm}(a_i) = \text{diag}(a_i) - a_i a_i^T$. If a token attends to a single position with absolute confidence, $a_i$ becomes a one-hot vector. Under this condition, $J_{sm}(a_i) = \mathbf{0}$, which forces $\delta A = \mathbf{0}$ and fully annihilates the nonlinear routing term.
-
-    To quantify the proximity to this saturated state, we compute the \textbf{Dynamic Attention Entropy} across all heads and tokens, normalized by the causal maximum theoretical entropy $H_{\max}^{\text{causal}}(N) = \frac{1}{N} \sum_{i=1}^{N} \log_2(i)$ to account for the expanding context window:
+    To quantify the proximity to this saturated state, we compute the \textbf{Attention Entropy} across all heads and tokens, normalized by the causal maximum theoretical entropy $H_{\max}^{\text{causal}}(N) = \frac{1}{N} \sum_{i=1}^{N} \log_2(i)$ to account for the expanding context window:
     \begin{equation}
         \text{Entropy Ratio} = \frac{\frac{1}{H \cdot N} \sum_{h,i} \left( - \sum_{j=1}^{i} A_{i,j}^{(h)} \log_2 A_{i,j}^{(h)} \right)}{H_{\max}^{\text{causal}}(N)}
     \end{equation}
-    If the entropy ratio approaches $0.0$, the routing saturates and the gradient flow with respect to the state vanishes. However, our empirical measurements demonstrate that the entropy ratio consistently fluctuates between $0.4$ and $0.8$ across all layers. Because the ratio remains strictly positive, the attention distribution avoids one-hot saturation in practice. Consequently, $J_{sm}(a_i) \neq \mathbf{0}$, ensuring that the $\delta A$ differential survives and the state-dependent expansive capacity is maintained.
+    Our measurements show that the entropy ratio fluctuates between $0.4$ and $0.8$ across all layers. Because the ratio remains positive, the attention distribution avoids one-hot saturation in practice. Consequently, $\delta A$  and $\delta Y_{\text{route}}$ do not vanish.
 
 
 
+    % GGG fiuuuu work on this part :)
+    % \paragraph{Global Sequence Jacobian and Numerical Measurement}
+    % Attention operates as a discrete delay-differential system. Because of the causal mask, a perturbation injected into an early token ($\delta x_k$) is encoded in the key and value caches and re-injected into the outputs of all subsequent tokens ($\delta y_t$ for $t \ge k$). 
 
-    \paragraph{Global Sequence Jacobian and Numerical Measurement}
-    Attention operates as a discrete delay-differential system. Because of the causal mask, a perturbation injected into an early token ($\delta x_k$) is encoded in the key and value caches and re-injected into the outputs of all subsequent tokens ($\delta y_t$ for $t \ge k$). 
+    % To capture this full temporal and spatial propagation, we compute the \textbf{Attention Jacobian Spectral Norm} with respect to the global sequence matrix $X$:
+    % $$ \|\mathbf{J}_{\text{Attn}}\|_2 = \max_{\delta X \neq 0} \frac{\|\mathbf{J}_{\text{Attn}}(X) \delta X\|_F}{\|\delta X\|_F} $$
+    % where $\mathbf{J}_{\text{Attn}} = \frac{\partial Y}{\partial X} \in \mathbb{R}^{(ND) \times (ND)}$. A spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2 > 1.0$ provides strict mathematical proof that the attention block acts as a net expansive operator for the given sequence, indicating sensitivity to initial conditions.
 
-    To capture this full temporal and spatial propagation, we compute the \textbf{Attention Jacobian Spectral Norm} with respect to the global sequence matrix $X$:
-    $$ \|\mathbf{J}_{\text{Attn}}\|_2 = \max_{\delta X \neq 0} \frac{\|\mathbf{J}_{\text{Attn}}(X) \delta X\|_F}{\|\delta X\|_F} $$
-    where $\mathbf{J}_{\text{Attn}} = \frac{\partial Y}{\partial X} \in \mathbb{R}^{(ND) \times (ND)}$. A spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2 > 1.0$ provides strict mathematical proof that the attention block acts as a net expansive operator for the given sequence, indicating sensitivity to initial conditions.
-
-    Because explicitly instantiating an $(ND) \times (ND)$ dense matrix would exceed memory constraints for large $N$, we compute the exact maximum singular value dynamically via Power Iteration. This is achieved using Jacobian-Vector Products (JVPs) and Vector-Jacobian Products (VJPs) directly through the automatic differentiation graph, allowing exact computation of the global spectral norm without $\mathcal{O}(N^2 D^2)$ memory allocation.
-    %  PyTorch's jvp uses forward-mode automatic differentiation (dual numbers) to propagate the exact analytical derivative at the point $X$. (independent of the magnitude of the perturbation) (in "perturbations" we applied a finite difference, here we do a exact derivative, chain rule)
+    % Because explicitly instantiating an $(ND) \times (ND)$ dense matrix would exceed memory constraints for large $N$, we compute the exact maximum singular value dynamically via Power Iteration. This is achieved using Jacobian-Vector Products (JVPs) and Vector-Jacobian Products (VJPs) directly through the automatic differentiation graph, allowing exact computation of the global spectral norm without $\mathcal{O}(N^2 D^2)$ memory allocation.
+    % %  PyTorch's jvp uses forward-mode automatic differentiation (dual numbers) to propagate the exact analytical derivative at the point $X$. (independent of the magnitude of the perturbation) (in "perturbations" we applied a finite difference, here we do a exact derivative, chain rule)
 
 
-    GGG
+    % GGG
 
-    Because the self-attention mechanism couples the entire context window, the Jacobian cannot be evaluated on isolated tokens. We define the global sequence Jacobian $\mathbf{J}_{\text{Attn}} = \frac{\partial Y}{\partial X} \in \mathbb{R}^{(ND) \times (ND)}$, which computes the derivative of the entire $N \times D$ output sequence with respect to the entire $N \times D$ input sequence. Structurally, this $(ND) \times (ND)$ operator is composed of a lower-triangular grid of $D \times D$ block matrices, $\frac{\partial y_t}{\partial x_k}$, where $k \le t$. This lower-triangular causality ensures that the global spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2$ inherently captures both the instantaneous self-expansion ($\frac{\partial y_t}{\partial x_t}$) and the delayed geometric amplification of historical perturbations ($\frac{\partial y_t}{\partial x_k}$ for $k < t$)."
+    % Because the self-attention mechanism couples the entire context window, the Jacobian cannot be evaluated on isolated tokens. We define the global sequence Jacobian $\mathbf{J}_{\text{Attn}} = \frac{\partial Y}{\partial X} \in \mathbb{R}^{(ND) \times (ND)}$, which computes the derivative of the entire $N \times D$ output sequence with respect to the entire $N \times D$ input sequence. Structurally, this $(ND) \times (ND)$ operator is composed of a lower-triangular grid of $D \times D$ block matrices, $\frac{\partial y_t}{\partial x_k}$, where $k \le t$. This lower-triangular causality ensures that the global spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2$ inherently captures both the instantaneous self-expansion ($\frac{\partial y_t}{\partial x_t}$) and the delayed geometric amplification of historical perturbations ($\frac{\partial y_t}{\partial x_k}$ for $k < t$)."
 
-    GGG
+    % GGG
 
 
     \begin{figure}[H] 
@@ -1159,6 +1143,26 @@
     Crucially, the residual identity branch $I$ perfectly preserves the radial perturbations that the normalization layer's projection matrix $P_{\perp}$ locally annihilated. Because of this, normalization does not geometrically clip the global trajectory. Instead, it provides topological folding via asymptotic starvation: as the global hidden state expands, the normalization scaling factor $S$ grows, passively shrinking the magnitude of the perturbation fed into $F(x)$. This interplay allows exponential sensitivity to initial conditions to persist along the residual stream while forcing the global trajectory to remain bounded within a strange attractor.
 
 
+    \subsection{Propagation of perturbations across Tokens}
+
+    Here I have some data which shows how the trajectory divergence depends on context window size. data is cooking, will be ready Thursday morning.
+
+
+    \section{Conclusions and Discussion}
+    \label{sec:conclusions}
+
+    \section{Acknowledgments }
+    \label{sec:acknowledgements}
+
+    I would like to thank my supervisors Dr. János Török, and Kristóf Benedek for their help and support during this work. This work was supported by the National Research, Development and Innovation Fund and by the Ministry of Culture and Innovation of Hungary through the TKP2021-NVA-02 OR TKP2021-EGA-02 funding scheme.
+
+    \newpage
+    \printbibliography
+
+    \section{Appendix}
+    \label{sec:appendix}
+
+
     \subsection{Forward pass across layers}
     \begin{algorithm}[H]
     \caption{Forward Pass of a Pre-LN Transformer Decoder Layer $\ell$}
@@ -1195,6 +1199,7 @@
 
 
 
+    
 
 
 
@@ -1231,214 +1236,213 @@
 
 
 
+    % \subsection{Intuition behind different metrics}
+    % \label{subsec:appendix_intuition_metrics}
 
-    \subsection{Intuition behind different metrics}
-    \label{subsec:appendix_intuition_metrics}
+    % In order to gain a more intuitive understanding of each metric, and the effect of the sentence embedders vs the raw hidden states, we show the RPs from the same trajectory using different metrics both with the hidden states and with the sentence embeddings.
 
-    In order to gain a more intuitive understanding of each metric, and the effect of the sentence embedders vs the raw hidden states, we show the RPs from the same trajectory using different metrics both with the hidden states and with the sentence embeddings.
+    % % G: maybe use cross_corr instead of cross_cos as cross_corr is bettter in distance timeseries
+    % \begin{figure}[H]
+    %     \centering
+    %     % First row
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/hausdorff_traj0.png}
+    %         \caption{Hausdorff}
+    %     \end{subfigure}
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/dtw_fast_traj0.png}
+    %         \caption{DTW}
+    %     \end{subfigure}
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/frechet_traj0.png}
+    %         \caption{Fréchet}
+    %     \end{subfigure}
+    %     % Second row
+    %     \\[0.5em]
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/rank_eigen_traj0.png}
+    %         \caption{PCD}
+    %     \end{subfigure}
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/cos_traj0.png}
+    %         \caption{Cosine Distance}
+    %     \end{subfigure}
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/cross_cos_traj0.png}
+    %         \caption{Cross-Correlation Dissimilarity}
+    %     \end{subfigure}
+    %     \caption{Distance matrices for a single trajectory using different metrics and using the hidden states.}
+    %     \label{fig:distance_metrics_comparison_hidden}
+    % \end{figure}
 
-    % G: maybe use cross_corr instead of cross_cos as cross_corr is bettter in distance timeseries
-    \begin{figure}[H]
-        \centering
-        % First row
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/hausdorff_traj0.png}
-            \caption{Hausdorff}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/dtw_fast_traj0.png}
-            \caption{DTW}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/frechet_traj0.png}
-            \caption{Fréchet}
-        \end{subfigure}
-        % Second row
-        \\[0.5em]
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/rank_eigen_traj0.png}
-            \caption{PCD}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/cos_traj0.png}
-            \caption{Cosine Distance}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/cross_cos_traj0.png}
-            \caption{Cross-Correlation Dissimilarity}
-        \end{subfigure}
-        \caption{Distance matrices for a single trajectory using different metrics and using the hidden states.}
-        \label{fig:distance_metrics_comparison_hidden}
-    \end{figure}
+    % In Figure \ref{fig:distance_metrics_comparison_hidden} we see that Fréchet (c) and Cosine Distance (e) do not recognize the diagonal lines in the hidden state space, but, when applied on sentence embeddings (Fig. \ref{fig:distance_metrics_comparison_embed}) they do.
 
-    In Figure \ref{fig:distance_metrics_comparison_hidden} we see that Fréchet (c) and Cosine Distance (e) do not recognize the diagonal lines in the hidden state space, but, when applied on sentence embeddings (Fig. \ref{fig:distance_metrics_comparison_embed}) they do.
+    % \begin{figure}[H]
+    %     \centering
+    %     % First row
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/hausdorff_traj0.png}
+    %         \caption{Hausdorff}
+    %     \end{subfigure}
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/dtw_fast_traj0.png}
+    %         \caption{DTW}
+    %     \end{subfigure}
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/frechet_traj0.png}
+    %         \caption{Fréchet}
+    %     \end{subfigure}
+    %     % Second row
+    %     \\[0.5em]
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/rank_eigen_traj0.png}
+    %         \caption{PCD}
+    %     \end{subfigure}
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/cos_traj0.png}
+    %         \caption{Cosine Distance}
+    %     \end{subfigure}
+    %     \begin{subfigure}[b]{0.32\textwidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/cross_cos_traj0.png}
+    %         \caption{Cross-Correlation Dissimilarity}
+    %     \end{subfigure}
+    %     \caption{Distance matrices for a single trajectory using different metrics and using the text embeddings.}
+    %     \label{fig:distance_metrics_comparison_embed}
+    % \end{figure}
 
-    \begin{figure}[H]
-        \centering
-        % First row
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/hausdorff_traj0.png}
-            \caption{Hausdorff}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/dtw_fast_traj0.png}
-            \caption{DTW}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/frechet_traj0.png}
-            \caption{Fréchet}
-        \end{subfigure}
-        % Second row
-        \\[0.5em]
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/rank_eigen_traj0.png}
-            \caption{PCD}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/cos_traj0.png}
-            \caption{Cosine Distance}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/cross_cos_traj0.png}
-            \caption{Cross-Correlation Dissimilarity}
-        \end{subfigure}
-        \caption{Distance matrices for a single trajectory using different metrics and using the text embeddings.}
-        \label{fig:distance_metrics_comparison_embed}
-    \end{figure}
-
-    It can also be seen how the use of sentence embedders helps identify deterministic and recurring themes, which are not evident at the hidden state level.
-
-
-    % G: Here i want to show how embeddings kind of do some averaging and pooling and context, and how some metrics pick up different features, some more global some more detail. 
-    % G: mention window size
-
-    \subsection{Use of Sliding Window and Sentence Embeddings} 
-    \label{subsec:sliding_window}
-
-    \begin{figure}[H]
-        \centering
-        % First row: Hidden state space
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_last_layer/hausdorff_timeseries_0_2_window_size_1.png}
-            \caption{window size 1}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_last_layer/hausdorff_timeseries_0_2_window_size_8.png}
-            \caption{window size 8}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_last_layer/hausdorff_timeseries_0_2_window_size_16.png}
-            \caption{window size 16}
-        \end{subfigure}
-        % Second row: Sentence embedding space
-        \\[0.5em]
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_2_window_size_1.png}
-            \caption{window size 1}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_2_window_size_8.png}
-            \caption{window size 8}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_2_window_size_16.png}
-            \caption{window size 16}
-        \end{subfigure}
-        \caption{Divergence between two trajectories using Hausdorff distance, for different sliding window sizes. Top row: hidden state space. Bottom row: sentence embedding space.}
-        \label{fig:sliding_window_compare}
-    \end{figure}
-
-    We see that in the hidden state space, without a sliding window, the distance measurement is very noisy, which is not as pronounced when using the sentence embedders. This shows that the hidden states represent mainly the meaning of the token they are associated with, and not so much of the context (even though they have access to information from other tokens via attention). 
-    We were originally expecting the hidden states to represent the whole state of the system up to that point, but this turned out to be false, and considering the hidden states in the context window is also necessary. This makes LLMs more similar to a delay system. % G: 
-    % G: With window size 1, the hidden state distance is noisy. As you increase the window size, a clear divergence curve emerges. This visually demonstrates that the 'true' state of the system is a sequence of vectors, not a single vector. connect size of window with semantic
+    % It can also be seen how the use of sentence embedders helps identify deterministic and recurring themes, which are not evident at the hidden state level.
 
 
-    % %  sliding window can make step function look linear diagonal with cos and dtw. maybe delete section
-    % % G: also maybe try cos with min aggregation (do not average the vectors fist, but first calc each pair and then min)
-    % Some artifacts can be introduced by the sliding windows. For some metrics the distance gets averaged over the window and this just turn a step function-like curve to a piecewise linear looking one.
-    % Other metrics, such as Hausdorff, which calculate the maximum of the minimum distance, do not present this problem, since they do not average out the distance.
+    % % G: Here i want to show how embeddings kind of do some averaging and pooling and context, and how some metrics pick up different features, some more global some more detail. 
+    % % G: mention window size
+
+    % \subsection{Use of Sliding Window and Sentence Embeddings} 
+    % \label{subsec:sliding_window}
+
     % \begin{figure}[H]
     %     \centering
     %     % First row: Hidden state space
     %     \begin{subfigure}[b]{0.32\textwidth}
     %         \centering
-    %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_dtw/dtw_timeseries_0_1_window_size_1.png}
+    %         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_last_layer/hausdorff_timeseries_0_2_window_size_1.png}
     %         \caption{window size 1}
     %     \end{subfigure}
     %     \begin{subfigure}[b]{0.32\textwidth}
     %         \centering
-    %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_dtw/dtw_timeseries_0_1_window_size_8.png}
+    %         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_last_layer/hausdorff_timeseries_0_2_window_size_8.png}
     %         \caption{window size 8}
     %     \end{subfigure}
     %     \begin{subfigure}[b]{0.32\textwidth}
     %         \centering
-    %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_dtw/dtw_timeseries_0_1_window_size_16.png}
+    %         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_last_layer/hausdorff_timeseries_0_2_window_size_16.png}
     %         \caption{window size 16}
     %     \end{subfigure}
     %     % Second row: Sentence embedding space
     %     \\[0.5em]
     %     \begin{subfigure}[b]{0.32\textwidth}
     %         \centering
-    %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_cos/cos_timeseries_0_1_window_size_1.png}
+    %         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_2_window_size_1.png}
     %         \caption{window size 1}
     %     \end{subfigure}
     %     \begin{subfigure}[b]{0.32\textwidth}
     %         \centering
-    %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_cos/cos_timeseries_0_1_window_size_8.png}
+    %         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_2_window_size_8.png}
     %         \caption{window size 8}
     %     \end{subfigure}
     %     \begin{subfigure}[b]{0.32\textwidth}
     %         \centering
-    %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_cos/cos_timeseries_0_1_window_size_16.png}
+    %         \includegraphics[width=\linewidth]{plots/divergence/sliding_window_compare/childhood_personality_development_0_0.0004_embed/hausdorff_timeseries_0_2_window_size_16.png}
     %         \caption{window size 16}
     %     \end{subfigure}
-    %     \caption{Divergence between two trajectories using sentenec embedders for different sliding window sizes. Top row: DTW. Bottom row: Cosine Distance.}
-    %     \label{fig:sliding_window_artifact}
+    %     \caption{Divergence between two trajectories using Hausdorff distance, for different sliding window sizes. Top row: hidden state space. Bottom row: sentence embedding space.}
+    %     \label{fig:sliding_window_compare}
     % \end{figure}
 
+    % We see that in the hidden state space, without a sliding window, the distance measurement is very noisy, which is not as pronounced when using the sentence embedders. This shows that the hidden states represent mainly the meaning of the token they are associated with, and not so much of the context (even though they have access to information from other tokens via attention). 
+    % We were originally expecting the hidden states to represent the whole state of the system up to that point, but this turned out to be false, and considering the hidden states in the context window is also necessary. This makes LLMs more similar to a delay system. % G: 
+    % % G: With window size 1, the hidden state distance is noisy. As you increase the window size, a clear divergence curve emerges. This visually demonstrates that the 'true' state of the system is a sequence of vectors, not a single vector. connect size of window with semantic
 
-    \subsection{Dimensionality of the LLM vocabulary}
-    \label{subsec:appendix_vocab_dim}
+
+    % % %  sliding window can make step function look linear diagonal with cos and dtw. maybe delete section
+    % % % G: also maybe try cos with min aggregation (do not average the vectors fist, but first calc each pair and then min)
+    % % Some artifacts can be introduced by the sliding windows. For some metrics the distance gets averaged over the window and this just turn a step function-like curve to a piecewise linear looking one.
+    % % Other metrics, such as Hausdorff, which calculate the maximum of the minimum distance, do not present this problem, since they do not average out the distance.
+    % % \begin{figure}[H]
+    % %     \centering
+    % %     % First row: Hidden state space
+    % %     \begin{subfigure}[b]{0.32\textwidth}
+    % %         \centering
+    % %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_dtw/dtw_timeseries_0_1_window_size_1.png}
+    % %         \caption{window size 1}
+    % %     \end{subfigure}
+    % %     \begin{subfigure}[b]{0.32\textwidth}
+    % %         \centering
+    % %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_dtw/dtw_timeseries_0_1_window_size_8.png}
+    % %         \caption{window size 8}
+    % %     \end{subfigure}
+    % %     \begin{subfigure}[b]{0.32\textwidth}
+    % %         \centering
+    % %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_dtw/dtw_timeseries_0_1_window_size_16.png}
+    % %         \caption{window size 16}
+    % %     \end{subfigure}
+    % %     % Second row: Sentence embedding space
+    % %     \\[0.5em]
+    % %     \begin{subfigure}[b]{0.32\textwidth}
+    % %         \centering
+    % %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_cos/cos_timeseries_0_1_window_size_1.png}
+    % %         \caption{window size 1}
+    % %     \end{subfigure}
+    % %     \begin{subfigure}[b]{0.32\textwidth}
+    % %         \centering
+    % %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_cos/cos_timeseries_0_1_window_size_8.png}
+    % %         \caption{window size 8}
+    % %     \end{subfigure}
+    % %     \begin{subfigure}[b]{0.32\textwidth}
+    % %         \centering
+    % %         \includegraphics[width=\linewidth]{plots/divergence/interstellar_propulsion_review_0_0.00035_sentence_transformers_cos/cos_timeseries_0_1_window_size_16.png}
+    % %         \caption{window size 16}
+    % %     \end{subfigure}
+    % %     \caption{Divergence between two trajectories using sentenec embedders for different sliding window sizes. Top row: DTW. Bottom row: Cosine Distance.}
+    % %     \label{fig:sliding_window_artifact}
+    % % \end{figure}
 
 
-    We also did this analysis on the embedding and unembedding matrix, which for the LLM model we use is the same. This matrix represents the vocabulary of the model, and it is not a trajectory. 
-    The reason we did this is because of the large number of data points available (around 150 thousand) without requiring any computation, and that it could provide insights into the structure of the vocabulary space. It is interesting to see that the results are different from those obtained from the analysis done on the trajectories, or what is obtained from a random set of vectors. The value obtained for the correlation dimension is smaller than expected.
-    % G: I don't have a good explanation or much to say here.
-    % G: a trajectory generated by the model is not just a random walk through this vocabulary space; the trajectory uses new vectors
+    % \subsection{Dimensionality of the LLM vocabulary}
+    % \label{subsec:appendix_vocab_dim}
 
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[b]{0.32\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/dimension/vocab/vocab_full.png}
-            % \caption{Correlation Dimension = 1.2}
-        \end{subfigure}\quad
-        % \begin{subfigure}[b]{0.48\linewidth}
-        %     \centering
-        %     \includegraphics[width=\linewidth]{plots/dimension/vocab/vocab_last.png}
-        %     \caption{Correlation Dimension = 5.4}
-        % \end{subfigure}
-        \caption{Correlation dimension of the LLM's embedding matrix.}
-        \label{fig:embedding_dim}
-    \end{figure}
+
+    % We also did this analysis on the embedding and unembedding matrix, which for the LLM model we use is the same. This matrix represents the vocabulary of the model, and it is not a trajectory. 
+    % The reason we did this is because of the large number of data points available (around 150 thousand) without requiring any computation, and that it could provide insights into the structure of the vocabulary space. It is interesting to see that the results are different from those obtained from the analysis done on the trajectories, or what is obtained from a random set of vectors. The value obtained for the correlation dimension is smaller than expected.
+    % % G: I don't have a good explanation or much to say here.
+    % % G: a trajectory generated by the model is not just a random walk through this vocabulary space; the trajectory uses new vectors
+
+    % \begin{figure}[H]
+    %     \centering
+    %     \begin{subfigure}[b]{0.32\linewidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots/dimension/vocab/vocab_full.png}
+    %         % \caption{Correlation Dimension = 1.2}
+    %     \end{subfigure}\quad
+    %     % \begin{subfigure}[b]{0.48\linewidth}
+    %     %     \centering
+    %     %     \includegraphics[width=\linewidth]{plots/dimension/vocab/vocab_last.png}
+    %     %     \caption{Correlation Dimension = 5.4}
+    %     % \end{subfigure}
+    %     \caption{Correlation dimension of the LLM's embedding matrix.}
+    %     \label{fig:embedding_dim}
+    % \end{figure}
 
 
 
