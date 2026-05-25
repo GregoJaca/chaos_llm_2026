@@ -113,6 +113,12 @@ do more runs different prompt,
 
 
 
+CHECK GGGGGGGGGGG
+any phrase "your" AI
+also AI checker
+
+
+
 
 QUESTIONS:
 
@@ -125,6 +131,8 @@ The hidden state $\mathbf{x}$ is a vector of dimension $D$. Due to RMSNorm, the 
 
 are my math proofs good? are they useful? 
 
+
+what are singular values? what do singular values of the jacobian represent?
 
 
 REVIEWERS:
