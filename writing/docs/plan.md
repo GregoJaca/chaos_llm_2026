@@ -32,8 +32,10 @@ What can Janos tell me that AI can't?
 What do I want to say?
 What will they understand?
 What does a great thesis look like? How can I make mine be like it?
+thesis structure? what parts and sections? should I have more sections like "contributions"
 is the logical flow of my presentation understandable?
 are my parameter choices well explained or does it seem to ad-hoc? my statistics/reliability are not so good (?)
+
 
 
 

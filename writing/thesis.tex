@@ -473,7 +473,7 @@
 
 
 
-    Experiments were conducted using the models \texttt{DeepSeek-R1-Distill-Qwen-1.5B} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.} \cite{deepseek2025r1distillqwen1.5b}, and \texttt{Phi-4-mini-instruct} \footnote{A reasoning 3.8 billion parameter model which achieved great performance for it's size.} \cite{microsoft2025phi4minitechnicalreportcompact, microsoft/Phi-4-mini-instruct,}. Inference was performed on a Tesla T4 GPU. Hidden states were extracted after each transformer block, yielding tensors of shape (layers, tokens, hidden dimension). Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. The context window length was set to 3096 tokens.
+    Experiments were conducted using the models \texttt{DeepSeek-R1-Distill-Qwen-1.5B} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.} \cite{deepseek2025r1distillqwen1.5b}, and \texttt{Phi-4-mini-instruct} \footnote{A reasoning 3.8 billion parameter model which achieved great performance for it's size.} \cite{microsoft2025phi4minitechnicalreportcompact, Phi-4-mini-instruct,}. Inference was performed on a Tesla T4 GPU. Hidden states were extracted after each transformer block, yielding tensors of shape (layers, tokens, hidden dimension). Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. The context window length was set to 3096 tokens.
 
     Perturbation magnitudes were chosen empirically to preserve topical coherence while inducing measurable divergence, with $r\in[2.5\times10^{-4},5\times10^{-4}]$ (for more details c.f. \ref{sec:experiments}).
 
@@ -704,7 +704,7 @@
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
-            \caption{microsoft/Phi-4-mini-instruct}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
@@ -726,7 +726,7 @@
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
-            \caption{microsoft/Phi-4-mini-instruct, exponent=$0.986 \pm 0.005$}
+            \caption{Phi-4-mini-instruct, exponent=$0.986 \pm 0.005$}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
@@ -757,7 +757,7 @@
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
-            \caption{microsoft/Phi-4-mini-instruct}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
@@ -807,7 +807,8 @@
 
     \subsubsection{Local Phase-Space Expansion in SwiGLU MLP Blocks}
 
-    The Multi-Layer Perceptron (MLP) acts as a primary source of local phase-space expansion. For an input hidden state $x \in \mathbb{R}^{d_{model}}$, the SwiGLU MLP block computes:
+    % The Multi-Layer Perceptron (MLP) acts as a primary source of local phase-space expansion. 
+    For an input hidden state $x \in \mathbb{R}^{d_{model}}$, the SwiGLU MLP block computes:
     \begin{equation}
         \text{MLP}(x) = W_{down} \left( \text{SiLU}(W_{gate} x) \odot (W_{up} x) \right)
     \end{equation}
@@ -822,26 +823,34 @@
         S_x = \text{SiLU}(W_{gate} x), \quad D_x = (W_{up} x) \odot \text{SiLU}'(W_{gate} x)
     \end{equation}
 
-    The total expansion of the phase space is governed by the squared Frobenius norm of the Jacobian. Expanding $\|J(x)\|_F^2 = \text{Tr}(J(x) J(x)^T)$ yields a quadratic form that isolates the dynamic activations from the static weights:
+    The total expansion of the phase space is governed by the squared Frobenius norm of the Jacobian. Expanding $\|J(x)\|_F^2 = \text{Tr}(J(x) J(x)^T)$ yields a quadratic form that isolates the dynamic activations from the static weights (M matrices):
     \begin{equation}
         \|J(x)\|_F^2 = S_x^T M_{up} S_x + D_x^T M_{gate} D_x + 2 S_x^T M_{cross} D_x
     \end{equation}
-    where the structural matrices $M \in \mathbb{R}^{H \times H}$ represent the Hadamard products of the respective weight Gramians, e.g., $M_{up} = (W_{down}^T W_{down}) \odot (W_{up} W_{up}^T)$. This demonstrates that the total stretching capacity is dynamically modulated by the magnitudes of the activation vectors $S_x$ and $D_x$.
+    \begin{align}
+        M_{\text{up}}    &= (W_{\text{down}}^T W_{\text{down}}) \odot (W_{\text{up}} W_{\text{up}}^T) \\
+        M_{\text{gate}}  &= (W_{\text{down}}^T W_{\text{down}}) \odot (W_{\text{gate}} W_{\text{gate}}^T) \\
+        M_{\text{cross}} &= (W_{\text{down}}^T W_{\text{down}}) \odot (W_{\text{up}} W_{\text{gate}}^T)
+    \end{align}
+    % The total stretching capacity depends on the magnitudes of the activation vectors $S_x$ and $D_x$.
 
-    Due to the $O(N \cdot d_{model}^2)$ memory constraints of storing full sequence Jacobians, the exact token-wise Jacobian $J(x)$ is computed iteratively using vectorized reverse-mode automatic differentiation in PyTorch (\texttt{vmap} and \texttt{jacrev}), chunking the sequence to prevent out-of-memory errors. From $J(x)$ and the static weights, we define and extract the following metrics:
+    Due to the $O(N \cdot d_{model}^2)$ memory constraints of storing full sequence Jacobians, the exact token-wise Jacobian $J(x)$ is computed iteratively using vectorized reverse-mode automatic differentiation in PyTorch (\texttt{vmap} and \texttt{jacrev}). 
+    The static weight metrics were computed directly from the model's parameters, while the dynamic activation densities were obtained by manually fetching the intermediate pre and post activation hidden states.
+    \footnote{Because the evaluated architecture uses a SwiGLU MLP rather than a vanilla MLP, the traditional three-term product $\left( \frac{\|W_1\|_F^2}{d} \right) \left( \frac{\|W_2\|_F^2}{d_{ff}} \right) \gamma$ splits into two parallel interacting channels due to the gating mechanism, yielding the exact architectural translation: $\lambda_{\text{predicted}} = \frac{\|W_{\text{down}}\|_F^2}{d_{ff}} \cdot \left[ \left(\frac{\|W_{\text{gate}}\|_F^2}{d} \cdot \bar{D}_x\right) + \left(\frac{\|W_{\text{up}}\|_F^2}{d} \cdot \bar{S}_x\right) \right]$. We accounted for this in the numerical measurement, but left the simpler mathematical derivation in the text.}
+    From $J(x)$ and the static weights, we define and extract the following metrics:
 
     \begin{itemize}
         \item \textbf{Maximum Expansion (Spectral Norm):} 
         \begin{equation}
             \|J(x)\|_2 = \sigma_{max}(J(x))
         \end{equation}
-        Measures the maximum local stretching factor of a perturbation along the principal singular vector. A value $\|J(x)\|_2 > 1$ indicates the existence of at least one expanding direction in the phase space.
+        The maximum local stretching factor of a perturbation along the principal singular vector.
         
         \item \textbf{Expected Isotropic Expansion:} 
         \begin{equation}
             \bar{\lambda} = \frac{1}{d_{model}} \|J(x)\|_F^2
         \end{equation}
-        Measures the average stretching factor applied to a randomly oriented, isotropic perturbation. A value $\bar{\lambda} > 1$ guarantees net phase-space expansion on average, structurally enforcing exponential divergence.
+        The average stretching factor applied to a randomly oriented, isotropic perturbation. A value $\bar{\lambda} > 1$ implies net phase-space expansion on average, structurally enforcing exponential divergence.
         
         \item \textbf{Activation Densities:} 
         \begin{equation}
@@ -853,17 +862,31 @@
         \begin{equation}
             \tilde{F}_{gate} = \frac{\|W_{gate}\|_F^2}{d_{model}}, \quad \tilde{F}_{up} = \frac{\|W_{up}\|_F^2}{d_{model}}, \quad \tilde{F}_{down} = \frac{\|W_{down}\|_F^2}{H}
         \end{equation}
-        The scaled variance of the static weight distributions. Values strictly $>1$ indicate a structural baseline capable of inducing expansion independent of the input activation.
+        The scaled variance of the static weight distributions. Values strictly $>1$ indicate a structural baseline capable of inducing expansion. 
         
-        \item \textbf{Weight Spectral Norms:} 
-        \begin{equation}
-            \|W_{\{\text{gate, up, down}\}}\|_2 = \sigma_{max}(W_{\{\text{gate, up, down}\}})
-        \end{equation}
-        The maximum linear stretch of the isolated projection matrices.
+        % \item \textbf{Weight Spectral Norms:} 
+        % \begin{equation}
+        %     \|W_{\{\text{gate, up, down}\}}\|_2 = \sigma_{max}(W_{\{\text{gate, up, down}\}})
+        % \end{equation}
+        % The maximum linear stretch of the isolated projection matrices.
     \end{itemize}
 
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/activation_densities_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{Activation Densities at each layer}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/jacobian_together_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{Jacobian spectral norm $\|J(x)\|_2$ and isotropic expansion $\bar{\lambda}$}
+        \end{subfigure}
+        \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+        \label{fig:jacobian_deepseek}
+    \end{figure}
 
-    % plot
     \begin{figure}[H]
         \centering
         \begin{subfigure}[b]{0.48\linewidth}
@@ -873,57 +896,74 @@
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/jacobian_together_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/jacobian_together_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
             \caption{Jacobian spectral norm $\|J(x)\|_2$ and isotropic expansion $\bar{\lambda}$}
         \end{subfigure}
-        \caption{Jacobian metrics at different layers in the DeepSeek-R1-Distill-Qwen-1.5B model}
-        \label{fig:jacobian_deepseek}
+        \caption{Phi-4-mini-instruct}
+        \label{fig:jacobian_microsoft}
     \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{Phi-4-mini-instruct}
+        \end{subfigure}
+        \caption{PFrobenius norms}
+        \label{fig:frobenius_static}
+    \end{figure}
+
+    % GGG add discussion about results
 
 
     \subsubsection{Mean-Field Derivation of the MLP Stretching Factor}
     \label{derivation:mft}
 
-    To quantify the average phase-space expansion induced by the Multi-Layer Perceptron (MLP) block, we analyze the mean squared singular value ($\overline{\lambda}$) of its local Jacobian ($J$). For a vanilla MLP layer defined by $f(x) = W_2 \phi(W_1 x)$, the local Jacobian matrix is:
+    To quantify the average phase-space expansion induced by the Multi-Layer Perceptron (MLP) block, we analyze the mean squared singular value ($\overline{\lambda}$) of its local Jacobian ($J$). For a MLP layer defined by $f(x) = W_2 \phi(W_1 x)$, the local Jacobian matrix is:
     $$J = W_2 \Sigma W_1$$
-    where $\Sigma = \text{diag}(\phi'(W_1 x)) \in \mathbb{R}^{d_{ff} \times d_{ff}}$. By definition, $\overline{\lambda}$ is proportional to the squared Frobenius norm normalized by the ambient hidden dimension $d$:
-    $$\overline{\lambda} = \frac{1}{d} \|J\|_F^2 = \frac{1}{d} \text{Tr}(J J^T)$$
+    where $\Sigma = \text{diag}(\phi'(W_1 x)) \in \mathbb{R}^{d_{ff} \times d_{ff}}$. % By definition, $\overline{\lambda}$ is proportional to the squared Frobenius norm normalized by the ambient hidden dimension $d$:
+    $$\overline{\lambda} = \frac{1}{d_{model}} \|J\|_F^2 = \frac{1}{d_{model}} \text{Tr}(J J^T)$$
 
     Using the cyclic property of the trace, we group the weight parameters into their respective Gramian matrices, $H_1 = W_1 W_1^T$ and $H_2 = W_2^T W_2$:
     $$\|J\|_F^2 = \text{Tr}(W_2 \Sigma W_1 W_1^T \Sigma W_2^T) = \text{Tr}(H_2 \Sigma H_1 \Sigma)$$
 
     Expanding this trace operator into an explicit summation over the intermediate neuron indices $i$ and $j$ yields:
-    $$\|J\|_F^2 = \sum_{i=1}^{d_{ff}} \sum_{j=1}^{d_{ff}} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j$$
+    $$\|J\|_F^2 = \sum_{i=1}^{d_{ff}} \sum_{j=1}^{d_{ff}} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j = \sum_{i=1}^{d_{ff}} (H_2)_{ii} (H_1)_{ii} (\phi'_i)^2 + \sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j$$
 
-    We decompose the summation into diagonal ($i=j$) and off-diagonal ($i \neq j$) components, applying three sequential mean-field simplifications:
-    $$\|J\|_F^2 = \sum_{i=1}^{d_{ff}} (H_2)_{ii} (H_1)_{ii} (\phi'_i)^2 + \sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j$$
+    We proceed by applying two mean-field simplifications. 1: We neglect the contribution of the off-diagonal terms. 2: 
+
 
     \begin{enumerate}
-        \item \textbf{Assumption 1: Vanishing Off-Diagonal Covariances.} We assume the weight matrices $W_1$ and $W_2$ are statistically uncorrelated. In the high-dimensional intermediate limit ($d_{ff} \gg 1$), the cross-terms $(H_2)_{ij} (H_1)_{ji}$ act as zero-mean random variables with alternating signs, causing the off-diagonal sum to destructively interfere and vanish:
+        \item We neglect the contribution of the off-diagonal terms
+        footnote{We assume the weight matrices $W_1$ and $W_2$ are statistically uncorrelated. In the high-dimensional intermediate limit ($d_{ff} \gg 1$), the cross-terms $(H_2)_{ij} (H_1)_{ji}$ act as zero-mean random variables with alternating signs, causing the off-diagonal sum to destructively interfere and vanish.}:
         $$\sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j \approx 0$$
         
-        \item \textbf{Assumption 2: Isotropic Homogeneity of Row Norms.} We assume the Euclidean norm of the weight vectors is distributed uniformly across all hidden units rather than concentrating within outlier neurons. The diagonal entries of the Gramians thus tightly concentrate around their mean traces:
+        \item We assume the norms of the rows of the weight matrices are uniformly distributed. Thus we replace the individual diagonal entries of the Gramian matrices with their uniform average values \footnote{During training, regularization and dropout favour uniformly distributed norms.}:
         $$(H_1)_{ii} \approx \frac{\text{Tr}(H_1)}{d_{ff}} = \frac{\|W_1\|_F^2}{d_{ff}}, \quad (H_2)_{ii} \approx \frac{\text{Tr}(H_2)}{d_{ff}} = \frac{\|W_2\|_F^2}{d_{ff}}$$
-        
-        \item \textbf{Assumption 3: Statistical Decoupling of States and Weights.} Substituting the concentrated row-norm parameters back into the diagonal sum allows the static weight variances to factor out from the dynamic, state-dependent activation derivatives:
-        $$\|J\|_F^2 \approx \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}^2} \sum_{i=1}^{d_{ff}} (\phi'_i)^2$$
     \end{enumerate}
-
-    Defining the empirical activation density as the layer-wide mean squared derivative, $\gamma = \frac{1}{d_{ff}} \sum_{i=1}^{d_{ff}} (\phi'_i)^2$, collapses the expression to:
-    $$\|J\|_F^2 \approx \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}} \gamma$$
-
-    Dividing the system by the ambient input dimension $d$ yields the final decoupled closed-form expression for the mean stretching factor:
+        
+    Substituting the concentrated row-norm parameters back into the diagonal sum allows the static weight variances to factor out from the dynamic, state-dependent activation derivatives:
+    $$\|J\|_F^2 \approx \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}^2} \sum_{i=1}^{d_{ff}} (\phi'_i)^2 = \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}} \gamma, $\gamma = \frac{1}{d_{ff}} \sum_{i=1}^{d_{ff}} (\phi'_i)^2$$$
+    
+    This yields the closed-form expression for the mean stretching factor:
     $$\overline{\lambda} \approx \left( \frac{\|W_1\|_F^2}{d} \right) \left( \frac{\|W_2\|_F^2}{d_{ff}} \right) \gamma$$
 
-    
-    To empirically validate the mean-field stretching derivation, we directly extracted the layer-wise Jacobian metrics from the open-weights model. We converted the target Multi-Layer Perceptron (MLP) module to \texttt{float32} precision to eliminate numerical underflow and computed the exact token-wise local Jacobian matrices via JAX-style functional differentiation using PyTorch's \texttt{jacrev} operator. To maintain a memory-safe execution footprint on a single 16GB Tesla T4 GPU, the sequence-wide hidden states were processed in chunks of 16 tokens, vectorizing the calculation via \texttt{vmap}. The true mean squared singular value ($\lambda_{\text{true}}$) was calculated immediately for each chunk by dividing the total Frobenius norm of the extracted Jacobian by the ambient dimension $d = 1536$, discarding the massive intermediate tensors to avoid memory overflow. The static weight variances were computed directly from the model's parameters, while the dynamic activation densities were intercepted via manual forward tracking of the intermediate pre-activation hidden streams.\footnote{Because the evaluated architecture uses a SwiGLU MLP rather than a vanilla MLP, the traditional three-term product $\left( \frac{\|W_1\|_F^2}{d} \right) \left( \frac{\|W_2\|_F^2}{d_{ff}} \right) \gamma$ splits into two parallel interacting channels due to the gating mechanism, yielding the exact architectural translation: $\lambda_{\text{predicted}} = \frac{\|W_{\text{down}}\|_F^2}{d_{ff}} \cdot \left[ \left(\frac{\|W_{\text{gate}}\|_F^2}{d} \cdot \bar{D}_x\right) + \left(\frac{\|W_{\text{up}}\|_F^2}{d} \cdot \bar{S}_x\right) \right]$. We accounted for this in the numerical measurement, but left the simpler mathematical derivation in the text.}
+    This formula yields an estimate for $\overline{\lambda}$ that does not require computing the full $J \in \mathbb{R}^{d \times d}$ Jacobian. $\|W_1\|_F^2 and \|W_2\|_F^2$ are static, and $\gamma$ requires evaluating $\phi'(x)$, which has a analytical formula for most LLM architectures.
+    % This measure can be useful for monitoring training stability in LLMs. % G
+    In order to evaluate this formula, we apply it to our measured data and display the results in Figure \ref{fig:mft}.
 
     \begin{figure}[H] 
         \centering
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/mft_comparison_jacobian_base_All_Prompts_Aggregated_aggregated_xscale-linear_yscale-log.png}
-            \caption{microsoft/Phi-4-mini-instruct}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
@@ -934,13 +974,7 @@
         \label{fig:mft}
     \end{figure}
 
-    In figure \ref{fig:mft}, we used the mean to aggregate the results, which is more sensitive to outliers than the median or harmonic mean (which we used in other figures). The mean-field derivation predicts the expected value of the squared Jacobian norm ($\mathbb{E}[\|J\|_F^2]$), so it relies on the linearity of expectation ($\mathbb{E}[A + B] = \mathbb{E}[A] + \mathbb{E}[B]$). The median and harmonic mean are not linear. The large discrepancy with the "Empirical" value correspond to outliers where the perturbation coincides with the direction of maximal jacobian. The shaded bands coincide consistently.
-    
-    This was done because our derivation \ref{derivation:mft} use the linear expectation of the squared norms ($\mathbb{E}[|J|_F^2]$)
-
-    To ensure mathematical validity, the layer-wise empirical and theoretical metrics must be aggregated using the arithmetic mean. Because the mean-field derivation predicts the expected value of the squared Jacobian norm ($\mathbb{E}[\|J\|_F^2]$), it relies entirely on the linearity of expectation ($\mathbb{E}[A + B] = \mathbb{E}[A] + \mathbb{E}[B]$). Non-linear operators like the median do not satisfy this property, making them mathematically incompatible with the theoretical prediction. Furthermore, using the arithmetic mean preserves the visibility of heavy-tailed outliers in the data. These outlier spikes are a real physical feature of the model's phase space, marking the exact steps where specific tokens hit the highly expansive axes of the trained weight matrices to trigger localized chaotic stretching.
-
-
+    The mean-field derivation predicts the expected value of the squared Jacobian norm ($\mathbb{E}[\|J\|_F^2]$), so it relies on the linearity of expectation. That's why, in figure \ref{fig:mft}, we used the mean to aggregate the results, which is more sensitive to outliers than the non-linear median or harmonic mean (which we used in other figures). There is a large discrepancy with the mean "Empirical" and "Mean Field" values observed in the second and third layers. This is due to outliers where the perturbation coincides with the direction of maximal jacobian, together with the fact that the mean is sensitive to these outliers. The shaded bands coincide consistently.
 
 
 
@@ -1085,7 +1119,7 @@
             \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_attn/attn_spectral_norms_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
             \caption{Jacobian Spectral norm}
         \end{subfigure}
-        \caption{Attention Jacobian measurements for microsoft/Phi-4-mini-instruct}
+        \caption{Attention Jacobian measurements for Phi-4-mini-instruct}
         \label{fig:attn_microsoft}
     \end{figure}
 
