@@ -8,14 +8,15 @@ import numpy as np
 def apply_style(cfg: Dict) -> None:
     plt.rcParams.update(
         {
-            "figure.dpi": cfg["plots"]["dpi"],
-            "savefig.dpi": cfg["plots"]["dpi"],
+            "figure.dpi": cfg["plots"].get("dpi", 300),
+            "savefig.dpi": cfg["plots"].get("dpi", 300),
             "font.family": "DejaVu Serif",
-            "font.size": 12,
-            "axes.titlesize": 14,
-            "axes.labelsize": 12,
-            "xtick.labelsize": 10,
-            "ytick.labelsize": 10,
+            "font.size": cfg["plots"].get("font_size", 14),
+            "axes.titlesize": cfg["plots"].get("title_size", 14),
+            "axes.labelsize": cfg["plots"].get("label_size", 14),
+            "xtick.labelsize": cfg["plots"].get("tick_size", 12),
+            "ytick.labelsize": cfg["plots"].get("tick_size", 12),
+            "legend.fontsize": cfg["plots"].get("legend_size", 11),
         }
     )
 
@@ -29,10 +30,12 @@ def plot_histogram(
     grid: bool,
     xlim: Optional[List[float]],
     ylim: Optional[List[float]],
+    show_title: bool = False,
 ) -> None:
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     ax.hist(values, bins=bins, color="#2a6f97", alpha=0.85)
-    ax.set_title(title)
+    if show_title:
+        ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel("count")
     if grid:
@@ -59,6 +62,7 @@ def plot_dependency_curves(
     xscale: str = "linear",
     yscale: str = "linear",
     split_y_for_stable: bool = False,
+    show_title: bool = False,
 ) -> None:
     has_stable = False
     if split_y_for_stable:
@@ -164,15 +168,16 @@ def plot_dependency_curves(
         ax_bot.set_xscale(xscale)
         ax_bot.set_yscale(yscale)
 
-        ax_top.set_title(title)
+        if show_title:
+            ax_top.set_title(title)
         ax_bot.set_xlabel(xlabel)
-        fig.text(0.04, 0.5, ylabel, va='center', rotation='vertical', fontsize=12)
+        fig.text(0.04, 0.5, ylabel, va='center', rotation='vertical')
 
         if grid:
             ax_top.grid(True, linestyle=":", alpha=0.5)
             ax_bot.grid(True, linestyle=":", alpha=0.5)
 
-        if series:
+        if series and len(series) > 1:
             ax_bot.legend(frameon=False)
 
     else:
@@ -222,12 +227,13 @@ def plot_dependency_curves(
                 ymax = pos_y.max()
                 ax.set_ylim(ymin * 0.8, ymax * 1.2)
 
-        ax.set_title(title)
+        if show_title:
+            ax.set_title(title)
         ax.set_xlabel(xlabel)
         ax.set_ylabel(ylabel)
         if grid:
             ax.grid(True, linestyle=":", alpha=0.5)
-        if series:
+        if series and len(series) > 1:
             ax.legend(frameon=False)
 
     for path in output_paths:
@@ -248,6 +254,7 @@ def plot_time_series(
     grid: bool,
     yscale: str = "linear",
     xscale: str = "linear",
+    show_title: bool = False,
 ) -> None:
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     ax.plot(x, mean, color="#1f77b4", label="mean")
@@ -257,7 +264,8 @@ def plot_time_series(
 
     ax.set_yscale(yscale)
     ax.set_xscale(xscale)
-    ax.set_title(title)
+    if show_title:
+        ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if grid:
@@ -282,6 +290,7 @@ def plot_survival_curves(
     color_map: str,
     yscale: str = "linear",
     xscale: str = "linear",
+    show_title: bool = False,
 ) -> None:
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     cmap = plt.get_cmap(color_map)
@@ -304,12 +313,13 @@ def plot_survival_curves(
         else:
             ax.set_ylim(1e-3, 1.1)
 
-    ax.set_title(title)
+    if show_title:
+        ax.set_title(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if grid:
         ax.grid(True, linestyle=":", alpha=0.5)
-    if series:
+    if series and len(series) > 1:
         ax.legend(frameon=False)
 
     for path in output_paths:

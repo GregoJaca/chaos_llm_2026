@@ -65,6 +65,19 @@ def apply_defaults(cfg: Dict[str, Any]) -> Dict[str, Any]:
     cfg["plots"]["dependencies"].setdefault("fan_quantiles", [0.05, 0.25, 0.75, 0.95])
     cfg["plots"]["dependencies"].setdefault("per_prompt", True)
     cfg["plots"]["dependencies"].setdefault("x_axis", ["sliding_window", "perturbation_magnitude"])
+    x_axis = cfg["plots"]["dependencies"]["x_axis"]
+    if isinstance(x_axis, str):
+        x_axis = [x_axis]
+    if isinstance(x_axis, list):
+        normalized = []
+        for val in x_axis:
+            if val == "attention":
+                normalized.append("sliding_window")
+            elif val == "magnitude":
+                normalized.append("perturbation_magnitude")
+            else:
+                normalized.append(val)
+        cfg["plots"]["dependencies"]["x_axis"] = normalized
     cfg["plots"]["dependencies"].setdefault("inverse", False)
     cfg["plots"]["dependencies"].setdefault("x_scale", ["linear"])
     cfg["plots"]["dependencies"].setdefault("y_scale", ["linear"])

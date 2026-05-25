@@ -1,6 +1,8 @@
 paths:
-  input_dir: outputs_microsoft  # folder with run_* outputs
-  output_dir: analysis_outputs_microsoft  # where analysis artifacts go
+  input_dir: outputs_microsoft #  outputs_microsoft # outputs_OLD  # folder with run_* outputs
+  # input_dir: outputs_0.0001 #  outputs_microsoft # outputs_OLD  # folder with run_* outputs
+  output_dir: analysis_outputs_microsoft # analysis_outputs_microsoft # analysis_OLD # analysis_outputs_microsoft  # where analysis artifacts go
+  # output_dir: analysis_0.0001 # analysis_outputs_microsoft # analysis_OLD # analysis_outputs_microsoft  # where analysis artifacts go
   run_list: null  # list of run folder names or absolute paths
 
 prompt_filter:
@@ -28,6 +30,12 @@ plots:
   enabled: true  # master toggle
   formats: [png]  # add pdf later if needed
   dpi: 300  # figure dpi
+  show_title: false  # whether to draw plot titles
+  font_size: 14
+  title_size: 14
+  label_size: 14
+  tick_size: 12
+  legend_size: 11
   bins: 100  # histogram bins
   histograms:
     enabled: false
@@ -41,17 +49,17 @@ plots:
   label_no_divergence: "no divergence"
   dependencies:
     enabled: true  # generate parameter-dependence plots
-    metrics: [median, harmonic_mean]  # which metrics to plot
+    metrics: [harmonic_mean, geometric_mean]  # which metrics to plot
     error_bars: none  # std | var | fan | none
-    fan_quantiles: [0.25, 0.75] # quantiles for the fan plot
+    fan_quantiles: [0.1, 0.25, 0.75, 0.9] # quantiles for the fan plot
     x_scale: [log] # linear | log
     y_scale: [linear]
     per_prompt: false  # separate plot per prompt
-    x_axis: [sliding_window]  # which x-axes to generate
+    x_axis: [attention]  # which x-axes to generate
     inverse: false  # if true, also plot 1/divergence (stability -> 0)
     plot_separate_magnitude: true  # separate plot per magnitude
     split_y_for_stable: true  # use discontinuous/split y-axis for stable points
-    include_stable_in_stats: true  # include stable sequences in aggregation stats
+    include_stable_in_stats: false  # include stable sequences in aggregation stats
 
 survival:
   enabled: false
@@ -69,7 +77,7 @@ agreement:
   xscale: linear  # linear | log
 
 logits:
-  enabled: true
+  enabled: false
   filename: logits_metrics.npz
   max_steps: null
   yscale: linear   # linear | log

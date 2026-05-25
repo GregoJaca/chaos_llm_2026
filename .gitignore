@@ -9,3 +9,10 @@ outputs_deepseek/*
 analysis_outputs_microsoft/*
 outputs_microsoft/*
 analysis_outputs_microsoft_old/*
+analysis_outputs_deepseek/*
+outputs_OLD/
+analysis_OLD/
+analysis_deepseek/*
+writing/plots_new/*
+outputs_0.0001/*
+analysis_0.0001/*

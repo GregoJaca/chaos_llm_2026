@@ -76,6 +76,19 @@ def _harmonic_mean(vals: np.ndarray) -> float:
     return float(vals.size / s) if s > 0 else float('inf')
 
 
+def _geometric_mean(vals: np.ndarray) -> float:
+    if not vals.size:
+        return 0.0
+    v = vals.astype(float)
+    if np.any(v <= 0.0):
+        return 0.0
+    if np.any(np.isinf(v)):
+        return float('inf')
+    with np.errstate(divide='ignore', invalid='ignore'):
+        logs = np.log(v)
+    return float(np.exp(logs.mean()))
+
+
 def _calculate_survival(values: np.ndarray, max_steps: int) -> Tuple[np.ndarray, np.ndarray]:
     """Calculate survival curve: fraction of non-diverged sequences vs step."""
     # values: (num_sequences,) containing divergence indices
@@ -200,6 +213,9 @@ def main() -> None:
                 h_vals = baseline_divergence.astype(float)
                 h_vals[baseline_divergence == no_div] = np.inf
                 row["baseline_harmonic_mean"] = _harmonic_mean(h_vals)
+                g_vals = baseline_divergence.astype(float)
+                g_vals[baseline_divergence == no_div] = np.inf
+                row["baseline_geometric_mean"] = _geometric_mean(g_vals)
                 for q in cfg["summary"]["quantiles"]:
                     row[f"baseline_q{int(q*100):02d}"] = float(np.quantile(filtered, q))
             else:
@@ -238,6 +254,7 @@ def main() -> None:
                     val_std = float(stat_vals.std(ddof=1)) if (stat_vals.size > 1 and not has_inf) else 0.0
                     val_var = float(stat_vals.var(ddof=1)) if (stat_vals.size > 1 and not has_inf) else 0.0
                     val_harmonic = _harmonic_mean(stat_vals)
+                    val_geometric = _geometric_mean(stat_vals)
 
                     stats_entry = {
                         "prompt": prompt_name,
@@ -247,6 +264,7 @@ def main() -> None:
                         "mean": val_mean,
                         "median": float(np.median(stat_vals)),
                         "harmonic_mean": val_harmonic,
+                        "geometric_mean": val_geometric,
                         "mode": _mode(stat_vals),
                         "std": val_std,
                         "var": val_var,
@@ -271,6 +289,7 @@ def main() -> None:
                             "mean": float(inv_vals.mean()),
                             "median": float(np.median(inv_vals)),
                             "harmonic_mean": _harmonic_mean(inv_vals),
+                            "geometric_mean": _geometric_mean(inv_vals),
                             "mode": _mode(inv_vals),
                             "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
                             "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
@@ -296,6 +315,7 @@ def main() -> None:
                             "mean": float(stable_val),
                             "median": float(stable_val),
                             "harmonic_mean": float(stable_val),
+                            "geometric_mean": float(stable_val),
                             "mode": float(stable_val),
                             "std": 0.0,
                             "var": 0.0,
@@ -315,6 +335,7 @@ def main() -> None:
                                 "mean": inv_mean,
                                 "median": inv_mean,
                                 "harmonic_mean": inv_mean,
+                                "geometric_mean": inv_mean,
                                 "mode": inv_mean,
                                 "std": 0.0,
                                 "var": 0.0,
@@ -335,6 +356,9 @@ def main() -> None:
                 h_vals = values.astype(float)
                 h_vals[values == no_div] = np.inf
                 row["pairwise_harmonic_mean"] = _harmonic_mean(h_vals)
+                g_vals = values.astype(float)
+                g_vals[values == no_div] = np.inf
+                row["pairwise_geometric_mean"] = _geometric_mean(g_vals)
                 for q in cfg["summary"]["quantiles"]:
                     row[f"pairwise_q{int(q*100):02d}"] = float(np.quantile(filtered, q))
             else:
@@ -371,6 +395,7 @@ def main() -> None:
                     val_std = float(stat_vals.std(ddof=1)) if (stat_vals.size > 1 and not has_inf) else 0.0
                     val_var = float(stat_vals.var(ddof=1)) if (stat_vals.size > 1 and not has_inf) else 0.0
                     val_harmonic = _harmonic_mean(stat_vals)
+                    val_geometric = _geometric_mean(stat_vals)
 
                     stats_entry = {
                         "prompt": prompt_name,
@@ -380,6 +405,7 @@ def main() -> None:
                         "mean": val_mean,
                         "median": float(np.median(stat_vals)),
                         "harmonic_mean": val_harmonic,
+                        "geometric_mean": val_geometric,
                         "mode": _mode(stat_vals),
                         "std": val_std,
                         "var": val_var,
@@ -403,6 +429,7 @@ def main() -> None:
                             "mean": float(inv_vals.mean()),
                             "median": float(np.median(inv_vals)),
                             "harmonic_mean": _harmonic_mean(inv_vals),
+                            "geometric_mean": _geometric_mean(inv_vals),
                             "mode": _mode(inv_vals),
                             "std": float(inv_vals.std(ddof=1)) if inv_vals.size > 1 else 0.0,
                             "var": float(inv_vals.var(ddof=1)) if inv_vals.size > 1 else 0.0,
@@ -428,6 +455,7 @@ def main() -> None:
                             "mean": float(stable_val),
                             "median": float(stable_val),
                             "harmonic_mean": float(stable_val),
+                            "geometric_mean": float(stable_val),
                             "mode": float(stable_val),
                             "std": 0.0,
                             "var": 0.0,
@@ -447,6 +475,7 @@ def main() -> None:
                                 "mean": inv_mean,
                                 "median": inv_mean,
                                 "harmonic_mean": inv_mean,
+                                "geometric_mean": inv_mean,
                                 "mode": inv_mean,
                                 "std": 0.0,
                                 "var": 0.0,
@@ -461,6 +490,7 @@ def main() -> None:
                 "mean": float(any_pair_value),
                 "median": float(any_pair_value),
                 "harmonic_mean": float(any_pair_value),
+                "geometric_mean": float(any_pair_value),
                 "mode": float(any_pair_value),
                 "std": 0.0,
                 "var": 0.0,
@@ -489,13 +519,14 @@ def main() -> None:
             plot_survival_curves(
                 series={"survival": {"x": steps, "y": survival}},
                 title=title,
-                xlabel="token step",
-                ylabel="fraction of stable sequences",
+                xlabel="Step",
+                ylabel="Fraction Stable",
                 output_paths=output_paths,
                 grid=bool(cfg["plots"]["grid"]),
                 color_map=str(cfg["plots"]["color_map"]),
                 yscale=cfg["survival"]["yscale"],
-                xscale=cfg["survival"]["xscale"]
+                xscale=cfg["survival"]["xscale"],
+                show_title=bool(cfg["plots"].get("show_title", False))
             )
 
         hist_cfg = cfg["plots"].get("histograms", {})
@@ -516,12 +547,13 @@ def main() -> None:
                 plot_histogram(
                     values=plot_values,
                     title=title,
-                    xlabel="divergence index",
+                    xlabel="Divergence",
                     output_paths=output_paths,
                     bins=int(cfg["plots"]["bins"]),
                     grid=bool(cfg["plots"]["grid"]),
                     xlim=cfg["plots"]["xlim"],
                     ylim=cfg["plots"]["ylim"],
+                    show_title=bool(cfg["plots"].get("show_title", False))
                 )
 
         if cfg["agreement"]["enabled"]:
@@ -533,10 +565,11 @@ def main() -> None:
                 output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                 plot_time_series(
                     steps, rates, rates, None,
-                    f"Agreement with Baseline - {run_name}", "step", "agreement rate",
+                    f"Agreement with Baseline - {run_name}", "Step", "Agreement",
                     output_paths, bool(cfg["plots"]["grid"]),
                     yscale=cfg["agreement"]["yscale"],
-                    xscale=cfg["agreement"]["xscale"]
+                    xscale=cfg["agreement"]["xscale"],
+                    show_title=bool(cfg["plots"].get("show_title", False))
                 )
 
             if cfg["agreement"]["all_pairs"]:
@@ -547,10 +580,11 @@ def main() -> None:
                 output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                 plot_time_series(
                     steps, rates, rates, None,
-                    f"Agreement All-Pairs - {run_name}", "step", "agreement rate",
+                    f"Agreement All-Pairs - {run_name}", "Step", "Agreement",
                     output_paths, bool(cfg["plots"]["grid"]),
                     yscale=cfg["agreement"]["yscale"],
-                    xscale=cfg["agreement"]["xscale"]
+                    xscale=cfg["agreement"]["xscale"],
+                    show_title=bool(cfg["plots"].get("show_title", False))
                 )
 
         if cfg["logits"]["enabled"]:
@@ -566,10 +600,11 @@ def main() -> None:
                     output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                     plot_time_series(
                         steps, mean, median, std,
-                        f"Logit {name} - {run_name}", "step", name,
+                        f"Logit {name} - {run_name}", "Step", name.replace("_", " ").capitalize(),
                         output_paths, bool(cfg["plots"]["grid"]),
                         yscale=cfg["logits"]["yscale"],
-                        xscale=cfg["logits"]["xscale"]
+                        xscale=cfg["logits"]["xscale"],
+                        show_title=bool(cfg["plots"].get("show_title", False))
                     )
             except FileNotFoundError:
                 pass
@@ -592,12 +627,13 @@ def main() -> None:
             plot_histogram(
                 values=np.array(values, dtype=np.int32),
                 title=title,
-                xlabel="divergence index",
+                xlabel="Divergence",
                 output_paths=output_paths,
                 bins=int(cfg["plots"]["bins"]),
                 grid=bool(cfg["plots"]["grid"]),
                 xlim=cfg["plots"]["xlim"],
                 ylim=cfg["plots"]["ylim"],
+                show_title=bool(cfg["plots"].get("show_title", False))
             )
 
     dep_cfg = cfg["plots"].get("dependencies", {})
@@ -711,6 +747,8 @@ def main() -> None:
                                         linestyle = "--"
                                     elif metric == "harmonic_mean":
                                         linestyle = "-."
+                                    elif metric == "geometric_mean":
+                                        linestyle = ":"
                                     else:
                                         linestyle = ":"
                                     
@@ -739,17 +777,27 @@ def main() -> None:
                                     title = f"{cfg['plots']['title_prefix']} ({metric}) (window dependence){suffix}{filename_suffix}{mag_title_part} [{x_scale}/{y_scale}]"
                                     output_base = os.path.join(output_dir, "figures", f"dep_window_{metric}{mag_suffix}{suffix}{filename_suffix}{scale_suffix}")
                                     output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                                    
+                                    y_label_mapping = {
+                                        "divergence index": "Divergence",
+                                        "inverse divergence index": "Inverse Divergence",
+                                        "fraction of stable sequences": "Fraction Stable",
+                                        "agreement rate": "Agreement",
+                                    }
+                                    simple_ylabel = y_label_mapping.get(ylabel, ylabel)
+                                    
                                     plot_dependency_curves(
                                         series=series,
                                         title=title,
-                                        xlabel="sliding window",
-                                        ylabel=ylabel,
+                                        xlabel="Window",
+                                        ylabel=simple_ylabel,
                                         output_paths=output_paths,
                                         grid=bool(cfg["plots"]["grid"]),
                                         color_map=str(cfg["plots"]["color_map"]),
                                         xscale=x_scale,
                                         yscale=y_scale,
                                         split_y_for_stable=bool(dep_cfg.get("split_y_for_stable", False)),
+                                        show_title=bool(cfg["plots"].get("show_title", False))
                                     )
 
             if "perturbation_magnitude" in x_axes:
@@ -771,6 +819,8 @@ def main() -> None:
                                     linestyle = "--"
                                 elif metric == "harmonic_mean":
                                     linestyle = "-."
+                                elif metric == "geometric_mean":
+                                    linestyle = ":"
                                 else:
                                     linestyle = ":"
                                 series.update(
@@ -790,17 +840,27 @@ def main() -> None:
                                 title = f"{cfg['plots']['title_prefix']} ({metric}) (magnitude dependence){suffix}{filename_suffix} [{x_scale}/{y_scale}]"
                                 output_base = os.path.join(output_dir, "figures", f"dep_magnitude_{metric}{suffix}{filename_suffix}{scale_suffix}")
                                 output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
+                                
+                                y_label_mapping = {
+                                    "divergence index": "Divergence",
+                                    "inverse divergence index": "Inverse Divergence",
+                                    "fraction of stable sequences": "Fraction Stable",
+                                    "agreement rate": "Agreement",
+                                }
+                                simple_ylabel = y_label_mapping.get(ylabel, ylabel)
+                                
                                 plot_dependency_curves(
                                     series=series,
                                     title=title,
-                                    xlabel="perturbation magnitude",
-                                    ylabel=ylabel,
+                                    xlabel="Magnitude",
+                                    ylabel=simple_ylabel,
                                     output_paths=output_paths,
                                     grid=bool(cfg["plots"]["grid"]),
                                     color_map=str(cfg["plots"]["color_map"]),
                                     xscale=x_scale,
                                     yscale=y_scale,
                                     split_y_for_stable=bool(dep_cfg.get("split_y_for_stable", False)),
+                                    show_title=bool(cfg["plots"].get("show_title", False))
                                 )
 
 
@@ -846,13 +906,14 @@ def main() -> None:
             plot_survival_curves(
                 series=series,
                 title=f"Combined Trajectory Survival (mag={mag})",
-                xlabel="token step",
-                ylabel="fraction of stable sequences",
+                xlabel="Step",
+                ylabel="Fraction Stable",
                 output_paths=output_paths,
                 grid=bool(cfg["plots"]["grid"]),
                 color_map=str(cfg["plots"]["color_map"]),
                 yscale=cfg["survival"]["yscale"],
-                xscale=cfg["survival"]["xscale"]
+                xscale=cfg["survival"]["xscale"],
+                show_title=bool(cfg["plots"].get("show_title", False))
             )
 
 
