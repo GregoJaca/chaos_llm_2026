@@ -469,7 +469,7 @@
 
     \subsection{Experiments} % GGG rewrite for clarity.also many different types of experiments. insist that many experiments were done to find good parameters
     \label{subsec:experiments}
-    % G: conretely explain what I did: model choice, params, dim, fix length generation, context window, etc...
+    % G: concretely explain what I did: model choice, params, dim, fix length generation, context window, etc...
 
 
 
@@ -514,284 +514,14 @@
     \section{Results}
     \label{sec:results}
 
-    \subsection{Trajectory Divergence} \label{res:lyapunov}  
-
-    We also calculated the divergence using other distance metrics. We see that the trajectories remain extremely close for several steps until they suddenly diverge. In the text, the first words are the same until, at the diverging step, the words turn different and the sentences too, while the general topic remains the same. So the initial perturbation persists in the hidden states, but does not affect token selection until a certain step, where the sampled token by two trajectories is different, which then leads them to quickly diverge.
-    The explanation for this is that at each step, the most probable next token is selected. If the perturbation is not large enough, at a given step it will not change the selected token, which keeps both trajectories close. In the text space, and in the sentence embeddings, the perturbation will not be detectable at all, while in the hidden state space, it will remain. After some steps, it might occur that the perturbation, which propagates and possibly amplifies due to the non-linear coupling, induces a different next token to be selected. This causes a big discrete difference with the non-disturbed trajectory, which then strongly influences the next token prediction. This causes trajectories to rapidly diverge once the first different token is predicted.
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[t]{0.4\textwidth}
-            \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/cross_corr_pearson_0_2_window_size_16.pdf}
-            \caption{Cross-correlation dissimilarity}
-        \end{subfigure}\quad
-        \begin{subfigure}[t]{0.4\textwidth}
-            \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/dtw_timeseries_0_2_window_size_16.pdf}
-            \caption{DTW}
-        \end{subfigure}
-        \\[0.5em]
-        \begin{subfigure}[t]{0.4\textwidth}
-            \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/frechet_timeseries_0_2_window_size_16.pdf}
-            \caption{Fréchet}
-        \end{subfigure}\quad
-        \begin{subfigure}[t]{0.4\textwidth}
-            \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/hausdorff_timeseries_0_2_window_size_16.pdf}
-            \caption{Hausdorff}
-        \end{subfigure}
-        \caption{Divergence between a pair of hidden-state trajectories measured using different distance metrics. Some metrics exhibit gradual divergence (panels (b), (d)), while others show abrupt, step-like separation (panels (a), (c))corresponding to the first differing token.}
-        \label{fig:distance_hidden}
-    \end{figure}
-
-    % Figures \ref{fig:distance_hidden} and show that considering trajectories of hidden states or sentence embeddings, the divergence curves are similar. Some metrics show a discrete, almost step-function-like divergence, like Fréchet in the hidden state space. % 
 
 
 
-    \subsection{RP}
-    \label{subsec:rp_results}
-
-    Plotting the RPs for trajectories from different prompts shows a wide variety of results. Strong similarities can be seen between the RP from the Lorenz \cite{DeterministicNonperiodicFlow} system as seen in Fig. \ref{fig:rp_examples} and some of the RPs obtained from the LLMs hidden states. Chaotic features are more strongly present at the last layers of the model as showed in the RP \ref{fig:rp_comparison_layers} and pointwise dimension \ref{fig:dim_first_last}. This is due to the progressive addition of more nonlinearity and coupling at each layer. 
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[t]{0.4\textwidth}
-            \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_first_rr_0.03.pdf}
-            \caption{Prompt 1, first layer}
-        \end{subfigure}\quad
-        \begin{subfigure}[t]{0.4\textwidth}
-            \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_last_rr_0.03.pdf}
-            \caption{Prompt 1, last layer}
-        \end{subfigure}
-        \\[0.5em]
-        \begin{subfigure}[t]{0.4\textwidth}
-            \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_first_rr_0.03.pdf}
-            \caption{Prompt 2, first layer}
-        \end{subfigure}\quad
-        \begin{subfigure}[t]{0.4\textwidth}
-            \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_last_rr_0.03.pdf}
-            \caption{Prompt 2, last layer}
-        \end{subfigure}
-        \caption{Recurrence plots for different prompts and transformer layers using cosine distance. Chaotic features such as diagonal line structures become more pronounced in deeper layers (cf. panel (b)). The recurrence rate was fixed to $0.03$.}
-        \label{fig:rp_comparison_layers}
-    \end{figure}
-
-    A prominent feature across prompts is the presence of numerous short diagonal line segments with varying lengths. In recurrence analysis, such fragmented diagonals indicate that nearby trajectory segments remain similar only for finite intervals before separating, a signature consistent with sensitivity to initial conditions and positive Lyapunov exponents. The abundance of diagonals with a broad length distribution is compatible with the chaotic dynamics suggested by the divergence analysis. % GGG maybe reference the divergence analysis
-
-    In some cases the recurrence plots also display quasi-periodic stripe or grid-like patterns (See Fig. \ref{rp_interesting} (b)). Inspection of the generated text shows that these structures arise when the model generates regular textual formats, such as enumerated suggestions or repeated recommendation templates. These patterns produce recurrent passages through similar regions of hidden-state space, giving rise to the periodic structures visible in the recurrence matrix.
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[t]{0.4\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_2_rr_0.05.pdf}
-            \caption{Prompt a}
-        \end{subfigure}\quad
-        \begin{subfigure}[t]{0.4\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_3_rr_0.05.pdf}
-            \caption{Prompt b}
-        \end{subfigure}
-        \\[0.5em]
-        \begin{subfigure}[t]{0.4\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_0_rr_0.05.pdf}
-            \caption{Prompt c}
-        \end{subfigure}\quad
-        \begin{subfigure}[t]{0.4\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_6_rr_0.05.pdf}
-            \caption{Prompt d}
-        \end{subfigure}
-        \caption{Recurrence plots obtained for different prompts, evaluated at the last layer. Panel (a) exhibits fractal-like behavior, with short diagonal lines, which can be interpreted as a state at the edge of chaos. The recurrence rate was fixed to $0.05$.}
-        \label{fig:rp_interesting}
-    \end{figure}
-
-    The Chain-of-Thought reasoning block, the first tokens generated by the model, can be identified in the RP (dark left bottom block), especially prominent in the last layers. It suggests the model enters a specific, stable 'reasoning state' before beginning its main output. RPs can be used to identify functional stages in the generation process. 
-
-    \subsection{Dimensionality}
-
-    Figure \ref{fig:dim_first_last} shows the Correlation Sum for a random set of vectors, and for the points in a trajectory using the hidden states from the first and last layers of the LLM. The curve obtained for the last layer is what we would expect from a system with low-dimensional chaos. The measured dimension value obtained varied significantly depending on the distance metric used, while in every case, the Correlation Dimension vs Threshold curve was almost identical, but with a different slope. Therefore we don't consider this as a precise measure of the fractal dimension of an attractor, but as an indicator of deterministic chaos, which helps us identify differences between layers, and between deterministic and nondeterministic sampling.
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/dimension/random.png}
-            \caption{Random}
-        \end{subfigure}
-        \centering
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first.png}
-            \caption{First layer}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last.png}
-            \caption{Last layer}
-        \end{subfigure}
-
-        \caption{Correlation dimension plots for a random set of vectors, and the first and last layers of the LLM.}
-        \label{fig:dim_first_last}
-    \end{figure}
-
-    In Figure \ref{fig:dim_first_last} note that the random set of vector's correlation sum resembles the first layer's close to a threshold value of around 0.9 and above, which can more clearly be seen in Figure \ref{fig:distribution_cos_dist}. In the first layer distance distribution, a peak at 1 is observed, which corresponds to almost orthogonal vectors. For a set of random vectors of the same dimension, we see a more narrow distribution peaked at 1 \footnote{The number of almost orthogonal vectors grows exponentially with the dimension of the space \cite{cai2013distributionsanglesrandompacking}. In LLMs the curse of dimensionality can be a blessing as they can represent many more concepts than the embedding dimension \cite{blessing}. Empirical results show that LLMs represent high-level concepts linearly as directions in space \cite{park2024linearrepresentationhypothesisgeometry}, with separable concepts being almost orthogonal.}.
-    In the first layer there are many vectors with distance equal to 0, which correspond to repeated tokens. These are not as prominent in the last layer, because after going through all the transformer layers, same tokens get mapped to different hidden states at the last layer, as the mapping is state dependent. % G: could be more concise
-    All of the cases analyzed showed two main peaks at values close to 0.6 and 1, for the distribution at the last layer, although not in every case was the peak at 0.6 so pronounced.
-    % any explanation for this
-
-    % random at first layer is because it doesn't have all the info of the context so it appears random.
-    % only at last layers can you see the true chaoicity
-    %  A non-integer value for Dimenion is a hallmark of a fractal strange attractor. 
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/dimension/random_dist.png}
-            \caption{Random}
-        \end{subfigure}
-        \centering
-        \begin{subfigure}[b]{0.32\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first_dist.png}
-            \caption{First layer}
-        \end{subfigure}
-        \begin{subfigure}[b]{0.32\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last_dist.png}
-            \caption{Last layer}
-        \end{subfigure}
-
-        \caption{Distribution of cosine distance for a random set of vectors, and the first and last layers of the LLM.}
-        % \caption{Distribution of cosine distance for the first and last layers of the LLM. The top and bottom rows are from different prompts}
-        \label{fig:distribution_cos_dist}
-    \end{figure}
-
-    The first layer hidden states show more resemblance with the randomly generated set of vectors, with the main difference that the former have many repeated tokens, which lead to many equal vectors. This corresponds to the almost constant correlation sum for low threshold values (see Fig. \ref{fig:dim_first_last}), which constrasts to the linear increase in the last layer hidden state case. For the first layer hidden states and the random vectors, the main increase in the correlation sum is close to the threshold = 1, corresponding to the single peak in the distance distribution. In the first layer, the Correlation Sum and the distribution is not as continuous as these vectors are discrete and taken from the embedding matrix, and do not approximate a continuous manifold.
-
-    % The correlation dimension of a random set of vectors tends to the embedding dimension. 
-
-    % In the cases investigated the correlation dimension obtained using the L2 distance metric was aproximately twice the one obtained using cosine similarity.
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/dimension/temperature06_childhood/cosine_sim_first_first_T06.png}
-            \caption{First layer}
-        \end{subfigure}\quad
-        \centering
-        \begin{subfigure}[b]{0.32\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots/dimension/temperature06_childhood/cosine_sim_last_last_T06.png}
-            \caption{Last layer}
-        \end{subfigure}\quad
-
-        \caption{Correlation dimension plots for the first and last layers of the LLM using probabilistic sampling with $T = 0.6$.}
-        \label{fig:dim_first_last_temperature}
-    \end{figure}
-
-    Finally in Figure \ref{fig:dim_first_last_temperature} we show the Correlation Sum obtained from a trajectory using probabilistic sampling, meaning that there is some stochasticity at the selection of each token. We see almost no difference at the first layer, compared to the deterministic case, but at the last layer we clearly see different behavior. There is no linear region to extract a dimension value. 
-    The fact that the difference between the deterministic and probabilistic trajectories can be identified only at the last layer supports the idea that chaotic behaviour is experienced at the last layer.
 
     \subsection{Propagation of a perturbation across the Layers}
     \label{subsec:layer_perturbations}
-
-    We analyze how a perturbation propagates as each token gets processed by the layers of the model. We generate a blob of initial conditions and do a forward pass, extracting the hidden states at each layer of the model. We analyze how the perturbation propagates across these layers.
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
-            \caption{Phi-4-mini-instruct}
-        \end{subfigure}\quad
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
-            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
-        \end{subfigure}
-        \caption{Propagation of a perturbation across the layers of the model}
-        \label{fig:perturbation_layers}
-    \end{figure}
-
-
-    The perturbation magnitude increases quickly after the first layers, then remains constant for the middle layers of the model, and finally decreases in the last layers. An explanation for this is that in the middle layers, the model expands the phase space to be ale to maximally connect the information.
-    In the last layer, the model predicts the next token. % GGG
-
-    The magnitude of the perturbation in the middle layers, which is approximately constant, follows a power law as a function of the applied perturbation. This is expected for linearized operator/systems. By fitting on the linear region, we obtain the exponents for each, both close to 1. % G i don't know exactly, what I want to say is that for small magnitude perturbations, they will propagate with power law.
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
-            \caption{Phi-4-mini-instruct, exponent=$0.986 \pm 0.005$}
-        \end{subfigure}\quad
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
-            \caption{DeepSeek-R1-Distill-Qwen-1.5B, exponent=$0.993 \pm 0.007$}
-        \end{subfigure}
-        \caption{Propagation of a perturbation across the layers of the model}
-        \label{fig:scaling}
-    \end{figure}
-
-    % G At each MLP block, the hidden state is up-projected, then ffnn and then down-project
-
-    % GGG here I don't like the use of \mathbf{T} , would it be fine to use \mathbf{J}?
-    In the linear regime (where $r$ is small), a perturbation $\delta \mathbf{x}_0$ propagates to layer $\ell$ through the linear tangent map (the product of layer Jacobians):
-    $$\delta \mathbf{x}_{\ell} \approx \mathbf{T}_{0 \to \ell} \delta \mathbf{x}_0$$
-    Since the initial simplex perturbation has a radius of $r$ ($\delta \mathbf{x}_0 = r \hat{\mathbf{u}}$ where $\hat{\mathbf{u}}$ is a unit vector):
-    $$\|\delta \mathbf{x}_{\ell}\|_2 \approx r \|\mathbf{T}_{0 \to \ell} \hat{\mathbf{u}}\|_2 = A(\ell) \cdot r$$
-    Thus, the distance at any layer $\ell$ is strictly proportional to $r^1$. On a log-log scale:
-    $$\log d(\ell) = \log A(\ell) + 1 \cdot \log r$$ \label{eq:power_law}
-    This is a straight line of slope 1. It is a fundamental property of linearized dynamical systems. % GGG
-
-
-
-    Once we isolate the linear region, from the constant term in the fit (Eq. \ref{eq:power_law}), we obtain the aggregate product of the layer jacobians. In Fig. \ref{fig:lin_pert_gain} we can see the 
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
-            \caption{Phi-4-mini-instruct}
-        \end{subfigure}\quad
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
-            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
-        \end{subfigure}
-        \caption{Linearized perturbation gain of each layer}
-        \label{fig:lin_pert_gain}
-    \end{figure}
-
-
-
-    At small magnitude perturbations the power law behavior no longer holds, and there is a constant baseline perturbation. This is caused by the numerical precision of the computations using FP16.
-    % For values in the range $[1.0, 2.0]$, the spacing (machine epsilon) is: $$\Delta x = 2^{-10} \approx 9.77 \times 10^{-4}$$
-    For values in the range $[0.5, 1.0]$, the exponent drops by 1, so the spacing is exactly half of that: $$\Delta x = 2^{-11} \approx 4.88 \times 10^{-4}$$
-    Since the activation values in the model's hidden states and embeddings are typically concentrated between $0.5$ and $1.0$, the minimum possible step size the hardware can represent is $ \approx 4.88 \times 10^{-4}$, which matches the observed value.
-    % microsoft: 0.00045525067813893355
-    % deepseek : 0.0005264790670480579
-
-
-    
-
-
-    
-
-
-
-
-
-
-
-
-
-
+    % XXX What I want to say is that: perturbations propagate across the layers of the model. This can be analyzed looking at the Jacobians (using exact derivatives from pytorch) if each component individually (MLP, Attention, Normalization, Residual connections). This tells us how a perturbation propagates across each operator. We first lay the mathematical foundations, we do some derivations, and we define some quantities. And we define conditions for the possibility (or guarante maybe, idk) of chaotic behavior. Without empirical data, little can be said, so based on the definitions we made, we make experiments and measurements on the model. (In some cases, like with residual connections, we need no experiments, theory is enough.) We then show the results. Finally, we apply a finite size perturbation, and analyze how it propagates across the layers (not just each operator individually, but all of them together). 
+    % 
 
     \subsubsection{Local Phase-Space Expansion in SwiGLU MLP Blocks}
 
@@ -1111,7 +841,7 @@
 
 
 
-    \subsubsection{Topological Folding via Normalization}
+    \subsubsection{Normalization}
 
     To prevent numerical overflow and stabilize learning, Transformers use normalization layers, most commonly LayerNorm or RMSNorm. From a dynamical systems perspective, these operators regulate phase-space expansion by suppressing the amplitude of perturbations fed into the nonlinear sub-blocks.
 
@@ -1132,7 +862,7 @@
     If preceding layers stretch $x$ along expansive directions, the absolute magnitude ($\|x\|_2$) or variance ($\sigma$) increases. The normalization Jacobian inversely scales the incoming perturbation $\delta x$ by this growing denominator $S$. 
 
 
-    \subsubsection{Spectrum Shifting via Residual Connections}
+    \subsubsection{Residual Connections}
 
     LLMs utilize residual connections around every nonlinear sub-block. For a given block computing $F(x) = \text{MLP/Attn}(\text{Norm}(x))$, the state update is $x_{res} = x + F(x)$. The total block Jacobian is therefore:
 
@@ -1143,9 +873,287 @@
     Crucially, the residual identity branch $I$ perfectly preserves the radial perturbations that the normalization layer's projection matrix $P_{\perp}$ locally annihilated. Because of this, normalization does not geometrically clip the global trajectory. Instead, it provides topological folding via asymptotic starvation: as the global hidden state expands, the normalization scaling factor $S$ grows, passively shrinking the magnitude of the perturbation fed into $F(x)$. This interplay allows exponential sensitivity to initial conditions to persist along the residual stream while forcing the global trajectory to remain bounded within a strange attractor.
 
 
+
+
+       \subsubsection{Finite size perturbation} 
+
+    We analyze how a perturbation propagates as each token gets processed by the layers of the model. We generate a blob of initial conditions and do a forward pass, extracting the hidden states at each layer of the model. We analyze how the perturbation propagates across these layers.
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
+            \caption{Phi-4-mini-instruct}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+        \end{subfigure}
+        \caption{Propagation of a perturbation across the layers of the model}
+        \label{fig:perturbation_layers}
+    \end{figure}
+
+
+    The perturbation magnitude increases quickly after the first layers, then remains constant for the middle layers of the model, and finally decreases in the last layers. An explanation for this is that in the middle layers, the model expands the phase space to be ale to maximally connect the information.
+    In the last layer, the model predicts the next token. % GGG
+
+    The magnitude of the perturbation in the middle layers, which is approximately constant, follows a power law as a function of the applied perturbation. This is expected for linearized operator/systems. By fitting on the linear region, we obtain the exponents for each, both close to 1. % G i don't know exactly, what I want to say is that for small magnitude perturbations, they will propagate with power law.
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
+            \caption{Phi-4-mini-instruct, exponent=$0.986 \pm 0.005$}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B, exponent=$0.993 \pm 0.007$}
+        \end{subfigure}
+        \caption{Propagation of a perturbation across the layers of the model}
+        \label{fig:scaling}
+    \end{figure}
+
+    % G At each MLP block, the hidden state is up-projected, then ffnn and then down-project
+
+    % GGG here I don't like the use of \mathbf{T} , would it be fine to use \mathbf{J}?
+    In the linear regime (where $r$ is small), a perturbation $\delta \mathbf{x}_0$ propagates to layer $\ell$ through the linear tangent map (the product of layer Jacobians):
+    $$\delta \mathbf{x}_{\ell} \approx \mathbf{T}_{0 \to \ell} \delta \mathbf{x}_0$$
+    Since the initial simplex perturbation has a radius of $r$ ($\delta \mathbf{x}_0 = r \hat{\mathbf{u}}$ where $\hat{\mathbf{u}}$ is a unit vector):
+    $$\|\delta \mathbf{x}_{\ell}\|_2 \approx r \|\mathbf{T}_{0 \to \ell} \hat{\mathbf{u}}\|_2 = A(\ell) \cdot r$$
+    Thus, the distance at any layer $\ell$ is strictly proportional to $r^1$. On a log-log scale:
+    $$\log d(\ell) = \log A(\ell) + 1 \cdot \log r$$ \label{eq:power_law}
+    This is a straight line of slope 1. It is a fundamental property of linearized dynamical systems. % GGG
+
+
+
+    Once we isolate the linear region, from the constant term in the fit (Eq. \ref{eq:power_law}), we obtain the aggregate product of the layer jacobians. In Fig. \ref{fig:lin_pert_gain} we can see the 
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
+            \caption{Phi-4-mini-instruct}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+        \end{subfigure}
+        \caption{Linearized perturbation gain of each layer}
+        \label{fig:lin_pert_gain}
+    \end{figure}
+
+
+
+    At small magnitude perturbations the power law behavior no longer holds, and there is a constant baseline perturbation. This is caused by the numerical precision of the computations using FP16.
+    % For values in the range $[1.0, 2.0]$, the spacing (machine epsilon) is: $$\Delta x = 2^{-10} \approx 9.77 \times 10^{-4}$$
+    For values in the range $[0.5, 1.0]$, the exponent drops by 1, so the spacing is exactly half of that: $$\Delta x = 2^{-11} \approx 4.88 \times 10^{-4}$$
+    Since the activation values in the model's hidden states and embeddings are typically concentrated between $0.5$ and $1.0$, the minimum possible step size the hardware can represent is $ \approx 4.88 \times 10^{-4}$, which matches the observed value.
+    % microsoft: 0.00045525067813893355
+    % deepseek : 0.0005264790670480579
+
+
+   
+
+
+
+    \subsection{Trajectory Divergence} \label{res:trajectory_divergence}  
+    % XXX: Here what I want to show is that: small perturbations in tokens/prompt don't cause an immediate change, and the first generated tokens coincide (the perturbation remains latent), and then eventually you get a different token sampled. This then causes the trajectories to quickly diverge. I also want to highlight the difficulties of measuring the perturbation due to the high dimensionality of the space and the lack of a canonical distance metric (we try out a lot of metrics, and sliding windows, and sentence embedders, and ...). Thus, we decide that a suitable metric is "how many generated tokens until the first different one" or "time to first divergence" (sort of like a characteristic time in which the trajectories remain together). 
+
+    We also calculated the divergence using other distance metrics. We see that the trajectories remain extremely close for several steps until they suddenly diverge. In the text, the first words are the same until, at the diverging step, the words turn different and the sentences too, while the general topic remains the same. So the initial perturbation persists in the hidden states, but does not affect token selection until a certain step, where the sampled token by two trajectories is different, which then leads them to quickly diverge.
+    The explanation for this is that at each step, the most probable next token is selected. If the perturbation is not large enough, at a given step it will not change the selected token, which keeps both trajectories close. In the text space, and in the sentence embeddings, the perturbation will not be detectable at all, while in the hidden state space, it will remain. After some steps, it might occur that the perturbation, which propagates and possibly amplifies due to the non-linear coupling, induces a different next token to be selected. This causes a big discrete difference with the non-disturbed trajectory, which then strongly influences the next token prediction. This causes trajectories to rapidly diverge once the first different token is predicted.
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[t]{0.4\textwidth}
+            \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/cross_corr_pearson_0_2_window_size_16.pdf}
+            \caption{Cross-correlation dissimilarity}
+        \end{subfigure}\quad
+        \begin{subfigure}[t]{0.4\textwidth}
+            \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/dtw_timeseries_0_2_window_size_16.pdf}
+            \caption{DTW}
+        \end{subfigure}
+        \\[0.5em]
+        \begin{subfigure}[t]{0.4\textwidth}
+            \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/frechet_timeseries_0_2_window_size_16.pdf}
+            \caption{Fréchet}
+        \end{subfigure}\quad
+        \begin{subfigure}[t]{0.4\textwidth}
+            \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/hausdorff_timeseries_0_2_window_size_16.pdf}
+            \caption{Hausdorff}
+        \end{subfigure}
+        \caption{Divergence between a pair of hidden-state trajectories measured using different distance metrics. Some metrics exhibit gradual divergence (panels (b), (d)), while others show abrupt, step-like separation (panels (a), (c))corresponding to the first differing token.}
+        \label{fig:distance_hidden}
+    \end{figure}
+
+    % Figures \ref{fig:distance_hidden} and show that considering trajectories of hidden states or sentence embeddings, the divergence curves are similar. Some metrics show a discrete, almost step-function-like divergence, like Fréchet in the hidden state space. % 
+
+
     \subsection{Propagation of perturbations across Tokens}
+    % XXX: Here what I want to say is: In the previous section we showed that perturbations can remain latent in the token's hidden states, and then after some number of tokens, cause a different token to be predicted. Given that attention is the only mechanism that enables forward propagation of information and perturbations, attention must be the cause. Here we use the "time to first divergence", and look at its dependence on the attention window size. Thus we want to show how attention propagates perturbations. The relationship is not straightforward.
 
     Here I have some data which shows how the trajectory divergence depends on context window size. data is cooking, will be ready Thursday morning.
+
+
+
+
+
+
+
+    \subsection{RP}
+    \label{subsec:rp_results}
+    % XXX Here what I want to say is that: the RP look super cool. they resemble those by chaotic systems like lorenz. There is not much consistency, and they all look different. RQA (recurrence quantification analysis) wasn't very illumiinating, but I wasn't very systematic. But it is extremely remarkable that they are so similar to those of chaotic systems. Also we can identify some structures in the text in the RPs, like the reasoning block and sometimes when it makes lists or structured info. (for someone who know about chaos theory and recurrence plots, seeing one of this is an immediate indicator of interesting chaotic system)
+
+    Plotting the RPs for trajectories from different prompts shows a wide variety of results. Strong similarities can be seen between the RP from the Lorenz \cite{DeterministicNonperiodicFlow} system as seen in Fig. \ref{fig:rp_examples} and some of the RPs obtained from the LLMs hidden states. Chaotic features are more strongly present at the last layers of the model as showed in the RP \ref{fig:rp_comparison_layers} and pointwise dimension \ref{fig:dim_first_last}. This is due to the progressive addition of more nonlinearity and coupling at each layer. 
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[t]{0.4\textwidth}
+            \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_first_rr_0.03.pdf}
+            \caption{Prompt 1, first layer}
+        \end{subfigure}\quad
+        \begin{subfigure}[t]{0.4\textwidth}
+            \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_last_rr_0.03.pdf}
+            \caption{Prompt 1, last layer}
+        \end{subfigure}
+        \\[0.5em]
+        \begin{subfigure}[t]{0.4\textwidth}
+            \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_first_rr_0.03.pdf}
+            \caption{Prompt 2, first layer}
+        \end{subfigure}\quad
+        \begin{subfigure}[t]{0.4\textwidth}
+            \includegraphics[width=\linewidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_last_rr_0.03.pdf}
+            \caption{Prompt 2, last layer}
+        \end{subfigure}
+        \caption{Recurrence plots for different prompts and transformer layers using cosine distance. Chaotic features such as diagonal line structures become more pronounced in deeper layers (cf. panel (b)). The recurrence rate was fixed to $0.03$.}
+        \label{fig:rp_comparison_layers}
+    \end{figure}
+
+    A prominent feature across prompts is the presence of numerous short diagonal line segments with varying lengths. In recurrence analysis, such fragmented diagonals indicate that nearby trajectory segments remain similar only for finite intervals before separating, a signature consistent with sensitivity to initial conditions and positive Lyapunov exponents. The abundance of diagonals with a broad length distribution is compatible with the chaotic dynamics suggested by the divergence analysis. % GGG maybe reference the divergence analysis
+
+    In some cases the recurrence plots also display quasi-periodic stripe or grid-like patterns (See Fig. \ref{rp_interesting} (b)). Inspection of the generated text shows that these structures arise when the model generates regular textual formats, such as enumerated suggestions or repeated recommendation templates. These patterns produce recurrent passages through similar regions of hidden-state space, giving rise to the periodic structures visible in the recurrence matrix.
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[t]{0.4\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_2_rr_0.05.pdf}
+            \caption{Prompt a}
+        \end{subfigure}\quad
+        \begin{subfigure}[t]{0.4\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_3_rr_0.05.pdf}
+            \caption{Prompt b}
+        \end{subfigure}
+        \\[0.5em]
+        \begin{subfigure}[t]{0.4\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_0_rr_0.05.pdf}
+            \caption{Prompt c}
+        \end{subfigure}\quad
+        \begin{subfigure}[t]{0.4\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{figures_pdf/RP/examples_llm/recurrence_traj_6_rr_0.05.pdf}
+            \caption{Prompt d}
+        \end{subfigure}
+        \caption{Recurrence plots obtained for different prompts, evaluated at the last layer. Panel (a) exhibits fractal-like behavior, with short diagonal lines, which can be interpreted as a state at the edge of chaos. The recurrence rate was fixed to $0.05$.}
+        \label{fig:rp_interesting}
+    \end{figure}
+
+    The Chain-of-Thought reasoning block, the first tokens generated by the model, can be identified in the RP (dark left bottom block), especially prominent in the last layers. It suggests the model enters a specific, stable 'reasoning state' before beginning its main output. RPs can be used to identify functional stages in the generation process. 
+
+    \subsection{Dimensionality}
+    % XXX Here my results are not so conclusive. But there are interesting results and I want to discuss them. What is interesting: correlation dimension allows one to distinguish between deterministic chaos and random noise. especially good in high dimensions. My results are that the correlation dimension when computed using the hidden states of the last layer of the model looks very similar to a deterministic chaotic system (the power law behavior and the scaling). When computed on the first layers of the model, it looks like random noise. The same is observed if I look at the distribution of distances. On top of that, if I stop the greedy sampling and use probabilistic temperature based sampling, then the data looks more random (trivial). What this indicates is that the system is deterministic (maybe even chaotic), and that this can only be observed at the last layers. This makes sense since at the last layers, it has more information and context. what is not so conclusive: I used small amounts of data (around 3k data points in a 1500 dim space, not enough), so my measured value for the correlation dimension is meaningless and not robust. whatis meaningful is the qualitative results I mentioned.
+
+    Figure \ref{fig:dim_first_last} shows the Correlation Sum for a random set of vectors, and for the points in a trajectory using the hidden states from the first and last layers of the LLM. The curve obtained for the last layer is what we would expect from a system with low-dimensional chaos. The measured dimension value obtained varied significantly depending on the distance metric used, while in every case, the Correlation Dimension vs Threshold curve was almost identical, but with a different slope. Therefore we don't consider this as a precise measure of the fractal dimension of an attractor, but as an indicator of deterministic chaos, which helps us identify differences between layers, and between deterministic and nondeterministic sampling.
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/dimension/random.png}
+            \caption{Random}
+        \end{subfigure}
+        \centering
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first.png}
+            \caption{First layer}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last.png}
+            \caption{Last layer}
+        \end{subfigure}
+
+        \caption{Correlation dimension plots for a random set of vectors, and the first and last layers of the LLM.}
+        \label{fig:dim_first_last}
+    \end{figure}
+
+    In Figure \ref{fig:dim_first_last} note that the random set of vector's correlation sum resembles the first layer's close to a threshold value of around 0.9 and above, which can more clearly be seen in Figure \ref{fig:distribution_cos_dist}. In the first layer distance distribution, a peak at 1 is observed, which corresponds to almost orthogonal vectors. For a set of random vectors of the same dimension, we see a more narrow distribution peaked at 1 \footnote{The number of almost orthogonal vectors grows exponentially with the dimension of the space \cite{cai2013distributionsanglesrandompacking}. In LLMs the curse of dimensionality can be a blessing as they can represent many more concepts than the embedding dimension \cite{blessing}. Empirical results show that LLMs represent high-level concepts linearly as directions in space \cite{park2024linearrepresentationhypothesisgeometry}, with separable concepts being almost orthogonal.}.
+    In the first layer there are many vectors with distance equal to 0, which correspond to repeated tokens. These are not as prominent in the last layer, because after going through all the transformer layers, same tokens get mapped to different hidden states at the last layer, as the mapping is state dependent. % G: could be more concise
+    All of the cases analyzed showed two main peaks at values close to 0.6 and 1, for the distribution at the last layer, although not in every case was the peak at 0.6 so pronounced.
+    % any explanation for this
+
+    % random at first layer is because it doesn't have all the info of the context so it appears random.
+    % only at last layers can you see the true chaoicity
+    %  A non-integer value for Dimenion is a hallmark of a fractal strange attractor. 
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/dimension/random_dist.png}
+            \caption{Random}
+        \end{subfigure}
+        \centering
+        \begin{subfigure}[b]{0.32\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first_dist.png}
+            \caption{First layer}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last_dist.png}
+            \caption{Last layer}
+        \end{subfigure}
+
+        \caption{Distribution of cosine distance for a random set of vectors, and the first and last layers of the LLM.}
+        % \caption{Distribution of cosine distance for the first and last layers of the LLM. The top and bottom rows are from different prompts}
+        \label{fig:distribution_cos_dist}
+    \end{figure}
+
+    The first layer hidden states show more resemblance with the randomly generated set of vectors, with the main difference that the former have many repeated tokens, which lead to many equal vectors. This corresponds to the almost constant correlation sum for low threshold values (see Fig. \ref{fig:dim_first_last}), which constrasts to the linear increase in the last layer hidden state case. For the first layer hidden states and the random vectors, the main increase in the correlation sum is close to the threshold = 1, corresponding to the single peak in the distance distribution. In the first layer, the Correlation Sum and the distribution is not as continuous as these vectors are discrete and taken from the embedding matrix, and do not approximate a continuous manifold.
+
+    % The correlation dimension of a random set of vectors tends to the embedding dimension. 
+
+    % In the cases investigated the correlation dimension obtained using the L2 distance metric was aproximately twice the one obtained using cosine similarity.
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/dimension/temperature06_childhood/cosine_sim_first_first_T06.png}
+            \caption{First layer}
+        \end{subfigure}\quad
+        \centering
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/dimension/temperature06_childhood/cosine_sim_last_last_T06.png}
+            \caption{Last layer}
+        \end{subfigure}\quad
+
+        \caption{Correlation dimension plots for the first and last layers of the LLM using probabilistic sampling with $T = 0.6$.}
+        \label{fig:dim_first_last_temperature}
+    \end{figure}
+
+    Finally in Figure \ref{fig:dim_first_last_temperature} we show the Correlation Sum obtained from a trajectory using probabilistic sampling, meaning that there is some stochasticity at the selection of each token. We see almost no difference at the first layer, compared to the deterministic case, but at the last layer we clearly see different behavior. There is no linear region to extract a dimension value. 
+    The fact that the difference between the deterministic and probabilistic trajectories can be identified only at the last layer supports the idea that chaotic behaviour is experienced at the last layer.
 
 
     \section{Conclusions and Discussion}
