@@ -779,7 +779,7 @@ def main() -> None:
                                     output_paths = _format_outputs(output_base, cfg["plots"]["formats"])
                                     
                                     y_label_mapping = {
-                                        "divergence index": "Divergence",
+                                        "divergence index": "Index of first divergence",
                                         "inverse divergence index": "Inverse Divergence",
                                         "fraction of stable sequences": "Fraction Stable",
                                         "agreement rate": "Agreement",
@@ -789,7 +789,7 @@ def main() -> None:
                                     plot_dependency_curves(
                                         series=series,
                                         title=title,
-                                        xlabel="Window",
+                                        xlabel="Attention window size",
                                         ylabel=simple_ylabel,
                                         output_paths=output_paths,
                                         grid=bool(cfg["plots"]["grid"]),
