@@ -112,7 +112,7 @@
 
     % \newpage\null\thispagestyle{empty}\newpage
 
-    % GGG check "your"
+    % GGG Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.
 
 
     \begin{abstract}
@@ -144,7 +144,7 @@
     % G: also these tools can be applied to other DNNs that handle audio image video
     % this dynamical systems perspective is a general framework applicable to any generative model that operates sequentially, not just text-based LLMs.
 
-    Much research interest has been placed on interpretability, understanding how LLMs learn, store facts, high level concepts and how they reason. Because of their large size, complexity, and number of parameters, LLM dynamics can not be studied analytically.
+    Much research interest has been placed on interpretability, understanding how LLMs learn, store facts, high level concepts and how they reason. Because of their large size, complexity, and number of parameters, studying LLM dynamics analytically is particularly challenging.
     Interpretability research has taken a bottom up approach, looking for mechanistic explanations of model behavior, from identifying circuits (small, interpretable subnetworks, toy models, which can be fully understood) to analyzing attention patterns \cite{olah2020zoom, ameisen2025circuit, lindsey2025biology}. Chaos-theoretic tools complement this line of work by quantifying emergent global properties such as stability, divergence, and attractor structure, rather than focusing solely on small scale mechanisms. 
     % Interpretability aims to understand how these networks do what they do, and chaos analysis may help reveal how they evolve dynamically across internal representations.
 
@@ -154,7 +154,7 @@
     %In particular, if LLMs perform reasoning in a structured, low-dimensional manifold of this space, one might expect ordered, non-chaotic evolution; yet if reasoning involves self-reinforcing feedback and contextual amplification, chaotic signatures may emerge. 
     We have worked around many of these challenges, and we hope this experience can be transferred to the study of other high dimensional systems.
 
-    In this paper, we apply tools from nonlinear dynamics to the study of LLM dynamics evolution during inference. We define trajectories in hidden-state and text space, explore metrics to quantify divergence between nearby trajectories, and apply recurrence and dimensionality analyses to detect possible chaotic structures. The framework presented here extends beyond text models and can, in principle, be applied to any high-dimensional autoregressive generative system, such as audio, image, or multimodal models.
+    In this paper, we apply tools from nonlinear dynamics to the study of LLM dynamics evolution during inference. We define trajectories in hidden-state and text space, measure the jacobians of the Transformer operators, explore metrics to quantify divergence between nearby trajectories, and apply recurrence and dimensionality analyses to detect possible chaotic structures. The framework presented here extends beyond text models and can, in principle, be applied to any high-dimensional autoregressive generative system, such as audio, image, or multimodal models.
 
     % Another challenge is the non-stationarity. The 'rules' of the system (the attention patterns) are state-dependent, changing at every single step. This is unlike classic chaotic systems where the governing equations are fixed. This makes analysis much harder but also much more interesting.
 
@@ -293,7 +293,7 @@
         \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
     \end{equation}
     % GGG make it consistent with math derivations
-    where $Q$ (Query), $K$ (Key), and $V$ (Value) are learned low-rank matrices. The Query represents the current token's focus, the Key represents the information of other tokens, and the Value contains the content of those tokens, with each attention head looking at different information. The attention mechanism computes a weighted sum of the Values, where the weights are determined by the similarity between the Query and Keys \footnote{As an intuition, attention is like a learned differentiable lookup table. Given a hidden state, it generates a query and returns a weighted sum of values based on the key-query similarity, which is used to update the hidden state. The queries, keys and values are generated from the hidden states in the context window using Q, K and V.}. At each layer there are multiple attention heads which operate in parallel on the same input hidden state. 
+    where $Q$ (Query), $K$ (Key), and $V$ (Value) are learned low-rank matrices. The Query represents the current token's focus, the Key represents the characteristics of other tokens, and the Value contains the information of those tokens, with each attention head looking at different information. The attention mechanism computes a weighted sum of the Values, where the weights are determined by the similarity between the Query and Keys \footnote{As an intuition, attention is like a learned differentiable lookup table. Given a hidden state, it generates a query and returns a weighted sum of values based on the key-query similarity, which is used to update the hidden state. The queries, keys and values are generated from the hidden states in the context window using Q, K and V.}. At each layer there are multiple attention heads which operate in parallel on the same input hidden state. 
     Their output is added to the hidden state, which then gets normalized and goes to a MLP module. % G: improve this sentence, maybe even include all the equations.
     % G: each heads output is of dimension d_model / n_heads , and then the output from the heads is concatenated, bringing back a d_model dimensional vector which is added to the hidden state. G: concatened?
     Causal masking in attention is used to ensure that a token is only influenced by previous tokens. 
@@ -316,7 +316,7 @@
 
     \subsection{LLMs and dynamical systems}
     \label{subsec:analogy_limitations}
-    We propose viewing the autoregressive operation of a Large Language Model as a \textbf{high-dimensional, discrete-time dynamical system}. Each forward pass defines a nonlinear state-dependent mapping between successive states of the system, where the collection of hidden states in the context window constitutes the trajectory evolving within the model's embedding space. From this perspective, the \textbf{self-attention mechanism} serves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. This acts as the stretching component: small perturbations to one token's hidden state can cause large changes in attention weights, which in turn significantly alter other token representations. The \textbf{normalization layers} (e.g., LayerNorm, RMSNorm) and bounded activation functions act as folding mechanisms, constraining the trajectory within a finite subspace by projecting hidden states onto normalized manifolds (explained in detail in Appendix \ref{subsec:layer_norm}). The alternation of stretching and folding operations across layers yields an evolution that is both bounded and sensitive to initial conditions.
+    We propose viewing the autoregressive operation of a Large Language Model as a \textbf{high-dimensional, discrete-time dynamical system}. Each forward pass defines a nonlinear state-dependent mapping between successive states of the system, where the collection of hidden states in the context window constitutes the trajectory evolving within the model's embedding space. From this perspective, the \textbf{self-attention mechanism} serves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. This acts as the stretching component: small perturbations to one token's hidden state can cause large changes in attention weights, which in turn significantly alter other token representations. The \textbf{normalization layers} (e.g., LayerNorm, RMSNorm) and bounded activation functions act as folding mechanisms, constraining the trajectory within a finite subspace by projecting hidden states onto normalized manifolds (explained in detail in Section \ref{ubsubsec:normalization}). The alternation of stretching and folding operations across layers yields an evolution that is both bounded and sensitive to initial conditions.
     % GGG check lol
     % GGG love you
 
@@ -424,7 +424,7 @@
         % For sliding-window analysis, hausdorff.py does not compute a strict per-window Hausdorff in all cases but computes per-point nearest distances and then aggregates those distances by either "max_of_mean" (default) or "mean_of_max" (configurable). This is a deliberate pragmatic choice;  it changes sensitivity (averaging vs extreme) and makes the sliding-window Hausdorff different from the textbook per-window Hausdorff if you choose mean-based aggregation.
         \item \textbf{Principal Component Dissimilarity (PCD):} We also defined a new distance metric based on the structural similarity of two trajectories. This metric compares the geometric structure of two trajectories by analyzing the alignment of their principal components (PCs). For each PC in the first trajectory, it finds the most similar PC in the second. The dissimilarity is then calculated as the total cosine distance between these matched pairs of principal components. This is explained in detail in \ref{subsec:pca_distance}.
 
-        \item \textbf{Cross-Correlation Dissimilarity \cite{pearson} \cite{scipy_pearson}:} This metric quantifies the structural dissimilarity between two trajectories by comparing their internal self-similarity structures. First, a cosine self-similarity matrix ($S_X$ and $S_Y$) is computed for each trajectory and the Pearson correlation ($\rho$) between both. The dissimilarity is defined as one minus the correlation, computed as:
+        \item \textbf{Cross-Correlation Dissimilarity \cite{pearson} \cite{scipy_pearson}:} This metric quantifies the structural dissimilarity between two trajectories by comparing their internal self-similarity. First, a cosine self-similarity matrix ($S_X$ and $S_Y$) is computed for each trajectory and the Pearson correlation ($\rho$) between both. The dissimilarity is defined as one minus the correlation, computed as:
         \begin{equation}
             d = 1 - \rho = 1 - \frac{\operatorname{cov}(S_X^\text{flat}, S_Y^\text{flat})}{\sigma_{S_X^\text{flat}} \sigma_{S_Y^\text{flat}}}
         \end{equation}
@@ -461,7 +461,7 @@
 
     \subsection{Dimensionality}
     \label{subsec:dimensionality_methods}
-    We estimate the correlation dimension ($D_2$) of the trajectories using the Grassberger-Procaccia algorithm \cite{GRASSBERGER1983189} \footnote{Other methods, such as box dimension or Hausdorff dimension, are less robust and harder to compute in higher dimensions}. It is derived from the scaling of the correlation integral, $C(\epsilon)$, which measures the probability that two points on the attractor are closer than a distance $\epsilon$. For small $\epsilon$, the correlation integral scales as a power law:
+    We estimate the correlation dimension ($D_2$) of the trajectories using the Grassberger-Procaccia algorithm \cite{GRASSBERGER1983189} \footnote{Other methods, such as box dimension or Hausdorff dimension, are less robust and harder to compute in higher dimensions}. It is derived from the scaling of the correlation integral, $C(\epsilon)$, which measures the probability that two points are closer than a distance $\epsilon$. For small $\epsilon$, the correlation integral scales as a power law:
     \begin{equation}
         C(\epsilon) = \lim_{N \to \infty} \frac{1}{N(N-1)} \sum_{i \ne j} \Theta(\epsilon - \|\mathbf{x}_i - \mathbf{x}_j\|) \sim \epsilon^{D_2}
     \end{equation}
@@ -530,7 +530,7 @@
     \begin{equation}
         \text{MLP}(x) = W_{down} \left( \text{SiLU}(W_{gate} x) \odot (W_{up} x) \right)
     \end{equation}
-    where $W_{gate}, W_{up} \in \mathbb{R}^{H \times d_{model}}$ and $W_{down} \in \mathbb{R}^{d_{model} \times H}$ are the learned weight matrices, $H$ is the intermediate feed-forward dimension, and $\odot$ denotes the Hadamard product. 
+    where $W_{gate}, W_{up} \in \mathbb{R}^{H \times d_{model}}$ and $W_{down} \in \mathbb{R}^{d_{model} \times H}$ are the learned weight matrices, $H$ is the intermediate feed-forward dimension, SiLU is the Sigmoid Linear Unit activation function, and $\odot$ denotes the Hadamard product. 
 
     To quantify the propagation of a local perturbation $\delta x$, we differentiate $\text{MLP}(x)$ with respect to $x$. Applying the chain rule yields the local Jacobian $J(x) \in \mathbb{R}^{d_{model} \times d_{model}}$:
     \begin{equation}
@@ -541,11 +541,11 @@
         S_x = \text{SiLU}(W_{gate} x), \quad D_x = (W_{up} x) \odot \text{SiLU}'(W_{gate} x)
     \end{equation}
 
-    The total expansion of the phase space is governed by the squared Frobenius norm of the Jacobian. Expanding $\|J(x)\|_F^2 = \text{Tr}(J(x) J(x)^T)$ yields a quadratic form that isolates the dynamic activations from the static weights (M matrices):
-    \begin{equation}
+    The total expansion of the phase space is governed by the squared Frobenius norm of the Jacobian. Expanding $\|J(x)\|_F^2 = \text{Tr}(J(x) J(x)^T)$ yields a quadratic form that contains the dynamic activations and the static weights (M matrices):
+    \begin{equation} % G I never reference these M matrices later, may delete
         \|J(x)\|_F^2 = S_x^T M_{up} S_x + D_x^T M_{gate} D_x + 2 S_x^T M_{cross} D_x
     \end{equation}
-    \begin{align}
+    \begin{align} 
         M_{\text{up}}    &= (W_{\text{down}}^T W_{\text{down}}) \odot (W_{\text{up}} W_{\text{up}}^T) \\
         M_{\text{gate}}  &= (W_{\text{down}}^T W_{\text{down}}) \odot (W_{\text{gate}} W_{\text{gate}}^T) \\
         M_{\text{cross}} &= (W_{\text{down}}^T W_{\text{down}}) \odot (W_{\text{up}} W_{\text{gate}}^T)
@@ -553,9 +553,7 @@
     % The total stretching capacity depends on the magnitudes of the activation vectors $S_x$ and $D_x$.
 
     Due to the $O(N \cdot d_{model}^2)$ memory constraints of storing full sequence Jacobians, the exact token-wise Jacobian $J(x)$ is computed iteratively using vectorized reverse-mode automatic differentiation in PyTorch (\texttt{vmap} and \texttt{jacrev}). 
-    The static weight metrics were computed directly from the model's parameters, while the dynamic activation densities were obtained by manually fetching the intermediate pre and post activation hidden states
-    \footnote{Because the evaluated architecture uses a SwiGLU MLP rather than a vanilla MLP, the traditional three-term product $\left( \frac{\|W_1\|_F^2}{d} \right) \left( \frac{\|W_2\|_F^2}{d_{ff}} \right) \gamma$ splits into two parallel interacting channels due to the gating mechanism, yielding the exact architectural translation: $\lambda_{\text{predicted}} = \frac{\|W_{\text{down}}\|_F^2}{d_{ff}} \cdot \left[ \left(\frac{\|W_{\text{gate}}\|_F^2}{d} \cdot \bar{D}_x\right) + \left(\frac{\|W_{\text{up}}\|_F^2}{d} \cdot \bar{S}_x\right) \right]$. We accounted for this in the numerical measurement, but left the simpler mathematical derivation in the text.}
-    From $J(x)$ and the static weights, we define and extract the following metrics:
+    The static weight metrics were computed directly from the model's parameters, while the dynamic activation densities were obtained by manually fetching the intermediate pre and post activation hidden states. From $J(x)$ and the static weights, we define and extract the following metrics:
 
     \begin{itemize}
         \item \textbf{Maximum Expansion (Spectral Norm):} 
@@ -568,7 +566,7 @@
         \begin{equation}
             \bar{\lambda} = \frac{1}{d_{model}} \|J(x)\|_F^2
         \end{equation}
-        The average stretching factor applied to a randomly oriented, isotropic perturbation. A value $\bar{\lambda} > 1$ implies net phase-space expansion on average, structurally enforcing exponential divergence.
+        The average stretching factor applied to a randomly oriented, isotropic perturbation. A value $\bar{\lambda} > 1$ implies net phase-space expansion on average.
         
         \item \textbf{Activation Densities:} 
         \begin{equation}
@@ -576,11 +574,11 @@
         \end{equation}
         The spatial means of the squared activation vectors. These quantify the dynamic magnitude of the gating state and gating sensitivity. 
         
-        \item \textbf{Structural Linear Capacity (Scaled Frobenius Norms):} 
+        \item \textbf{Baseline Linear Capacity (Scaled Frobenius Norms):} 
         \begin{equation}
             \tilde{F}_{gate} = \frac{\|W_{gate}\|_F^2}{d_{model}}, \quad \tilde{F}_{up} = \frac{\|W_{up}\|_F^2}{d_{model}}, \quad \tilde{F}_{down} = \frac{\|W_{down}\|_F^2}{H}
         \end{equation}
-        The scaled variance of the static weight distributions. Values strictly $>1$ indicate a structural baseline capable of inducing expansion. 
+        The scaled variance of the static weight distributions. Values $>1$ indicate capability of expansion. 
         
         % \item \textbf{Weight Spectral Norms:} 
         % \begin{equation}
@@ -643,7 +641,9 @@
     \subsubsection{Mean-Field Derivation of the MLP Stretching Factor}
     \label{derivation:mft}
 
-    To quantify the average phase-space expansion induced by the Multi-Layer Perceptron (MLP) block, we analyze the mean squared singular value ($\overline{\lambda}$) of its local Jacobian ($J$). For a MLP layer defined by $f(x) = W_2 \phi(W_1 x)$, the local Jacobian matrix is:
+    To quantify the average phase-space expansion induced by the Multi-Layer Perceptron (MLP) block, we analyze the mean squared singular value ($\overline{\lambda}$) of its local Jacobian ($J$). For a MLP layer defined by $MLP(x) = W_2 \phi(W_1 x)$
+    \footnote{This is a simpler version of MLP than the SwiGLU, which simplifies the notation for the derivation.} % GGG
+    , where $\phi$ is the act function, the local Jacobian matrix is:
     $$J = W_2 \Sigma W_1$$
     where $\Sigma = \text{diag}(\phi'(W_1 x)) \in \mathbb{R}^{d_{ff} \times d_{ff}}$. % By definition, $\overline{\lambda}$ is proportional to the squared Frobenius norm normalized by the ambient hidden dimension $d$:
     $$\overline{\lambda} = \frac{1}{d_{model}} \|J\|_F^2 = \frac{1}{d_{model}} \text{Tr}(J J^T)$$
@@ -651,7 +651,7 @@
     Using the cyclic property of the trace, we group the weight parameters into their respective Gramian matrices, $H_1 = W_1 W_1^T$ and $H_2 = W_2^T W_2$:
     $$\|J\|_F^2 = \text{Tr}(W_2 \Sigma W_1 W_1^T \Sigma W_2^T) = \text{Tr}(H_2 \Sigma H_1 \Sigma)$$
 
-    Expanding this trace operator into an explicit summation over the intermediate neuron indices $i$ and $j$ yields:
+    Expanding the trace operator yields:
     $$\|J\|_F^2 = \sum_{i=1}^{d_{ff}} \sum_{j=1}^{d_{ff}} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j = \sum_{i=1}^{d_{ff}} (H_2)_{ii} (H_1)_{ii} (\phi'_i)^2 + \sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j$$
 
     We proceed by applying two mean-field simplifications:
@@ -665,10 +665,12 @@
         $$(H_1)_{ii} \approx \frac{\text{Tr}(H_1)}{d_{ff}} = \frac{\|W_1\|_F^2}{d_{ff}}, \quad (H_2)_{ii} \approx \frac{\text{Tr}(H_2)}{d_{ff}} = \frac{\|W_2\|_F^2}{d_{ff}}$$
     \end{enumerate}
         
-    Substituting the concentrated row-norm parameters back into the diagonal sum allows the static weight variances to factor out from the dynamic, state-dependent activation derivatives:
+    Substituting these into the diagonal sum:
     $$\|J\|_F^2 \approx \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}^2} \sum_{i=1}^{d_{ff}} (\phi'_i)^2 = \frac{\|W_1\|_F^2 \|W_2\|_F^2}{d_{ff}} \gamma, \quad \gamma = \frac{1}{d_{ff}} \sum_{i=1}^{d_{ff}} (\phi'_i)^2$$
 
-    This yields the closed-form expression for the mean stretching factor:
+    This yields the closed-form expression for the mean stretching factor
+    \footnote{Because the evaluated architecture uses a SwiGLU MLP rather than a vanilla MLP, the three-term product $\left( \frac{\|W_1\|_F^2}{d} \right) \left( \frac{\|W_2\|_F^2}{d_{ff}} \right) \gamma$ splits into two due to the gating mechanism, yielding: $\lambda_{\text{predicted}} = \frac{\|W_{\text{down}}\|_F^2}{d_{ff}} \cdot \left[ \left(\frac{\|W_{\text{gate}}\|_F^2}{d} \cdot \bar{D}_x\right) + \left(\frac{\|W_{\text{up}}\|_F^2}{d} \cdot \bar{S}_x\right) \right]$. We accounted for this in the numerical measurement, but left the simpler mathematical derivation in the text.}
+    :
     $$\overline{\lambda} \approx \left( \frac{\|W_1\|_F^2}{d} \right) \left( \frac{\|W_2\|_F^2}{d_{ff}} \right) \gamma$$
 
     This formula yields an estimate for $\overline{\lambda}$ that does not require computing the full $J \in \mathbb{R}^{d \times d}$ Jacobian. $\|W_1\|_F^2$ and $\|W_2\|_F^2$ are static, and $\gamma$ requires evaluating $\phi'(x)$, which has a analytic form for most LLM architectures.
@@ -677,17 +679,18 @@
 
     \begin{figure}[H] 
         \centering
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/mft_comparison_jacobian_base_All_Prompts_Aggregated_aggregated_xscale-linear_yscale-log.png}
-            \caption{Phi-4-mini-instruct}
-        \end{subfigure}\quad
+        
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/mft_comparison_jacobian_base_All_Prompts_Aggregated_aggregated_xscale-linear_yscale-log.png}
             \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/mft_comparison_jacobian_base_All_Prompts_Aggregated_aggregated_xscale-linear_yscale-log.png}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{Measured $\overline{\lambda}$ and value calculated from the Mean Field approach. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
+        \caption{Measured $\overline{\lambda}$ and value calculated using the Mean Field formula. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
         \label{fig:mft}
     \end{figure}
 
@@ -722,7 +725,7 @@
 
 
     \paragraph{Static Linear Mixing}
-    The second term evaluates the propagation of the perturbation through the fixed attention weights. We prove that the attention matrix $A$ acts strictly as a variance-reducing operator in this term. Let the linearly projected perturbation be $\delta V = (\delta X) W_V W_O^T$, with its $j$-th row denoted as $\delta v_j$. The resulting perturbation for the $i$-th token is the convex combination:
+    The second term evaluates the propagation of the perturbation through the fixed attention weights. We prove that the attention matrix $A$ acts as a variance-reducing operator in this term. Let the linearly projected perturbation be $\delta V = (\delta X) W_V W_O^T$, with its $j$-th row denoted as $\delta v_j$. The resulting perturbation for the $i$-th token is the convex combination:
     \begin{equation}
         (A \delta V)_i = \sum_{j=1}^N A_{i,j} \delta v_j
     \end{equation}
@@ -734,9 +737,10 @@
     \begin{equation}
         \left\| (A \delta V)_i \right\|_2 \le \max_j \|\delta v_j\|_2 \le \left(\max_j \|\delta x_j\|_2\right) \underbrace{\left\| W_V W_O^T \right\|_2}_{\text{Mixing Weight Norm}}
     \end{equation}
+    % GGG clarify \left(\max_j \|\delta x_j\|_2\right)
 
 
-    This inequality establishes that $A$ computes a convex mixture and cannot autonomously amplify the perturbation norm. The absolute expansion of this term is structurally constrained by the constant projection matrices, which we define as the static \textbf{Mixing Weight Norm}. Operating entirely independent of the dynamic state $X$, this static norm dictates the maximum capacity for linear perturbation transfer.
+    This inequality establishes that $A$ computes a convex mixture and cannot autonomously amplify the perturbation norm. The absolute expansion of this term is constrained by the constant projection matrices, which we define as the static \textbf{Mixing Weight Norm}. Operating entirely independent of the dynamic state $X$, this static norm dictates the maximum capacity for linear perturbation transfer.
 
     \paragraph{Nonlinear Routing and Bilinear Coupling}
     The capacity for state-dependent perturbation growth arises from the first term, where the perturbation actively alters the routing matrix ($\delta A$). The differential of the causal pre-softmax logits is:
@@ -810,38 +814,39 @@
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_attn/attn_static_weights_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{Static Weights Jacobian}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_attn/attn_spectral_norms_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{Jacobian Spectral norm}
+            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_attn/attn_static_weights_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{Attention Jacobian measurements for DeepSeek-R1-Distill-Qwen-1.5B}
-        \label{fig:attn_deepseek}
+        \caption{Static Weights Jacobian}
+        \label{fig:attn_static_weights}
     \end{figure}
 
     \begin{figure}[H] 
         \centering
+        \
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_attn/attn_static_weights_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{Static Weights Jacobian}
+            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_attn/attn_spectral_norms_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_attn/attn_spectral_norms_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{Jacobian Spectral norm}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{Attention Jacobian measurements for Phi-4-mini-instruct}
-        \label{fig:attn_microsoft}
+        \caption{Jacobian Spectral norm} % GGG this scales with sqrt(N) from random matrix theory and the bilinear coupling $\delta Z \propto (\delta X) W_{QK} X^T$, we can show that the A matrices are operating at the isotropic / random regime.
+        \label{fig:attn_jacobian_spectral_norm}
     \end{figure}
 
 
 
 
 
-    \subsubsection{Normalization}
+    \subsubsection{Normalization} \label{subsubsec:normalization}
 
     To prevent numerical overflow and stabilize learning, Transformers use normalization layers, most commonly LayerNorm or RMSNorm. From a dynamical systems perspective, these operators regulate phase-space expansion by suppressing the amplitude of perturbations fed into the nonlinear sub-blocks.
 
@@ -856,7 +861,7 @@
     Both Jacobians share the generalized structure $J_{Norm} = \frac{1}{S} P_{\perp}$, where $S$ is a scaling factor proportional to the state's magnitude or standard deviation, and $P_{\perp}$ is an orthogonal projection matrix. This structure restricts chaotic divergence prior to the nonlinear layers through two mechanisms:
 
     \textbf{Orthogonal Annihilation:} 
-    The matrix $P_{\perp}$ dictates the permitted local geometry. In RMSNorm, $P_{\perp}$ is an exact orthogonal projection onto the tangent space of a $D$-dimensional hypersphere, satisfying $P_{\perp} x = 0$. In LayerNorm, the equivalent projection satisfies $P_{\perp} \tilde{x} = 0$. Mathematically, any component of an expansive perturbation $\delta x$ pointing outward in the radial direction of the state vector is strictly annihilated before it enters the Attention or MLP operators.
+    The matrix $P_{\perp}$ dictates the permitted local geometry. In RMSNorm, $P_{\perp}$ is an exact orthogonal projection onto the tangent space of a $D$-dimensional hypersphere, satisfying $P_{\perp} x = 0$. In LayerNorm, the equivalent projection satisfies $P_{\perp} \tilde{x} = 0$. Mathematically, any component of an expansive perturbation $\delta x$ pointing outward in the radial direction of the state vector is eliminated before it enters the Attention or MLP operators.
 
     \textbf{Radial Damping:} 
     If preceding layers stretch $x$ along expansive directions, the absolute magnitude ($\|x\|_2$) or variance ($\sigma$) increases. The normalization Jacobian inversely scales the incoming perturbation $\delta x$ by this growing denominator $S$. 
@@ -868,28 +873,28 @@
 
     $$ J_{res} = I + J_F $$
 
-    The eigenvalues $\lambda_i$ of the sub-block Jacobian $J_F$ are strictly shifted to $1 + \lambda_i$. Consequently, if the Attention or MLP operators produce any expansive direction ($\lambda_i > 0$), the spectral radius of the residual stream strictly exceeds 1, mathematically guaranteeing local phase-space expansion.
+    The eigenvalues $\lambda_i$ of the sub-block Jacobian $J_F$ are shifted to $1 + \lambda_i$. Consequently, if the Attention or MLP operators produce any expansive direction ($\lambda_i > 0$), the spectral radius of the residual stream exceeds 1, mathematically guaranteeing local phase-space expansion.
 
     Crucially, the residual identity branch $I$ perfectly preserves the radial perturbations that the normalization layer's projection matrix $P_{\perp}$ locally annihilated. Because of this, normalization does not geometrically clip the global trajectory. Instead, it provides topological folding via asymptotic starvation: as the global hidden state expands, the normalization scaling factor $S$ grows, passively shrinking the magnitude of the perturbation fed into $F(x)$. This interplay allows exponential sensitivity to initial conditions to persist along the residual stream while forcing the global trajectory to remain bounded within a strange attractor.
 
 
 
 
-       \subsubsection{Finite size perturbation} 
+    \subsubsection{Finite size perturbation} 
 
-    We analyze how a perturbation propagates as each token gets processed by the layers of the model. We generate a blob of initial conditions and do a forward pass, extracting the hidden states at each layer of the model. We analyze how the perturbation propagates across these layers.
+    We analyze how a perturbation propagates as each token gets processed by the layers of the model. We generate a blob of initial conditions (as described in Section \ref{subsec:init_cond_gen}) and do a forward pass, extracting the hidden states at each layer of the model. We analyze how the perturbation propagates across these layers.
 
     \begin{figure}[H]
         \centering
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
-            \caption{Phi-4-mini-instruct}
+            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
-            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}
         \caption{Propagation of a perturbation across the layers of the model}
         \label{fig:perturbation_layers}
@@ -905,13 +910,13 @@
         \centering
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
-            \caption{Phi-4-mini-instruct, exponent=$0.986 \pm 0.005$}
+            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B, exponent=$0.993 \pm 0.007$}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
-            \caption{DeepSeek-R1-Distill-Qwen-1.5B, exponent=$0.993 \pm 0.007$}
+            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
+            \caption{Phi-4-mini-instruct, exponent=$0.986 \pm 0.005$}
         \end{subfigure}
         \caption{Propagation of a perturbation across the layers of the model}
         \label{fig:scaling}
@@ -920,29 +925,28 @@
     % G At each MLP block, the hidden state is up-projected, then ffnn and then down-project
 
     % GGG here I don't like the use of \mathbf{T} , would it be fine to use \mathbf{J}?
-    In the linear regime (where $r$ is small), a perturbation $\delta \mathbf{x}_0$ propagates to layer $\ell$ through the linear tangent map (the product of layer Jacobians):
+    In the linear regime a perturbation $\delta \mathbf{x}_0$ propagates to layer $\ell$ through the linear tangent map (the product of layer Jacobians):
     $$\delta \mathbf{x}_{\ell} \approx \mathbf{T}_{0 \to \ell} \delta \mathbf{x}_0$$
     Since the initial simplex perturbation has a radius of $r$ ($\delta \mathbf{x}_0 = r \hat{\mathbf{u}}$ where $\hat{\mathbf{u}}$ is a unit vector):
     $$\|\delta \mathbf{x}_{\ell}\|_2 \approx r \|\mathbf{T}_{0 \to \ell} \hat{\mathbf{u}}\|_2 = A(\ell) \cdot r$$
-    Thus, the distance at any layer $\ell$ is strictly proportional to $r^1$. On a log-log scale:
+    Thus, the distance at any layer $\ell$ is proportional to $r^1$. On a log-log scale:
     $$\log d(\ell) = \log A(\ell) + 1 \cdot \log r$$ \label{eq:power_law}
-    This is a straight line of slope 1. It is a fundamental property of linearized dynamical systems. % GGG
 
+    Once we isolate the linear region, from the constant term in the fit (Eq. \ref{eq:power_law}), we obtain the aggregate product of the layer jacobians. In Fig. \ref{fig:lin_pert_gain} we can see the effective Jacobian for each layer, which encompasses the MLP, Attenntion, normalization, and residual connection. 
 
-
-    Once we isolate the linear region, from the constant term in the fit (Eq. \ref{eq:power_law}), we obtain the aggregate product of the layer jacobians. In Fig. \ref{fig:lin_pert_gain} we can see the 
+    % GGGclarify jacobian close to 0 or close to 1. for effective but also for attn, mlp. bc residual does 1 shift, so should baseline for attn and mlp be 0 or 1?
 
     \begin{figure}[H]
         \centering
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
-            \caption{Phi-4-mini-instruct}
+            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
-            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+            \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
+            \caption{Phi-4-mini-instruct}
         \end{subfigure}
         \caption{Linearized perturbation gain of each layer}
         \label{fig:lin_pert_gain}
