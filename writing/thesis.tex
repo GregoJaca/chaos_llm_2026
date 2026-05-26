@@ -316,7 +316,7 @@
 
     \subsection{LLMs and dynamical systems}
     \label{subsec:analogy_limitations}
-    We propose viewing the autoregressive operation of a Large Language Model as a \textbf{high-dimensional, discrete-time dynamical system}. Each forward pass defines a nonlinear state-dependent mapping between successive states of the system, where the collection of hidden states in the context window constitutes the trajectory evolving within the model's embedding space. From this perspective, the \textbf{self-attention mechanism} serves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. This acts as the stretching component: small perturbations to one token's hidden state can cause large changes in attention weights, which in turn significantly alter other token representations. The \textbf{normalization layers} (e.g., LayerNorm, RMSNorm) and bounded activation functions act as folding mechanisms, constraining the trajectory within a finite subspace by projecting hidden states onto normalized manifolds (explained in detail in Section \ref{ubsubsec:normalization}). The alternation of stretching and folding operations across layers yields an evolution that is both bounded and sensitive to initial conditions.
+    We propose viewing the autoregressive operation of a Large Language Model as a \textbf{high-dimensional, discrete-time dynamical system}. Each forward pass defines a nonlinear state-dependent mapping between successive states of the system, where the collection of hidden states in the context window constitutes the trajectory evolving within the model's embedding space. From this perspective, the \textbf{self-attention mechanism} serves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. This acts as the stretching component: small perturbations to one token's hidden state can cause large changes in attention weights, which in turn significantly alter other token representations. The \textbf{normalization layers} (e.g., LayerNorm, RMSNorm) and bounded activation functions act as folding mechanisms, constraining the trajectory within a finite subspace by projecting hidden states onto normalized manifolds (explained in detail in Section \ref{subsubsec:normalization}). The alternation of stretching and folding operations across layers yields an evolution that is both bounded and sensitive to initial conditions.
     % GGG check lol
     % GGG love you
 
@@ -422,7 +422,7 @@
         \end{equation}
         % implementation computes the symmetric Hausdorff as max(directed_hausdorff(a,b), directed_hausdorff(b,a)), that is standard.
         % For sliding-window analysis, hausdorff.py does not compute a strict per-window Hausdorff in all cases but computes per-point nearest distances and then aggregates those distances by either "max_of_mean" (default) or "mean_of_max" (configurable). This is a deliberate pragmatic choice;  it changes sensitivity (averaging vs extreme) and makes the sliding-window Hausdorff different from the textbook per-window Hausdorff if you choose mean-based aggregation.
-        \item \textbf{Principal Component Dissimilarity (PCD):} We also defined a new distance metric based on the structural similarity of two trajectories. This metric compares the geometric structure of two trajectories by analyzing the alignment of their principal components (PCs). For each PC in the first trajectory, it finds the most similar PC in the second. The dissimilarity is then calculated as the total cosine distance between these matched pairs of principal components. This is explained in detail in \ref{subsec:pca_distance}.
+        \item \textbf{Principal Component Dissimilarity (PCD):} We also defined a new distance metric based on the structural similarity of two trajectories. This metric compares the geometric structure of two trajectories by analyzing the alignment of their principal components (PCs). For each PC in the first trajectory, it finds the most similar PC in the second. The dissimilarity is then calculated as the total cosine distance between these matched pairs of principal components. This is explained in detail in \ref{subsec:pca_distance}. % GGG dead reference
 
         \item \textbf{Cross-Correlation Dissimilarity \cite{pearson} \cite{scipy_pearson}:} This metric quantifies the structural dissimilarity between two trajectories by comparing their internal self-similarity. First, a cosine self-similarity matrix ($S_X$ and $S_Y$) is computed for each trajectory and the Pearson correlation ($\rho$) between both. The dissimilarity is defined as one minus the correlation, computed as:
         \begin{equation}
@@ -473,9 +473,11 @@
 
 
 
-    Experiments were conducted using the models \texttt{DeepSeek-R1-Distill-Qwen-1.5B} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.} \cite{deepseek2025r1distillqwen1.5b}, and \texttt{Phi-4-mini-instruct} \footnote{A reasoning 3.8 billion parameter model which achieved great performance for it's size.} \cite{microsoft2025phi4minitechnicalreportcompact, Phi-4-mini-instruct,}. Inference was performed on a Tesla T4 GPU. Hidden states were extracted after each transformer block, yielding tensors of shape (layers, tokens, hidden dimension). Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. The context window length was set to 3096 tokens.
+    Experiments were conducted using the models \texttt{DeepSeek-R1-Distill-Qwen-1.5B} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.} \cite{deepseek2025r1distillqwen1.5b}, and \texttt{Phi-4-mini-instruct} \footnote{A reasoning 3.8 billion parameter model which achieved great performance for it's size.} \cite{microsoft2025phi4minitechnicalreportcompact, microsoft/Phi-4-mini-instruct}. 
+    Inference was performed on a Tesla T4 GPU. Hidden states were extracted after each transformer block, yielding tensors of shape (layers, tokens, hidden dimension). % GGG also intermediate activations (for the jacobians?) or not?
+    Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. The context window length was set to 3096 tokens. % GGG revise this at the end
 
-    Perturbation magnitudes were chosen empirically to preserve topical coherence while inducing measurable divergence, with $r\in[2.5\times10^{-4},5\times10^{-4}]$ (for more details c.f. \ref{sec:experiments}).
+    Perturbation magnitudes were chosen empirically to preserve topical coherence while inducing measurable divergence, with $r\in[2.5\times10^{-4},5\times10^{-4}]$ (for more details c.f. \ref{subsec:experiments}).
 
     \subsubsection{Initial Condition Generation}
     \label{subsec:init_cond_gen}
@@ -521,7 +523,9 @@
     \subsection{Propagation of a perturbation across the Layers}
     \label{subsec:layer_perturbations}
     % XXX What I want to say is that: perturbations propagate across the layers of the model. This can be analyzed looking at the Jacobians (using exact derivatives from pytorch) if each component individually (MLP, Attention, Normalization, Residual connections). This tells us how a perturbation propagates across each operator. We first lay the mathematical foundations, we do some derivations, and we define some quantities. And we define conditions for the possibility (or guarante maybe, idk) of chaotic behavior. Without empirical data, little can be said, so based on the definitions we made, we make experiments and measurements on the model. (In some cases, like with residual connections, we need no experiments, theory is enough.) We then show the results. Finally, we apply a finite size perturbation, and analyze how it propagates across the layers (not just each operator individually, but all of them together). 
-    % 
+
+    We evaluate the dynamical effect of each operator in a transformer block in order to understand how perturbations propagate across the layers of the model. 
+    % Theoretical derivations are complemented by numerical results.
 
     \subsubsection{Local Phase-Space Expansion in SwiGLU MLP Blocks}
 
@@ -553,7 +557,9 @@
     % The total stretching capacity depends on the magnitudes of the activation vectors $S_x$ and $D_x$.
 
     Due to the $O(N \cdot d_{model}^2)$ memory constraints of storing full sequence Jacobians, the exact token-wise Jacobian $J(x)$ is computed iteratively using vectorized reverse-mode automatic differentiation in PyTorch (\texttt{vmap} and \texttt{jacrev}). 
-    The static weight metrics were computed directly from the model's parameters, while the dynamic activation densities were obtained by manually fetching the intermediate pre and post activation hidden states. From $J(x)$ and the static weights, we define and extract the following metrics:
+    The static weight metrics were computed directly from the model's parameters, while the dynamic activation densities were obtained by manually fetching the intermediate pre and post activation hidden states. % GGG to methods
+    
+    From $J(x)$ and the static weights, we define and extract the following metrics:
 
     \begin{itemize}
         \item \textbf{Maximum Expansion (Spectral Norm):} 
@@ -631,7 +637,7 @@
             \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
             \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{Frobenius norms}
+        \caption{Frobenius norms} % GGG may delete this plot
         \label{fig:frobenius_static}
     \end{figure}
 
@@ -643,7 +649,7 @@
 
     To quantify the average phase-space expansion induced by the Multi-Layer Perceptron (MLP) block, we analyze the mean squared singular value ($\overline{\lambda}$) of its local Jacobian ($J$). For a MLP layer defined by $MLP(x) = W_2 \phi(W_1 x)$
     \footnote{This is a simpler version of MLP than the SwiGLU, which simplifies the notation for the derivation.} % GGG
-    , where $\phi$ is the act function, the local Jacobian matrix is:
+    , where $\phi$ is the activation function, the local Jacobian matrix is:
     $$J = W_2 \Sigma W_1$$
     where $\Sigma = \text{diag}(\phi'(W_1 x)) \in \mathbb{R}^{d_{ff} \times d_{ff}}$. % By definition, $\overline{\lambda}$ is proportional to the squared Frobenius norm normalized by the ambient hidden dimension $d$:
     $$\overline{\lambda} = \frac{1}{d_{model}} \|J\|_F^2 = \frac{1}{d_{model}} \text{Tr}(J J^T)$$
@@ -1003,6 +1009,29 @@
 
     Here I have some data which shows how the trajectory divergence depends on context window size. data is cooking, will be ready Thursday morning.
 
+    In the previous section we showed that it's possible for small magnitude perturbation to remain latent in the hidden states and trigger a different token to be selected not immediately, but after a certain number of tokens. The attention mechanism propagates these perturbations to future tokens. 
+    To quantify the chaoticity of a system, we report the number of tokens until two trajectories diverge, that is, the predicted token differs \footnote{A common metric to quantify the chaoticity of a system is the lyapunov exponents, which would be inversely proportial to the metric we report. As we did not observe strictly exponential divergence, we chose this metric.}. % GGG opinions on footnote?
+
+    \begin{figure}[H] 
+        \centering
+        
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/attn/dep_window_harmonic_mean_mag_0.0001_log_linear.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/attn/dep_window_harmonic_mean_mag_0.0001_log_linear.png}
+            \caption{Phi-4-mini-instruct}
+        \end{subfigure}
+        \caption{Divergence dependence on Attention context window size. The vertical axis represents the number of tokens until a pair of trajectories first diverge. Perturbation magnitude = $0.0001$} %%% magnitude 0.0001 ? GGG 
+        \label{fig:attn}
+    \end{figure}
+
+    Figure \ref{fig:attn} shows the relationship between the attention window size and the divergence. For very small attention window sizes, the model is very sensitive to its immediately previous tokens (which received a perturbation in our experiments), and thus diverges immediately. For slightly larger window sizes, trajectories never diverge. An explanation could be that the larger context (which is shared, if we ignore the small perturbation) stabilizes the first generated tokens. Then, after the first tokens are generated identically in all trajectories, if those populate the context window, the original perturbed prompt will be outside the window, and trajectories do not diverge. For larger context sizes, we again see consistent divergence, since the perturbation remains in the context window. % GGG
+
+    The relationship is not very straightforward and it depends on the magnitude of the perturbation. 
 
 
 
@@ -1040,7 +1069,7 @@
 
     A prominent feature across prompts is the presence of numerous short diagonal line segments with varying lengths. In recurrence analysis, such fragmented diagonals indicate that nearby trajectory segments remain similar only for finite intervals before separating, a signature consistent with sensitivity to initial conditions and positive Lyapunov exponents. The abundance of diagonals with a broad length distribution is compatible with the chaotic dynamics suggested by the divergence analysis. % GGG maybe reference the divergence analysis
 
-    In some cases the recurrence plots also display quasi-periodic stripe or grid-like patterns (See Fig. \ref{rp_interesting} (b)). Inspection of the generated text shows that these structures arise when the model generates regular textual formats, such as enumerated suggestions or repeated recommendation templates. These patterns produce recurrent passages through similar regions of hidden-state space, giving rise to the periodic structures visible in the recurrence matrix.
+    In some cases the recurrence plots also display quasi-periodic stripe or grid-like patterns (See Fig. \ref{fig:rp_interesting} (b)). Inspection of the generated text shows that these structures arise when the model generates regular textual formats, such as enumerated suggestions or repeated recommendation templates. These patterns produce recurrent passages through similar regions of hidden-state space, giving rise to the periodic structures visible in the recurrence matrix.
 
     \begin{figure}[H]
         \centering
