@@ -119,6 +119,29 @@
         Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions and a positive maximum Lyapunov exponent, with consistent results across different distance metrics. Recurrence plots show structural similarities between LLMs and canonical chaotic systems such as the Lorenz attractor, while dimension analysis reveals fractal structures in the hidden state space, particularly pronounced in the last layers. We propose that the nonlinear coupling induced by attention mechanisms plays a key role in driving this chaotic behavior. 
     \end{abstract}
     \newpage
+
+    \vspace*{1 cm}
+
+    \begin{center}
+        {\Large \textbf{Statement of originality}}
+    \end{center}
+
+    \vspace{0.5 cm}
+
+    I, the undersigned \textbf{Gregorio Jaca}, Physicist Engineer BSc student of the Budapest University of Technology and Economics, declare that I wrote this thesis without the use of any unauthorized assistance, under the guidance of my supervisor. I have cited every source I used. For any part that I have borrowed verbatim, or paraphrased while preserving its original meaning,
+    I have marked its source of origin.
+
+    \vspace{1 cm}
+
+    Budapest, May 2026
+
+    \vspace{0.2 cm}
+
+    \par\noindent\makebox[10cm][l]     \hfill\makebox[5cm][l]{\hrulefill}
+    \par\noindent\makebox[10cm][l]     \hfill\makebox[5cm][c]{Gregorio Jaca}
+
+    \newpage
+
     {
     \hypersetup{linkcolor=black}
     \tableofcontents
@@ -161,7 +184,7 @@
     \section{Related Work} 
     \label{sec:related_work}
     % This section quite common in ML papers. 
-    % This section briefly summarizes the main results from other papers which inspired my analysis and also explain some of the results obtained. It also should reinforce the idea that it's justifiable to treat LLMs and chaotic nonlinear systems. 
+    % This section briefly summarizes the main results from other papers which inspired my analysis and also explain some of the results obtained. It also should reinforce the idea that it is justifiable to treat LLMs and chaotic nonlinear systems. 
 
     The application of dynamical systems theory to neural networks has revealed complex behaviors such as attractors, bifurcations, and chaotic transients in both recurrent and feed-forward architectures. Recent work has extended these ideas to Transformer models, motivating the present study.
 
@@ -368,7 +391,7 @@
 
 
     % G: also in chaotic systems the nonlinear coupling is between variables, but in llm it is between tokens, which would be the state of the system (so all the variables) at different times
-    % ?? In a classical system like Lorenz, the coupling is between fixed variables (x, y, z). In a Transformer, the coupling is between *positions* in a sequence, and the 'variables' at those positions are entire state vectors. It's a much more complex, higher-order form of coupling. Worth stating this clearly. ??? GGG
+    % ?? In a classical system like Lorenz, the coupling is between fixed variables (x, y, z). In a Transformer, the coupling is between *positions* in a sequence, and the 'variables' at those positions are entire state vectors. It is a much more complex, higher-order form of coupling. Worth stating this clearly. ??? GGG
 
     % G: as i understand it. MLP provides nonlinearity, attention nonlinear coupling and (maybe) stretching. normalization keeps the system bounded (folding). layer norm is more like projecting to the plane perpendicular to (1,1,1,..,1) plus affine rescale.
 
@@ -473,7 +496,7 @@
 
 
 
-    Experiments were conducted using the models \texttt{DeepSeek-R1-Distill-Qwen-1.5B} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.} \cite{deepseek2025r1distillqwen1.5b}, and \texttt{Phi-4-mini-instruct} \footnote{A reasoning 3.8 billion parameter model which achieved great performance for it's size.} \cite{microsoft2025phi4minitechnicalreportcompact, microsoft/Phi-4-mini-instruct}. 
+    Experiments were conducted using the models \texttt{DeepSeek-R1-Distill-Qwen-1.5B} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.} \cite{deepseek2025r1distillqwen1.5b}, and \texttt{Phi-4-mini-instruct} \footnote{A reasoning 3.8 billion parameter model which achieved great performance for its size.} \cite{microsoft2025phi4minitechnicalreportcompact, microsoft/Phi-4-mini-instruct}. 
     Inference was performed on a Tesla T4 GPU. Hidden states were extracted after each transformer block, yielding tensors of shape (layers, tokens, hidden dimension). % GGG also intermediate activations (for the jacobians?) or not?
     Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. The context window length was set to 3096 tokens. % GGG revise this at the end
 
@@ -700,7 +723,7 @@
         \label{fig:mft}
     \end{figure}
 
-    The mean-field derivation predicts the expected value of the squared Jacobian norm ($\mathbb{E}[\|J\|_F^2]$), so it relies on the linearity of expectation. That's why, in figure \ref{fig:mft}, we used the mean to aggregate the results, which is more sensitive to outliers than the non-linear median or harmonic mean (which we used in other figures). There is a large discrepancy with the mean "Empirical" and "Mean Field" values observed in the second and third layers. This is due to outliers where the perturbation coincides with the direction of maximal jacobian, together with the fact that the mean is sensitive to these outliers. The shaded bands coincide consistently.
+    The mean-field derivation predicts the expected value of the squared Jacobian norm ($\mathbb{E}[\|J\|_F^2]$), so it relies on the linearity of expectation. Thus, in figure \ref{fig:mft}, we used the mean to aggregate the results, which is more sensitive to outliers than the non-linear median or harmonic mean (which we used in other figures). There is a large discrepancy with the mean "Empirical" and "Mean Field" values observed in the second and third layers. This is due to outliers where the perturbation coincides with the direction of maximal jacobian, together with the fact that the mean is sensitive to these outliers. The shaded bands coincide consistently.
 
 
 
@@ -1009,7 +1032,7 @@
 
     Here I have some data which shows how the trajectory divergence depends on context window size. data is cooking, will be ready Thursday morning.
 
-    In the previous section we showed that it's possible for small magnitude perturbation to remain latent in the hidden states and trigger a different token to be selected not immediately, but after a certain number of tokens. The attention mechanism propagates these perturbations to future tokens. 
+    In the previous section we showed that it is possible for small magnitude perturbation to remain latent in the hidden states and trigger a different token to be selected not immediately, but after a certain number of tokens. The attention mechanism propagates these perturbations to future tokens. 
     To quantify the chaoticity of a system, we report the number of tokens until two trajectories diverge, that is, the predicted token differs \footnote{A common metric to quantify the chaoticity of a system is the lyapunov exponents, which would be inversely proportial to the metric we report. As we did not observe strictly exponential divergence, we chose this metric.}. % GGG opinions on footnote?
 
     \begin{figure}[H] 
