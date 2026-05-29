@@ -4,18 +4,19 @@ project:
   dtype: bfloat16  # float16 | bfloat16 | float32 (int8/int4 require quantization libs)
 
 paths:
-  # model_path: ../models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B  # model or HF cache path
-  model_path: "microsoft/Phi-4-mini-instruct"
+  model_path: ../models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B  # model or HF cache path
+  # model_path: "microsoft/Phi-4-mini-instruct"
   prompts_path: prompts.txt  # prompt file
-  output_dir: outputs_microsoft_0.00001  # run output root
+  output_dir: outputs_0.0001  # run output root
+  # output_dir: outputs_microsoft_0.00001  # run output root
 
 prompts:
   format: line  # one prompt per line
   encoding: utf-8
 
 perturbation:
-  num_conditions: 200  # number of equidistant initial conditions
-  magnitude_list: [0.00001] # [0.00002]  # perturbation magnitudes
+  num_conditions: 400  # number of equidistant initial conditions
+  magnitude_list: [0.0001] # [0.00002]  # perturbation magnitudes
   apply_to_first_n_tokens: null  # set an int to restrict perturbations to first N tokens
   subspace_mode: random  # random | first
   subspace_seed: 42  # RNG seed for subspace selection
@@ -30,7 +31,7 @@ attention:
 
 generation:
   max_new_tokens: 1000 # 1000  # max generated tokens
-  batch_size: 24  # batched generation size
+  batch_size: 36  # batched generation size
   adaptive_stop: false  # stop at divergence vs baseline
   do_sample: false  # greedy decoding
   temperature: 0.0  # ignored for greedy
