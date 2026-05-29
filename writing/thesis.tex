@@ -117,6 +117,14 @@
 
     \begin{abstract}
         Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions and a positive maximum Lyapunov exponent, with consistent results across different distance metrics. Recurrence plots show structural similarities between LLMs and canonical chaotic systems such as the Lorenz attractor, while dimension analysis reveals fractal structures in the hidden state space, particularly pronounced in the last layers. We propose that the nonlinear coupling induced by attention mechanisms plays a key role in driving this chaotic behavior. % GGG rewrite
+
+        Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions % and stable bounded evolution
+        % and a positive maximum Lyapunov exponent, with consistent results across different distance metrics. 
+        Jacobian analysis shows Attention and Multi-Layer Perceptron (MLP) expand and propagate perturbations, while normalization and residual connections promote stability.
+        Recurrence plots show structural similarities between LLMs and canonical chaotic systems such as the Lorenz attractor, while dimension analysis reveals fractal structures in the hidden state space, particularly pronounced in the last layers. We propose that the nonlinear coupling induced by attention mechanisms plays a key role in driving this chaotic behavior.
+
+
+
     \end{abstract}
     \newpage
 
@@ -249,9 +257,9 @@
     Despite their practical unpredictability, often the trajectories of dissipative chaotic systems are not random; frequently they are confined to a bounded, lower dimensional subset of phase space, a \textbf{strange attractor}, towards which all close trajectories get asymptotically attracted but without realizing a periodic motion \footnote{In general, if a map contracts volumes in phase space it is called dissipative. A physical system with friction is an example. In contrast, conservative systems cannot have strange attractors because attractors attract all trajectories in a small open set containing it, which contracts the phase space volume.}\footnote{The 'strangeness' partly comes from the fact that trajectories diverge exponentially but remain confined in a zero-volume subset of the phase space. The explanation for this is that they diverge in the direction parallel to the attractor, with positive lyapunov exponent, and get attracted in the direction orthogonal to it, with negaitve lyapunov exponent.}.
     Intuitively, such systems combine stretching (which causes divergence) with folding (which confines trajectories), resulting in intricate, fractal-like structures of non-integer dimension. 
 
-    The \textbf{correlation dimension ($D_2$)} is a characteristic measure of strange attractors \cite{GRASSBERGER1983189}. This technique can be used to distinguish between deterministic chaos and random noise, and it is closely related, but not equal to the fractal and information dimension \cite{GRASSBERGER1983189}. For purely periodic systems, $D_2 = 1$, while for chaotic systems it takes non-integer values, indicating a fractal attractor structure (see Sec. \ref{subsec:dimensionality_methods}).
+    The \textbf{correlation dimension ($D_2$)} is a characteristic measure of strange attractors \cite{GRASSBERGER1983189}. This technique can be used to distinguish between deterministic chaos and random noise, and it is closely related, but not equal to the fractal and information dimension \cite{GRASSBERGER1983189}. For purely periodic systems, $D_2 = 1$, while for chaotic systems it takes non-integer values, indicating a fractal attractor structure (see Section \ref{subsec:dimensionality_methods}).
 
-    Another powerful tool for analyzing dynamical systems is \textbf{Recurrence Analysis} \cite{MARWAN2007237}. A Recurrence Plot (RP) visualizes the times at which a trajectory revisits a previously visited neighborhood in phase space (see Sec. \ref{subsec:recurrence_analysis_methods}).
+    Another powerful tool for analyzing dynamical systems is \textbf{Recurrence Analysis} \cite{MARWAN2007237}. A Recurrence Plot (RP) visualizes the times at which a trajectory revisits a previously visited neighborhood in phase space (see Section \ref{subsec:recurrence_analysis_methods}).
     The visual patterns in a RP provide an insight into the type of dynamics of the system: periodic systems produce long, parallel diagonal lines, the distance between them corresponding to the periods of oscillations, random systems show a uniform, noisy plot, and chaotic systems display a complex geometric structure with short, interrupted diagonal lines. % G anything else we can say ?
     % \textbf{Recurrence Quantification Analysis (RQA)} quantifies these structures by extracting metrics such as recurrence rate, determinism, laminarity, and entropy to characterize dynamical complexity.
 
@@ -711,7 +719,7 @@
 
     This formula yields an estimate for $\overline{\lambda}$ that does not require computing the full $J \in \mathbb{R}^{d \times d}$ Jacobian. $\|W_1\|_F^2$ and $\|W_2\|_F^2$ are static, and $\gamma$ requires evaluating $\phi'(x)$, which has a analytic form for most LLM architectures.
     % This measure can be useful for monitoring training stability in LLMs. % G
-    In order to evaluate this formula, we apply it to our measured data and display the results in Figure \ref{fig:mft}.
+    In order to evaluate this formula, we apply it to our measured data and display the results in Fig. \ref{fig:mft}.
 
     \begin{figure}[H] 
         \centering
@@ -730,7 +738,7 @@
         \label{fig:mft}
     \end{figure}
 
-    The mean-field derivation predicts the expected value of the squared Jacobian norm ($\mathbb{E}[\|J\|_F^2]$), so it relies on the linearity of expectation. Thus, in figure \ref{fig:mft}, we used the mean to aggregate the results, which is more sensitive to outliers than the non-linear median or harmonic mean (which we used in other figures). There is a large discrepancy with the mean "Empirical" and "Mean Field" values observed in the second and third layers. This is due to outliers where the perturbation coincides with the direction of maximal jacobian, together with the fact that the mean is sensitive to these outliers. The shaded bands coincide consistently.
+    The mean-field derivation predicts the expected value of the squared Jacobian norm ($\mathbb{E}[\|J\|_F^2]$), so it relies on the linearity of expectation. Thus, in Fig. \ref{fig:mft}, we used the mean to aggregate the results, which is more sensitive to outliers than the non-linear median or harmonic mean (which we used in other figures). There is a large discrepancy with the mean "Empirical" and "Mean Field" values observed in the second and third layers. This is due to outliers where the perturbation coincides with the direction of maximal jacobian, together with the fact that the mean is sensitive to these outliers. The shaded bands coincide consistently.
     % This section (and it's assumptions) are justified by the great agreement of the formula with the measured results
 
 
@@ -892,7 +900,7 @@
 
     Standard LayerNorm applies the same operation to the mean-centered vector $\tilde{x} = x - \mu \mathbf{1}$, scaled by the standard deviation $\sigma = \frac{1}{\sqrt{D}} \|\tilde{x}\|_2$. Its Jacobian is:
 
-    $$ J_{LN} = \frac{1}{\sigma} \left[ \left( I - \frac{1}{D}\mathbf{1}\mathbf{1}^T \right) - \frac{\tilde{x} \tilde{x}^T}{\|\tilde{x}\|_2^2} \right] $$
+    $$ J_{LN} = \frac{1}{\sigma} \left[ \left( I - \frac{1}{D}\mathbf{1}\mathbf{1}^T \right) - \frac{\tilde{x} \tilde{x}^T}{\|\tilde{x}\|_2^2} \right]$$
 
     Both Jacobians share the generalized structure $J_{Norm} = \frac{1}{S} P_{\perp}$, where $S$ is a scaling factor proportional to the state's magnitude or standard deviation, and $P_{\perp}$ is an orthogonal projection matrix. This structure restricts chaotic divergence prior to the nonlinear layers through two mechanisms:
 
@@ -901,6 +909,26 @@
 
     \textbf{Radial Scaling:} 
     If preceding layers stretch $x$ along expansive directions, the absolute magnitude ($\|x\|_2$) or variance ($\sigma$) increases. The normalization Jacobian inversely scales the incoming perturbation $\delta x$ by this growing denominator $S$. 
+
+    To validate this, we did measured the alignement between the output difference $\delta y = \text{Norm}(x + \delta x) - \text{Norm}(x)$ compared to the input difference (perturbation) $\delta x$, which can be seen in Fig. \ref{fig:normalization} (a). In Fig. \ref{fig:normalization} (b) we show the results confirming the scaling of the hidden state norm. These two together confirm the equations and qualitative discussion presented above.
+
+
+    \begin{figure}[H] 
+        \centering
+        \
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/norm/normalization_orthogonal_annihilation_rms_pure_median.png}
+            \caption{Alignement of the output difference compared to the input difference. Values close to 0 indicate that the perturation was eliminated, and values close to 1 indicate that the perturbation remains.}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/norm/normalization_scaling_verification_rms_pure_median.png}
+            \caption{Radial scaling analysis comparing the theoretical expectation with the exact differentiation JVP measurement and with the observed value (applying a finite perturbation of magnitude $1.0e-4$)}
+        \end{subfigure}
+        \caption{Measurements on the normalization layer performed on the Phi-4-mini-instruct model} 
+        \label{fig:normalization}
+    \end{figure}
 
 
     \subsubsection{Residual Connections}
@@ -954,7 +982,7 @@
             \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
             \caption{Phi-4-mini-instruct, exponent=$0.986 \pm 0.005$}
         \end{subfigure}
-        \caption{Propagation of a perturbation across the layers of the model}
+        \caption{Propagation of a perturbation across the layers of the model. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
         \label{fig:scaling}
     \end{figure}
 
@@ -984,7 +1012,7 @@
             \includegraphics[width=\linewidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
             \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{Linearized perturbation gain of each layer}
+        \caption{Linearized perturbation gain of each layer. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
         \label{fig:lin_pert_gain}
     \end{figure}
 
@@ -1064,7 +1092,7 @@
         \label{fig:attn}
     \end{figure}
 
-    Figure \ref{fig:attn} shows the relationship between the attention window size and the divergence. For very small attention window sizes, the model is very sensitive to its immediately previous tokens (which received a perturbation in our experiments), and thus diverges immediately. For slightly larger window sizes, trajectories never diverge. An explanation could be that the larger context (which is shared, if we ignore the small perturbation) stabilizes the first generated tokens. Then, after the first tokens are generated identically in all trajectories, if those populate the context window, the original perturbed prompt will be outside the window, and trajectories do not diverge. For larger context sizes, we again see consistent divergence, since the perturbation remains in the context window. % GGG
+    Fig. \ref{fig:attn} shows the relationship between the attention window size and the divergence. For very small attention window sizes, the model is very sensitive to its immediately previous tokens (which received a perturbation in our experiments), and thus diverges immediately. For slightly larger window sizes, trajectories never diverge. An explanation could be that the larger context (which is shared, if we ignore the small perturbation) stabilizes the first generated tokens. Then, after the first tokens are generated identically in all trajectories, if those populate the context window, the original perturbed prompt will be outside the window, and trajectories do not diverge. For larger context sizes, we again see consistent divergence, since the perturbation remains in the context window. % GGG
 
     The relationship is not very straightforward and it depends on the magnitude of the perturbation. 
 
@@ -1138,7 +1166,7 @@
     \subsection{Dimensionality}
     % XXX Here my results are not so conclusive. But there are interesting results and I want to discuss them. What is interesting: correlation dimension allows one to distinguish between deterministic chaos and random noise. especially good in high dimensions. My results are that the correlation dimension when computed using the hidden states of the last layer of the model looks very similar to a deterministic chaotic system (the power law behavior and the scaling). When computed on the first layers of the model, it looks like random noise. The same is observed if I look at the distribution of distances. On top of that, if I stop the greedy sampling and use probabilistic temperature based sampling, then the data looks more random (trivial). What this indicates is that the system is deterministic (maybe even chaotic), and that this can only be observed at the last layers. This makes sense since at the last layers, it has more information and context. what is not so conclusive: I used small amounts of data (around 3k data points in a 1500 dim space, not enough), so my measured value for the correlation dimension is meaningless and not robust. whatis meaningful is the qualitative results I mentioned.
 
-    Figure \ref{fig:dim_first_last} shows the Correlation Sum for a random set of vectors, and for the points in a trajectory using the hidden states from the first and last layers of the LLM. The curve obtained for the last layer is what we would expect from a system with low-dimensional chaos. The measured dimension value obtained varied significantly depending on the distance metric used, while in every case, the Correlation Dimension vs Threshold curve was almost identical, but with a different slope. Therefore we don't consider this as a precise measure of the fractal dimension of an attractor, but as an indicator of deterministic chaos, which helps us identify differences between layers, and between deterministic and nondeterministic sampling.
+    Fig. \ref{fig:dim_first_last} shows the Correlation Sum for a random set of vectors, and for the points in a trajectory using the hidden states from the first and last layers of the LLM. The curve obtained for the last layer is what we would expect from a system with low-dimensional chaos. The measured dimension value obtained varied significantly depending on the distance metric used, while in every case, the Correlation Dimension vs Threshold curve was almost identical, but with a different slope. Therefore we don't consider this as a precise measure of the fractal dimension of an attractor, but as an indicator of deterministic chaos, which helps us identify differences between layers, and between deterministic and nondeterministic sampling.
 
     \begin{figure}[H]
         \centering
@@ -1163,7 +1191,7 @@
         \label{fig:dim_first_last}
     \end{figure}
 
-    In Figure \ref{fig:dim_first_last} note that the random set of vector's correlation sum resembles the first layer's close to a threshold value of around 0.9 and above, which can more clearly be seen in Figure \ref{fig:distribution_cos_dist}. In the first layer distance distribution, a peak at 1 is observed, which corresponds to almost orthogonal vectors. For a set of random vectors of the same dimension, we see a more narrow distribution peaked at 1 \footnote{The number of almost orthogonal vectors grows exponentially with the dimension of the space \cite{cai2013distributionsanglesrandompacking}. In LLMs the curse of dimensionality can be a blessing as they can represent many more concepts than the embedding dimension \cite{blessing}. Empirical results show that LLMs represent high-level concepts linearly as directions in space \cite{park2024linearrepresentationhypothesisgeometry}, with separable concepts being almost orthogonal.}.
+    In Fig. \ref{fig:dim_first_last} note that the random set of vector's correlation sum resembles the first layer's close to a threshold value of around 0.9 and above, which can more clearly be seen in Fig. \ref{fig:distribution_cos_dist}. In the first layer distance distribution, a peak at 1 is observed, which corresponds to almost orthogonal vectors. For a set of random vectors of the same dimension, we see a more narrow distribution peaked at 1 \footnote{The number of almost orthogonal vectors grows exponentially with the dimension of the space \cite{cai2013distributionsanglesrandompacking}. In LLMs the curse of dimensionality can be a blessing as they can represent many more concepts than the embedding dimension \cite{blessing}. Empirical results show that LLMs represent high-level concepts linearly as directions in space \cite{park2024linearrepresentationhypothesisgeometry}, with separable concepts being almost orthogonal.}.
     In the first layer there are many vectors with distance equal to 0, which correspond to repeated tokens. These are not as prominent in the last layer, because after going through all the transformer layers, same tokens get mapped to different hidden states at the last layer, as the mapping is state dependent. % G: could be more concise
     All of the cases analyzed showed two main peaks at values close to 0.6 and 1, for the distribution at the last layer, although not in every case was the peak at 0.6 so pronounced.
     % any explanation for this
@@ -1220,7 +1248,7 @@
         \label{fig:dim_first_last_temperature}
     \end{figure}
 
-    Finally in Figure \ref{fig:dim_first_last_temperature} we show the Correlation Sum obtained from a trajectory using probabilistic sampling, meaning that there is some stochasticity at the selection of each token. We see almost no difference at the first layer, compared to the deterministic case, but at the last layer we clearly see different behavior. There is no linear region to extract a dimension value. 
+    Finally in Fig. \ref{fig:dim_first_last_temperature} we show the Correlation Sum obtained from a trajectory using probabilistic sampling, meaning that there is some stochasticity at the selection of each token. We see almost no difference at the first layer, compared to the deterministic case, but at the last layer we clearly see different behavior. There is no linear region to extract a dimension value. 
     The fact that the difference between the deterministic and probabilistic trajectories can be identified only at the last layer supports the idea that chaotic behaviour is experienced at the last layer.
 
 
@@ -1268,39 +1296,35 @@
     \end{algorithm}
 
 
-    \subsection{Normalization Jacobian numerical results}
-
-
-
     \subsection{Testing the Mean Field derivation assumptions} \label{numerical:mft}
 
-    We made two main assumptions in the Mean Field derivation in Sec. \ref{derivation:mft}. To test if the diagonal term dominates
+    We made two main assumptions in the Mean Field derivation in Section \ref{derivation:mft}. To test if the diagonal term dominates
     \footnote{We assume the weight matrices $W_1$ and $W_2$ are statistically uncorrelated. In the high-dimensional intermediate limit ($d_{ff} \gg 1$), the cross-terms $(H_2)_{ij} (H_1)_{ji}$ act as zero-mean random variables with alternating signs, causing the off-diagonal sum to destructively interfere and vanish. This is a common assumption done by authors studying untrained neural networks. This is not exactly true in trained models like the ones used in this study.}
     , we compute the contribution of the diagonal terms and compare it with the total:
     $\text{R} = \frac{\lambda_{\text{diagonal}}}{\lambda_{\text{true}}}$.
     A value close to 1 representing diagonal dominance.
     
     To test if the norms of the rows of the weight matrices are uniformly distributed \footnote{During training, regularization and dropout favour uniformly distributed norms.}
-    we compute the norm of each (row) column vector for $(W_{\text{gate}}$, $W_{\text{up}}$), and $W_{\text{down}}$. We compute the Coefficient of Variation (CV): $\text{CV} = \frac{\sigma}{\mu}$ (Standard Deviation divided by Mean). If $\text{CV} \ll 1$, the norms are highly uniform. 
+    we compute the norm of each (row) column vector for $(W_{\text{gate}}$, $W_{\text{up}}$) $W_{\text{down}}$. We compute the Coefficient of Variation (CV): $\text{CV} = \frac{\sigma}{\mu}$ (Standard Deviation divided by Mean). If $\text{CV} \ll 1$, the norms are highly uniform. 
 
     \begin{figure}[H] 
         \centering
         
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption1_jacobian_base_All_Prompts_Aggregated_aggregated.png}
+            \includegraphics[width=\linewidth]{plots_new/microsoft/mft-check/mft_validation_plot_assumption1_jacobian_base_All_Prompts_Aggregated_aggregated.png}
             \caption{DeepSeek-R1-Distill-Qwen-1.5B}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/mft-check/mft_validation_plot_assumption2_jacobian_base_All_Prompts_Aggregated_aggregated.png}
+            \includegraphics[width=\linewidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption2_jacobian_base_All_Prompts_Aggregated_aggregated.png}
             \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{.}
+        \caption{Numerical results testing the assumptions made in the mean field approach. The Tolerance bands represent the conditions R close to 1 and $\text{CV} \ll 1$. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
         \label{fig:mft-num-check}
     \end{figure}
 
-    Fig. \ref{fig:mft-num-check} shows the numerical results, which show that are assumptions are reasonably satisfied. Larger discrepancies appear at the last layers. Still, the formula we derived is mainly justified by its agreement with empirical results as shown in Sec. \ref{numerical:mft} Fig. \ref{fig:mft}. 
+    Fig. \ref{fig:mft-num-check} shows the numerical results, which show that are assumptions are reasonably satisfied. Larger discrepancies appear at the last layers. Still, the mean field approach is mainly justified by its agreement with empirical results as shown in Section \ref{numerical:mft} Fig. \ref{fig:mft}. 
 
 
 
@@ -1564,3 +1588,4 @@
 
 
 
+% GGG sentence embedders
