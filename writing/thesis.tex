@@ -802,23 +802,13 @@
         \left\| \delta Y_{\text{route}} \right\|_2 \le \frac{2 \|X\|_2^2}{\sqrt{d_k}} \|\delta X\|_2 \|J_{sm}(A)\|_2 \left\|W_V W_O^T\right\|_2 \left\|W_Q W_K^T\right\|_2
     \end{equation}
 
-    For any probability vector $p$ (a row of the attention matrix), the Jacobian of the softmax function is:
-    
-    $$J_{sm}(p) = \text{diag}(p) - p p^T$$
+    We evaluate the spectral norm of the softmax Jacobian for a given row $p$: $J_{sm}(p) = \text{diag}(p) - p p^T$. For any unit vector $v$, the Rayleigh quotient $v^T J_{sm}(p) v = \sum p_i v_i^2 - (\sum p_i v_i)^2$ defines the statistical variance of $v$'s coordinates under the distribution $p$. By Popoviciu's inequality, the variance of any bounded variable is at most $\frac{1}{4}(v_{\max} - v_{\min})^2$. Because $v$ is bounded to the ($L_2$) unit hypersphere, $v_{\max}^2 + v_{\min}^2 \le 1$, which bounds $(v_{\max} - v_{\min})^2 \le 2$. Thus, we obtain a strict, state-independent universal bound: $\|J_{sm}(A)\|_2 \le 0.5$. This was recently proven more generally \cite{nair2025softmax12lipschitztightbound}.
 
-    To find its spectral norm, we maximize the quadratic form for a unit vector $v$ ($\|v\|_2 = 1$):
-    
-    $$v^T J_{sm}(p) v = \sum_i p_i v_i^2 - \left(\sum_i p_i v_i\right)^2$$ % GGG finish!!!!!
-
-
+    $$\left\| \delta Y_{\text{route}} \right\|_2 \le \frac{\|X\|_2^2}{\sqrt{d_k}} \|\delta X\|_2 \left\|W_V W_O^T\right\|_2 \left\|W_Q W_K^T\right\|_2$$
 
     It can be seen that $\delta Y_{\text{route}}$ is quadratic with respect to $X$, introducing non-linearity into the Jacobian.
 
-
-
-
     % G: here we should upper bound, which is not so interesting, but experimentally we show very large jacobian
-
 
 
 
