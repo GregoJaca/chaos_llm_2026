@@ -675,7 +675,7 @@
     % GGG add discussion about results
 
 
-    \paragraph{Mean-Field Approximation}
+    \paragraph{Mean  Field Approximation}
     \label{derivation:mft}
 
     To quantify the average phase-space expansion induced by the Multi-Layer Perceptron (MLP) block, we analyze the mean squared singular value ($\overline{\lambda}$) of its local Jacobian ($J$). For a MLP layer defined by $MLP(x) = W_2 \phi(W_1 x)$
@@ -691,14 +691,13 @@
     Expanding the trace operator yields:
     $$\|J\|_F^2 = \sum_{i=1}^{d_{ff}} \sum_{j=1}^{d_{ff}} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j = \sum_{i=1}^{d_{ff}} (H_2)_{ii} (H_1)_{ii} (\phi'_i)^2 + \sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j$$
 
-    We proceed by applying two mean-field simplifications:
+    We proceed by applying two mean-field simplifications. These assumptions are evaluated numerically in Appendix \ref{numerical:mft}.
 
     \begin{enumerate}
-        \item We neglect the contribution of the off-diagonal terms
-        \footnote{We assume the weight matrices $W_1$ and $W_2$ are statistically uncorrelated. In the high-dimensional intermediate limit ($d_{ff} \gg 1$), the cross-terms $(H_2)_{ij} (H_1)_{ji}$ act as zero-mean random variables with alternating signs, causing the off-diagonal sum to destructively interfere and vanish. This is a common assumption done by authors studying untrained neural networks. This is not exactly true in trained models like the ones used in this study. GGG cite someone here? also get back to my measured results GGG}:
+        \item We neglect the contribution of the off-diagonal terms:
         $$\sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j \approx 0$$
         
-        \item We assume the norms of the rows of the weight matrices are uniformly distributed. Thus we replace the individual diagonal entries of the Gramian matrices with their uniform average values \footnote{During training, regularization and dropout favour uniformly distributed norms.}:
+        \item We assume the norms of the rows of the weight matrices are uniformly distributed. Thus we replace the individual diagonal entries of the Gramian matrices with their uniform average values:
         $$(H_1)_{ii} \approx \frac{\text{Tr}(H_1)}{d_{ff}} = \frac{\|W_1\|_F^2}{d_{ff}}, \quad (H_2)_{ii} \approx \frac{\text{Tr}(H_2)}{d_{ff}} = \frac{\|W_2\|_F^2}{d_{ff}}$$
     \end{enumerate}
         
@@ -1269,7 +1268,39 @@
     \end{algorithm}
 
 
+    \subsection{Normalization Jacobian numerical results}
 
+
+
+    \subsection{Testing the Mean Field derivation assumptions} \label{numerical:mft}
+
+    We made two main assumptions in the Mean Field derivation in Sec. \ref{derivation:mft}. To test if the diagonal term dominates
+    \footnote{We assume the weight matrices $W_1$ and $W_2$ are statistically uncorrelated. In the high-dimensional intermediate limit ($d_{ff} \gg 1$), the cross-terms $(H_2)_{ij} (H_1)_{ji}$ act as zero-mean random variables with alternating signs, causing the off-diagonal sum to destructively interfere and vanish. This is a common assumption done by authors studying untrained neural networks. This is not exactly true in trained models like the ones used in this study.}
+    , we compute the contribution of the diagonal terms and compare it with the total:
+    $\text{R} = \frac{\lambda_{\text{diagonal}}}{\lambda_{\text{true}}}$.
+    A value close to 1 representing diagonal dominance.
+    
+    To test if the norms of the rows of the weight matrices are uniformly distributed \footnote{During training, regularization and dropout favour uniformly distributed norms.}
+    we compute the norm of each (row) column vector for $(W_{\text{gate}}$, $W_{\text{up}}$), and $W_{\text{down}}$. We compute the Coefficient of Variation (CV): $\text{CV} = \frac{\sigma}{\mu}$ (Standard Deviation divided by Mean). If $\text{CV} \ll 1$, the norms are highly uniform. 
+
+    \begin{figure}[H] 
+        \centering
+        
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption1_jacobian_base_All_Prompts_Aggregated_aggregated.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/mft-check/mft_validation_plot_assumption2_jacobian_base_All_Prompts_Aggregated_aggregated.png}
+            \caption{Phi-4-mini-instruct}
+        \end{subfigure}
+        \caption{.}
+        \label{fig:mft-num-check}
+    \end{figure}
+
+    Fig. \ref{fig:mft-num-check} shows the numerical results, which show that are assumptions are reasonably satisfied. Larger discrepancies appear at the last layers. Still, the formula we derived is mainly justified by its agreement with empirical results as shown in Sec. \ref{numerical:mft} Fig. \ref{fig:mft}. 
 
 
 
