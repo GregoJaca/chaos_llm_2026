@@ -216,3 +216,8 @@ From a dynamical systems perspective, SwiGLU is qualitatively different from old
 * **Physical Analogy:** This is a **parametric amplifier** or **multiplicative feedback loop**. (In ML research, this quadratic scaling is known to cause "activation spikes" and numerical instabilities in FP8/FP16 at scale). SwiGLU models naturally support a positive feedback loop: larger states lead to larger Jacobians, which lead to even larger states, driving stronger chaotic stretching.
 
 ---
+
+
+$$\max_{\|\delta x\|_2 = 1} \|J \delta x\|_2 = \sigma_{\max}(J) = \|J\|_2$$
+
+

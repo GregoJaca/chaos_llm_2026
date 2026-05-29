@@ -1,7 +1,7 @@
 paths:
-  input_dir: outputs_microsoft #  outputs_microsoft # outputs_OLD  # folder with run_* outputs
+  input_dir: outputs_microsoft_0.00001 #  outputs_microsoft # outputs_OLD  # folder with run_* outputs
   # input_dir: outputs_0.0001 #  outputs_microsoft # outputs_OLD  # folder with run_* outputs
-  output_dir: analysis_outputs_microsoft # analysis_outputs_microsoft # analysis_OLD # analysis_outputs_microsoft  # where analysis artifacts go
+  output_dir: analysis_outputs_microsoft_NEW # analysis_outputs_microsoft # analysis_OLD # analysis_outputs_microsoft  # where analysis artifacts go
   # output_dir: analysis_0.0001 # analysis_outputs_microsoft # analysis_OLD # analysis_outputs_microsoft  # where analysis artifacts go
   run_list: null  # list of run folder names or absolute paths
 
@@ -31,11 +31,11 @@ plots:
   formats: [png]  # add pdf later if needed
   dpi: 300  # figure dpi
   show_title: false  # whether to draw plot titles
-  font_size: 14
-  title_size: 14
-  label_size: 14
-  tick_size: 12
-  legend_size: 11
+  font_size: 20
+  title_size: 20
+  label_size: 20
+  tick_size: 16
+  legend_size: 16
   bins: 100  # histogram bins
   histograms:
     enabled: false
