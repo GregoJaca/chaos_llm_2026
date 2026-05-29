@@ -23,7 +23,7 @@ perturbation:
 
 attention:
 
-  sliding_window_list: [1] 
+  sliding_window_list: [2, 4] 
   # sliding_window_list: [10, 20, 30, 40, 50, 60, 70, 85, 100, 200, 500, 1000] 
   # sliding_window_list: [10, 25, 50, 65, 80, 150, 1000] 
   # sliding_window_list: [4, 8, 9, 70]  # attention window sizes
