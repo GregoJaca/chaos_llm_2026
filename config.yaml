@@ -23,14 +23,14 @@ perturbation:
 
 attention:
 
-  sliding_window_list: [2000, 4000] 
+  sliding_window_list: [2, 4] 
   # sliding_window_list: [10, 20, 30, 40, 50, 60, 70, 85, 100, 200, 500, 1000] 
   # sliding_window_list: [10, 25, 50, 65, 80, 150, 1000] 
   # sliding_window_list: [4, 8, 9, 70]  # attention window sizes
   use_sliding_window: true 
 
 generation:
-  max_new_tokens: 4000 # 1000  # max generated tokens
+  max_new_tokens: 500 # 1000  # max generated tokens
   batch_size: 16  # batched generation size
   adaptive_stop: false  # stop at divergence vs baseline
   do_sample: false  # greedy decoding
