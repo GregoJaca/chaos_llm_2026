@@ -114,7 +114,6 @@
 
 
     \begin{abstract}
-        % Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions and a positive maximum Lyapunov exponent, with consistent results across different distance metrics. Recurrence plots show structural similarities between LLMs and canonical chaotic systems such as the Lorenz attractor, while dimension analysis reveals fractal structures in the hidden state space, particularly pronounced in the last layers. We propose that the nonlinear coupling induced by attention mechanisms plays a key role in driving this chaotic behavior. % GGG rewrite
 
         Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions and stable bounded evolution.
         Jacobian analysis shows Attention and Multi-Layer Perceptron (MLP) expand and propagate perturbations, while normalization and residual connections promote stability.
@@ -315,8 +314,7 @@
     \end{equation}
     where $E \in \mathbb{R}^{V \times d}$ is the embedding matrix, $V$ the vocabulary size, $d$ the embedding dimension, and $L$ the sequence length. Embeddings serve as initial representations of tokens in a high-dimensional vector space. 
 
-    The embeddings are processed through a stack of Transformer layers. Hidden state refers to the vectors that go through the model's layers \footnote{Embeddings are static, initial vector representations of tokens, while hidden states are dynamic, context-dependent vectors that change as the model processes information through its layers. Embeddings provide an initial meaning for a token, whereas hidden states carry the evolving context, including information from previous tokens in the sequence.}. Each layer is primarily composed of two sub-modules: % GGG norm, residual, also RoPE (Rotary Position Embedding), which is a unitary rotation
-    a multi-head self-attention mechanism and a position-wise feed-forward network called Multi-Layer Perceptron (MLP). The self-attention mechanism is the key source of nonlinearity and contextual understanding, allowing the model to dynamically weigh the importance of all other tokens in the context window, to update the representation of the current token. Each attention head can be expressed as \cite{attention}:
+    The embeddings are processed through a stack of Transformer layers. Hidden state refers to the vectors that go through the model's layers \footnote{Embeddings are static, initial vector representations of tokens, while hidden states are dynamic, context-dependent vectors that change as the model processes information through its layers. Embeddings provide an initial meaning for a token, whereas hidden states carry the evolving context, including information from previous tokens in the sequence.}. Each layer is composed of Normalization, multi-head selfAttention, position-wise feed-forward network called Multi-Layer Perceptron (MLP), residual connections, and RoPE (Rotary Position Embedding), a unitary rotation. The self-attention mechanism is the key source of nonlinearity and contextual understanding, allowing the model to dynamically weigh the importance of all other tokens in the context window, to update the representation of the current token. Each attention head can be expressed as \cite{attention}:
 
     \begin{equation}
         \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V
@@ -347,7 +345,6 @@
     \label{subsec:analogy_limitations}
     We propose viewing the autoregressive operation of a Large Language Model as a \textbf{high-dimensional, discrete-time dynamical system}. Each forward pass defines a nonlinear state-dependent mapping between successive states of the system, where the collection of hidden states in the context window constitutes the trajectory evolving within the model's embedding space. From this perspective, the \textbf{self-attention mechanism} serves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. This acts as the stretching component: small perturbations to one token's hidden state can cause large changes in attention weights, which in turn significantly alter other token representations. The \textbf{normalization layers} (e.g., LayerNorm, RMSNorm) and bounded activation functions act as folding mechanisms, constraining the trajectory within a finite subspace by projecting hidden states onto normalized manifolds (explained in detail in Section \ref{subsubsec:normalization}). The alternation of stretching and folding operations across layers yields an evolution that is both bounded and sensitive to initial conditions.
     % GGG check lol
-    % GGG love you
 
     % attention allows for information propagation to future tokens during autoregressive generation.
 
@@ -834,9 +831,6 @@
     \end{equation}
     Our measurements show that the entropy ratio fluctuates between $0.4$ and $0.8$ across all layers. Because the ratio remains positive, the attention distribution does not one-hot saturate. Consequently, $\delta A$  and $\delta Y_{\text{route}}$ do not vanish.
 
-
-
-    % GGG fiuuuu work on this part :), I care about it, becaus eit shows how perturbations propagate forward for a next token, but
     \paragraph{Global Sequence Jacobian and Numerical Measurement}
     Attention operates as a discrete delay-differential system. Because of the causal mask, a perturbation injected into an early token ($\delta x_k$) is encoded in the key and value caches and re-injected into the outputs of all subsequent tokens in the context window($\delta y_t$ for $t \ge k$). 
 
