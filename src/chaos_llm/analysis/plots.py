@@ -32,7 +32,7 @@ def plot_histogram(
     ylim: Optional[List[float]],
     show_title: bool = False,
 ) -> None:
-    fig, ax = plt.subplots(figsize=(7.5, 4.5))
+    fig, ax = plt.subplots(figsize=(8.5, 4.5))
     ax.hist(values, bins=bins, color="#2a6f97", alpha=0.85)
     if show_title:
         ax.set_title(title)
@@ -75,9 +75,9 @@ def plot_dependency_curves(
 
     if has_stable:
         fig, (ax_top, ax_bot) = plt.subplots(
-            2, 1, sharex=True, figsize=(7.5, 5.5), gridspec_kw={"height_ratios": [0.15, 0.85]}
+            2, 1, sharex=True, figsize=(8.5, 5.5), gridspec_kw={"height_ratios": [0.15, 0.85]}
         )
-        plt.subplots_adjust(hspace=0.08)
+        plt.subplots_adjust(hspace=0.08, left=0.15)
         cmap = plt.get_cmap(color_map)
 
         # Determine y limits for finite values
@@ -171,7 +171,7 @@ def plot_dependency_curves(
         if show_title:
             ax_top.set_title(title)
         ax_bot.set_xlabel(xlabel)
-        fig.text(0.04, 0.5, ylabel, va='center', rotation='vertical')
+        fig.text(0.03, 0.5, ylabel, va='center', rotation='vertical')
 
         if grid:
             ax_top.grid(True, linestyle=":", alpha=0.5)
@@ -181,7 +181,7 @@ def plot_dependency_curves(
             ax_bot.legend(frameon=False)
 
     else:
-        fig, ax = plt.subplots(figsize=(7.5, 4.5))
+        fig, ax = plt.subplots(figsize=(8.5, 4.5))
         cmap = plt.get_cmap(color_map)
 
         for idx, (label, data) in enumerate(series.items()):
@@ -256,7 +256,7 @@ def plot_time_series(
     xscale: str = "linear",
     show_title: bool = False,
 ) -> None:
-    fig, ax = plt.subplots(figsize=(7.5, 4.5))
+    fig, ax = plt.subplots(figsize=(8.5, 4.5))
     ax.plot(x, mean, color="#1f77b4", label="mean")
     ax.plot(x, median, color="#ff7f0e", linestyle="--", label="median")
     if std is not None:
@@ -292,7 +292,7 @@ def plot_survival_curves(
     xscale: str = "linear",
     show_title: bool = False,
 ) -> None:
-    fig, ax = plt.subplots(figsize=(7.5, 4.5))
+    fig, ax = plt.subplots(figsize=(8.5, 4.5))
     cmap = plt.get_cmap(color_map)
 
     for idx, (label, data) in enumerate(series.items()):

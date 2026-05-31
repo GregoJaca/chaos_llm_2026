@@ -1,8 +1,9 @@
 paths:
-  input_dir: outputs_microsoft_0.00001 #  outputs_microsoft # outputs_OLD  # folder with run_* outputs
   # input_dir: outputs_0.0001 #  outputs_microsoft # outputs_OLD  # folder with run_* outputs
-  output_dir: analysis_outputs_microsoft_NEW # analysis_outputs_microsoft # analysis_OLD # analysis_outputs_microsoft  # where analysis artifacts go
-  # output_dir: analysis_0.0001 # analysis_outputs_microsoft # analysis_OLD # analysis_outputs_microsoft  # where analysis artifacts go
+  input_dir: outputs_microsoft_0.00001 #  outputs_microsoft # outputs_OLD  # folder with run_* outputs
+  # output_dir: analysis_outputs_0.0001
+  output_dir: analysis_outputs_microsoft_NEW 
+
   run_list: null  # list of run folder names or absolute paths
 
 prompt_filter:

@@ -95,11 +95,11 @@
     Supervisors: \\
     \Large\textbf{Dr. Török János}\\
     \large Associate professor \\
-    BME Elméleti Fizika Tanszék
+    BME Theorethical Physics Department
 
-    \Large\textbf{Kristóf Benedek}\\
+    \Large\textbf{Benedek Kristóf}\\
     \large PhD Candidate in Physics \\
-    BME Elméleti Fizika Tanszék
+    BME Theorethical Physics Department
 
     \end{flushleft}
     \end{minipage}
@@ -112,14 +112,11 @@
 
     % \newpage\null\thispagestyle{empty}\newpage
 
-    % GGG Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.
-
 
     \begin{abstract}
-        Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions and a positive maximum Lyapunov exponent, with consistent results across different distance metrics. Recurrence plots show structural similarities between LLMs and canonical chaotic systems such as the Lorenz attractor, while dimension analysis reveals fractal structures in the hidden state space, particularly pronounced in the last layers. We propose that the nonlinear coupling induced by attention mechanisms plays a key role in driving this chaotic behavior. % GGG rewrite
+        % Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions and a positive maximum Lyapunov exponent, with consistent results across different distance metrics. Recurrence plots show structural similarities between LLMs and canonical chaotic systems such as the Lorenz attractor, while dimension analysis reveals fractal structures in the hidden state space, particularly pronounced in the last layers. We propose that the nonlinear coupling induced by attention mechanisms plays a key role in driving this chaotic behavior. % GGG rewrite
 
-        Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions % and stable bounded evolution
-        % and a positive maximum Lyapunov exponent, with consistent results across different distance metrics. 
+        Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions and stable bounded evolution.
         Jacobian analysis shows Attention and Multi-Layer Perceptron (MLP) expand and propagate perturbations, while normalization and residual connections promote stability.
         Recurrence plots show structural similarities between LLMs and canonical chaotic systems such as the Lorenz attractor, while dimension analysis reveals fractal structures in the hidden state space, particularly pronounced in the last layers. We propose that the nonlinear coupling induced by attention mechanisms plays a key role in driving this chaotic behavior.
 
@@ -399,14 +396,6 @@
     \end{itemize}
 
 
-    % G: also in chaotic systems the nonlinear coupling is between variables, but in llm it is between tokens, which would be the state of the system (so all the variables) at different times
-    % ?? In a classical system like Lorenz, the coupling is between fixed variables (x, y, z). In a Transformer, the coupling is between *positions* in a sequence, and the 'variables' at those positions are entire state vectors. It is a much more complex, higher-order form of coupling. Worth stating this clearly. ??? GGG
-
-    % G: as i understand it. MLP provides nonlinearity, attention nonlinear coupling and (maybe) stretching. normalization keeps the system bounded (folding). layer norm is more like projecting to the plane perpendicular to (1,1,1,..,1) plus affine rescale.
-
-    % G: is normalization folding or stretching? normalize would siggest constraining so folding, but attention is cross communication so also folding. talk this out and dicuss. which processes in LLM constrain and maintain boudedness? is this folding? which stretch= is stretching individual?
-    %  Normalization is probably folding/constraining. Attention is primarily stretching. attention allows one state vector to be influenced by many others. If a small change in one vector causes it to attend more strongly to a very different vector, its representation can be 'stretched' dramatically towards the VALUE (from K-Q) other vector. The MLP layers, with their non-linear activations, also contribute to stretching. The folding comes from normalization layers and activation functions like tanh that are inherently bounded.
-
     \section{Methods}
     \label{sec:methods}
 
@@ -454,7 +443,6 @@
         \end{equation}
         % implementation computes the symmetric Hausdorff as max(directed_hausdorff(a,b), directed_hausdorff(b,a)), that is standard.
         % For sliding-window analysis, hausdorff.py does not compute a strict per-window Hausdorff in all cases but computes per-point nearest distances and then aggregates those distances by either "max_of_mean" (default) or "mean_of_max" (configurable). This is a deliberate pragmatic choice;  it changes sensitivity (averaging vs extreme) and makes the sliding-window Hausdorff different from the textbook per-window Hausdorff if you choose mean-based aggregation.
-        \item \textbf{Principal Component Dissimilarity (PCD):} We also defined a new distance metric based on the structural similarity of two trajectories. This metric compares the geometric structure of two trajectories by analyzing the alignment of their principal components (PCs). For each PC in the first trajectory, it finds the most similar PC in the second. The dissimilarity is then calculated as the total cosine distance between these matched pairs of principal components. This is explained in detail in \ref{subsec:pca_distance}. % GGG dead reference
 
         \item \textbf{Cross-Correlation Dissimilarity \cite{pearson} \cite{scipy_pearson}:} This metric quantifies the structural dissimilarity between two trajectories by comparing their internal self-similarity. First, a cosine self-similarity matrix ($S_X$ and $S_Y$) is computed for each trajectory and the Pearson correlation ($\rho$) between both. The dissimilarity is defined as one minus the correlation, computed as:
         \begin{equation}
@@ -470,6 +458,7 @@
     To generate a time-series distance from the trajectory-wise metrics, which naturally yield a single scalar, we use a sliding window that moves along both trajectories simultaneously, computing a single distance value for each window. This process results in a time series of distances. The use of a sliding window is motivated by the fact that an LLM's state depends on a history of previous states (the context window).
 
     The standard Cosine Distance metric can optionally be used with a sliding window. For each window, it computes the mean vector of all vectors within that window. This creates new, shorter trajectories where each point represents the average of a window from the original trajectory. The final time series is then computed by performing the standard one-to-one cosine distance calculation.
+    % GGG revise
 
 
 
@@ -489,8 +478,6 @@
     \end{equation}
     where $\epsilon$ is a recurrence threshold and $\Theta$ is the Heaviside function. The resulting binary matrix visualizes when the system revisits similar states in its embedding space.
 
-    % G: if i could say something about choice of threshold that would be great. for the RP images not so necessary but in RQA part yes
-
     \subsection{Dimensionality}
     \label{subsec:dimensionality_methods}
     We estimate the correlation dimension ($D_2$) of the trajectories using the Grassberger-Procaccia algorithm \cite{GRASSBERGER1983189} \footnote{Other methods, such as box dimension or Hausdorff dimension, are less robust and harder to compute in higher dimensions}. It is derived from the scaling of the correlation integral, $C(\epsilon)$, which measures the probability that two points are closer than a distance $\epsilon$. For small $\epsilon$, the correlation integral scales as a power law:
@@ -499,6 +486,39 @@
     \end{equation}
     where $N$ is the number of points on the trajectory and $\Theta$ is the Heaviside step function. The dimension $D_2$ is then found as the slope of the linear region in a log-log plot of $C(\epsilon)$ versus $\epsilon$. The correlation integral can be calculated by thresholding the distance matrix, which makes both similar.
 
+    \subsection{Computational Jacobian Analysis}
+    \label{subsec:computational_jacobian}
+
+    To characterize the local stability and stretching properties of the model, we compute the Jacobians of the individual architectural components. Due to the high dimensionality, direct computation and storage of these Jacobians is memory-prohibitive. For all measurements, intermediate activations and input hidden states are extracted by storing forward hooks on the corresponding sub-blocks during a standard forward pass.
+
+    \subsubsection{Local Token-wise Operators}
+    For the MLP blocks, we analyze the token-wise Jacobian $J(x) = \frac{\partial f(x)}{\partial x} \in \mathbb{R}^{d_{model} \times d_{model}}$ of each isolated component:
+    We use vectorized reverse-mode automatic differentiation:
+    \begin{equation}
+        J_{\text{chunk}}(x) = \texttt{vmap}(\texttt{jacrev}(\text{MLP}))(x)
+    \end{equation}
+    We immediately compute the spectral norm $\|J(x)\|_2 = \sigma_{\max}(J(x))$ and the expected isotropic expansion $\bar{\lambda} = \frac{1}{d_{model}} \|J(x)\|_F^2$. The static weight metrics were computed directly from the model's parameters, while the dynamic activation densities were obtained by manually fetching the intermediate pre and post activation hidden states. 
+    
+    %Static weight metrics (e.g., scaled Frobenius norms $\tilde{F}$) and dynamic activation densities ($\overline{S_x^2}$, $\overline{D_x^2}$) are extracted from weights and intermediate activation tensors.
+
+    % The dynamic activation densities $\overline{S_x^2}$ and $\overline{D_x^2}$ are evaluated by manually propagating the intermediate hidden states through the isolated gating and up-projection paths.
+
+
+    \subsubsection{Global Sequence Attention Jacobian}
+    Because the self-attention mechanism couples all tokens in the context window, it cannot be evaluated token-wise. We instead define the global sequence Jacobian:
+    \begin{equation}
+        \mathbf{J}_{\text{Attn}} = \frac{\partial Y}{\partial X} \in \mathbb{R}^{(N d_{model}) \times (N d_{model})}
+    \end{equation}
+    Materializing this dense matrix requires $\mathcal{O}(N^2 d_{model}^2)$ space, which is impossible for long sequences. Therefore, we compute the global spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2$ using a matrix-free **Power Iteration**. 
+
+    Starting with a random unit vector $v_0 \in \mathbb{R}^{N \times d_{model}}$, $\|v_0\|_F = 1$, we iteratively refine the dominant singular direction without constructing the full Jacobian matrix. At each step $k$, we compute the pushforward (JVP) and pullback (VJP) directly on the execution graph:
+    \begin{align}
+        u_k &= \mathbf{J}_{\text{Attn}} v_k = \texttt{jvp}(\text{Attn}, (X,), (v_k,))_1 \\
+        w_k &= \mathbf{J}_{\text{Attn}}^T u_k = \texttt{vjp}(\text{Attn}, X)(u_k)_1
+    \end{align}
+    The global spectral norm is then estimated via the Rayleigh quotient $\sigma_{\max}(\mathbf{J}_{\text{Attn}}) \approx \sqrt{\frac{\langle w_k, v_k \rangle}{\langle v_k, v_k \rangle}}$, updating the next direction as $v_{k+1} = w_k / \|w_k\|_F$. We run this iteration for $K = 50$ steps. 
+
+
     \subsection{Experiments} % GGG rewrite for clarity.also many different types of experiments. insist that many experiments were done to find good parameters
     \label{subsec:experiments}
     % G: concretely explain what I did: model choice, params, dim, fix length generation, context window, etc...
@@ -506,12 +526,8 @@
 
 
     Experiments were conducted using the models \texttt{DeepSeek-R1-Distill-Qwen-1.5B} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.} \cite{deepseek2025r1distillqwen1.5b}, and \texttt{Phi-4-mini-instruct} \footnote{A reasoning 3.8 billion parameter model which achieved great performance for its size.} \cite{microsoft2025phi4minitechnicalreportcompact, microsoft/Phi-4-mini-instruct}. 
-    Inference was performed on a Tesla T4 GPU. Hidden states and intermediate activations were extracted at each transformer block, yielding tensors of shape (layers, tokens, dimension). % GGG also intermediate activations (for the jacobians?) or not?
-    Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. The context window length was set to 3096 tokens. % GGG revise this at the end. rewrtie all
-
-    % Sensitivity analysis on perturbation magnitude % GGG
-
-    % Perturbation magnitudes were chosen empirically to preserve topical coherence while inducing measurable divergence, with $r\in[2.5\times10^{-4},5\times10^{-4}]$ (for more details c.f. \ref{subsec:experiments}).
+    Inference was performed on a Tesla T4 GPU. Hidden states and intermediate activations were extracted at each transformer block, yielding tensors of shape (layers, tokens, dimension). 
+    Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. The context window length was set to 3096 tokens. 
 
     \subsubsection{Initial Condition Generation}
     \label{subsec:init_cond_gen}
@@ -568,9 +584,9 @@
     \begin{equation}
         \text{MLP}(x) = W_{down} \left( \text{SiLU}(W_{gate} x) \odot (W_{up} x) \right)
     \end{equation}
-    where $W_{gate}, W_{up} \in \mathbb{R}^{H \times d_{model}}$ and $W_{down} \in \mathbb{R}^{d_{model} \times H}$ are the learned weight matrices, $H$ is the intermediate feed-forward dimension, SiLU is the Sigmoid Linear Unit activation function, and $\odot$ denotes the Hadamard product. 
+    where $W_{gate}, W_{up} \in \mathbb{R}^{H \times d_{model}}$ and $W_{down} \in \mathbb{R}^{d_{model} \times H}$ are the learned weight matrices, $H$ is the intermediate feed-forward dimension, SiLU is the Sigmoid Linear Unit activation function, and $\odot$ the Hadamard product. 
 
-    To quantify the propagation of a local perturbation $\delta x$, we differentiate $\text{MLP}(x)$ with respect to $x$. Applying the chain rule yields the local Jacobian $J(x) \in \mathbb{R}^{d_{model} \times d_{model}}$:
+    To quantify the propagation of a local perturbation $\delta x$, we differentiate $\text{MLP}(x)$ with respect to $x$. Applying the chain rule yields the Jacobian $J(x) \in \mathbb{R}^{d_{model} \times d_{model}}$:
     \begin{equation}
         J(x) = W_{down} \left[ \text{diag}(S_x) W_{up} + \text{diag}(D_x) W_{gate} \right]
     \end{equation}
@@ -580,7 +596,7 @@
     \end{equation}
 
     The total expansion of the phase space is governed by the squared Frobenius norm of the Jacobian. Expanding $\|J(x)\|_F^2 = \text{Tr}(J(x) J(x)^T)$ yields a quadratic form that contains the dynamic activations and the static weights (M matrices):
-    \begin{equation} % G I never reference these M matrices later, may delete
+    \begin{equation} 
         \|J(x)\|_F^2 = S_x^T M_{up} S_x + D_x^T M_{gate} D_x + 2 S_x^T M_{cross} D_x
     \end{equation}
     \begin{align} 
@@ -589,9 +605,6 @@
         M_{\text{cross}} &= (W_{\text{down}}^T W_{\text{down}}) \odot (W_{\text{up}} W_{\text{gate}}^T)
     \end{align}
     % The total stretching capacity depends on the magnitudes of the activation vectors $S_x$ and $D_x$.
-
-    Due to the $O(N \cdot d_{model}^2)$ memory constraints of storing full sequence Jacobians, the exact token-wise Jacobian $J(x)$ is computed iteratively using vectorized reverse-mode automatic differentiation in PyTorch (\texttt{vmap} and \texttt{jacrev}). 
-    The static weight metrics were computed directly from the model's parameters, while the dynamic activation densities were obtained by manually fetching the intermediate pre and post activation hidden states. % GGG to methods
     
     From $J(x)$ and the static weights, we define and extract the following metrics:
 
@@ -627,6 +640,23 @@
         % The maximum linear stretch of the isolated projection matrices.
     \end{itemize}
 
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+            \caption{Phi-4-mini-instruct}
+        \end{subfigure}
+        \caption{Frobenius norms at each layer}
+        \label{fig:frobenius_static}
+    \end{figure}
+
     \begin{figure}[H]
         \centering
         \begin{subfigure}[b]{0.48\linewidth}
@@ -642,6 +672,8 @@
         \caption{Activation Densities at each layer. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
         \label{fig:jacobian_activation}
     \end{figure}
+
+    The static weight Frobenius norms are consistently larger than 1 at every layer, showing that the model has a capability to expand perturbations (Fig. \ref{fig:frobenius_static}). The activation densities $\|D_x\|_2^2 , \|S_x\|_2^2$ (Fig. \ref{fig:jacobian_activation}), and the jacobian stretching $\|J(x)\|_2 , \bar{\lambda}$ (Fig. \ref{fig:jacobian_norm_and_lambda}) increase together in the last layers. The MLP dynamics are most active in the last layers. $\|J(x)\|_2$ is larger than 1 in all layers, while $\bar{\lambda}$ is larger than 1 with the exception of the first layers.
 
     \begin{figure}[H]
         \centering
@@ -659,35 +691,11 @@
         \label{fig:jacobian_norm_and_lambda}
     \end{figure}
 
-
-
-    \begin{figure}[H]
-        \centering
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
-        \end{subfigure}\quad
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-            \caption{Phi-4-mini-instruct}
-        \end{subfigure}
-        \caption{Frobenius norms at each layer} % GGG may delete this plot
-        \label{fig:frobenius_static}
-    \end{figure}
-
-    
-    The Frobenius norms are consistently larger than 1 at every layer, showing that the model has a capability to expand perturbations (Fig. \ref{fig:frobenius_static}). The activation densities $\|D_x\|_2^2 , \|S_x\|_2^2$ (Fig. \ref{fig:jacobian_activation}), and the jacobian stretching $\|J(x)\|_2 , \bar{\lambda}$ (Fig. \ref{fig:jacobian_norm_and_lambda}) increase together in the last layers. The MLP dynamics are most active in the last layers. $\|J(x)\|_2$ is larger than 1 in all layers, while $\bar{\lambda}$ is larger than 1 with the exception of the first layers.
-
-    % GGG add discussion about results
-
-
     \paragraph{Mean  Field Approximation}
     \label{derivation:mft}
 
-    To quantify the average phase-space expansion induced by the Multi-Layer Perceptron (MLP) block, we analyze the mean squared singular value ($\overline{\lambda}$) of its local Jacobian ($J$). For a MLP layer defined by $MLP(x) = W_2 \phi(W_1 x)$
-    \footnote{This is a simpler version of MLP than the SwiGLU, which simplifies the notation for the derivation.} % GGG
+    To quantify the average phase-space expansion induced by the MLP block, we analyze the mean squared singular value ($\overline{\lambda}$) of its local Jacobian ($J$). For a $MLP(x) = W_2 \phi(W_1 x)$
+    \footnote{This is a simpler version of MLP than the SwiGLU, which simplifies the notation for the derivation.}
     , where $\phi$ is the activation function, the local Jacobian matrix is:
     $$J = W_2 \Sigma W_1$$
     where $\Sigma = \text{diag}(\phi'(W_1 x)) \in \mathbb{R}^{d_{ff} \times d_{ff}}$. % By definition, $\overline{\lambda}$ is proportional to the squared Frobenius norm normalized by the ambient hidden dimension $d$:
@@ -696,7 +704,7 @@
     Using the cyclic property of the trace, we group the weight parameters into their respective Gramian matrices, $H_1 = W_1 W_1^T$ and $H_2 = W_2^T W_2$:
     $$\|J\|_F^2 = \text{Tr}(W_2 \Sigma W_1 W_1^T \Sigma W_2^T) = \text{Tr}(H_2 \Sigma H_1 \Sigma)$$
 
-    Expanding the trace operator yields:
+    Expanding the trace operator:
     $$\|J\|_F^2 = \sum_{i=1}^{d_{ff}} \sum_{j=1}^{d_{ff}} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j = \sum_{i=1}^{d_{ff}} (H_2)_{ii} (H_1)_{ii} (\phi'_i)^2 + \sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j$$
 
     We proceed by applying two mean-field simplifications. These assumptions are evaluated numerically in Appendix \ref{numerical:mft}.
@@ -748,18 +756,16 @@
     % $$ \|X\|_{\text{mean}} = \frac{1}{N} \sum_{i=1}^N \|x_i\|_2 $$
     % While Root Mean Square Normalization (RMSNorm) constrains this magnitude to approximately $\sqrt{D}$, the interactions within the attention block rely on these bounded states to dynamically scale perturbations.
 
-    Let $X \in \mathbb{R}^{N \times D}$ be the input sequence of $N$ tokens. We analyze how a perturbation $\delta X$ in the input sequence propagates through the self-attention mechanism.
-
-    The self-attention operator computes\footnote{For notational simplicity, derivations are shown for a single attention head. The total output is the sum over $H$ heads ($Y = \sum_h A^{(h)} X W_V^{(h)} W_O^{(h)}$).}:
+    Let $X \in \mathbb{R}^{N \times D}$ be the input sequence of $N$ tokens. We analyze how a perturbation $\delta X$ in the input sequence propagates through the self-attention mechanism, which computes\footnote{For notational simplicity, derivations are shown for a single attention head. The total output is the sum over $H$ heads ($Y = \sum_h A^{(h)} X W_V^{(h)} W_O^{(h)}$).}:
     $$ Y = A X W_V W_O $$
     where the attention probability matrix $A = \text{softmax}(Z)$ is applied row-wise, and the pre-softmax logits are defined as:
-    $$ Z = \frac{1}{\sqrt{d_k}} X W_Q W_K^T X^T + \mathcal{M} \quad A_{i,j} = \frac{\exp(x_i W_{QK} x_j^T + \mathcal{M}_{ij} )}{\sum_{k} \exp(x_i W_{QK} x_k^T)} $$
+    $$ Z = \frac{1}{\sqrt{d_k}} X W_Q W_K^T X^T + \mathcal{M} , \quad A_{i,j} = \frac{\exp(x_i W_{QK} x_j^T + \mathcal{M}_{ij} )}{\sum_{k} \exp(x_i W_{QK} x_k^T)} $$
 
     where $W_Q, W_K \in \mathbb{R}^{D \times d_k}$, $W_V \in \mathbb{R}^{D \times d_v}$, $W_O \in \mathbb{R}^{d_v \times D}$, and $\mathcal{M}$ is the lower-triangular causal mask ($\mathcal{M}_{ij} = 0$ for $i \ge j$, and $-\infty$ otherwise).
 
     % $A \in \mathbb{R}^{N \times N}$ is the attention probability matrix. For a specific row $i$ and column $j$, the scalar value $A_{i,j}$ (which is between $0$ and $1$) dictates exactly how much of token $j$'s information is mixed into the new representation for token $i$. Because of the causal mask, token $i$ can only attend to tokens $j \le i$.
 
-    To determine the local stability of the self-attention operator, we evaluate the total matrix differential $\delta Y$ with respect to a perturbation $\delta X$. Applying the product rule yields two distinct components:
+    We evaluate the differential $\delta Y$ with respect to a perturbation $\delta X$. Applying the product rule yields:
     \begin{equation}
         \delta Y = \underbrace{(\delta A) X W_V W_O}_{\text{Nonlinear Routing}} + \underbrace{A (\delta X) W_V W_O}_{\text{Static Linear Mixing}}
     \end{equation}
@@ -774,16 +780,16 @@
     \begin{equation}
        \left\| (A \delta V)_i \right\|_2 = \left\| \sum_{j=1}^N A_{i,j} \delta v_j \right\|_2 \le \sum_{j=1}^N A_{i,j} \|\delta v_j\|_2
     \end{equation}
-    Because the softmax function ensures $A$ is row-stochastic ($A_{i,j} \ge 0$ and $\sum_j A_{i,j} = 1$), applying the triangle inequality and the induced operator norm yields:
+    Because the softmax function ensures $A$ is row-stochastic ($A_{i,j} \ge 0$ and $\sum_j A_{i,j} = 1$), applying the triangle inequality yields:
 
     \begin{equation}
         \left\| (A \delta V)_i \right\|_2 \le \max_j \|\delta v_j\|_2 \le \left(\max_j \|\delta x_j\|_2\right) \underbrace{\left\| W_V W_O^T \right\|_2}_{\text{Mixing Weight Norm}}
     \end{equation}
 
-    This inequality establishes that $A$ computes a convex mixture and cannot autonomously amplify the perturbation norm. The absolute expansion of this term is constrained by the constant projection matrices, which we define as the static \textbf{Mixing Weight Norm}. Operating entirely independent of the dynamic state $X$, this static norm dictates the maximum capacity for linear perturbation transfer.
+    This inequality establishes that $A$ computes a convex mixture and cannot autonomously amplify the perturbation norm. The expansion of this term is constrained by the constant projection matrices, which we define as the static \textbf{Mixing Weight Norm}.
 
     \paragraph{Nonlinear Routing and Bilinear Coupling}
-    The capacity for state-dependent perturbation growth arises from the first term, where the perturbation actively alters the routing matrix ($\delta A$). The differential of the causal pre-softmax logits is:
+    The capacity for state-dependent perturbation growth arises from the first term. The differential of the causal pre-softmax logits is:
     \begin{equation}
         \delta Z = \frac{1}{\sqrt{d_k}} \left[ (\delta X) W_Q W_K^T X^T + X W_Q W_K^T (\delta X)^T \right]
     \end{equation}
@@ -793,11 +799,11 @@
     \end{equation}
     where we identify the operator norm of the query-key projection as the \textbf{Routing Weight Norm}. 
 
-    The differential of the softmax matrix $A$ is determined by its exact Jacobian, denoted here as $J_{sm}(A)$:
+    The differential of the softmax matrix $A$ is determined by its Jacobian, denoted here as $J_{sm}(A)$:
     \begin{equation}
         \delta A = A \odot \left( \delta Z - (A \odot \delta Z)\mathbf{1}\mathbf{1}^T \right) = J_{sm}(A) \delta Z
     \end{equation}
-    To determine why this operator drives nonlinear instability, we substitute $\delta Z$ into $\delta A$, and then $\delta A$ into the routing term $\delta Y_{\text{route}} = (\delta A) X W_V W_O^T$. 
+    We substitute $\delta Z$ into $\delta A$, and then $\delta A$ into the routing term $\delta Y_{\text{route}} = (\delta A) X W_V W_O^T$. 
     \begin{equation} \label{eq:nonlinear_routing_full}
         \delta Y_{\text{route}} = \left( J_{sm}(A) \left( \frac{1}{\sqrt{d_k}} \left[ (\delta X) W_Q W_K^T X^T + X W_Q W_K^T (\delta X)^T \right] \right) \right) X W_V W_O^T
     \end{equation}
@@ -820,35 +826,23 @@
 
 
     \paragraph{Softmax Saturation and Entropy}
-    The expansive capacity of the nonlinear routing term depends on $J_{sm}(A)$. For a given row $a_i$, the Jacobian of the softmax function is $J_{sm}(a_i) = \text{diag}(a_i) - a_i a_i^T$. If a token attends to a single position with absolute confidence, $a_i$ becomes a one-hot vector. Under this condition, $J_{sm}(a_i) = \mathbf{0}$, causing $\delta A = \delta Y_{\text{route}}  = \mathbf{0}$.
+    The nonlinear term depends on $J_{sm}(A)$. For a given row $a_i$, the Jacobian of the softmax function is $J_{sm}(a_i) = \text{diag}(a_i) - a_i a_i^T$. If a token attends to a single position with absolute confidence, $a_i$ becomes a one-hot vector, which makes, $J_{sm}(a_i) = \mathbf{0}$, causing $\delta A = \delta Y_{\text{route}}  = \mathbf{0}$.
 
-    To quantify the proximity to this saturated state, we compute the \textbf{Attention Entropy} across all heads and tokens, normalized by the causal maximum theoretical entropy $H_{\max}^{\text{causal}}(N) = \frac{1}{N} \sum_{i=1}^{N} \log_2(i)$ to account for the expanding context window:
+    To understand if this happends, we compute the \textbf{Attention Entropy} across all heads and tokens, normalized by the causal maximum theoretical entropy $H_{\max}^{\text{causal}}(N) = \frac{1}{N} \sum_{i=1}^{N} \log_2(i)$ to account for the expanding context window:
     \begin{equation}
         \text{Entropy Ratio} = \frac{\frac{1}{H \cdot N} \sum_{h,i} \left( - \sum_{j=1}^{i} A_{i,j}^{(h)} \log_2 A_{i,j}^{(h)} \right)}{H_{\max}^{\text{causal}}(N)}
     \end{equation}
-    Our measurements show that the entropy ratio fluctuates between $0.4$ and $0.8$ across all layers. Because the ratio remains positive, the attention distribution avoids one-hot saturation in practice. Consequently, $\delta A$  and $\delta Y_{\text{route}}$ do not vanish.
+    Our measurements show that the entropy ratio fluctuates between $0.4$ and $0.8$ across all layers. Because the ratio remains positive, the attention distribution does not one-hot saturate. Consequently, $\delta A$  and $\delta Y_{\text{route}}$ do not vanish.
 
 
 
     % GGG fiuuuu work on this part :), I care about it, becaus eit shows how perturbations propagate forward for a next token, but
     \paragraph{Global Sequence Jacobian and Numerical Measurement}
-    Attention operates as a discrete delay-differential system. Because of the causal mask, a perturbation injected into an early token ($\delta x_k$) is encoded in the key and value caches and re-injected into the outputs of all subsequent tokens ($\delta y_t$ for $t \ge k$). 
+    Attention operates as a discrete delay-differential system. Because of the causal mask, a perturbation injected into an early token ($\delta x_k$) is encoded in the key and value caches and re-injected into the outputs of all subsequent tokens in the context window($\delta y_t$ for $t \ge k$). 
 
     To capture this full temporal and spatial propagation, we compute the \textbf{Attention Jacobian Spectral Norm} with respect to the global sequence matrix $X$:
     $$ \|\mathbf{J}_{\text{Attn}}\|_2 = \max_{\delta X \neq 0} \frac{\|\mathbf{J}_{\text{Attn}}(X) \delta X\|_F}{\|\delta X\|_F} $$
     where $\mathbf{J}_{\text{Attn}} = \frac{\partial Y}{\partial X} \in \mathbb{R}^{(ND) \times (ND)}$. 
-    % A spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2 > 1.0$ provides strict mathematical proof that the attention block acts as a net expansive operator for the given sequence, indicating sensitivity to initial conditions.
-
-    % Because explicitly instantiating an $(ND) \times (ND)$ dense matrix would exceed memory constraints for large $N$, we compute the exact maximum singular value dynamically via Power Iteration. This is achieved using Jacobian-Vector Products (JVPs) and Vector-Jacobian Products (VJPs) directly through the automatic differentiation graph, allowing exact computation of the global spectral norm without $\mathcal{O}(N^2 D^2)$ memory allocation.
-    % %  PyTorch's jvp uses forward-mode automatic differentiation (dual numbers) to propagate the exact analytical derivative at the point $X$. (independent of the magnitude of the perturbation) (in "perturbations" we applied a finite difference, here we do a exact derivative, chain rule)
-
-
-    % GGG
-
-    % Because the self-attention mechanism couples the entire context window, the Jacobian cannot be evaluated on isolated tokens. We define the global sequence Jacobian $\mathbf{J}_{\text{Attn}} = \frac{\partial Y}{\partial X} \in \mathbb{R}^{(ND) \times (ND)}$, which computes the derivative of the entire $N \times D$ output sequence with respect to the entire $N \times D$ input sequence. Structurally, this $(ND) \times (ND)$ operator is composed of a lower-triangular grid of $D \times D$ block matrices, $\frac{\partial y_t}{\partial x_k}$, where $k \le t$. This lower-triangular causality ensures that the global spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2$ inherently captures both the instantaneous self-expansion ($\frac{\partial y_t}{\partial x_t}$) and the delayed geometric amplification of historical perturbations ($\frac{\partial y_t}{\partial x_k}$ for $k < t$)."
-
-    % GGG
-
 
     \begin{figure}[H] 
         \centering
@@ -862,11 +856,11 @@
             \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_attn/attn_static_weights_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
             \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{Static Weights Jacobian}
+        \caption{Static weights norms $\left\|W_Q W_K^T\right\|_2$ and $\left\|W_V W_O^T\right\|_2$}
         \label{fig:attn_static_weights}
     \end{figure}
 
-    The static weights norms $\left\|W_Q W_K^T\right\|_2$ and $\left\|W_V W_O^T\right\|_2$ are larger than 1, indicating a capacity for perturbation expansion.
+    Similarly to the previous section, we measure the Routing and Mixing static weights norms $\left\|W_Q W_K^T\right\|_2$ and $\left\|W_V W_O^T\right\|_2$. The results show that these are larger than 1, indicating a capacity for perturbation expansion as can be seen in Fig. \ref{fig:attn_static_weights}. $\|\mathbf{J}_{\text{Attn}}\|_2$ is consistently positive, and its magnitude can be seen to scale with $\sqrt{N}$ \footnote{}
 
     \begin{figure}[H] 
         \centering
@@ -881,7 +875,7 @@
             \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_attn/attn_spectral_norms_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
             \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{Jacobian Spectral norm} % GGG this scales with sqrt(N) from random matrix theory and the bilinear coupling $\delta Z \propto (\delta X) W_{QK} X^T$, we can show that the A matrices are operating at the isotropic / random regime.
+        \caption{Jacobian Spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2$} % this scales with sqrt(N) from random matrix theory and the bilinear coupling $\delta Z \propto (\delta X) W_{QK} X^T$, we can show that the A matrices are operating at the isotropic / random regime.
         \label{fig:attn_jacobian_spectral_norm}
     \end{figure}
 
@@ -894,7 +888,7 @@
     % To prevent numerical overflow and stabilize learning, Transformers use normalization layers, most commonly LayerNorm or RMSNorm. 
     %From a dynamical systems perspective, these operators regulate phase-space expansion by suppressing the amplitude of perturbations fed into the nonlinear sub-blocks.
 
-    For an input vector $x \in \mathbb{R}^D$, Root Mean Square Normalization (RMSNorm) computes $y = \frac{x}{\text{RMS}(x)}$, where $\text{RMS}(x) = \frac{1}{\sqrt{D}} \|x\|_2$. The Jacobian of this transformation with respect to a perturbation $\delta x$ is:
+    For an input hidden state $x \in \mathbb{R}^D$, Root Mean Square Normalization (RMSNorm) computes $y = \frac{x}{\text{RMS}(x)}$, where $\text{RMS}(x) = \frac{1}{\sqrt{D}} \|x\|_2$. The Jacobian of this transformation with respect to a perturbation $\delta x$ is:
 
     $$ J_{RMS} = \frac{\sqrt{D}}{\|x\|_2} \left( I - \frac{x x^T}{\|x\|_2^2} \right) $$
 
@@ -905,30 +899,34 @@
     Both Jacobians share the generalized structure $J_{Norm} = \frac{1}{S} P_{\perp}$, where $S$ is a scaling factor proportional to the state's magnitude or standard deviation, and $P_{\perp}$ is an orthogonal projection matrix. This structure restricts chaotic divergence prior to the nonlinear layers through two mechanisms:
 
     \textbf{Orthogonal Projection:} 
-    The matrix $P_{\perp}$ dictates the permitted local geometry. In RMSNorm, $P_{\perp}$ is an exact orthogonal projection onto the tangent space of a $D$-dimensional hypersphere, satisfying $P_{\perp} x = 0$. In LayerNorm, the equivalent projection satisfies $P_{\perp} \tilde{x} = 0$. Any component of an expansive perturbation $\delta x$ pointing outward in the radial direction of the state vector is eliminated before it enters the Attention or MLP operators.
+    In RMSNorm, $P_{\perp}$ is an exact orthogonal projection onto the tangent space of a $D$-dimensional hypersphere, satisfying $P_{\perp} x = 0$. In LayerNorm, the equivalent projection satisfies $P_{\perp} \tilde{x} = 0$. Any component of an expansive perturbation $\delta x$ pointing outward in the radial direction of the state vector is eliminated before it enters the Attention or MLP operators \footnote{This explains why metrcis like cosine similarity are relevant for LLM hidden states.}.
 
     \textbf{Radial Scaling:} 
     If preceding layers stretch $x$ along expansive directions, the absolute magnitude ($\|x\|_2$) or variance ($\sigma$) increases. The normalization Jacobian inversely scales the incoming perturbation $\delta x$ by this growing denominator $S$. 
 
-    To validate this, we did measured the alignement between the output difference $\delta y = \text{Norm}(x + \delta x) - \text{Norm}(x)$ compared to the input difference (perturbation) $\delta x$, which can be seen in Fig. \ref{fig:normalization} (a). In Fig. \ref{fig:normalization} (b) we show the results confirming the scaling of the hidden state norm. These two together confirm the equations and qualitative discussion presented above.
+    % To validate this, we did measured the alignement between the output difference $\delta y = \text{Norm}(x + \delta x) - \text{Norm}(x)$ and the input:
+    % $$\cos(\theta) = \frac{x^T \delta y}{\|x\|_2 \|\delta y\|_2}$$
+    % In Fig. \ref{fig:normalization} (a). 
+
+    % In Fig. \ref{fig:normalization} (b) we show the results confirming the scaling of the hidden state norm. These two together confirm the equations and qualitative discussion presented above.
 
 
-    \begin{figure}[H] 
-        \centering
-        \
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/norm/normalization_orthogonal_annihilation_rms_pure_median.png}
-            \caption{Alignement of the output difference compared to the input difference. Values close to 0 indicate that the perturation was eliminated, and values close to 1 indicate that the perturbation remains.}
-        \end{subfigure}\quad
-        \begin{subfigure}[b]{0.48\linewidth}
-            \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/norm/normalization_scaling_verification_rms_pure_median.png}
-            \caption{Radial scaling analysis comparing the theoretical expectation with the exact differentiation JVP measurement and with the observed value (applying a finite perturbation of magnitude $1.0e-4$)}
-        \end{subfigure}
-        \caption{Measurements on the normalization layer performed on the Phi-4-mini-instruct model} 
-        \label{fig:normalization}
-    \end{figure}
+    % \begin{figure}[H] 
+    %     \centering
+    %     \
+    %     \begin{subfigure}[b]{0.48\linewidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots_new/microsoft/norm/normalization_orthogonal_annihilation_rms_pure_median.png}
+    %         \caption{Alignement of the output difference compared to the input difference. Values close to 0 indicate that the perturation was eliminated, and values close to 1 indicate that the perturbation remains.} 
+    %     \end{subfigure}\quad
+    %     \begin{subfigure}[b]{0.48\linewidth}
+    %         \centering
+    %         \includegraphics[width=\linewidth]{plots_new/microsoft/norm/normalization_scaling_verification_rms_pure_median.png}
+    %         \caption{Radial scaling analysis comparing the theoretical expectation with the exact differentiation JVP measurement and with the observed value (applying a finite perturbation of magnitude $1.0e-4$)}
+    %     \end{subfigure}
+    %     \caption{Measurements on the normalization layer performed on the Phi-4-mini-instruct model} 
+    %     \label{fig:normalization}
+    % \end{figure}
 
 
     \subsubsection{Residual Connections}
@@ -937,16 +935,24 @@
 
     $$ J_{res} = I + J_F $$
 
-    The eigenvalues $\lambda_i$ of the sub-block Jacobian $J_F$ are shifted to $1 + \lambda_i$. Consequently, if the Attention or MLP operators produce any expansive direction ($\lambda_i > 0$), the spectral radius of the residual stream exceeds 1, mathematically guaranteeing local phase-space expansion.
+    The eigenvalues $\lambda_i$ of the sub-block Jacobian $J_F$ are shifted to $1 + \lambda_i$. However, eigenvalues do not govern the evolution of a perturbation after a single application of the operator. For a single step, the singular values dictate it.
 
-    Crucially, the residual identity branch $I$ perfectly preserves the radial perturbations that the normalization layer's projection matrix $P_{\perp}$ locally annihilated. Because of this, normalization does not geometrically clip the global trajectory. Instead, it provides topological folding via asymptotic starvation: as the global hidden state expands, the normalization scaling factor $S$ grows, passively shrinking the magnitude of the perturbation fed into $F(x)$. This interplay allows exponential sensitivity to initial conditions to persist along the residual stream while forcing the global trajectory to remain bounded within a strange attractor.
+    $$\|(I + J_F)\delta x\|_2^2 = \|\delta x + J_F \delta x\|_2^2$$
+    $$\|J_{res} \delta x\|_2^2 = \|\delta x\|_2^2 + \|J_F \delta x\|_2^2 + 2 \delta x^T (J_F \delta x)$$
+
+    We cannot offer a simpler relationship for the singular values. The residual connection makes models more stable, and preserves information. It will preserve the radial perturbations that the normalization layer's projection matrix $P_{\perp}$ eliminated. In the next section we explore the effect of the complete layer on a perturbation.
+    
+    % Consequently, if the Attention or MLP operators produce any expansive direction ($\lambda_i > 0$), the spectral radius of the residual stream exceeds 1, mathematically guaranteeing local phase-space expansion.
+
+    %Crucially, the residual identity branch $I$ perfectly preserves the radial perturbations that the normalization layer's projection matrix $P_{\perp}$ locally annihilated. Because of this, normalization does not geometrically clip the global trajectory. Instead, it provides topological folding via asymptotic starvation: as the global hidden state expands, the normalization scaling factor $S$ grows, passively shrinking the magnitude of the perturbation fed into $F(x)$. This interplay allows exponential sensitivity to initial conditions to persist along the residual stream while forcing the global trajectory to remain bounded within a strange attractor.
 
 
 
 
-    \subsubsection{Finite size perturbation} 
+    \subsubsection{Finite size perturbation} \label{subsubsec:finite_size}
 
-    We analyze how a perturbation propagates as each token gets processed by the layers of the model. We generate a blob of initial conditions (as described in Section \ref{subsec:init_cond_gen}) and do a forward pass, extracting the hidden states at each layer of the model. We analyze how the perturbation propagates across these layers.
+
+    In the previous sections we did our analysis using exact derivatives. In this, we analyze how a finite perturbation propagates as each token gets processed by the full layers of the model, which contain the MLP, Attenntion, normalization, and residual connections. We generate a blob of initial conditions (as described in Section \ref{subsec:init_cond_gen}) and do a forward pass, extracting the hidden states at each layer of the model. We analyze how the perturbation propagates across these layers.
 
     \begin{figure}[H]
         \centering
@@ -965,8 +971,8 @@
     \end{figure}
 
 
-    The perturbation magnitude increases quickly after the first layers, then remains constant for the middle layers of the model, and finally decreases in the last layers. An explanation for this is that in the middle layers, the model expands the phase space to be ale to maximally connect the information.
-    In the last layer, the model predicts the next token. % GGG
+    The perturbation magnitude increases quickly after the first layers, then remains constant for the middle layers of the model, and finally decreases in the last layers. An explanation for this is that in the middle layers, the model expands the phase space to be able to maximally connect the information.
+    In the last layer, the model predicts the next token and it must learn converge to a more defined probability distribution.
 
     The magnitude of the perturbation in the middle layers, which is approximately constant, follows a power law as a function of the applied perturbation. This is expected for linearized operator/systems. By fitting on the linear region, we obtain the exponents for each, both close to 1. % G i don't know exactly, what I want to say is that for small magnitude perturbations, they will propagate with power law.
 
@@ -988,17 +994,14 @@
 
     % G At each MLP block, the hidden state is up-projected, then ffnn and then down-project
 
-    % GGG here I don't like the use of \mathbf{T} , would it be fine to use \mathbf{J}?
-    In the linear regime a perturbation $\delta \mathbf{x}_0$ propagates to layer $\ell$ through the linear tangent map (the product of layer Jacobians):
+    In the linear regime a perturbation $\delta \mathbf{x}_0$ propagates to layer $\ell$ through the linear tangent map $\mathbf{T}_{0 \to \ell = \prod_{k=1}^{\ell} \mathbf{J}_{k}}$ (the product of layer Jacobians):
     $$\delta \mathbf{x}_{\ell} \approx \mathbf{T}_{0 \to \ell} \delta \mathbf{x}_0$$
     Since the initial simplex perturbation has a radius of $r$ ($\delta \mathbf{x}_0 = r \hat{\mathbf{u}}$ where $\hat{\mathbf{u}}$ is a unit vector):
     $$\|\delta \mathbf{x}_{\ell}\|_2 \approx r \|\mathbf{T}_{0 \to \ell} \hat{\mathbf{u}}\|_2 = A(\ell) \cdot r$$
     Thus, the distance at any layer $\ell$ is proportional to $r^1$. On a log-log scale:
     $$\log d(\ell) = \log A(\ell) + 1 \cdot \log r$$ \label{eq:power_law}
 
-    Once we isolate the linear region, from the constant term in the fit (Eq. \ref{eq:power_law}), we obtain the aggregate product of the layer jacobians. In Fig. \ref{fig:lin_pert_gain} we can see the effective Jacobian for each layer, which encompasses the MLP, Attenntion, normalization, and residual connection. 
-
-    % GGGclarify jacobian close to 0 or close to 1. for effective but also for attn, mlp. bc residual does 1 shift, so should baseline for attn and mlp be 0 or 1?
+    Once we isolate the linear region, from the constant term in the fit (Eq. \ref{eq:power_law}), we obtain the aggregate product of the layer jacobians. In Fig. \ref{fig:lin_pert_gain} we can see the effective Jacobian for each layer. 
 
     \begin{figure}[H]
         \centering
@@ -1031,15 +1034,32 @@
 
     \subsection{Propagation of perturbations across Tokens} \label{subsec:token_perturbations}
 
-    In the previous section we studied how perturbations in a single token propagate across the layers of the model. In this section we will analyze how perturbations propagate across tokens, and how they manifest in the hidden state space and text space.
-    % GGG we work with finite size perturbation in the "linear regime"
-
+    In the previous section we studied how perturbations propagate across the layers of the model. In this section we will analyze how finite size perturbations in the linear regime propagate across tokens, and how they manifest in the hidden state space and text space. The trajectory now is the sequence of tokens, or hidden states at a given layer.
 
     \subsubsection{Trajectory Divergence} \label{res:trajectory_divergence}  
     % XXX: Here what I want to show is that: small perturbations in tokens/prompt don't cause an immediate change, and the first generated tokens coincide (the perturbation remains latent), and then eventually you get a different token sampled. This then causes the trajectories to quickly diverge. I also want to highlight the difficulties of measuring the perturbation due to the high dimensionality of the space and the lack of a canonical distance metric (we try out a lot of metrics, and sliding windows, and sentence embedders, and ...). Thus, we decide that a suitable metric is "how many generated tokens until the first different one" or "time to first divergence" (sort of like a characteristic time in which the trajectories remain together). 
 
+    Firstly, we evaluated sensitivity to parturbation magnitude. Empirically we found that perturbations of magnitude greater than $10^{-4}$ induced immediate divergence. This was unexpected, as in the previous sections, we found the operators to be linearized, and the power law dependence still hold at much larger magnitude perturbations (Sec. \ref{subsubsec:finite_size}). The explanation resides in the Softmax function and the sampling; a perturbation of sufficient magnitude will induce a different token to be the most likely already in the first step. We empirically choose the perturbation magnitude to be lower than that, allowing us to study more interesting dynamics.
+
     We also calculated the divergence using other distance metrics. We see that the trajectories remain extremely close for several steps until they suddenly diverge. In the text, the first words are the same until, at the diverging step, the words turn different and the sentences too, while the general topic remains the same. So the initial perturbation persists in the hidden states, but does not affect token selection until a certain step, where the sampled token by two trajectories is different, which then leads them to quickly diverge.
     The explanation for this is that at each step, the most probable next token is selected. If the perturbation is not large enough, at a given step it will not change the selected token, which keeps both trajectories close. In the text space, and in the sentence embeddings, the perturbation will not be detectable at all, while in the hidden state space, it will remain. After some steps, it might occur that the perturbation, which propagates and possibly amplifies due to the non-linear coupling, induces a different next token to be selected. This causes a big discrete difference with the non-disturbed trajectory, which then strongly influences the next token prediction. This causes trajectories to rapidly diverge once the first different token is predicted.
+
+    \begin{figure}[H]
+        \centering
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/divergence/cos_timeseries_0_1_window_size_16.png}
+            \caption{hidden-states}
+        \end{subfigure}\quad
+        \begin{subfigure}[b]{0.48\linewidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots_new/deepseek/divergence/cos_timeseries_0_1_window_size_16_sentence.png}
+            \caption{sentence embeddings}
+        \end{subfigure}
+        \caption{Divergence between a pair of hidden-state trajectories measured using different distance metrics. DeepSeek-R1-Distill-Qwen-1.5B}
+        \label{fig:divergence_cos}
+    \end{figure}
+
 
     \begin{figure}[H]
         \centering
@@ -1060,7 +1080,7 @@
             \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/hausdorff_timeseries_0_2_window_size_16.pdf}
             \caption{Hausdorff}
         \end{subfigure}
-        \caption{Divergence between a pair of hidden-state trajectories measured using different distance metrics. Some metrics exhibit gradual divergence (panels (b), (d)), while others show abrupt, step-like separation (panels (a), (c))corresponding to the first differing token.}
+        \caption{Divergence between a pair of hidden-state trajectories measured using different distance metrics. DeepSeek-R1-Distill-Qwen-1.5B}
         \label{fig:distance_hidden}
     \end{figure}
 
@@ -1070,30 +1090,30 @@
     \subsubsection{Dependence on Attenntion}
     % XXX: Here what I want to say is: In the previous section we showed that perturbations can remain latent in the token's hidden states, and then after some number of tokens, cause a different token to be predicted. Given that attention is the only mechanism that enables forward propagation of information and perturbations, attention must be the cause. Here we use the "time to first divergence", and look at its dependence on the attention window size. Thus we want to show how attention propagates perturbations. The relationship is not straightforward.
 
-    Here I have some data which shows how the trajectory divergence depends on context window size. data is cooking, will be ready Thursday morning.
+    % Here I have some data which shows how the trajectory divergence depends on context window size. data is cooking, will be ready Thursday morning.
 
     In the previous section we showed that it is possible for small magnitude perturbation to remain latent in the hidden states and trigger a different token to be selected not immediately, but after a certain number of tokens. The attention mechanism propagates these perturbations to future tokens. 
-    To quantify the chaoticity of a system, we report the number of tokens until two trajectories diverge, that is, the predicted token differs \footnote{A common metric to quantify the chaoticity of a system is the lyapunov exponents, which would be inversely proportial to the metric we report. As we did not observe strictly exponential divergence, we chose this metric.}. % GGG opinions on footnote?
+    To quantify the chaoticity of a system, we report the number of tokens until two trajectories diverge, that is, the predicted token differs \footnote{A common metric to quantify the chaoticity of a system is the lyapunov exponents, which would be inversely proportial to the metric we report. As we did not observe strictly exponential divergence, we chose this metric.}.
 
     \begin{figure}[H] 
         \centering
         
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/deepseek/attn/dep_window_harmonic_mean_mag_0.0001_log_linear.png}
-            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+            \includegraphics[width=\linewidth]{plots_new/deepseek/attn/dep_window_geometric_mean_mag_0.0001_log_linear.png}
+            \caption{DeepSeek-R1-Distill-Qwen-1.5B Perturbation magnitude = $10^{-4}$}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
-            \includegraphics[width=\linewidth]{plots_new/microsoft/attn/dep_window_harmonic_mean_mag_0.0001_log_linear.png}
-            \caption{Phi-4-mini-instruct}
+            \includegraphics[width=\linewidth]{plots_new/microsoft/attn/dep_window_geometric_mean_mag_1e-05_log_linear.png}
+            \caption{Phi-4-mini-instruct, Perturbation magnitude = $10^{-5}$}
         \end{subfigure}
-        \caption{Divergence dependence on Attention context window size. The vertical axis represents the number of tokens until a pair of trajectories first diverge. Perturbation magnitude = $0.0001$} %%% magnitude 0.0001 ? GGG 
+        \caption{Divergence dependence on Attention context window size. The vertical axis represents the number of tokens until a pair of trajectories first diverge. Data points that never diverge are marked as "stable".} 
         \label{fig:attn}
     \end{figure}
 
-    Fig. \ref{fig:attn} shows the relationship between the attention window size and the divergence. For very small attention window sizes, the model is very sensitive to its immediately previous tokens (which received a perturbation in our experiments), and thus diverges immediately. For slightly larger window sizes, trajectories never diverge. An explanation could be that the larger context (which is shared, if we ignore the small perturbation) stabilizes the first generated tokens. Then, after the first tokens are generated identically in all trajectories, if those populate the context window, the original perturbed prompt will be outside the window, and trajectories do not diverge. For larger context sizes, we again see consistent divergence, since the perturbation remains in the context window. % GGG
-
+    Fig. \ref{fig:attn} shows the relationship between the attention window size and the divergence. When the attention window size is 1, it attends only to itself, and we see that it is stable.
+    For very small attention window sizes, the model is very sensitive to its immediately previous tokens (which received a perturbation), and thus diverges immediately. For slightly larger window sizes, trajectories never diverge. An explanation could be that the larger context (which is shared, if we ignore the small perturbation) stabilizes the first generated tokens. Then, after the first tokens are generated identically in all trajectories, if those populate the context window, the original perturbed prompt will be outside the window, and trajectories do not diverge. For larger context sizes, we again see consistent divergence, since the perturbation remains in the context window.
     The relationship is not very straightforward and it depends on the magnitude of the perturbation. 
 
 
@@ -1256,11 +1276,22 @@
     \label{sec:conclusions}
 
     % MLP is most active in the last layers.
+    % MLP attention can be extremely expansive and unstable, because they rely on normalization and residual connection to provide the stability and preserving the information
+
+    This study explored the internal dynamics of a Large Language Model (LLM) through the lens of nonlinear dynamical systems. 
+
+    By interpreting autoregressive generation as a high-dimensional discrete-time dynamical system and analyzing trajectories in hidden-state spacee, we investigated whether the evolution of representations within Transformer-based LLMs exhibit signatures of deterministic chaos.
+    
+    By analyzing trajectories of hidden states we investigated whether the evolution of representations within an autoregressive Transformer can exhibit behaviors analogous to deterministic chaos.
+
+    Our results provide consistent evidence for the possibility of such behavior. Across multiple distance metrics-capturing fundamentally different geometric notions such as alignment, extremal deviation, temporal warping, and global self-similarity and across different representational spaces, we observed qualitatively robust patterns of trajectory divergence, recurrence, and boundedness.
+
+    We looked for explanation for this behavior by analyzing the dynamical effect of the different components of the Transformer architecture: Attention, MLP, normalization, and residual connections. We showed how perturbations propagate across these operators. The combination of MLP and Attention, which amplify the perturbations, with normalization and residual connections, which preserve information and keep the system bounded produces a balance between divergence and confinement analogous to chaotic attractors. Attention introduces non-linear coupling between tokens which propagates infromation and perturbations during autoregressive information.
 
     \section{Acknowledgments }
     \label{sec:acknowledgements}
 
-    I would like to thank my supervisors Dr. János Török, and Kristóf Benedek for their help and support during this work. This work was supported by the National Research, Development and Innovation Fund and by the Ministry of Culture and Innovation of Hungary through the TKP2021-NVA-02 OR TKP2021-EGA-02 funding scheme.
+    I would like to thank my supervisors Dr. János Török, and Kristóf Benedek for their help and support during this work. This work was supported by the National Research, Development and Innovation Fund and by the Ministry of Culture and Innovation of Hungary through the TKP2021-NVA-02 OR TKP2021-EGA-02 funding scheme. Results were obtained by using the HPC of the Budapest University of Technology and Economics, Department of Theoretical Physics.
 
     \newpage
     \printbibliography
@@ -1330,10 +1361,6 @@
 
 
 
-
-
-
-    
 
 
 

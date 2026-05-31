@@ -221,3 +221,6 @@ From a dynamical systems perspective, SwiGLU is qualitatively different from old
 $$\max_{\|\delta x\|_2 = 1} \|J \delta x\|_2 = \sigma_{\max}(J) = \|J\|_2$$
 
 
+
+
+Eigenvalues (and the spectral radius) dictate what happens if you apply the exact same linear operator infinitely many times. For a single discrete step, geometric expansion of a perturbation vector $\delta x$ is governed exclusively by the singular values, not the eigenvalues.
