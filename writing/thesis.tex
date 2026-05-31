@@ -340,12 +340,14 @@
 
     \subsection{LLMs and dynamical systems}
     \label{subsec:analogy_limitations}
-    We propose viewing the autoregressive operation of a Large Language Model as a \textbf{high-dimensional, discrete-time dynamical system}. Each forward pass defines a nonlinear state-dependent mapping between successive states of the system, where the collection of hidden states in the context window constitutes the trajectory evolving within the model's embedding space. From this perspective, the \textbf{self-attention mechanism} serves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. This acts as the stretching component: small perturbations to one token's hidden state can cause large changes in attention weights, which in turn significantly alter other token representations. The \textbf{normalization layers} (e.g., LayerNorm, RMSNorm) and bounded activation functions act as folding mechanisms, constraining the trajectory within a finite subspace by projecting hidden states onto normalized manifolds (explained in detail in Section \ref{subsubsec:normalization}). The alternation of stretching and folding operations across layers yields an evolution that is both bounded and sensitive to initial conditions.
-    % GGG check lol
+    We model the autoregressive operation and depth-wise representation evolution of a Large Language Model as a \textbf{high-dimensional, discrete-time dynamical system}. We analyze this system through two distinct trajectories:
 
-    % attention allows for information propagation to future tokens during autoregressive generation.
+    \begin{enumerate}
+        \item \textbf{Vertical Trajectory (Depth Evolution):} The state vector is the hidden representation $\mathbf{x}_\ell \in \mathbb{R}^d$ of a token, which evolves across layers $\ell = 1 \dots L$ as $\mathbf{x}_{\ell+1} = \mathbf{x}_\ell + \mathbf{f}_\ell(\mathbf{x}_\ell)$. Since each layer has unique weights, the mapping $\mathbf{f}_\ell$ varies with depth, making the vertical system non-autonomous.
+        \item \textbf{Horizontal Trajectory (Sequence Generation):} The state represents the sequence of tokens or their corresponding hidden states at a fixed layer across generation steps $t = 1 \dots N$. Here, the self-attention mechanism couples states across different positions (time steps).
+    \end{enumerate}
 
-    % Each token's representation is affected by (previous) other tokens, with softmax, ReLU, layer norm providing the nonlinearity.
+    From this perspective, the self-attention mechanismserves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. The combination of transformer operators mimics the stretching and folding actions of classical chaotic systems (summarized in Table \ref{tab:analogy}). The Attention and MLP blocks act as stretching mechanisms, amplifying local perturbations when the spectral norm of their Jacobians exceeds $1$. The normalization layers (LayerNorm, RMSNorm) act as folding mechanisms, constraining the state space by projecting hidden states onto a bounded manifold.
 
     \begin{table}[H]
     \centering
@@ -353,40 +355,26 @@
     \toprule
     \textbf{Chaotic System} & \textbf{LLMs} \\ \midrule
     Phase Space & Embedding / Hidden State Space \\
-    State Vector & Hidden State Vector \\
-    Phase-Space Trajectory & Sequence of Token Text or Hidden States \\
-    Continuous Time Evolution & Discrete Token Generation Step \\
-    Differential Equation & Autoregressive Function \\
-    Numerical Integration & Forward-Pass Inference \\
+    State Vector & Hidden State Vector $\mathbf{x}$ \\
+    Phase-Space Trajectory & Sequence of generated tokens (Horizontal) or layer-wise hidden state evolution (Vertical) \\
+    Continuous Time Evolution & Discrete token step (Horizontal) or layer index (Vertical) \\
+    Differential Equation & Autoregressive mapping (Horizontal) or Transformer Block (Vertical) \\
+    Numerical Integration & Forward-Pass Inference / Autoregressive generation \\
     Nonlinear Coupling & Self-Attention Mechanism \\
     Stretching & Attention / MLP Layers \\
     Folding & Normalization Layers \\
-    Initial Condition & Initial Prompt Text or Embedding \\
+    Initial Condition & Input prompt / initial layer hidden state \\
     Measurement Uncertainty & Floating-Point Precision, Quantization \\ \bottomrule
     \end{tabular}
     \caption{Analogies between concepts in chaos theory and LLMs.}
     \label{tab:analogy}
     \end{table}
-    % G: could add stretching and folding. table too big rn
-    % could add "Stretching" -> "Attention/MLP layers" and "Folding" -> "Normalization layers". 
 
-    Furthermore, the multi-head attention architecture can be interpreted as an ensemble of coupled dynamical subsystems, each operating in a distinct subspace. Their outputs are combined through learned linear projections (GGG linear -> nonlinear ?), introducing another layer of nonlinear interaction analogous to multi-variable coupling in chaotic flows such as the Lorenz or Rössler systems. 
-    The overall model thus represents a structured, multi-dimensional extension of the canonical "stretching-folding" paradigm observed in dissipative chaotic systems. % GGG
-
-    However, the analogy is not perfect and has critical limitations.
+    However, mapping LLMs to classical dynamical systems presents several distinct challenges:
     \begin{itemize}
-        \item \textbf{Discrete-Time and Sampling Effects.} LLM dynamics are discrete, not continuous, with a fixed "time step" of one token. The act of sampling a token from the probability distribution to generate the next token can be seen as a "collapse" or a sharp discontinuity in the trajectory's evolution \footnote{The hidden states at the first layer are also discrete and correspond exactly to a column of the embedding matrix. In deeper layers, the possible hidden states are more numerous (and effectively continuous), as they are generated through nonlinear transformations (transformer layers) of the previous hidden representations.}.
-        % G: can clarify that it matters in that this new token is the starting point for the processing in the 1st layer, but all the previous hidden states remain and will influence at each layer.
-        \item \textbf{Stochasticity and Non-Determinism.} LLMs are usually used with probabilistic sampling, which adds a random component and makes it non-deterministic. 
-        \item \textbf{Extreme Dimensionality.}  
-        The dimensionality of modern LLM state spaces (typically thousands of hidden dimensions across hundreds of context positions) vastly exceeds that of classical chaotic systems. This high dimensionality leads to strong concentration of measure effects and challenges the direct application of traditional chaos analysis tools, which are often developed for low-dimensional, smooth manifolds.
-
-        \item \textbf{Nature of Coupling.}  
-        In classical systems (e.g., Lorenz equations), coupling occurs between fixed state variables (e.g., $x$, $y$, $z$). In Transformers, coupling occurs across token positions, that is, between distinct instances of the system at different effective "times" within the same context. This results in a higher-order coupling structure where each state variable is itself a vector embedding, leading to emergent behaviors that differ qualitatively from classical variable coupling. % GGG what the fuck do you want to say. if you want to say something say it, but this is word salad.
-
-        \item \textbf{Nonstationarity and Weight Freezing.}  
-        The weights of a trained LLM remain static during inference; all apparent "dynamics" arise solely from transformations of the input representations. This differs from physical dynamical systems, whose governing equations continuously evolve in real time (GGG whaaaaaaaat???). Thus, while the forward pass can be viewed as a dynamical process, it does not constitute an autonomous system in the classical sense. % GGG fact check myself % GGG also we can relate it to how even though parameters are fixed, the jacobians and activations etc... depend on the input
-
+        \item \textbf{The Discrete Token Bottleneck:} Unlike continuous flows, autoregressive generation requires sampling a discrete token at each step. Small perturbations in the hidden state remain latent and undetectable in the text space until they cross the softmax threshold and trigger a different token selection, causing rapid trajectory divergence.
+        \item \textbf{Stochasticity:} Standard inference uses probabilistic sampling ($T > 0$). To study deterministic chaotic properties, we restrict our analysis to greedy sampling ($T = 0$).
+        \item \textbf{High Dimensionality:} Measuring fractal dimensions and Lyapunov exponents in spaces of thousands of dimensions ($\mathbb{R}^d$) is highly sensitive to the choice of distance metric and requires substantial data.
     \end{itemize}
 
 
