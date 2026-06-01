@@ -86,7 +86,7 @@
     \begin{flushleft} \large
     Author: \\
     \Large\textbf{Jaca Gregorio}\\
-    \large{Physicist Engineering BSc, III. year.}
+    \large{Physicist Engineering BSc.}
     \end{flushleft}
     \end{minipage}
     \qquad
@@ -154,7 +154,7 @@
 
     \section{Introduction and Motivation}
     \label{sec:introduction}
-    Large Language Models (LLMs) are among the most complex artificial systems currently studied. As deep neural networks composed of billions of parameters, they are highly nonlinear and high-dimensional. Unlike classical dynamical systems, where governing equations are explicitly defined, the parameters of LLMs are learned through during training on massive amounts of data. This allows LLMs to learn huge amounts of knowledge with little human intervention, resulting in powerful models with intricate dynamics whose behavior is often unpredictable and difficult to interpret.
+    Large Language Models (LLMs) are among the most complex artificial systems currently studied. As deep neural networks composed of billions of parameters, they are highly nonlinear and high-dimensional. Unlike classical dynamical systems, where governing equations are explicitly defined, the parameters of LLMs are learned during training on massive amounts of data. This allows LLMs to learn huge amounts of knowledge with little human intervention, resulting in powerful models with intricate dynamics whose behavior is often unpredictable and difficult to interpret.
     % provide a fascinating case study for nonlinear dynamics
 
     Despite this opacity, LLMs exhibit stable generative behavior: they maintain coherence over long text sequences while allowing for variability in their responses. This tension between stability and sensitivity is reminiscent of chaotic systems in nonlinear dynamics, systems that remain bounded yet display sensitive dependence on initial conditions. Understanding whether the internal evolution of LLM representations exhibits similar characteristics offers a new perspective on both interpretability and model behavior.
@@ -181,7 +181,7 @@
     %In particular, if LLMs perform reasoning in a structured, low-dimensional manifold of this space, one might expect ordered, non-chaotic evolution; yet if reasoning involves self-reinforcing feedback and contextual amplification, chaotic signatures may emerge. 
     We have worked around many of these challenges, and we hope this experience can be transferred to the study of other high dimensional systems.
 
-    In this paper, we apply tools from nonlinear dynamics to the study of LLM dynamics evolution during inference. We define trajectories in hidden-state and text space, measure the jacobians of the Transformer operators, explore metrics to quantify divergence between nearby trajectories, and apply recurrence and dimensionality analyses to detect possible chaotic structures. The framework presented here extends beyond text models and can, in principle, be applied to any high-dimensional autoregressive generative system, such as audio, image, or multimodal models.
+    In this paper, we apply tools from nonlinear dynamics to the study of LLM dynamics evolution during inference. We define trajectories in hidden state and text space, measure the jacobians of the Transformer operators, explore metrics to quantify divergence between nearby trajectories, and apply recurrence and dimensionality analyses to detect possible chaotic structures. The framework presented here extends beyond text models and can, in principle, be applied to any high-dimensional autoregressive generative system, such as audio, image, or multimodal models.
 
     % Another challenge is the non-stationarity. The 'rules' of the system (the attention patterns) are state-dependent, changing at every single step. This is unlike classic chaotic systems where the governing equations are fixed. This makes analysis much harder but also much more interesting.
 
@@ -194,10 +194,10 @@
 
     \paragraph{Chaotic Dynamics in LLMs:}
 
-    \cite{li2025cognitive_activation} proposes that LLMs' reasoning capabilities are, in fact, chaotic processes of dynamic information extraction in parameter space.  Introduces the Quasi-Lyapunov Exponents to quantify chaotic characteristics across model layers and shows sensitivity to initial conditions.
-    \cite{geshkovski2025mathematicalperspectivetransformers} model self-attention as a nonlinear coupling between tokens.
-    \cite{dynamicalmeanfieldtheoryselfattention} demonstrates that even simplified self-attention transformer networks with 1-bit tokens and weights exhibit nontrivial dynamical phenomena, including non-equilibrium phase transitions and chaotic bifurcations. 
-    \cite{tomihari2025recurrent_self_attention_dynamics} shows that normalization layers also normalize the Jacobian's complex eigenvalues, bringing the dynamics close to a critical state with maximum Lyapunov exponents close to zero, suggesting operation at the edge of chaos: a critical regime where signals neither explode nor vanish, enabling long-range information propagation.
+    LLMs' reasoning capabilities have been proposed to be chaotic processes of dynamic information extraction in parameter space \cite{li2025cognitive_activation}. Quasi-Lyapunov Exponents quantify chaotic characteristics across model layers and show sensitivity to initial conditions.
+    Self-attention has been modelled as a nonlinear coupling between tokens \cite{geshkovski2025mathematicalperspectivetransformers}.
+    E ven simplified self-attention transformer networks with 1-bit tokens and weights exhibit nontrivial dynamical phenomena, including non-equilibrium phase transitions and chaotic bifurcations \cite{dynamicalmeanfieldtheoryselfattention}. 
+    N ormalization layers also normalize the Jacobian's complex eigenvalues, bringing the dynamics close to a critical state with maximum Lyapunov exponents close to zero, suggesting operation at the edge of chaos: a critical regime where signals neither explode nor vanish, enabling long-range information propagation \cite{tomihari2025recurrent_self_attention_dynamics}.
     % G: this can explain if the trajectories have sub-exponential divergence
     %show that normalization layers effectively suppress the Jacobian's spectral norm and control oscillatory behaviors. Their empirical findings reveal that high-performance self-attention models exhibit maximum Lyapunov exponents close to zero, suggesting operation at the edge of chaos—a critical regime where signals neither explode nor vanish, enabling long-range information propagation.
     % this provides a mechanistic explanation for why the system might hover at the edge of chaos. The normalization layers act as a dissipative force, counteracting the explosive stretching from other parts of the network, keeping the system bounded and stable. This connects directly to the idea of 'folding'.
@@ -205,9 +205,7 @@
     \paragraph{Determinism and Attractors in Language Models:}
     % The tension between reproducibility and novely in LLMs has become increasingly relevant. 
     Recent engineering efforts \cite{he2025nondeterminism} have focused on achieving deterministic inference by controlling GPU batching variance and floating-point errors, motivated by the need for reproducibility and clear signals in reinforcement learning training. Understanding LLM's sensitivity to batch combinations, perturbations and input data is useful for this branch of study.
-    \cite{wang2025unveiling_attractor_cycles} shows that LLMs used for paraphrasing converge to periodic attractor cycles, reducing linguistic diversity.
-    \cite{cyclegan} % Comment: PLOS Complex Systems article - 
-    demonstrates that CycleGAN image generators' space is more limited than the training data's, having positive Lyapunov exponents and attractor dimensions similar to the training data intrinsic dimension. Chaotic dynamics contribute to the diversity of the generated images.
+    LLMs used for paraphrasing converge to periodic attractor cycles, reducing linguistic diversity \cite{wang2025unveiling_attractor_cycles}. CycleGAN image generators' space is more limited than the training data's, having positive Lyapunov exponents and attractor dimensions similar to the training data intrinsic dimension \cite{cyclegan}. Chaotic dynamics contribute to the diversity of the generated images.
     %This suggests that generative models may naturally converge to stable configurations that reduce output diversity. 
     % G: this is a bit contradictory bc I say that model generation: more limited than training data but chaotic makes more diverse.
     % This isn't necessarily a contradiction. The system can be chaotic (positive Lyapunov exponent, sensitive dependence) which allows for diversity, but still be confined to an attractor whose dimension is smaller than the ambient space. This is the definition of a *strange attractor*. The chaos creates novelty *within* the bounds of the learned manifold.
@@ -215,7 +213,7 @@
     \paragraph{Interpretability Through Dynamical Analysis:}
     \label{par:interpretability_dynamics}
     %The dynamical systems perspective has proven valuable for understanding recurrent architectures. 
-    \cite{sussillo2013} showed that fixed points and linearized dynamics in trained RNNs provide interpretable insights into network function. \cite{zhang2024intelligence_edge_of_chaos} found that intelligence emerges at an optimal complexity level, a regime neither fully ordered nor chaotic or random. Systems that are either highly chaotic or perfectly periodic exhibit poor downstream performance, suggesting a "sweet spot" conducive to intelligent behavior at the edge of chaos. \cite{zhou2025geometryreasoningflowinglogics} shows how LLM's chain-of-thought reasoning can be interpreted as smooth flows in embedding space, where logical statements control the flow's velocities.
+    Fixed points and linearized dynamics in trained RNNs provide interpretable insights into network function \cite{sussillo2013}. Intelligence emerges at an optimal complexity level, a regime neither fully ordered nor chaotic or random. Systems that are either highly chaotic or perfectly periodic exhibit poor downstream performance, suggesting a "sweet spot" conducive to intelligent behavior at the edge of chaos \cite{zhang2024intelligence_edge_of_chaos}. LLM's chain-of-thought reasoning can be interpreted as smooth flows in embedding space, where logical statements control the flow's velocities \cite{zhou2025geometryreasoningflowinglogics}.
     % G: grego this section and see where in the text you should cite this papers etc...
 
     \section{Preliminaries}
@@ -319,7 +317,6 @@
     \begin{equation}
         \text{Attention}(\mathbf{Q}, \mathbf{K}, \mathbf{V}) = \text{softmax}\left(\frac{\mathbf{Q}\mathbf{K}^T}{\sqrt{d_k}}\right)\mathbf{V}
     \end{equation}
-    % GGG make it consistent with math derivations
     where the Query ($\mathbf{Q} = \mathbf{X} W_Q$), Key ($\mathbf{K} = \mathbf{X} W_K$), and Value ($\mathbf{V} = \mathbf{X} W_V$) are linear projections. The Query represents the current token's focus, the Key represents the characteristics of other tokens, and the Value contains the information of those tokens, with each attention head looking at different information. The attention mechanism computes a weighted sum of the Values, where the weights are determined by the similarity between the Query and Keys \footnote{As an intuition, attention is like a learned differentiable lookup table. Given a hidden state, it generates a query and returns a weighted sum of values based on the key-query similarity, which is used to update the hidden state. The queries, keys and values are generated from the hidden states in the context window using $W_Q, W_K$ and $W_V$.}. At each layer there are multiple attention heads ($H_{\text{heads}}$) operating in parallel. Their outputs are projected, combined, and added to the residual stream of the hidden state, which then gets normalized and enters the MLP module. 
     Causal masking in attention is used to ensure that a token is only influenced by previous tokens
     \footnote{Nowadays most LLMs are decoder-only and it is necessary to use causal masking for autoregressive generation. Bidirectional (no causal masking) attention can be used in the encoder of a transformer-based model, such as BERT (encoder only) or some translators (encoder-decoder).}.
@@ -340,14 +337,14 @@
 
     \subsection{LLMs and dynamical systems}
     \label{subsec:analogy_limitations}
-    We model the autoregressive operation and depth-wise representation evolution of a Large Language Model as a \textbf{high-dimensional, discrete-time dynamical system}. We analyze this system through two distinct trajectories:
+    We model the autoregressive operation of a Large Language Model as a high-dimensional, discrete-time dynamical system. We analyze this system through two distinct trajectories:
 
     \begin{enumerate}
-        \item \textbf{Vertical Trajectory (Depth Evolution):} The state vector is the hidden representation $\mathbf{x}_\ell \in \mathbb{R}^d$ of a token, which evolves across layers $\ell = 1 \dots L$ as $\mathbf{x}_{\ell+1} = \mathbf{x}_\ell + \mathbf{f}_\ell(\mathbf{x}_\ell)$. Since each layer has unique weights, the mapping $\mathbf{f}_\ell$ varies with depth, making the vertical system non-autonomous.
+        \item \textbf{Vertical Trajectory (Layer Evolution):} The state vector is the hidden representation $\mathbf{x}_\ell \in \mathbb{R}^d$ of a token, which evolves across layers $\ell = 1 \dots L$ as $\mathbf{x}_{\ell+1} = \mathbf{x}_\ell + \mathbf{f}_\ell(\mathbf{x}_\ell)$. Since each layer has unique weights, the mapping $\mathbf{f}_\ell$ varies with depth, making the vertical system non-autonomous.
         \item \textbf{Horizontal Trajectory (Sequence Generation):} The state represents the sequence of tokens or their corresponding hidden states at a fixed layer across generation steps $t = 1 \dots N$. Here, the self-attention mechanism couples states across different positions (time steps).
     \end{enumerate}
 
-    From this perspective, the self-attention mechanismserves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. The combination of transformer operators mimics the stretching and folding actions of classical chaotic systems (summarized in Table \ref{tab:analogy}). The Attention and MLP blocks act as stretching mechanisms, amplifying local perturbations when the spectral norm of their Jacobians exceeds $1$. The normalization layers (LayerNorm, RMSNorm) act as folding mechanisms, constraining the state space by projecting hidden states onto a bounded manifold.
+    From this perspective, the self-attention mechanism serves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. The combination of transformer operators mimics the stretching and folding actions of classical chaotic systems (summarized in Table \ref{tab:analogy}). The Attention and MLP blocks act as stretching mechanisms, amplifying local perturbations. The normalization layers act as folding mechanisms, constraining the state space by projecting hidden states onto a bounded manifold.
 
     \begin{table}[H]
     \centering
@@ -509,7 +506,8 @@
 
     Experiments were conducted using the models \texttt{DeepSeek-R1-Distill-Qwen-1.5B} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.} \cite{deepseek2025r1distillqwen1.5b}, and \texttt{Phi-4-mini-instruct} \footnote{A reasoning 3.8 billion parameter model which achieved great performance for its size.} \cite{microsoft2025phi4minitechnicalreportcompact, microsoft/Phi-4-mini-instruct}. 
     Inference was performed on a Tesla T4 GPU. Hidden states and intermediate activations were extracted at each transformer block, yielding tensors of shape (layers, tokens, dimension). 
-    Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. The context window length was set to 3096 tokens. 
+    Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. 
+    % The context window length was set to 3096 tokens. 
 
     \subsubsection{Initial Condition Generation}
     \label{subsec:init_cond_gen}
@@ -673,7 +671,7 @@
         \label{fig:jacobian_norm_and_lambda}
     \end{figure}
 
-    \paragraph{Mean Field Approximation}
+    \paragraph{Mean-Field Approximation}
     \label{derivation:mft}
 
     To quantify the average phase-space expansion induced by the MLP block, we analyze the mean squared singular value ($\overline{\lambda}$) of its local Jacobian ($\mathbf{J}$). For a simplified MLP block mapping a single token $\mathbf{x} \in \mathbb{R}^d$ via $\text{MLP}(\mathbf{x}) = W_2 \phi(W_1 \mathbf{x})$
@@ -690,7 +688,7 @@
     $$\|\mathbf{J}\|_F^2 = \sum_{i=1}^{d_{\text{ff}}} \sum_{j=1}^{d_{\text{ff}}} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j = \sum_{i=1}^{d_{\text{ff}}} (H_2)_{ii} (H_1)_{ii} (\phi'_i)^2 + \sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j$$
     where $\phi'_i = \phi'( (W_1 \mathbf{x})_i )$.
 
-    We proceed by applying two mean-field simplifications. These assumptions are evaluated numerically in Appendix \ref{numerical:mft}.
+    We proceed by applying two Mean-Field simplifications. These assumptions are evaluated numerically in Appendix \ref{numerical:mft}.
 
     \begin{enumerate}
         \item We neglect the contribution of the off-diagonal terms:
@@ -725,11 +723,11 @@
             \includegraphics[width=\linewidth]{plots_new/microsoft/jacobians_MLP/mft_comparison_jacobian_base_All_Prompts_Aggregated_aggregated_xscale-linear_yscale-log.png}
             \caption{Phi-4-mini-instruct}
         \end{subfigure}
-        \caption{Measured $\overline{\lambda}$ and value calculated using the Mean Field formula. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
+        \caption{Measured $\overline{\lambda}$ and value calculated using the Mean-Field formula. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
         \label{fig:mft}
     \end{figure}
 
-    The mean-field derivation predicts the expected value of the squared Jacobian norm ($\mathbb{E}[\|J\|_F^2]$), so it relies on the linearity of expectation. Thus, in Fig. \ref{fig:mft}, we used the mean to aggregate the results, which is more sensitive to outliers than the non-linear median or harmonic mean (which we used in other figures). There is a large discrepancy with the mean "Empirical" and "Mean Field" values observed in the second and third layers. This is due to outliers where the perturbation coincides with the direction of maximal jacobian, together with the fact that the mean is sensitive to these outliers. The shaded bands coincide consistently.
+    The Mean-Field derivation predicts the expected value of the squared Jacobian norm ($\mathbb{E}[\|J\|_F^2]$), so it relies on the linearity of expectation. Thus, in Fig. \ref{fig:mft}, we used the mean to aggregate the results, which is more sensitive to outliers than the non-linear median or harmonic mean (which we used in other figures). There is a large discrepancy with the mean "Empirical" and "Mean-Field" values observed in the second and third layers. This is due to outliers where the perturbation coincides with the direction of maximal jacobian, together with the fact that the mean is sensitive to these outliers. The shaded bands coincide consistently.
     % This section (and it's assumptions) are justified by the great agreement of the formula with the measured results
 
 
@@ -1038,14 +1036,14 @@
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/deepseek/divergence/cos_timeseries_0_1_window_size_16.png}
-            \caption{hidden-states}
+            \caption{hidden states}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/deepseek/divergence/cos_timeseries_0_1_window_size_16_sentence.png}
             \caption{sentence embeddings}
         \end{subfigure}
-        \caption{Divergence between a pair of hidden-state trajectories measured using different distance metrics. DeepSeek-R1-Distill-Qwen-1.5B}
+        \caption{Divergence between a pair of hidden state trajectories measured using different distance metrics. DeepSeek-R1-Distill-Qwen-1.5B}
         \label{fig:divergence_cos}
     \end{figure}
 
@@ -1069,7 +1067,7 @@
             \includegraphics[width=\linewidth]{figures_pdf/divergence/childhood_personality_development_0_0.0004/hidden_states_layer_-1_sentence/20260213-161650-81b984/plots/hausdorff_timeseries_0_2_window_size_16.pdf}
             \caption{Hausdorff}
         \end{subfigure}
-        \caption{Divergence between a pair of hidden-state trajectories measured using different distance metrics. DeepSeek-R1-Distill-Qwen-1.5B}
+        \caption{Divergence between a pair of hidden state trajectories measured using different distance metrics. DeepSeek-R1-Distill-Qwen-1.5B}
         \label{fig:distance_hidden}
     \end{figure}
 
@@ -1139,9 +1137,9 @@
         \label{fig:rp_comparison_layers}
     \end{figure}
 
-    A prominent feature across prompts is the presence of numerous short diagonal line segments with varying lengths. In recurrence analysis, such fragmented diagonals indicate that nearby trajectory segments remain similar only for finite intervals before separating, a signature consistent with sensitivity to initial conditions and positive Lyapunov exponents. The abundance of diagonals with a broad length distribution is compatible with the chaotic dynamics suggested by the divergence analysis. % GGG maybe reference the divergence analysis
+    A prominent feature across prompts is the presence of numerous short diagonal line segments with varying lengths. In recurrence analysis, such fragmented diagonals indicate that nearby trajectory segments remain similar only for finite intervals before separating, a signature consistent with sensitivity to initial conditions and positive Lyapunov exponents. The abundance of diagonals with a broad length distribution is compatible with the chaotic dynamics suggested by the divergence analysis.
 
-    In some cases the recurrence plots also display quasi-periodic stripe or grid-like patterns (See Fig. \ref{fig:rp_interesting} (b)). Inspection of the generated text shows that these structures arise when the model generates regular textual formats, such as enumerated suggestions or repeated recommendation templates. These patterns produce recurrent passages through similar regions of hidden-state space, giving rise to the periodic structures visible in the recurrence matrix.
+    In some cases the recurrence plots also display quasi-periodic stripe or grid-like patterns (See Fig. \ref{fig:rp_interesting} (b)). Inspection of the generated text shows that these structures arise when the model generates regular textual formats, such as enumerated suggestions or repeated recommendation templates. These patterns produce recurrent passages through similar regions of hidden state space, giving rise to the periodic structures visible in the recurrence matrix.
 
     \begin{figure}[H]
         \centering
@@ -1269,11 +1267,13 @@
 
     This study explored the internal dynamics of a Large Language Model (LLM) through the lens of nonlinear dynamical systems. 
 
-    By interpreting autoregressive generation as a high-dimensional discrete-time dynamical system and analyzing trajectories in hidden-state space, we investigated whether the evolution of representations within Transformer-based LLMs exhibits signatures of deterministic chaos.
+    By interpreting autoregressive generation as a high-dimensional discrete-time dynamical system and analyzing trajectories in hidden state space, we investigated whether the evolution of representations within Transformer-based LLMs exhibits signatures of deterministic chaos.
 
-    Our results provide consistent evidence for the possibility of such behavior. Across multiple distance metrics—capturing fundamentally different geometric notions such as alignment, extremal deviation, temporal warping, and global self-similarity—and across different representational spaces, we observed qualitatively robust patterns of trajectory divergence, recurrence, and boundedness.
+    
 
-    We analyzed the dynamical effect of the different components of the Transformer architecture: Attention, MLP, normalization, and residual connections. We showed how perturbations propagate across these operators. The combination of MLP and Attention, which amplify perturbations, with normalization and residual connections, which preserve information and keep the system bounded, produces a balance between divergence and confinement analogous to chaotic attractors. Attention introduces nonlinear coupling between tokens that propagates information and perturbations during autoregressive generation.
+    We analyzed the dynamical effect of the different components of the Transformer architecture: Attention, MLP, normalization, and residual connections. We showed how perturbations propagate across these operators. The combination of MLP and Attention, which amplify perturbations, with normalization, which keeps the system bounded, and residual connections, which preserve information, produces a balance between divergence and confinement analogous to chaotic attractors. Attention introduces nonlinear coupling between tokens that propagates information and perturbations during autoregressive generation. We also derived a closed-form Mean-Field Theory (MFT) formula predicting the expected isotropic stretching of the MLP block, showing strong agreement with empirical results.
+
+    Our results provide consistent evidence for the possibility of such behavior. Across multiple distance metrics, capturing fundamentally different geometric notions such as alignment, extremal deviation, temporal warping, and global self-similarity, and across different representational spaces, we observed qualitatively robust patterns of trajectory divergence, recurrence, and boundedness. We identified that small magnitude perturbations remain latent in the hidden states until they cross the softmax and sampling, where they can induce a token flip, which triggers rapid trajectory divergence.
 
     \section{Acknowledgments }
     \label{sec:acknowledgements}
@@ -1286,37 +1286,9 @@
     \section{Appendix}
     \label{sec:appendix}
 
+    \subsection{Testing the Mean-Field derivation assumptions} \label{numerical:mft}
 
-    \subsection{Forward pass across layers}
-    \begin{algorithm}[H]
-    \caption{Forward Pass of a Pre-LN Transformer Decoder Layer $\ell$}
-    \label{alg:transformer_decoder_layer}
-    \begin{algorithmic}[1]
-    \REQUIRE Input hidden state tensor $\mathbf{x}_\ell \in \mathbb{R}^{T \times d}$, norm weights $\mathbf{w}_{\text{in}}, \mathbf{w}_{\text{post}} \in \mathbb{R}^d$, projection weights for Attention ($W_Q, W_K, W_V, W_O$) and MLP ($W_{\text{gate}}, W_{\text{up}}, W_{\text{down}}$)
-    \ENSURE Output updated hidden state tensor $\mathbf{x}_{\ell+1} \in \mathbb{R}^{T \times d}$
-
-    \STATE $\mathbf{x}_{\text{resid}} \leftarrow \mathbf{x}_\ell$ \COMMENT{Save residual for attention}
-    \STATE $\tilde{\mathbf{x}}_\ell \leftarrow \text{RMSNorm}(\mathbf{x}_\ell; \mathbf{w}_{\text{in}})$ \COMMENT{1. Pre-Attention Normalization}
-
-    \STATE $\mathbf{q} \leftarrow \text{RoPE}(\tilde{\mathbf{x}}_\ell W_Q), \quad \mathbf{k} \leftarrow \text{RoPE}(\tilde{\mathbf{x}}_\ell W_K), \quad \mathbf{v} \leftarrow \tilde{\mathbf{x}}_\ell W_V$ \COMMENT{Project queries, keys, values}
-    \STATE $\mathbf{a}_\ell \leftarrow \text{Softmax}\left(\frac{\mathbf{q}\mathbf{k}^T}{\sqrt{d_k}} + \mathbf{M}\right)\mathbf{v} \cdot W_O$ \COMMENT{2. Self-Attention (with causal mask $\mathbf{M}$)}
-
-    \STATE $\mathbf{x}'_\ell \leftarrow \mathbf{x}_{\text{resid}} + \mathbf{a}_\ell$ \COMMENT{3. First Residual Connection}
-
-    \STATE $\mathbf{x}_{\text{resid}}' \leftarrow \mathbf{x}'_\ell$ \COMMENT{Save residual for MLP}
-    \STATE $\tilde{\mathbf{x}}'_\ell \leftarrow \text{RMSNorm}(\mathbf{x}'_\ell; \mathbf{w}_{\text{post}})$ \COMMENT{4. Pre-MLP Normalization}
-
-    \STATE $\mathbf{m}_\ell \leftarrow \left(\text{SiLU}(\tilde{\mathbf{x}}'_\ell W_{\text{gate}}) \odot (\tilde{\mathbf{x}}'_\ell W_{\text{up}})\right) W_{\text{down}}$ \COMMENT{5. SwiGLU MLP Block}
-    \STATE $\mathbf{x}_{\ell+1} \leftarrow \mathbf{x}_{\text{resid}}' + \mathbf{m}_\ell$ \COMMENT{6. Second Residual Connection}
-
-    \RETURN $\mathbf{x}_{\ell+1}$
-    \end{algorithmic}
-    \end{algorithm}
-
-
-    \subsection{Testing the Mean Field derivation assumptions} \label{numerical:mft}
-
-    We made two main assumptions in the Mean Field derivation in Section \ref{derivation:mft}. To test if the diagonal term dominates
+    We made two main assumptions in the Mean-Field derivation in Section \ref{derivation:mft}. To test if the diagonal term dominates
     \footnote{We assume the weight matrices $W_1$ and $W_2$ are statistically uncorrelated. In the high-dimensional intermediate limit ($d_{\text{ff}} \gg 1$), the cross-terms $(H_2)_{ij} (H_1)_{ji}$ act as zero-mean random variables with alternating signs, causing the off-diagonal sum to destructively interfere and vanish. This is a common assumption done by authors studying untrained neural networks. This is not exactly true in trained models like the ones used in this study.}
     , we compute the contribution of the diagonal terms and compare it with the total:
     $R = \frac{\lambda_{\text{diagonal}}}{\lambda_{\text{true}}}$,
@@ -1331,18 +1303,18 @@
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/microsoft/mft-check/mft_validation_plot_assumption1_jacobian_base_All_Prompts_Aggregated_aggregated.png}
-            \caption{DeepSeek-R1-Distill-Qwen-1.5B}
+            \caption{Assumption 1: diagonal dominance}
         \end{subfigure}\quad
         \begin{subfigure}[b]{0.48\linewidth}
             \centering
             \includegraphics[width=\linewidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption2_jacobian_base_All_Prompts_Aggregated_aggregated.png}
-            \caption{Phi-4-mini-instruct}
+            \caption{Assumption 2: Uniformity of weights}
         \end{subfigure}
-        \caption{Numerical results testing the assumptions made in the mean field approach. The Tolerance bands represent the conditions R close to 1 and $\text{CV} \ll 1$. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
+        \caption{Numerical results testing the assumptions made in the Mean-Field approach. The Tolerance bands represent the conditions R close to 1 and $\text{CV} \ll 1$. Shaded bands show the 10th-90th (light) and 25th-75th (dark) percentile ranges.}
         \label{fig:mft-num-check}
     \end{figure}
 
-    Fig. \ref{fig:mft-num-check} shows the numerical results, which show that are assumptions are reasonably satisfied. Larger discrepancies appear at the last layers. Still, the mean field approach is mainly justified by its agreement with empirical results as shown in Section \ref{numerical:mft} Fig. \ref{fig:mft}. 
+    Fig. \ref{fig:mft-num-check} shows the numerical results, which show that are assumptions are reasonably satisfied. Larger discrepancies appear at the last layers. Still, the Mean-Field approach is mainly justified by its agreement with empirical results as shown in Section \ref{numerical:mft} Fig. \ref{fig:mft}. 
 
 
 
@@ -1384,93 +1356,93 @@
 
 
 
-    % \subsection{Intuition behind different metrics}
-    % \label{subsec:appendix_intuition_metrics}
+    \subsection{Intuition behind different metrics}
+    \label{subsec:appendix_intuition_metrics}
 
-    % In order to gain a more intuitive understanding of each metric, and the effect of the sentence embedders vs the raw hidden states, we show the RPs from the same trajectory using different metrics both with the hidden states and with the sentence embeddings.
+    In order to gain a more intuitive understanding of each metric, and the effect of the sentence embedders vs the raw hidden states, we show the RPs from the same trajectory using different metrics both with the hidden states and with the sentence embeddings.
 
-    % % G: maybe use cross_corr instead of cross_cos as cross_corr is bettter in distance timeseries
-    % \begin{figure}[H]
-    %     \centering
-    %     % First row
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/hausdorff_traj0.png}
-    %         \caption{Hausdorff}
-    %     \end{subfigure}
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/dtw_fast_traj0.png}
-    %         \caption{DTW}
-    %     \end{subfigure}
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/frechet_traj0.png}
-    %         \caption{Fréchet}
-    %     \end{subfigure}
-    %     % Second row
-    %     \\[0.5em]
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/rank_eigen_traj0.png}
-    %         \caption{PCD}
-    %     \end{subfigure}
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/cos_traj0.png}
-    %         \caption{Cosine Distance}
-    %     \end{subfigure}
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/cross_cos_traj0.png}
-    %         \caption{Cross-Correlation Dissimilarity}
-    %     \end{subfigure}
-    %     \caption{Distance matrices for a single trajectory using different metrics and using the hidden states.}
-    %     \label{fig:distance_metrics_comparison_hidden}
-    % \end{figure}
+    % G: maybe use cross_corr instead of cross_cos as cross_corr is bettter in distance timeseries
+    \begin{figure}[H]
+        \centering
+        % First row
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/hausdorff_traj0.png}
+            \caption{Hausdorff}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/dtw_fast_traj0.png}
+            \caption{DTW}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/frechet_traj0.png}
+            \caption{Fréchet}
+        \end{subfigure}
+        % Second row
+        \\[0.5em]
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/rank_eigen_traj0.png}
+            \caption{PCD}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/cos_traj0.png}
+            \caption{Cosine Distance}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/hidden/cross_cos_traj0.png}
+            \caption{Cross-Correlation Dissimilarity}
+        \end{subfigure}
+        \caption{Distance matrices for a single trajectory using different metrics and using the hidden states.}
+        \label{fig:distance_metrics_comparison_hidden}
+    \end{figure}
 
-    % In Figure \ref{fig:distance_metrics_comparison_hidden} we see that Fréchet (c) and Cosine Distance (e) do not recognize the diagonal lines in the hidden state space, but, when applied on sentence embeddings (Fig. \ref{fig:distance_metrics_comparison_embed}) they do.
+    In Figure \ref{fig:distance_metrics_comparison_hidden} we see that Fréchet (c) and Cosine Distance (e) do not recognize the diagonal lines in the hidden state space, but, when applied on sentence embeddings (Fig. \ref{fig:distance_metrics_comparison_embed}) they do.
 
-    % \begin{figure}[H]
-    %     \centering
-    %     % First row
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/hausdorff_traj0.png}
-    %         \caption{Hausdorff}
-    %     \end{subfigure}
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/dtw_fast_traj0.png}
-    %         \caption{DTW}
-    %     \end{subfigure}
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/frechet_traj0.png}
-    %         \caption{Fréchet}
-    %     \end{subfigure}
-    %     % Second row
-    %     \\[0.5em]
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/rank_eigen_traj0.png}
-    %         \caption{PCD}
-    %     \end{subfigure}
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/cos_traj0.png}
-    %         \caption{Cosine Distance}
-    %     \end{subfigure}
-    %     \begin{subfigure}[b]{0.32\textwidth}
-    %         \centering
-    %         \includegraphics[width=\linewidth]{plots/distance_matrix/embed/cross_cos_traj0.png}
-    %         \caption{Cross-Correlation Dissimilarity}
-    %     \end{subfigure}
-    %     \caption{Distance matrices for a single trajectory using different metrics and using the text embeddings.}
-    %     \label{fig:distance_metrics_comparison_embed}
-    % \end{figure}
+    \begin{figure}[H]
+        \centering
+        % First row
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/hausdorff_traj0.png}
+            \caption{Hausdorff}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/dtw_fast_traj0.png}
+            \caption{DTW}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/frechet_traj0.png}
+            \caption{Fréchet}
+        \end{subfigure}
+        % Second row
+        \\[0.5em]
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/rank_eigen_traj0.png}
+            \caption{PCD}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/cos_traj0.png}
+            \caption{Cosine Distance}
+        \end{subfigure}
+        \begin{subfigure}[b]{0.32\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{plots/distance_matrix/embed/cross_cos_traj0.png}
+            \caption{Cross-Correlation Dissimilarity}
+        \end{subfigure}
+        \caption{Distance matrices for a single trajectory using different metrics and using the text embeddings.}
+        \label{fig:distance_metrics_comparison_embed}
+    \end{figure}
 
-    % It can also be seen how the use of sentence embedders helps identify deterministic and recurring themes, which are not evident at the hidden state level.
+    It can also be seen how the use of sentence embedders helps identify deterministic and recurring themes, which are not evident at the hidden state level.
 
 
     % % G: Here i want to show how embeddings kind of do some averaging and pooling and context, and how some metrics pick up different features, some more global some more detail. 
@@ -1595,6 +1567,31 @@
 
 
 
+    \subsection{Forward pass across layers}
+    \begin{algorithm}[H]
+    \caption{Forward Pass of a Pre-LN Transformer Decoder Layer $\ell$}
+    \label{alg:transformer_decoder_layer}
+    \begin{algorithmic}[1]
+    \REQUIRE Input hidden state tensor $\mathbf{x}_\ell \in \mathbb{R}^{T \times d}$, norm weights $\mathbf{w}_{\text{in}}, \mathbf{w}_{\text{post}} \in \mathbb{R}^d$, projection weights for Attention ($W_Q, W_K, W_V, W_O$) and MLP ($W_{\text{gate}}, W_{\text{up}}, W_{\text{down}}$)
+    \ENSURE Output updated hidden state tensor $\mathbf{x}_{\ell+1} \in \mathbb{R}^{T \times d}$
+
+    \STATE $\mathbf{x}_{\text{resid}} \leftarrow \mathbf{x}_\ell$ \COMMENT{Save residual for attention}
+    \STATE $\tilde{\mathbf{x}}_\ell \leftarrow \text{RMSNorm}(\mathbf{x}_\ell; \mathbf{w}_{\text{in}})$ \COMMENT{1. Pre-Attention Normalization}
+
+    \STATE $\mathbf{q} \leftarrow \text{RoPE}(\tilde{\mathbf{x}}_\ell W_Q), \quad \mathbf{k} \leftarrow \text{RoPE}(\tilde{\mathbf{x}}_\ell W_K), \quad \mathbf{v} \leftarrow \tilde{\mathbf{x}}_\ell W_V$ \COMMENT{Project queries, keys, values}
+    \STATE $\mathbf{a}_\ell \leftarrow \text{Softmax}\left(\frac{\mathbf{q}\mathbf{k}^T}{\sqrt{d_k}} + \mathbf{M}\right)\mathbf{v} \cdot W_O$ \COMMENT{2. Self-Attention (with causal mask $\mathbf{M}$)}
+
+    \STATE $\mathbf{x}'_\ell \leftarrow \mathbf{x}_{\text{resid}} + \mathbf{a}_\ell$ \COMMENT{3. First Residual Connection}
+
+    \STATE $\mathbf{x}_{\text{resid}}' \leftarrow \mathbf{x}'_\ell$ \COMMENT{Save residual for MLP}
+    \STATE $\tilde{\mathbf{x}}'_\ell \leftarrow \text{RMSNorm}(\mathbf{x}'_\ell; \mathbf{w}_{\text{post}})$ \COMMENT{4. Pre-MLP Normalization}
+
+    \STATE $\mathbf{m}_\ell \leftarrow \left(\text{SiLU}(\tilde{\mathbf{x}}'_\ell W_{\text{gate}}) \odot (\tilde{\mathbf{x}}'_\ell W_{\text{up}})\right) W_{\text{down}}$ \COMMENT{5. SwiGLU MLP Block}
+    \STATE $\mathbf{x}_{\ell+1} \leftarrow \mathbf{x}_{\text{resid}}' + \mathbf{m}_\ell$ \COMMENT{6. Second Residual Connection}
+
+    \RETURN $\mathbf{x}_{\ell+1}$
+    \end{algorithmic}
+    \end{algorithm}
 
 
     \end{document}
