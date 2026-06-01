@@ -507,6 +507,8 @@
     Experiments were conducted using the models \texttt{DeepSeek-R1-Distill-Qwen-1.5B} \footnote{The model used is distilled from DeepSeek R1 reducing the number of parameters from 671 billion to 1.5 billion. It is trained and fine-tuned to replicate the behavior from the DeepSeek R1. This distilled model is based on the Qwen2.5 family and there are differences in the architecture, which are beyond the scope of this study. All the points mentioned in Section \ref{subsec:llms} apply to both, and generally to most LLMs. The reason we used this model was memory limitations in the GPUs available for this study.} \cite{deepseek2025r1distillqwen1.5b}, and \texttt{Phi-4-mini-instruct} \footnote{A reasoning 3.8 billion parameter model which achieved great performance for its size.} \cite{microsoft2025phi4minitechnicalreportcompact, microsoft/Phi-4-mini-instruct}. 
     Inference was performed on a Tesla T4 GPU. Hidden states and intermediate activations were extracted at each transformer block, yielding tensors of shape (layers, tokens, dimension). 
     Unless explicitly stated, we use greedy sampling, except in some cases, where in order to compare with the deterministic case we use probabilistic sampling with $T=0.6$, $\text{top}_p = 0.95$ and $\text{top}_k = 50$ \footnote{This configuration means that the model samples the tokens using Softmax with $T=0.6$ and considers the minimum between $\text{top}_k$ tokens or as many tokens needed for their probability to cover $\text{top}_p$. We used these values as these are the default ones for this model. Probabilistic sampling is typically used because it makes models more expressive, less repetitive and more creative.}. 
+
+    We complemented the data analysis using the hidden states and with vector embeddings obtained from the text. For this we used open-source sentence embedders \footnote{We tried three different models: $sentence-transformers\_all-mpnet-base-v2$, $intfloat\_e5-large-v2$, and  $facebook\_contriever$. All yielded similar results with the distance metrics, and in this paper we show results using the first.}, which take a string as input and output a vector. Sentence embedders are explicitly trained so that the cosine similarity between the vectors is related to their semantic similarity. This method reduces the amount of data, and aggregates the meaning within each sentence, and we compare the results obtained with both approaches. 
     % The context window length was set to 3096 tokens. 
 
     \subsubsection{Initial Condition Generation}
@@ -768,7 +770,7 @@
     This inequality establishes that $\mathbf{A}$ computes a convex mixture and cannot autonomously amplify the perturbation norm. The expansion of this term is constrained by the constant projection matrices, which we define as the static \textbf{Mixing Weight Norm}.
 
     \paragraph{Nonlinear Routing and Bilinear Coupling}
-    The capacity for state-dependent perturbation growth arises from the first term. The differential of the causal pre-softmax logits is:
+    The capacity for state-dependent perturbation growth arises from the first term \cite{kim2021lipschitzconstantselfattention}. The differential of the causal pre-softmax logits is:
     \begin{equation}
         \delta \mathbf{Z} = \frac{1}{\sqrt{d_k}} \left[ (\delta \mathbf{X}) W_Q W_K^T \mathbf{X}^T + \mathbf{X} W_Q W_K^T (\delta \mathbf{X})^T \right]
     \end{equation}
@@ -809,7 +811,7 @@
     \begin{equation}
         \text{Entropy Ratio} = \frac{\frac{1}{H_{\text{heads}} \cdot N} \sum_{h,i} \left( - \sum_{j=1}^{i} A_{i,j}^{(h)} \log_2 A_{i,j}^{(h)} \right)}{H_{\max}^{\text{causal}}(N)}
     \end{equation}
-    Our measurements show that the entropy ratio fluctuates between $0.4$ and $0.8$ across all layers. Because the ratio remains positive, the attention distribution does not one-hot saturate. Consequently, $\delta \mathbf{A}$ and $\delta \mathbf{Y}_{\text{route}}$ do not vanish.
+    Our measurements show that the entropy ratio fluctuates between $0.4$ and $0.8$ across all layers. Because the ratio remains positive, the attention distribution does not one-hot saturate. Consequently, $\delta \mathbf{A}$ and $\delta \mathbf{Y}_{\text{route}}$ do not vanish \cite{emadi2026exactattentionsensitivitygeometry}.
 
     \paragraph{Global Sequence Jacobian and Numerical Measurement}
     Attention operates as a discrete delay-differential system. Because of the causal mask, a perturbation injected into an early token ($\delta \mathbf{x}_k$) is encoded in the key and value caches and re-injected into the outputs of all subsequent tokens in the context window ($\delta \mathbf{y}_t$ for $t \ge k$). 
@@ -1026,10 +1028,7 @@
     \subsubsection{Trajectory Divergence} \label{res:trajectory_divergence}  
     % XXX: Here what I want to show is that: small perturbations in tokens/prompt don't cause an immediate change, and the first generated tokens coincide (the perturbation remains latent), and then eventually you get a different token sampled. This then causes the trajectories to quickly diverge. I also want to highlight the difficulties of measuring the perturbation due to the high dimensionality of the space and the lack of a canonical distance metric (we try out a lot of metrics, and sliding windows, and sentence embedders, and ...). Thus, we decide that a suitable metric is "how many generated tokens until the first different one" or "time to first divergence" (sort of like a characteristic time in which the trajectories remain together). 
 
-    Firstly, we evaluated sensitivity to parturbation magnitude. Empirically we found that perturbations of magnitude greater than $10^{-4}$ induced immediate divergence. This was unexpected, as in the previous sections, we found the operators to be linearized, and the power law dependence still hold at much larger magnitude perturbations (Sec. \ref{subsubsec:finite_size}). The explanation resides in the Softmax function and the sampling; a perturbation of sufficient magnitude will induce a different token to be the most likely already in the first step. We empirically choose the perturbation magnitude to be lower than that, allowing us to study more interesting dynamics.
-
-    We also calculated the divergence using other distance metrics. We see that the trajectories remain extremely close for several steps until they suddenly diverge. In the text, the first words are the same until, at the diverging step, the words turn different and the sentences too, while the general topic remains the same. So the initial perturbation persists in the hidden states, but does not affect token selection until a certain step, where the sampled token by two trajectories is different, which then leads them to quickly diverge.
-    The explanation for this is that at each step, the most probable next token is selected. If the perturbation is not large enough, at a given step it will not change the selected token, which keeps both trajectories close. In the text space, and in the sentence embeddings, the perturbation will not be detectable at all, while in the hidden state space, it will remain. After some steps, it might occur that the perturbation, which propagates and possibly amplifies due to the non-linear coupling, induces a different next token to be selected. This causes a big discrete difference with the non-disturbed trajectory, which then strongly influences the next token prediction. This causes trajectories to rapidly diverge once the first different token is predicted.
+    Firstly, we evaluated sensitivity to parturbation magnitude. Empirically we found that perturbations of magnitude greater than $10^{-4}$ induced immediate divergence. This was unexpected, as in the previous sections, we found the layer operators to be linearized, and the power law dependence still hold at much larger magnitude perturbations (Sec. \ref{subsubsec:finite_size}). The explanation resides in the Softmax function and the sampling; a perturbation of sufficient magnitude will induce a different token to be the most likely already in the first step. We empirically choose the perturbation magnitude to be lower than that, allowing us to observe more interesting dynamics.
 
     \begin{figure}[H]
         \centering
@@ -1043,10 +1042,13 @@
             \includegraphics[width=\linewidth]{plots_new/deepseek/divergence/cos_timeseries_0_1_window_size_16_sentence.png}
             \caption{sentence embeddings}
         \end{subfigure}
-        \caption{Divergence between a pair of hidden state trajectories measured using different distance metrics. DeepSeek-R1-Distill-Qwen-1.5B}
+        \caption{Divergence between a pair of hidden state trajectories measured using cosine distance on hidden states and the sentence embeddings. DeepSeek-R1-Distill-Qwen-1.5B}
         \label{fig:divergence_cos}
     \end{figure}
 
+    Fig. \ref{fig:divergence_cos} shows the divergence measured with cosine distance on the hidden states, and on the sentence embeddings. We also calculate the divergence with a variety distance metrics in Fig. \ref{fig:distance_hidden}. We see that the trajectories remain extremely close for several steps until they suddenly diverge. In the text, the first words are the same until, at the diverging step, the words turn different and the sentences too, while the general topic remains the same. So the initial perturbation persists in the hidden states, but does not affect token selection until a certain step, where the sampled token by two trajectories is different, which then leads them to quickly diverge. Unfortunately we were not able to get a more continuous measure.
+
+    The explanation for this is that at each step, the most probable next token is selected. If the perturbation is not large enough, at a given step it will not change the selected token, which keeps both trajectories close. In the text space, and in the sentence embeddings, the perturbation will not be detectable at all, while in the hidden state space, it will remain. After some steps, it might occur that the perturbation, which propagates and possibly amplifies due to the non-linear coupling, induces a different next token to be selected. This causes a big discrete difference with the non-disturbed trajectory, which then strongly influences the next token prediction. This causes trajectories to rapidly diverge once the first different token is predicted.
 
     \begin{figure}[H]
         \centering
@@ -1100,11 +1102,8 @@
     \end{figure}
 
     Fig. \ref{fig:attn} shows the relationship between the attention window size and the divergence. When the attention window size is 1, it attends only to itself, and we see that it is stable.
-    For very small attention window sizes, the model is very sensitive to its immediately previous tokens (which received a perturbation), and thus diverges immediately. For slightly larger window sizes, trajectories never diverge. An explanation could be that the larger context (which is shared, if we ignore the small perturbation) stabilizes the first generated tokens. Then, after the first tokens are generated identically in all trajectories, if those populate the context window, the original perturbed prompt will be outside the window, and trajectories do not diverge. For larger context sizes, we again see consistent divergence, since the perturbation remains in the context window.
+    For very small attention window sizes, the model is very sensitive to its immediately previous tokens (which received a perturbation), and thus diverges immediately. For slightly larger window sizes, trajectories never diverge. An explanation could be that the larger context (which is shared, if we ignore the small perturbation) stabilizes the first generated tokens. Then, after the first tokens are generated identically in all trajectories, if those populate the context window, the original perturbed prompt will be outside the window, and trajectories do not diverge. For larger context sizes, we again see consistent but not immediate divergence, since the perturbation remains in the context window.
     The relationship is not very straightforward and it depends on the magnitude of the perturbation. 
-
-
-
 
 
 
@@ -1112,7 +1111,7 @@
     \label{subsec:rp_results}
     % XXX Here what I want to say is that: the RP look super cool. they resemble those by chaotic systems like lorenz. There is not much consistency, and they all look different. RQA (recurrence quantification analysis) wasn't very illumiinating, but I wasn't very systematic. But it is extremely remarkable that they are so similar to those of chaotic systems. Also we can identify some structures in the text in the RPs, like the reasoning block and sometimes when it makes lists or structured info. (for someone who know about chaos theory and recurrence plots, seeing one of this is an immediate indicator of interesting chaotic system)
 
-    Plotting the RPs for trajectories from different prompts shows a wide variety of results. Strong similarities can be seen between the RP from the Lorenz \cite{DeterministicNonperiodicFlow} system as seen in Fig. \ref{fig:rp_examples} and some of the RPs obtained from the LLMs hidden states. Chaotic features are more strongly present at the last layers of the model as showed in the RP \ref{fig:rp_comparison_layers} and pointwise dimension \ref{fig:dim_first_last}. This is due to the progressive addition of more nonlinearity and coupling at each layer. 
+    Plotting the RPs for trajectories from different prompts shows a wide variety of results. Strong similarities can be seen between the RP from the Lorenz \cite{DeterministicNonperiodicFlow} system as seen in Fig. \ref{fig:rp_examples} and some of the RPs obtained from the LLMs hidden states. Chaotic features are more strongly present at the last layers of the model as showed in the RPs in Fig. \ref{fig:rp_comparison_layers} and pointwise dimension in Fig. \ref{fig:dim_first_last}. This is due to the progressive addition of more nonlinearity and coupling at each layer. 
 
     \begin{figure}[H]
         \centering
@@ -1258,6 +1257,8 @@
     Finally in Fig. \ref{fig:dim_first_last_temperature} we show the Correlation Sum obtained from a trajectory using probabilistic sampling, meaning that there is some stochasticity at the selection of each token. We see almost no difference at the first layer, compared to the deterministic case, but at the last layer we clearly see different behavior. There is no linear region to extract a dimension value. 
     The fact that the difference between the deterministic and probabilistic trajectories can be identified only at the last layer supports the idea that chaotic behaviour is experienced at the last layer.
 
+    The first layer hidden states resemble a stochastic process, while the last layer is similar to a chaotic deterministic system. The explanation is that at the first layer, the hidden states are just direct embeddings of the tokenized text, with no context or information from the model. At the last layer, on the other hand, the hidden states have been updated with information from the model, and context from the previous tokens.
+
 
     \section{Conclusions and Discussion}
     \label{sec:conclusions}
@@ -1265,16 +1266,17 @@
     % MLP is most active in the last layers.
     % MLP attention can be extremely expansive and unstable, because they rely on normalization and residual connection to provide the stability and preserving the information
 
-    This study explored the internal dynamics of a Large Language Model (LLM) through the lens of nonlinear dynamical systems. 
-
-    By interpreting autoregressive generation as a high-dimensional discrete-time dynamical system and analyzing trajectories in hidden state space, we investigated whether the evolution of representations within Transformer-based LLMs exhibits signatures of deterministic chaos.
-
-    
-
-    We analyzed the dynamical effect of the different components of the Transformer architecture: Attention, MLP, normalization, and residual connections. We showed how perturbations propagate across these operators. The combination of MLP and Attention, which amplify perturbations, with normalization, which keeps the system bounded, and residual connections, which preserve information, produces a balance between divergence and confinement analogous to chaotic attractors. Attention introduces nonlinear coupling between tokens that propagates information and perturbations during autoregressive generation. We also derived a closed-form Mean-Field Theory (MFT) formula predicting the expected isotropic stretching of the MLP block, showing strong agreement with empirical results.
+    This study explored the internal dynamics of a Large Language Model (LLM) through the lens of nonlinear dynamical systems. By interpreting autoregressive generation as a high-dimensional discrete-time dynamical system and analyzing trajectories in hidden state space, we investigated whether the evolution of representations within Transformer-based LLMs exhibits signatures of deterministic chaos.
 
     Our results provide consistent evidence for the possibility of such behavior. Across multiple distance metrics, capturing fundamentally different geometric notions such as alignment, extremal deviation, temporal warping, and global self-similarity, and across different representational spaces, we observed qualitatively robust patterns of trajectory divergence, recurrence, and boundedness. We identified that small magnitude perturbations remain latent in the hidden states until they cross the softmax and sampling, where they can induce a token flip, which triggers rapid trajectory divergence.
 
+    We analyzed the dynamical effect of the different components of the Transformer architecture: Attention, MLP, normalization, and residual connections. We showed how perturbations propagate across these operators. The combination of MLP and Attention, which amplify perturbations, with normalization, which keeps the system bounded, and residual connections, which preserve information, produces a balance between divergence and confinement analogous to chaotic attractors. Attention introduces nonlinear coupling between tokens that propagates information and perturbations during autoregressive generation. We derived a closed-form Mean-Field Theory (MFT) formula predicting the expected isotropic stretching of the MLP block, showing strong agreement with empirical results.
+
+    Our investigations were limited to studying a single LLM model. Nontheless, we expect similar results in the case of other models and architectures as well, but with some differences, since certain architectural features of the model, such as the Chain-of-Thought reasoning logic, could be recognized in the recurrence plots.
+
+    
+    Future work could systematically explore how chaotic characteristics scale with model size, architecture, and training regime. Comparing encoder-only, decoder-only, and encoder-decoder architectures could illuminate how bidirectional vs. causal attention affects dynamical stability. Moreover, investigating the influence of hyperparameters such as context length, normalization type, and activation function could provide insighths into different dynamical regimes in which the models might operate.
+    
     \section{Acknowledgments }
     \label{sec:acknowledgements}
 
