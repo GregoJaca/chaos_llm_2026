@@ -26,7 +26,7 @@
     \usepackage{subcaption}
     \usepackage{amsmath} % for the cases environment
     \usepackage{amsfonts} % additional math symbols (if needed)
-    \usepackage{graphicx}
+    \usepackage{tabularx}
     \usepackage{algorithm, algorithmic}
 
     % \usepackage{algpseudocode}
@@ -118,7 +118,7 @@
         Large Language Models (LLMs) have achieved remarkable performance across a wide range of tasks, yet their internal dynamics remain poorly understood. In this work, we apply the tools of nonlinear dynamics and chaos theory to LLMs. By analyzing both text and hidden state trajectories, we demonstrate that LLMs exhibit hallmark signatures of chaos, including sensitivity to initial conditions and stable bounded evolution.
         Jacobian analysis shows Attention and Multi-Layer Perceptron (MLP) expand and propagate perturbations, while normalization and residual connections promote stability.
         Recurrence plots show structural similarities between LLMs and canonical chaotic systems such as the Lorenz attractor, while dimension analysis reveals fractal structures in the hidden state space, particularly pronounced in the last layers. We propose that the nonlinear coupling induced by attention mechanisms plays a key role in driving this chaotic behavior.
-
+        % GGG fractal
 
 
     \end{abstract}
@@ -239,7 +239,7 @@
     % Linear systems, while analytically tractable, cannot produce the rich, aperiodic behaviors associated with chaos. Nonlinearity, arising when $\mathbf{F}$ or $\mathbf{f}$ involve products, powers, or nonlinear couplings of state variables, enables multiple time scales, feedback loops, and instabilities. This results in phenomena such as bifurcations, quasi-periodicity, and ultimately, chaos. For instance, as a control parameter $\mu$ varies, a nonlinear system may undergo a sequence of \textbf{period-doubling bifurcations}, leading to an accumulation point $\mu_\infty$, beyond which the motion becomes chaotic (as shown famously in the logistic map).
     % G include or not?
 
-    Chaotic systems are a subclass of deterministic nonlinear systems that exhibit complex and practically unpredictable behavior. This apparent randomness arises not from a stochastic nature but from the system's intrinsic dynamics. The defining characteristics of chaos are non-periodicity and sensitivity to initial conditions (SIC). This property implies that trajectories originating from infinitesimally close initial states, say $\mathbf{x}(0)$ and $\mathbf{x}(0) + \bm{\delta}(0)$, will diverge exponentially over time. The separation distance $\|\bm{\delta}(t)\|$ grows according to:
+    Chaotic systems are a subclass of deterministic nonlinear systems that exhibit complex and practically unpredictable behavior. This apparent randomness arises not from a stochastic nature but from the system's intrinsic dynamics. The defining characteristics of chaos are non-periodicity and sensitivity to initial conditions. This property implies that trajectories originating from infinitesimally close initial states, say $\mathbf{x}(0)$ and $\mathbf{x}(0) + \bm{\delta}(0)$, will diverge exponentially over time. The separation distance $\|\bm{\delta}(t)\|$ grows according to:
     \begin{equation}
         \|\bm{\delta}(t)\| \approx \|\bm{\delta}(0)\| e^{\lambda t}
     \end{equation}
@@ -320,7 +320,7 @@
     where the Query ($\mathbf{Q} = \mathbf{X} W_Q$), Key ($\mathbf{K} = \mathbf{X} W_K$), and Value ($\mathbf{V} = \mathbf{X} W_V$) are linear projections. The Query represents the current token's focus, the Key represents the characteristics of other tokens, and the Value contains the information of those tokens, with each attention head looking at different information. The attention mechanism computes a weighted sum of the Values, where the weights are determined by the similarity between the Query and Keys \footnote{As an intuition, attention is like a learned differentiable lookup table. Given a hidden state, it generates a query and returns a weighted sum of values based on the key-query similarity, which is used to update the hidden state. The queries, keys and values are generated from the hidden states in the context window using $W_Q, W_K$ and $W_V$.}. At each layer there are multiple attention heads ($H_{\text{heads}}$) operating in parallel. Their outputs are projected, combined, and added to the residual stream of the hidden state, which then gets normalized and enters the MLP module. 
     Causal masking in attention is used to ensure that a token is only influenced by previous tokens
     \footnote{Nowadays most LLMs are decoder-only and it is necessary to use causal masking for autoregressive generation. Bidirectional (no causal masking) attention can be used in the encoder of a transformer-based model, such as BERT (encoder only) or some translators (encoder-decoder).}.
-    Due to the computational cost of attention, which grows with the square of the sequence length, attention is only performed on a sliding context window.
+    Due to the computational cost of attention, which grows with the square of the sequence length, attention is only performed on a sliding context window. The algorithm for a forward pass across one layer is detailed in Appendix \ref{alg:transformer_decoder_layer}.
 
     % This operation creates a nonlinear feedback and coupling mechanism between all elements of the sequence. The MLP further processes these representations through additional nonlinear transformations. Normalization layers like LayerNorm and RMSNorm normalize the hidden states and project onto a lower-dimensional ellipsoid.
     %This is a bounding operation, preventing state vectors from growing infinitely and thus providing the "folding" part of the "stretching and folding" mechanism required for chaos. 
@@ -335,7 +335,7 @@
     To generate the next token, the hidden state of the last token is passed through a final linear layer, the unembedding, to produce logits over the entire vocabulary, which are then converted to a probability distribution via a softmax function. A decoding strategy is then used to select a token. \textbf{Greedy sampling} deterministically selects the token with the highest probability. In contrast, \textbf{probabilistic sampling} introduces stochasticity, controlled by a temperature parameter ($T$). Higher temperatures flatten the distribution, making the output more diverse.
 
 
-    \subsection{LLMs and dynamical systems}
+    \subsection{LLMs as dynamical systems}
     \label{subsec:analogy_limitations}
     We model the autoregressive operation of a Large Language Model as a high-dimensional, discrete-time dynamical system. We analyze this system through two distinct trajectories:
 
@@ -347,24 +347,25 @@
     From this perspective, the self-attention mechanism serves as a state-dependent nonlinear coupling between different components of this trajectory, analogous to the inter-variable coupling observed in classical chaotic systems. The combination of transformer operators mimics the stretching and folding actions of classical chaotic systems (summarized in Table \ref{tab:analogy}). The Attention and MLP blocks act as stretching mechanisms, amplifying local perturbations. The normalization layers act as folding mechanisms, constraining the state space by projecting hidden states onto a bounded manifold.
 
     \begin{table}[H]
-    \centering
-    \begin{tabular}{@{}ll@{}}
-    \toprule
-    \textbf{Chaotic System} & \textbf{LLMs} \\ \midrule
-    Phase Space & Embedding / Hidden State Space \\
-    State Vector & Hidden State Vector $\mathbf{x}$ \\
-    Phase-Space Trajectory & Sequence of generated tokens (Horizontal) or layer-wise hidden state evolution (Vertical) \\
-    Continuous Time Evolution & Discrete token step (Horizontal) or layer index (Vertical) \\
-    Differential Equation & Autoregressive mapping (Horizontal) or Transformer Block (Vertical) \\
-    Numerical Integration & Forward-Pass Inference / Autoregressive generation \\
-    Nonlinear Coupling & Self-Attention Mechanism \\
-    Stretching & Attention / MLP Layers \\
-    Folding & Normalization Layers \\
-    Initial Condition & Input prompt / initial layer hidden state \\
-    Measurement Uncertainty & Floating-Point Precision, Quantization \\ \bottomrule
-    \end{tabular}
-    \caption{Analogies between concepts in chaos theory and LLMs.}
-    \label{tab:analogy}
+        \centering
+        % Ensure you have \usepackage{tabularx} and \usepackage{booktabs} in your preamble
+        \begin{tabularx}{\textwidth}{@{} l X @{}}
+        \toprule
+        \textbf{Chaotic System} & \textbf{LLMs} \\ \midrule
+        Phase Space & Embedding / Hidden State Space \\
+        State Vector & Hidden State Vector $\mathbf{x}$ \\
+        Phase-Space Trajectory & Sequence of generated tokens (Horizontal) or layer-wise hidden state evolution (Vertical) \\
+        Continuous Time Evolution & Discrete token step (Horizontal) or layer index (Vertical) \\
+        Differential Equation & Autoregressive mapping (Horizontal) or Transformer Block (Vertical) \\
+        Numerical Integration & Forward-Pass Inference / Autoregressive generation \\
+        Nonlinear Coupling & Self-Attention Mechanism \\
+        Stretching & Attention / MLP Layers \\
+        Folding & Normalization Layers \\
+        Initial Condition & Input prompt / initial layer hidden state \\
+        Measurement Uncertainty & Floating-Point Precision, Quantization \\ \bottomrule
+        \end{tabularx}
+        \caption{Analogies between concepts in chaos theory and LLMs.}
+        \label{tab:analogy}
     \end{table}
 
     However, mapping LLMs to classical dynamical systems presents several distinct challenges:
@@ -378,7 +379,7 @@
     \section{Methods}
     \label{sec:methods}
 
-    This section describes the methodological framework used to investigate chaoticity in Large Language Models (LLMs). We quantify divergence and structure in the model's hidden-state trajectories using a suite of distance metrics, recurrence analysis, and dimensionality estimation techniques derived from nonlinear dynamics. Finally, we detail the experimental setup and the procedure used to generate perturbed initial conditions.
+    This section describes the methodological framework used to investigate chaoticity in LLMs. We quantify divergence and structure in the model's hidden-state trajectories using a suite of distance metrics, recurrence analysis, and dimensionality estimation techniques derived from nonlinear dynamics. Finally, we detail the experimental setup and the procedure used to generate perturbed initial conditions.
 
     \subsection{Trajectory Distance Metrics}
     \label{subsec:trajectory_distance_metrics}
@@ -514,35 +515,10 @@
     \subsubsection{Initial Condition Generation}
     \label{subsec:init_cond_gen}
 
-    To evaluate SIC, we generated an ensemble of trajectories from close starting points. We begin with a single prompt, tokenize it, and retrieve its initial embedding tensor $\mathbf{E}_0 \in \mathbb{R}^{N_p \times d}$, where $N_p$ is the prompt length and $d$ is the model's hidden dimension. 
+    To evaluate sensitivity to initial conditions, we generated an ensemble of trajectories from close starting points. We begin with a single prompt, tokenize it, and retrieve its initial embedding tensor $\mathbf{E}_0 \in \mathbb{R}^{N_p \times d}$, where $N_p$ is the prompt length and $d$ is the model's hidden dimension. 
 
-    We generate a set of $N_{\text{pert}}$ perturbed initial conditions $\{\mathbf{E}_i\}_{i=1}^{N_{\text{pert}}}$ located at the vertices of a regular simplex of radius $r$ centered at $\mathbf{E}_0$ within a randomly selected $N_{\text{pert}}$-dimensional subspace. This ensures that all perturbations have an identical Euclidean norm of $r$, and are mutually equidistant, avoiding bias in the sensitivity analysis.
-    % Algorithm~\ref{alg:simplex_perturbation}
-
-    % We then feed each perturbed initial condition into the model to generate the corresponding trajectory. The complete procedure is detailed in Algorithm~\ref{alg:simplex_perturbation}. This was done for different initial prompts on different topics.
-
-    \begin{algorithm}[H]
-    \caption{Regular Simplex Initial Condition Generation}
-    \label{alg:simplex_perturbation}
-    \begin{algorithmic}[1]
-    \REQUIRE Base embedding $\mathbf{E}_0 \in \mathbb{R}^{L \times D}$, state count $N$, radius $r$, random seed $\sigma$
-    \ENSURE Perturbed embeddings $\{\mathbf{E}_1, \dots, \mathbf{E}_N\}$
-    \STATE Seed pseudorandom number generator with $\sigma$
-    \STATE $M \leftarrow L \times D$
-    \STATE $S \leftarrow \text{sample } N \text{ unique indices uniformly from } \{1, \dots, M\}$
-    \STATE Construct centering matrix $\mathbf{V}' \leftarrow \mathbf{I}_N - \frac{1}{N}\mathbf{J}_N$ \COMMENT{$\mathbf{J}_N$ is the $N \times N$ all-ones matrix}
-    \FOR{$i = 1$ \TO $N$}
-        \STATE $\mathbf{v}_i \leftarrow \mathbf{V}'_{i, :} / \|\mathbf{V}'_{i, :}\|_2$ \COMMENT{Normalize the $i$-th simplex vertex to unit length}
-    \ENDFOR
-    \FOR{$i = 1$ \TO $N$}
-        \STATE Initialize flat perturbation vector $\Delta_i \leftarrow \mathbf{0}_M$
-        \STATE $\Delta_i[S] \leftarrow r \cdot \mathbf{v}_i$ \COMMENT{Inject vertex coordinates into selected subspace}
-        \STATE $\mathbf{E}_i \leftarrow \mathbf{E}_0 + \text{reshape}(\Delta_i, N_p \times d)$
-    \ENDFOR
-
-    \RETURN $\{\mathbf{E}_1, \dots, \mathbf{E}_N\}$
-    \end{algorithmic}
-    \end{algorithm}
+    We generate a set of $N_{\text{pert}}$ perturbed initial conditions $\{\mathbf{E}_i\}_{i=1}^{N_{\text{pert}}}$ located at the vertices of a regular simplex of radius $r$ centered at $\mathbf{E}_0$ within a randomly selected $N_{\text{pert}}$-dimensional subspace. This ensures that all perturbations have an identical Euclidean norm of $r$, and are mutually equidistant, avoiding bias in the sensitivity analysis. The algorithm used is described in Appendix \ref{alg:simplex_perturbation}
+    We then feed each perturbed initial condition into the model to generate the corresponding trajectory. This was done for different initial prompts on different topics.
 
 
     \section{Results}
@@ -796,7 +772,7 @@
         \left\| \delta \mathbf{Y}_{\text{route}} \right\|_2 \le \frac{2 \|\mathbf{X}\|_2^2}{\sqrt{d_k}} \|\delta \mathbf{X}\|_2 \|\mathbf{J}_{\text{sm}}(\mathbf{A})\|_2 \left\|W_V W_O\right\|_2 \left\|W_Q W_K^T\right\|_2
     \end{equation}
 
-    We evaluate the spectral norm of the softmax Jacobian for a given row $\mathbf{p}$: $\mathbf{J}_{\text{sm}}(\mathbf{p}) = \text{diag}(\mathbf{p}) - \mathbf{p} \mathbf{p}^T$. For any unit vector $\mathbf{v}$, the Rayleigh quotient $\mathbf{v}^T \mathbf{J}_{\text{sm}}(\mathbf{p}) \mathbf{v} = \sum p_i v_i^2 - (\sum p_i v_i)^2$ defines the statistical variance of $\mathbf{v}$'s coordinates under the distribution $\mathbf{p}$. By Popoviciu's inequality, the variance of any bounded variable is at most $\frac{1}{4}(v_{\max} - v_{\min})^2$. Because $\mathbf{v}$ is bounded to the ($L_2$) unit hypersphere, $v_{\max}^2 + v_{\min}^2 \le 1$, which bounds $(v_{\max} - v_{\min})^2 \le 2$. Thus, we obtain a strict, state-independent universal bound: $\|\mathbf{J}_{\text{sm}}(\mathbf{A})\|_2 \le 0.5$. This was recently proven more generally \cite{nair2025softmax12lipschitztightbound}.
+    We evaluate the spectral norm of the softmax Jacobian for a given row $\mathbf{p}$: $\mathbf{J}_{\text{sm}}(\mathbf{p}) = \text{diag}(\mathbf{p}) - \mathbf{p} \mathbf{p}^T$. For any unit vector $\mathbf{v}$, the Rayleigh quotient $\mathbf{v}^T \mathbf{J}_{\text{sm}}(\mathbf{p}) \mathbf{v} = \sum p_i v_i^2 - (\sum p_i v_i)^2$ defines the statistical variance of $\mathbf{v}$'s coordinates under the distribution $\mathbf{p}$. By Popoviciu's inequality, the variance of any bounded variable is at most $\frac{1}{4}(v_{\max} - v_{\min})^2$. Because $\mathbf{v}$ is bounded to the ($L_2$) unit hypersphere, $v_{\max}^2 + v_{\min}^2 \le 1$, which bounds $(v_{\max} - v_{\min})^2 \le 2$. Thus, we obtain a state-independent bound: $\|\mathbf{J}_{\text{sm}}(\mathbf{A})\|_2 \le 0.5$. This was recently proven more generally \cite{nair2025softmax12lipschitztightbound}.
 
     \begin{equation}
         \left\| \delta \mathbf{Y}_{\text{route}} \right\|_2 \le \frac{\|\mathbf{X}\|_2^2}{\sqrt{d_k}} \|\delta \mathbf{X}\|_2 \left\|W_V W_O\right\|_2 \left\|W_Q W_K^T\right\|_2
@@ -932,7 +908,7 @@
 
 
 
-    \subsubsection{Finite size perturbation} \label{subsubsec:finite_size}
+    \subsubsection{Finite size perturbations} \label{subsubsec:finite_size}
 
 
     In the previous sections we did our analysis using exact derivatives. In this, we analyze how a finite perturbation propagates as each token gets processed by the full layers of the model, which contain the MLP, Attenntion, normalization, and residual connections. We generate a blob of initial conditions (as described in Section \ref{subsec:init_cond_gen}) and do a forward pass, extracting the hidden states at each layer of the model. We analyze how the perturbation propagates across these layers.
@@ -1266,16 +1242,16 @@
     % MLP is most active in the last layers.
     % MLP attention can be extremely expansive and unstable, because they rely on normalization and residual connection to provide the stability and preserving the information
 
-    This study explored the internal dynamics of a Large Language Model (LLM) through the lens of nonlinear dynamical systems. By interpreting autoregressive generation as a high-dimensional discrete-time dynamical system and analyzing trajectories in hidden state space, we investigated whether the evolution of representations within Transformer-based LLMs exhibits signatures of deterministic chaos.
+    This study explored the internal dynamics of Large Language Models through the lens of nonlinear dynamical systems. By interpreting autoregressive generation as a high-dimensional discrete-time dynamical system and analyzing trajectories in hidden state space, we investigated whether the evolution of representations within Transformer-based LLMs exhibit signatures of deterministic chaos.
 
     Our results provide consistent evidence for the possibility of such behavior. Across multiple distance metrics, capturing fundamentally different geometric notions such as alignment, extremal deviation, temporal warping, and global self-similarity, and across different representational spaces, we observed qualitatively robust patterns of trajectory divergence, recurrence, and boundedness. We identified that small magnitude perturbations remain latent in the hidden states until they cross the softmax and sampling, where they can induce a token flip, which triggers rapid trajectory divergence.
 
-    We analyzed the dynamical effect of the different components of the Transformer architecture: Attention, MLP, normalization, and residual connections. We showed how perturbations propagate across these operators. The combination of MLP and Attention, which amplify perturbations, with normalization, which keeps the system bounded, and residual connections, which preserve information, produces a balance between divergence and confinement analogous to chaotic attractors. Attention introduces nonlinear coupling between tokens that propagates information and perturbations during autoregressive generation. We derived a closed-form Mean-Field Theory (MFT) formula predicting the expected isotropic stretching of the MLP block, showing strong agreement with empirical results.
+    We analyzed the dynamical effect of the different components of the Transformer architecture: Attention, MLP, normalization, and residual connections, and showed how perturbations propagate across these operators. The combination of MLP and Attention, which amplify perturbations, with normalization, which keeps the system bounded, and residual connections, which preserve information, produces a balance between divergence and confinement analogous to chaotic attractors. Attention introduces nonlinear coupling between tokens that propagates information and perturbations during autoregressive generation. We derived a closed-form Mean-Field Theory formula predicting the expected isotropic stretching of the MLP block, showing strong agreement with empirical results.
 
-    Our investigations were limited to studying a single LLM model. Nontheless, we expect similar results in the case of other models and architectures as well, but with some differences, since certain architectural features of the model, such as the Chain-of-Thought reasoning logic, could be recognized in the recurrence plots.
+    % Our investigations were limited to studying two single LLM model. Nontheless, we expect similar results in the case of other models and architectures as well, but with some differences, since certain architectural features of the model, such as the Chain-of-Thought reasoning logic, could be recognized in the recurrence plots.
 
     
-    Future work could systematically explore how chaotic characteristics scale with model size, architecture, and training regime. Comparing encoder-only, decoder-only, and encoder-decoder architectures could illuminate how bidirectional vs. causal attention affects dynamical stability. Moreover, investigating the influence of hyperparameters such as context length, normalization type, and activation function could provide insighths into different dynamical regimes in which the models might operate.
+    Future work could systematically explore how chaotic characteristics scale with model size, architecture, and training regime. Comparing encoder-only, decoder-only, and encoder-decoder architectures could illuminate how bidirectional vs. causal attention affects dynamical stability. Studying Chain-of-Thought reasoning and non-reasoning models would be valuable as the reasoning block could be recognized in the recurrence plots. Moreover, investigating the influence of hyperparameters such as context length, normalization type, and activation function could provide insighths into different dynamical regimes in which the models might operate.
     
     \section{Acknowledgments }
     \label{sec:acknowledgements}
@@ -1570,9 +1546,10 @@
 
 
     \subsection{Forward pass across layers}
+    \label{alg:transformer_decoder_layer}
+
     \begin{algorithm}[H]
     \caption{Forward Pass of a Pre-LN Transformer Decoder Layer $\ell$}
-    \label{alg:transformer_decoder_layer}
     \begin{algorithmic}[1]
     \REQUIRE Input hidden state tensor $\mathbf{x}_\ell \in \mathbb{R}^{T \times d}$, norm weights $\mathbf{w}_{\text{in}}, \mathbf{w}_{\text{post}} \in \mathbb{R}^d$, projection weights for Attention ($W_Q, W_K, W_V, W_O$) and MLP ($W_{\text{gate}}, W_{\text{up}}, W_{\text{down}}$)
     \ENSURE Output updated hidden state tensor $\mathbf{x}_{\ell+1} \in \mathbb{R}^{T \times d}$
@@ -1592,6 +1569,35 @@
     \STATE $\mathbf{x}_{\ell+1} \leftarrow \mathbf{x}_{\text{resid}}' + \mathbf{m}_\ell$ \COMMENT{6. Second Residual Connection}
 
     \RETURN $\mathbf{x}_{\ell+1}$
+    \end{algorithmic}
+    \end{algorithm}
+
+
+
+
+
+    \subsection{Regular Simplex Initial Condition Generation} 
+    \label{alg:simplex_perturbation}
+
+    \begin{algorithm}[H]
+    \caption{Regular Simplex Initial Condition Generation}
+    \begin{algorithmic}[1]
+    \REQUIRE Base embedding $\mathbf{E}_0 \in \mathbb{R}^{L \times D}$, state count $N$, radius $r$, random seed $\sigma$
+    \ENSURE Perturbed embeddings $\{\mathbf{E}_1, \dots, \mathbf{E}_N\}$
+    \STATE Seed pseudorandom number generator with $\sigma$
+    \STATE $M \leftarrow L \times D$
+    \STATE $S \leftarrow \text{sample } N \text{ unique indices uniformly from } \{1, \dots, M\}$
+    \STATE Construct centering matrix $\mathbf{V}' \leftarrow \mathbf{I}_N - \frac{1}{N}\mathbf{J}_N$ \COMMENT{$\mathbf{J}_N$ is the $N \times N$ all-ones matrix}
+    \FOR{$i = 1$ \TO $N$}
+        \STATE $\mathbf{v}_i \leftarrow \mathbf{V}'_{i, :} / \|\mathbf{V}'_{i, :}\|_2$ \COMMENT{Normalize the $i$-th simplex vertex to unit length}
+    \ENDFOR
+    \FOR{$i = 1$ \TO $N$}
+        \STATE Initialize flat perturbation vector $\Delta_i \leftarrow \mathbf{0}_M$
+        \STATE $\Delta_i[S] \leftarrow r \cdot \mathbf{v}_i$ \COMMENT{Inject vertex coordinates into selected subspace}
+        \STATE $\mathbf{E}_i \leftarrow \mathbf{E}_0 + \text{reshape}(\Delta_i, N_p \times d)$
+    \ENDFOR
+
+    \RETURN $\{\mathbf{E}_1, \dots, \mathbf{E}_N\}$
     \end{algorithmic}
     \end{algorithm}
 
