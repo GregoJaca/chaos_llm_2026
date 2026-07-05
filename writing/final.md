@@ -1,12 +1,21 @@
-Modern Physics
-1 The experimental basis of quantum physics.
+I am sitting for my final exam for my whole undergrad. I have taken advanced courses in classical mechanics (goldstein level), electrodynamics (griffth level), quantum (griffith + more stuff like symmetries, generators, path integrals), and also the courses you see listed here. I want you to understand that my knowledge of theoretical physics goes beyond the courses you see here. But my final exam is on the topics you see here (I took these courses 1 year ago). I want to basically create very detailed full complete answers for these so I can prepare. The answers should both include content at the level of the course, but also insights/results/derivations/references from my more advanced knowledge. The explanations you provide should be long detailed, with all the relevant information and derivations. Really gold standard full.
+
+
+
+
+
+
+
+Modern Physics (Stephen T. Thornton, Andrew Rex: Modern Physics for Scientists and Engineers)
+1 The experimental basis of quantum physics. (discovery of x-ray Brems-strahlung, electron (Thompson), electron charge (Millikan), Electrons and charge quantization, Line spectra and diffraction, black body radiation, photoelectric effect, Electromagnetic radiation, quanta,
+and photons, Balmer series, Compton effect, Pair production, positron emission tomography, Rutherford scattering, X-ray emission and Bohr model, Frank-Hertz experiment, matter waves, Laue and Bragg diffraction, Laue and Bragg diffraction, Electron diffraction, Two-slit experiment)
 2 Structure of the atom, de Broglie waves.
 3 Wave functions, Schrödinger equation.
 4 Particle in a box, quantum tunneling.
 5 Atomic physics: hydrogen atom, quantum numbers, Zeeman effect, total angular
 momentum.
 
-Solid State Physics
+Solid State Physics (The Oxford Solid State Basics, Simon)
 6 Phonons in solids: heat capacity of solids, Bose–Einstein statistics, phonon dispersion
 relations, chain models, density of states, Debye model.
 7 Electrons in metals: From Drude theory to free electron model, Fermi–Dirac statistics,
@@ -18,14 +27,19 @@ of a chain, metals and insulators.
 10 Electrons in solids II: tight-binding approximation, effective mass, metals and
 insulators.
 
-Quantum Physics
+
+
+
+
+
+Quantum Physics (Griffith QM, Michael A. Nielsen, Isaac L. Chuang,Quantum Computation and Quantum Information)
 11 Linear algebra and quantum postulates.
 12 Two-levels systems, Rabi oscillations.
 13 Quantum harmonic oscillator.
 14 Quantum entanglement, quantum advantage.
 15 Quantum applications: lasers, NV centers.
 
-Nano and Quantum Phenomena in Solids
+Nano and Quantum Phenomena in Solids  (The Oxford Solid State Basics, Simon, Electrons in Solids: Mesoscopics, Photonics, Quantum Computing, Correlations, Topology (De Gruyter, 2019), Thermal Management for LED applications)
 16 Semiconductor physics and devices.
 17 Basic nano phenomena: quantum dots and quantum wires.
 18 Non-equilibrium distribution function and the Boltzmann equation; calculation of the
@@ -68,6 +82,21 @@ spin 1   pauli matrices are rank 2 (even though they are 3x3)
 
 
 
+you say that time is a classical parameter in non relativistic quantum mechanics, but there is the Heisenberg uncertainty relation between time and energy, no?
+
+what is the dispersion relation for sound waves
+are phonons like sound waves? I know phonons are modes of lattice vibrations, but maybe phonons have different dispersion relation
+
+blackbody radiation. do the classical derivation (which is wrong) more in detail. few words. use equations math and physics formulas. math is the language. you said that each quadratic DOF carries k_B T, also how is DOS derived. are the standing wave modes quantized?
+
+Compton effect can be done very simply using 4 vectors and relativity (insetad of doing a tedious more manual derivation). Is there a simpler derivation for Rutherford scattering. the one you show is a bit tedious. the quantum Born derivation was also kind of hard. I knew about the Born approximation for scattering, but derivation was tedious.
+
+
+
+
+
+
+
 
 
 Questions:
@@ -105,6 +134,11 @@ how is the correlation between two observables calculated? I saw one formula whe
 
 it's not clear to me what a heterostructure is? is it like a mixture of two compounds typically found at the boundary?
 
+equipartition theorem, does each DOF have k_B T or k_B T /2 energy? then explain what the heat capacity is for metal and for gas using the simple thermodynamic model like Boltzmann
+
+is 01 + 10 a singlet state? I though singlet was 01 - 10 ??
+In my notes I wrote that using the bell observables (-Z-X)/sqrt(2) and (-Z+X)/sqrrt(2) you can get perfect correlation or anticorrelation in every direction (you can create the correlation matrix), which is not possible classically.explain
+
 
 
 Principles:
@@ -137,7 +171,7 @@ also it's great when we have two different models (which are approximations), wh
 
 
 
-
+in the atomic chain, the kappa used for the hoke's law is different from the k wave vector
 
 
 
