@@ -56,22 +56,22 @@
   {\small \textbf{BME} \\ 2026}
 \end{frame}
 
-% Slide 2: Outline
-\begin{frame}{Outline}
-  \tableofcontents
-\end{frame}
+% % Slide 2: Outline
+% \begin{frame}{Outline}
+%   \tableofcontents
+% \end{frame}
 
-\section{Introduction and Motivation}
+%\section{Introduction and Motivation}
 
 % Slide 3: LLMs as Dynamical Systems
-\begin{frame}{LLMs as Dynamical Systems}
-  \begin{itemize}
-    \item \textbf{High-Dimensional Complexity}: Billion-parameter deep networks, highly nonlinear and high-dimensional.
-    \item \textbf{Stability vs. Sensitivity}: Coherence over long text sequences contrasted with high sensitivity to prompt details.
-    \item \textbf{Determinisitic Chaos vs. Noise}: Investigating if sensitivity stems from deterministic chaos or stochastic noise.
-    \item \textbf{Scope}: Applicable to any high-dimensional autoregressive generative system (text, audio, image).
-  \end{itemize}
-\end{frame}
+% \begin{frame}{LLMs as Dynamical Systems}
+%   \begin{itemize}
+%     \item \textbf{High-Dimensional Complexity}: Billion-parameter deep networks, highly nonlinear and high-dimensional.
+%     \item \textbf{Stability vs. Sensitivity}: Coherence over long text sequences contrasted with high sensitivity to prompt details.
+%     \item \textbf{Determinisitic Chaos vs. Noise}: Investigating if sensitivity stems from deterministic chaos or stochastic noise.
+%     \item \textbf{Scope}: Applicable to any high-dimensional autoregressive generative system (text, audio, image).
+%   \end{itemize}
+% \end{frame}
 
 % Slide 4: Interpretability: Mechanisms vs. Global Properties
 \begin{frame}{Interpretability: Mechanisms vs. Global Properties}
@@ -100,7 +100,7 @@
   \end{itemize}
 \end{frame}
 
-\section{Preliminaries: Chaos \& LLMs}
+%\section{Preliminaries: Chaos \& LLMs}
 
 % Slide 5: Nonlinear Dynamics and Chaos
 \begin{frame}{Nonlinear Dynamics and Chaos}
@@ -109,7 +109,7 @@
     \mathbf{x}_{t+1} = \mathbf{f}(\mathbf{x}_t)
   \end{equation*}
   
-  \textbf{Sensitivity to Initial Conditions (SIC):}
+  \textbf{Sensitivity to Initial Conditions:}
   \begin{equation*}
     \|\bm{\delta}(t)\| \approx \|\bm{\delta}(0)\| e^{\lambda t}
   \end{equation*}
@@ -126,10 +126,10 @@
 \end{frame}
 
 % Slide 6: Recurrence Plots
-\begin{frame}{Recurrence Plots (RP)}
+\begin{frame}{Recurrence Plots}
   \begin{columns}
     \begin{column}{0.35\textwidth}
-      \textbf{Mathematical Formulation:}
+      % \textbf{Mathematical Formulation:}
       \begin{equation*}
         R_{i,j}(\epsilon) = \Theta(\epsilon - d(\mathbf{x}_i, \mathbf{x}_j))
       \end{equation*}
@@ -156,6 +156,8 @@
   \end{columns}
 \end{frame}
 
+
+
 % Slide 7: LLMs as Dynamical Systems
 \begin{frame}{LLMs as Dynamical Systems}
   \textbf{Inference Trajectories:}
@@ -172,6 +174,9 @@
     \item \textbf{Residual Connections}: Information preservation.
   \end{itemize}
 \end{frame}
+
+
+
 
 % Slide 8: The Chaos-LLM Analogy
 \begin{frame}{The Chaos-LLM Analogy}
@@ -196,7 +201,7 @@
   \end{tabular}
 \end{frame}
 
-\section{Methodology}
+%\section{Methodology}
 
 % Slide 9: Trajectory Distance Metrics
 \begin{frame}{Trajectory Distance Metrics}
@@ -264,7 +269,7 @@
   \end{itemize}
 \end{frame}
 
-\section{Results: Perturbation Propagation (Layers)}
+%\section{Results: Perturbation Propagation (Layers)}
 
 % Slide 12: MLP Static Weights
 \begin{frame}{MLP Static Weights}
@@ -552,7 +557,7 @@
   \end{columns}
 \end{frame}
 
-\section{Results: Perturbation Propagation (Tokens)}
+%\section{Results: Perturbation Propagation (Tokens)}
 
 % Slide 23: Trajectory Divergence
 \begin{frame}{Trajectory Divergence}
@@ -626,7 +631,7 @@
   \end{columns}
 \end{frame}
 
-\section{Results: Recurrence and Dimensionality}
+%\section{Results: Recurrence and Dimensionality}
 
 % Slide 26: Recurrence Plots: Layer Comparison
 \begin{frame}{Recurrence Plots: Layer Comparison}
@@ -757,7 +762,7 @@
   \end{columns}
 \end{frame}
 
-\section{Demonstration and Screenshots}
+%\section{Demonstration and Screenshots}
 
 % Slide 31: Full-Screen Screenshot Placeholder
 \begin{frame}[plain]
@@ -766,7 +771,7 @@
   \end{center}
 \end{frame}
 
-\section{Conclusions and Future Work}
+%\section{Conclusions and Future Work}
 
 % Slide 32: Conclusions
 \begin{frame}{Conclusions}
@@ -788,7 +793,57 @@
   \end{itemize}
 \end{frame}
 
-% Slide 34: Acknowledgements
+% Slide 34: Memory-Efficient Jacobian Spectral Norm
+\begin{frame}{Memory-Efficient Jacobian Spectral Norm}
+  \begin{columns}
+    \begin{column}{0.48\textwidth}
+        Spectral Norm (largest singular value):
+          \begin{equation*}
+            \|J\|_2 = \sigma_{\max}(J) = \sqrt{\lambda_{\max}(J^T J)}
+          \end{equation*}
+      
+      \textbf{Memory Bottleneck:}
+
+      Full Jacobian size ($\approx 618$ GB in FP32).
+
+      Forward pass on GPU; clone and copy hidden states to CPU immediately.
+
+      Compute Jacobians layer-by-layer by loading only one layer's tensors to GPU.
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Matrix-Free Power Iteration:}
+      % \begin{itemize}
+      %   \item Find $\lambda_{\max}(J^T J)$ without materializing $J$ or $J^T J$:
+      % \end{itemize}
+      Initialize random unit vector $v \in \mathbb{R}^{N \times d}$.
+
+      Iterate for $K$ steps:
+
+      textbf{JVP (Pushforward)}:
+        \begin{equation*}
+          u = J v \quad \text{via} \quad \texttt{torch.func.jvp}
+        \end{equation*}
+
+      VJP (Pullback):
+        \begin{equation*}
+          w = J^T u \quad \text{via} \quad \texttt{torch.func.vjp}
+        \end{equation*}
+        (using reverse-mode autodiff)
+
+      \textbf{Re-normalize}:
+        \begin{equation*}
+          v = \frac{w}{\|w\|_2}
+        \end{equation*}
+
+      Output spectral norm:
+          \begin{equation*}
+            \sigma_{\max} = \sqrt{\frac{v^T w}{v^T v}}
+          \end{equation*}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% Slide 35: Acknowledgements
 \begin{frame}{Acknowledgements}
   \begin{itemize}
     \item \textbf{Supervisors}: Special thanks to Dr. János Török and Kristóf Benedek for guidance.
