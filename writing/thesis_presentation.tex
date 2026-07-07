@@ -10,6 +10,15 @@
 \usepackage[style=numeric,sorting=none,maxbibnames=3,minbibnames=1]{biblatex}
 \addbibresource{lit.bib}
 
+% Custom color overrides (white background, black text/titles)
+\setbeamercolor{background canvas}{bg=white}
+\setbeamercolor{normal text}{fg=black}
+\setbeamercolor{frametitle}{bg=white, fg=black}
+\setbeamercolor{section title}{fg=black}
+\setbeamercolor{palette primary}{bg=white, fg=black}
+
+% Custom font overrides (make slide titles bigger)
+\setbeamerfont{frametitle}{size=\Large}
 
 % Custom BME red/burgundy styling for elements
 \definecolor{BMEred}{RGB}{128, 0, 0}
@@ -75,44 +84,7 @@
   They are an interesting case study for chaos theory.
 \end{frame}
 
-% Slide 3: LLMs as Dynamical Systems
-% \begin{frame}{LLMs as Dynamical Systems}
-%   \begin{itemize}
-%     \item \textbf{High-Dimensional Complexity}: Billion-parameter deep networks, highly nonlinear and high-dimensional.
-%     \item \textbf{Stability vs. Sensitivity}: Coherence over long text sequences contrasted with high sensitivity to prompt details.
-%     \item \textbf{Determinisitic Chaos vs. Noise}: Investigating if sensitivity stems from deterministic chaos or stochastic noise.
-%     \item \textbf{Scope}: Applicable to any high-dimensional autoregressive generative system (text, audio, image).
-%   \end{itemize}
-% \end{frame}
 
-% % Slide 4: Interpretability: Mechanisms vs. Global Properties
-% \begin{frame}{Interpretability: Mechanisms vs. Global Properties}
-%   \begin{columns}
-%     \begin{column}{0.5\textwidth}
-%       \textbf{Mechanistic Interpretability}
-%       \begin{itemize}
-%         \item Bottom-up analysis.
-%         \item Explains small-scale circuits, subnetworks, or attention patterns.
-%       \end{itemize}
-%     \end{column}
-%     \begin{column}{0.5\textwidth}
-%       \textbf{Chaos-Theoretic Approach}
-%       \begin{itemize}
-%         \item Top-down analysis.
-%         \item Quantifies global properties (stability, dimensionality, and attractor dynamics).
-%       \end{itemize}
-%     \end{column}
-%   \end{columns}
-%   \vspace{0.4cm}
-%   \textbf{Key Challenges in LLM Chaos Analysis:}
-%   \begin{itemize}
-%     \item Discrete nature of tokens.
-%     \item High-dimensionality of embedding spaces ($10^3$--$10^4$).
-%     \item Defining trajectories and distances in semantic spaces.
-%   \end{itemize}
-% \end{frame}
-
-%\section{Preliminaries: Chaos \& LLMs}
 
 % Slide 5: Nonlinear Dynamics and Chaos
 \begin{frame}{Nonlinear Dynamics and Chaos}
@@ -170,23 +142,6 @@
 
 
 
-% Slide 7: LLMs as Dynamical Systems
-\begin{frame}{LLMs as Dynamical Systems}
-  \textbf{Inference Trajectories:}
-  \begin{itemize}
-    \item \textbf{Vertical Trajectory} (Layer-wise): $\mathbf{x}_{\ell+1} = \mathbf{x}_\ell + \mathbf{f}_\ell(\mathbf{x}_\ell)$ (Non-autonomous).
-    \item \textbf{Horizontal Trajectory} (Sequence-wise): $\mathbf{s}_{t+1} = \mathbf{f}(\mathbf{s}_t, \mathbf{s}_{t-1}, \dots)$ (Bilinear coupling via attention).
-  \end{itemize}
-  
-  \textbf{Architectural Mappings to Chaos Mechanics:}
-  \begin{itemize}
-    \item \textbf{Self-Attention}: State-dependent nonlinear coupling.
-    \item \textbf{Attention / MLP}: Stretching (amplification of perturbations).
-    \item \textbf{Normalization} (RMSNorm/LayerNorm): Folding (bounding vectors).
-    \item \textbf{Residual Connections}: Information preservation.
-  \end{itemize}
-\end{frame}
-
 
 
 
@@ -213,29 +168,7 @@
   \end{tabular}
 \end{frame}
 
-%\section{Methodology}
 
-% Slide 9: Trajectory Distance Metrics
-\begin{frame}{Trajectory Distance Metrics}
-  \textbf{Vector-wise Metrics:}
-  \begin{itemize}
-    \item Cosine Distance: $d_{\text{cos}}(\mathbf{x}, \mathbf{y}) = 1 - \frac{\mathbf{x} \cdot \mathbf{y}}{\|\mathbf{x}\|_2 \|\mathbf{y}\|_2}$
-  \end{itemize}
-
-  \textbf{Trajectory-wise Metrics (Sliding Windows):}
-  \begin{itemize}
-    \item \textbf{Dynamic Time Warping (DTW)}: Optimal alignment of temporal sequences.
-    \item \textbf{Fréchet Distance}: Ordered trajectory similarity (minimum leash length).
-    \item \textbf{Hausdorff Distance}: Set-based greatest distance between sets:
-      \begin{equation*}
-        d_H(\mathbf{X}, \mathbf{Y}) = \max \left( \sup_{\mathbf{x} \in \mathbf{X}} \inf_{\mathbf{y} \in \mathbf{Y}} \|\mathbf{x}-\mathbf{y}\|_2, \sup_{\mathbf{y} \in \mathbf{Y}} \inf_{\mathbf{x} \in \mathbf{X}} \|\mathbf{x}-\mathbf{y}\|_2 \right)
-      \end{equation*}
-    \item \textbf{Cross-Correlation Dissimilarity}: Pearson correlation of self-similarity:
-      \begin{equation*}
-        d_{\text{CC}}(\mathbf{X}, \mathbf{Y}) = 1 - \rho = 1 - \frac{\operatorname{cov}(S_{\mathbf{X}}^\text{flat}, S_{\mathbf{Y}}^\text{flat})}{\sigma_{S_{\mathbf{X}}^\text{flat}} \sigma_{S_{\mathbf{Y}}^\text{flat}}}
-      \end{equation*}
-  \end{itemize}
-\end{frame}
 
 % Slide 10: Dimensionality & Power Iteration
 \begin{frame}{Dimensionality \& Jacobian Power Iteration}
@@ -259,25 +192,21 @@
   \end{itemize}
 \end{frame}
 
-% Slide 11: Experimental Setup
-\begin{frame}{Experimental Setup}
-  \textbf{Models Investigated:}
-  \begin{itemize}
-    \item \texttt{DeepSeek-R1-Distill-Qwen-1.5B}
-    \item \texttt{Phi-4-mini-instruct}
-  \end{itemize}
+% Slide 10A: Perturbation Propagation and Operator Jacobians
+\begin{frame}{Perturbation Propagation and Operator Jacobians}
+  \textbf{Linearized Perturbation Propagation:}
+  For a small input perturbation $\bm{\delta}_0$, the output perturbation after an operator $f(\mathbf{x})$ is governed by the local Jacobian matrix $\mathbf{J}_f(\mathbf{x}) = \frac{\partial f(\mathbf{x})}{\partial \mathbf{x}}$:
+  \begin{equation*}
+    \bm{\delta}_1 = f(\mathbf{x} + \bm{\delta}_0) - f(\mathbf{x}) \approx \mathbf{J}_f(\mathbf{x}) \bm{\delta}_0
+  \end{equation*}
   
-  \textbf{Initial Condition Perturbations:}
-  \begin{itemize}
-    \item To avoid direction bias, perturbations are placed at the vertices of a regular simplex of radius $r$ centered at initial prompt embedding $\mathbf{E}_0$.
-    \item Subspace of dimension $N_{\text{pert}}$ is randomly chosen.
-  \end{itemize}
+  \vspace{0.3cm}
   
-  \textbf{Inference Configurations:}
+  \textbf{Operator-Specific Jacobian Dynamics:}
   \begin{itemize}
-    \item Deterministic Case: Greedy sampling ($T = 0$).
-    \item Probabilistic Case: Temperature sampling ($T = 0.6$, $\text{top}_p=0.95$, $\text{top}_k=50$).
-    \item Embeddings compared using Sentence-Transformers (\textit{all-mpnet-base-v2}).
+    \item \textbf{Self-Attention ($\mathbf{J}_{\text{Attn}}$)}: Spatially couples tokens, routing and spreading the perturbation across the sequence dimension.
+    \item \textbf{MLP Block ($\mathbf{J}_{\text{MLP}}$)}: Operates token-wise; high-dimensional expansion causes isotropic amplification (stretching, typically $\|\mathbf{J}_{\text{MLP}}\|_2 > 1$).
+    \item \textbf{Normalization ($\mathbf{J}_{\text{Norm}}$)}: Rescales activations to a constant radial bound, acting as a contracting projection (folding component).
   \end{itemize}
 \end{frame}
 
@@ -287,27 +216,26 @@
 \begin{frame}{MLP Static Weights}
   \begin{columns}
     \begin{column}{0.32\textwidth}
-      \textbf{SwiGLU MLP Formulation:}
-      \begin{equation*}
-        \text{MLP}(\mathbf{x}) = W_{\text{down}} \left( \text{SiLU}(W_{\text{gate}} \mathbf{x}) \odot (W_{\text{up}} \mathbf{x}) \right)
-      \end{equation*}
-      
+      \textbf{SwiGLU MLP:}
+      $$ \text{MLP}(\mathbf{x}) = W_{\text{down}} \left( \text{SiLU}(W_{\text{gate}} \mathbf{x}) \odot (W_{\text{up}} \mathbf{x}) \right) $$
+
+      \vspace{0.15cm}
+
       \textbf{Scaled Frobenius Norms:}
-      \begin{equation*}
-        \tilde{F}_{\text{gate}} = \frac{\|W_{\text{gate}}\|_F^2}{d}, \quad \tilde{F}_{\text{up}} = \frac{\|W_{\text{up}}\|_F^2}{d}
-      \end{equation*}
-      
+      $$ \tilde{F}_{\text{gate}} = \frac{\|W_{\text{gate}}\|_F^2}{d}, \quad \tilde{F}_{\text{up}} = \frac{\|W_{\text{up}}\|_F^2}{d} $$
+
+      \vspace{0.15cm}
+
       \begin{itemize}
-        \item Consistently larger than 1 at every layer.
-        \item Indicates the static architecture has a baseline capacity to expand perturbations.
+        \item Norms are $>1$ at all layers.
+        \item Indicates baseline capacity to expand perturbations.
       \end{itemize}
     \end{column}
     \begin{column}{0.66\textwidth}
       \centering
-      \includegraphics[width=0.49\textwidth]{plots_new/deepseek/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-      \includegraphics[width=0.49\textwidth]{plots_new/microsoft/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
       \\[0.1cm]
-      {\tiny Fig 2: Scaled Frobenius norms of MLP static weights (DeepSeek left, Phi-4 right).}
+      {\tiny Fig 2: Scaled Frobenius norms of MLP static weights (DeepSeek).}
     \end{column}
   \end{columns}
 \end{frame}
@@ -316,28 +244,26 @@
 \begin{frame}{MLP Activation Densities}
   \begin{columns}
     \begin{column}{0.32\textwidth}
-      \textbf{Dynamic Activation Vectors:}
-      \begin{align*}
-        \mathbf{s}_x &= \text{SiLU}(W_{\text{gate}} \mathbf{x}) \\
-        \mathbf{d}_x &= (W_{\text{up}} \mathbf{x}) \odot \text{SiLU}'(W_{\text{gate}} \mathbf{x})
-      \end{align*}
-      
-      \textbf{Activation Densities:}
-      \begin{equation}
-        \overline{s_x^2} = \frac{\|\mathbf{s}_x\|_2^2}{d_{\text{ff}}}, \quad \overline{d_x^2} = \frac{\|\mathbf{d}_x\|_2^2}{d_{\text{ff}}}
-      \end{equation}
-      
+      \textbf{Gate Activation Density:}
+      $$ \overline{s_x^2} = \frac{\|\text{SiLU}(W_{\text{gate}} \mathbf{x})\|_2^2}{d_{\text{ff}}} $$
+
+      \vspace{0.15cm}
+
+      \textbf{Derivative Density:}
+      $$ \overline{d_x^2} = \frac{\|(W_{\text{up}} \mathbf{x}) \odot \text{SiLU}'(W_{\text{gate}} \mathbf{x})\|_2^2}{d_{\text{ff}}} $$
+
+      \vspace{0.15cm}
+
       \begin{itemize}
-        \item Directly influence Jacobian stretching.
-        \item Show pronounced growth in deeper layers.
+        \item Drives dynamic Jacobian stretching.
+        \item Grows significantly in deeper layers.
       \end{itemize}
     \end{column}
     \begin{column}{0.66\textwidth}
       \centering
-      \includegraphics[width=0.49\textwidth]{plots_new/deepseek/jacobians_MLP/activation_densities_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-      \includegraphics[width=0.49\textwidth]{plots_new/microsoft/jacobians_MLP/activation_densities_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_MLP/activation_densities_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
       \\[0.1cm]
-      {\tiny Fig 3: Dynamic activation densities across layers (DeepSeek left, Phi-4 right).}
+      {\tiny Fig 3: Dynamic activation densities across layers (DeepSeek).}
     \end{column}
   \end{columns}
 \end{frame}
@@ -346,29 +272,26 @@
 \begin{frame}{MLP Jacobian Norm and Isotropic Expansion}
   \begin{columns}
     \begin{column}{0.32\textwidth}
-      \textbf{SwiGLU MLP Jacobian:}
-      \begin{equation*}
-        \mathbf{J}(\mathbf{x}) = W_{\text{down}} \left[ \text{diag}(\mathbf{s}_x) W_{\text{up}} + \text{diag}(\mathbf{d}_x) W_{\text{gate}} \right]
-      \end{equation*}
-      
-      \textbf{Stretching Quantities:}
-      \begin{itemize}
-        \item Maximal Stretch (Spectral norm): $\|\mathbf{J}(\mathbf{x})\|_2 = \sigma_{\max}(\mathbf{J}(\mathbf{x}))$
-        \item Isotropic stretching: $\bar{\lambda} = \frac{1}{d} \|\mathbf{J}(\mathbf{x})\|_F^2$
-      \end{itemize}
-      
-      \textbf{Key Observations:}
+      \textbf{Maximum Expansion (Spectral Norm):} 
+      $$\|\mathbf{J}(\mathbf{x})\|_2 = \sigma_{\max}(\mathbf{J}(\mathbf{x}))$$
+
+      \vspace{0.15cm}
+
+      \textbf{Expected Isotropic Expansion:} 
+      $$\bar{\lambda} = \frac{1}{d} \|\mathbf{J}(\mathbf{x})\|_F^2$$
+
+      \vspace{0.15cm}
+
       \begin{itemize}
         \item $\|\mathbf{J}(\mathbf{x})\|_2 > 1$ at all layers.
-        \item Isotropic expansion $\bar{\lambda} > 1$ (except first few layers).
+        \item $\bar{\lambda} > 1$ (except first few layers).
       \end{itemize}
     \end{column}
     \begin{column}{0.66\textwidth}
       \centering
-      \includegraphics[width=0.49\textwidth]{plots_new/deepseek/jacobians_MLP/jacobian_together_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-      \includegraphics[width=0.49\textwidth]{plots_new/microsoft/jacobians_MLP/jacobian_together_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_MLP/jacobian_together_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
       \\[0.1cm]
-      {\tiny Fig 4: Jacobian spectral norm and isotropic expansion (DeepSeek left, Phi-4 right).}
+      {\tiny Fig 4: Jacobian spectral norm and isotropic expansion (DeepSeek).}
     \end{column}
   \end{columns}
 \end{frame}
@@ -382,8 +305,8 @@
   
   \textbf{Core Assumptions:}
   \begin{enumerate}
-    \item \textbf{Off-Diagonal Cancellation}: Weight matrices are uncorrelated; cross-terms sum to 0: $\sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j \approx 0$
-    \item \textbf{Gramian Uniformity}: Row norms of weight matrices are uniform: $(H_1)_{ii} \approx \frac{\|W_1\|_F^2}{d_{\text{ff}}}$
+    \item Neglect off-diagonal terms: $\sum_{i \neq j} (H_2)_{ij} (H_1)_{ji} \phi'_i \phi'_j \approx 0$
+    \item Row norms of weight matrices are uniform: $(H_1)_{ii} \approx \frac{\|W_1\|_F^2}{d_{\text{ff}}}$
   \end{enumerate}
 
   \textbf{Closed-Form Isotropic Expansion Estimate:}
@@ -395,50 +318,73 @@
   \end{itemize}
 \end{frame}
 
-% Slide 16: MFT Verification
-\begin{frame}{MFT Verification}
+% Slide 16A: MFT Assumption Validation
+\begin{frame}{MFT Assumption Validation}
   \begin{columns}
     \begin{column}{0.30\textwidth}
       \textbf{Assumption Validation:}
       \begin{itemize}
         \item Diagonal dominance ($R \approx 1$) and Uniformity ($CV \ll 1$) are well-satisfied, showing slight discrepancies only in the last layers.
-        \item Outliers in early layers show deviation under arithmetic mean, but bands align strongly.
       \end{itemize}
     \end{column}
     \begin{column}{0.68\textwidth}
       \centering
-      \includegraphics[width=0.48\textwidth]{plots_new/microsoft/mft-check/mft_validation_plot_assumption1_jacobian_base_All_Prompts_Aggregated_aggregated.png}
-      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption2_jacobian_base_All_Prompts_Aggregated_aggregated.png} \\
-      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/jacobians_MLP/mft_comparison_jacobian_base_All_Prompts_Aggregated_aggregated_xscale-linear_yscale-log.png}
-      \includegraphics[width=0.48\textwidth]{plots_new/microsoft/jacobians_MLP/mft_comparison_jacobian_base_All_Prompts_Aggregated_aggregated_xscale-linear_yscale-log.png}
+      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption1_jacobian_base_All_Prompts_Aggregated_aggregated.png}
+      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption2_jacobian_base_All_Prompts_Aggregated_aggregated.png}
       \\[0.1cm]
-      {\tiny Fig 5: MFT validation: diagonal dominance, uniformity, and $\bar{\lambda}$ prediction.}
+      {\tiny Fig 5a: MFT assumptions: diagonal dominance (left) and uniformity (right).}
     \end{column}
   \end{columns}
 \end{frame}
+
+% Slide 16B: MFT Prediction Verification
+\begin{frame}{MFT Prediction Verification}
+  \begin{columns}
+    \begin{column}{0.30\textwidth}
+      \textbf{Isotropic Expansion Prediction:}
+      \begin{itemize}
+        \item Outliers in layer with large Jacobian using mean 
+        \item mean is sensitive to outliers 
+        \item The 25-75 percentile bands agree consistently
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.68\textwidth}
+      \centering
+      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_MLP/mft_comparison_jacobian_base_All_Prompts_Aggregated_aggregated_xscale-linear_yscale-log.png}
+      \\[0.1cm]
+      {\tiny Fig 5b: Measured isotropic expansion vs. closed-form MFT prediction (DeepSeek).}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+
+
 
 % Slide 17: Attention Static Weights
 \begin{frame}{Attention Static Weights}
   \begin{columns}
     \begin{column}{0.32\textwidth}
-      \textbf{Static Projection matrices:}
+      \textbf{Routing Matrix ($W_{QK}$):}
+      $$W_{QK} = \frac{1}{\sqrt{d_k}} W_Q W_K^T$$
+
+      \vspace{0.15cm}
+
+      \textbf{Mixing Matrix ($W_{VO}$):}
+      $$W_{VO} = W_V W_O$$
+
+      \vspace{0.15cm}
+
       \begin{itemize}
-        \item $W_{QK} = \frac{1}{\sqrt{d_k}} W_Q W_K^T$ (Routing weight matrix)
-        \item $W_V W_O$ (Mixing weight matrix)
-      \end{itemize}
-      
-      \textbf{Spectral Norms:}
-      \begin{itemize}
-        \item Both routing and mixing norms are consistently $> 1$ at all layers.
-        \item Confirms that attention has static components capable of stretching perturbations.
+        \item Routing and mixing norms are consistently $> 1$ at all layers.
+        \item Confirms capacity to stretch perturbations.
       \end{itemize}
     \end{column}
     \begin{column}{0.66\textwidth}
       \centering
-      \includegraphics[width=0.49\textwidth]{plots_new/deepseek/jacobians_attn/attn_static_weights_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
-      \includegraphics[width=0.49\textwidth]{plots_new/microsoft/jacobians_attn/attn_static_weights_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
+      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_attn/attn_static_weights_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
       \\[0.1cm]
-      {\tiny Fig 6: Spectral norms of routing and mixing weight matrices (DeepSeek left, Phi-4 right).}
+      {\tiny Fig 6: Spectral norms of routing and mixing weight matrices (DeepSeek).}
     \end{column}
   \end{columns}
 \end{frame}
@@ -468,30 +414,30 @@
   \end{itemize}
 \end{frame}
 
-% Slide 19: Attention Jacobian Spectral Norm & Entropy
-\begin{frame}{Attention Jacobian and Entropy}
-  \begin{columns}
-    \begin{column}{0.32\textwidth}
-      \textbf{Jacobian Scaling:}
-      \begin{itemize}
-        \item Global attention Jacobian norm $\|\mathbf{J}_{\text{Attn}}\|_2$ scales with $\sqrt{N}$ due to random matrix coupling.
-      \end{itemize}
+% % Slide 19: Attention Jacobian Spectral Norm & Entropy
+% \begin{frame}{Attention Jacobian and Entropy}
+%   \begin{columns}
+%     \begin{column}{0.32\textwidth}
+%       \textbf{Jacobian Scaling:}
+%       \begin{itemize}
+%         \item Global attention Jacobian norm $\|\mathbf{J}_{\text{Attn}}\|_2$ scales with $\sqrt{N}$ due to random matrix coupling.
+%       \end{itemize}
       
-      \textbf{Softmax Entropy Ratio:}
-      \begin{itemize}
-        \item Softmax saturation could collapse routing sensitivity ($\mathbf{J}_{\text{sm}} \to \mathbf{0}$).
-        \item Empirically, normalized entropy ratio remains high ($0.4$--$0.8$), preventing Jacobian vanishing.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.66\textwidth}
-      \centering
-      \includegraphics[width=0.49\textwidth]{plots_new/deepseek/jacobians_attn/attn_spectral_norms_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
-      \includegraphics[width=0.49\textwidth]{plots_new/microsoft/jacobians_attn/attn_spectral_norms_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
-      \\[0.1cm]
-      {\tiny Fig 7: Global attention Jacobian spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2$ (DeepSeek left, Phi-4 right).}
-    \end{column}
-  \end{columns}
-\end{frame}
+%       \textbf{Softmax Entropy Ratio:}
+%       \begin{itemize}
+%         \item Softmax saturation could collapse routing sensitivity ($\mathbf{J}_{\text{sm}} \to \mathbf{0}$).
+%         \item Empirically, normalized entropy ratio remains high ($0.4$--$0.8$), preventing Jacobian vanishing.
+%       \end{itemize}
+%     \end{column}
+%     \begin{column}{0.66\textwidth}
+%       \centering
+%       \includegraphics[width=0.49\textwidth]{plots_new/deepseek/jacobians_attn/attn_spectral_norms_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
+%       \includegraphics[width=0.49\textwidth]{plots_new/microsoft/jacobians_attn/attn_spectral_norms_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
+%       \\[0.1cm]
+%       {\tiny Fig 7: Global attention Jacobian spectral norm $\|\mathbf{J}_{\text{Attn}}\|_2$ (DeepSeek left, Phi-4 right).}
+%     \end{column}
+%   \end{columns}
+% \end{frame}
 
 % Slide 20: Normalization and Residual Connections
 \begin{frame}{Normalization and Residual Connections}
@@ -518,21 +464,20 @@
 % Slide 21: Finite Size Perturbation Propagation
 \begin{frame}{Finite Size Perturbation Propagation}
   \begin{columns}
-    \begin{column}{0.32\textwidth}
+    \begin{column}{0.4\textwidth}
       \textbf{Layer-wise Evolution:}
       \begin{itemize}
-        \item A physical perturbation is injected and tracked through all layers.
+        \item A finite-size perturbation is applied.
         \item Perturbation magnitude increases rapidly in early layers.
-        \item Plateaus in middle layers (maximizing informational coupling).
+        \item Plateaus in middle layers.
         \item Decays in the final layers (converging to output probability distribution).
       \end{itemize}
     \end{column}
-    \begin{column}{0.66\textwidth}
+    \begin{column}{0.58\textwidth}
       \centering
-      \includegraphics[width=0.49\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
-      \includegraphics[width=0.49\textwidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
+      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_metric-harmonic_err-fan_xscale-linear_yscale-log.png}
       \\[0.1cm]
-      {\tiny Fig 8: Finite perturbation magnitude across model layers (DeepSeek left, Phi-4 right).}
+      {\tiny Fig 8: Finite perturbation magnitude across model layers (DeepSeek).}
     \end{column}
   \end{columns}
 \end{frame}
@@ -559,12 +504,10 @@
     \end{column}
     \begin{column}{0.68\textwidth}
       \centering
-      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png}
-      \includegraphics[width=0.48\textwidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png} \\
-      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
-      \includegraphics[width=0.48\textwidth]{plots_new/microsoft/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
+      \includegraphics[width=0.8\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png} \\
+      \includegraphics[width=0.8\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
       \\[0.1cm]
-      {\tiny Fig 9: Exponent scaling and linearized perturbation gain (DeepSeek left, Phi-4 right).}
+      {\tiny Fig 9: Exponent scaling and linearized perturbation gain (DeepSeek).}
     \end{column}
   \end{columns}
 \end{frame}
@@ -620,28 +563,6 @@
   \end{columns}
 \end{frame}
 
-% Slide 25: Attention Context Window Dependence
-\begin{frame}{Attention Context Window Dependence}
-  \begin{columns}
-    \begin{column}{0.32\textwidth}
-      \textbf{Divergence vs. Window Size:}
-      \begin{itemize}
-        \item Measured using "number of tokens to first divergence".
-        \item Window size = 1 (no attention to past): Completely stable.
-        \item Small windows: Immediate divergence.
-        \item Intermediate windows: Stable (shared context stabilizes generation).
-        \item Large windows: Delayed divergence (original perturbation remains in window).
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.66\textwidth}
-      \centering
-      \includegraphics[width=0.49\textwidth]{plots_new/deepseek/attn/dep_window_geometric_mean_mag_0.0001_log_linear.png}
-      \includegraphics[width=0.49\textwidth]{plots_new/microsoft/attn/dep_window_geometric_mean_mag_1e-05_log_linear.png}
-      \\[0.1cm]
-      {\tiny Fig 12: Tokens to divergence vs. context window size (DeepSeek left, Phi-4 right).}
-    \end{column}
-  \end{columns}
-\end{frame}
 
 %\section{Results: Recurrence and Dimensionality}
 
@@ -696,103 +617,44 @@
   \end{columns}
 \end{frame}
 
-% Slide 28: Correlation Dimension and Distance Distribution
-\begin{frame}{Correlation Dimension and Distance Distribution}
-  \begin{columns}
-    \begin{column}{0.28\textwidth}
-      \textbf{Grassberger-Procaccia (GP) algorithm:}
-      \begin{itemize}
-        \item Measures spatial correlation of points along trajectory.
-        \item Correlation sum: $C(\epsilon) \propto \epsilon^{D_2}$ as $\epsilon \to 0$.
-        \item Slope of $\ln C(\epsilon)$ vs. $\ln \epsilon$ yields dimension $D_2$.
-      \end{itemize}
-      
-      \textbf{Differentiating Chaos vs. Noise:}
-      \begin{itemize}
-        \item \textbf{Deterministic Chaos}: $D_2$ saturates to a low, non-integer value (fractal attractor), producing a clear linear scaling range.
-        \item \textbf{Random Noise}: $D_2$ does not saturate and scales with embedding dimension $d$.
-        \item \textbf{LLM layers}: Last layer shows a distinct scaling region (chaos); first layer matches high-dimensional random noise.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.70\textwidth}
-      \centering
-      \includegraphics[width=0.32\textwidth]{plots/dimension/random.png}
-      \includegraphics[width=0.32\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first.png}
-      \includegraphics[width=0.32\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last.png} \\
-      \includegraphics[width=0.32\textwidth]{plots/dimension/random_dist.png}
-      \includegraphics[width=0.32\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first_dist.png}
-      \includegraphics[width=0.32\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last_dist.png}
-      \\[0.1cm]
-      {\tiny Fig 15: GP dimension curves and cosine distance distributions.}
-    \end{column}
-  \end{columns}
+
+% Slide 28A: Correlation Dimension
+\begin{frame}{Correlation Dimension}
+  % The Correlation Dimension $D_2$ is defined via the correlation sum $C(\epsilon)$:
+  \begin{equation*}
+    C(\epsilon) = \frac{1}{N(N-1)} \sum_{i \ne j} \Theta(\epsilon - \|\mathbf{x}_i - \mathbf{x}_j\|_2) % \quad \implies \quad C(\epsilon) \propto \epsilon^{D_2} \quad \text{as } \epsilon \to 0
+  \end{equation*}
+
+  Correlation dimension allows one to distinguish between deterministic chaos and random noise
+
+  Not enough datapoints to compute exact dimension.
+
+  
+  
+  \vspace{0.3cm}
+  
+  \centering
+  \begin{tabular}{ccc}
+    \includegraphics[width=0.31\textwidth]{plots/dimension/random.png} &
+    \includegraphics[width=0.31\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first.png} &
+    \includegraphics[width=0.31\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last.png} \\
+    \small{RANDOM} & \small{FIRST LAYER} & \small{LAST LAYERS}
+  \end{tabular}
 \end{frame}
 
-% % Slide 29: Deterministic vs. Probabilistic Sampling
-% \begin{frame}{Deterministic vs. Probabilistic Sampling}
-%   \begin{columns}
-%     \begin{column}{0.32\textwidth}
-%       \textbf{Influence of Stochasticity ($T = 0.6$):}
-%       \begin{itemize}
-%         \item In first layers, deterministic and probabilistic curves match.
-%         \item In the last layer, probabilistic sampling destroys the linear power-law region of the GP dimension curves.
-%         \item Confirms that the structured deterministic attractor is an emergent property of the model's forward pass, collapsed under stochastic sampling.
-%       \end{itemize}
-%     \end{column}
-%     \begin{column}{0.66\textwidth}
-%       \centering
-%       \includegraphics[width=0.49\textwidth]{plots/dimension/temperature06_childhood/cosine_sim_first_first_T06.png}
-%       \includegraphics[width=0.49\textwidth]{plots/dimension/temperature06_childhood/cosine_sim_last_last_T06.png}
-%       \\[0.1cm]
-%       {\tiny Fig 16: GP dimension curves under probabilistic sampling ($T=0.6$) (first layer left, last layer right).}
-%     \end{column}
-%   \end{columns}
-% \end{frame}
-
-% % Slide 30: Distance Matrices and Embeddings
-% \begin{frame}{Distance Matrices and Embeddings}
-%   \begin{columns}
-%     \begin{column}{0.28\textwidth}
-%       \textbf{Representational Differences:}
-%       \begin{itemize}
-%         \item Raw hidden states show very localized patterns (high frequency).
-%         \item Sentence embeddings act as spatial pooling, smoothing local features and highlighting global semantic recurrence.
-%         \item Fréchet and Cosine Distance do not capture diagonal lines in hidden state space but do in sentence embedding space.
-%       \end{itemize}
-%     \end{column}
-%     \begin{column}{0.70\textwidth}
-%       \centering
-%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/hidden/hausdorff_traj0.png}
-%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/hidden/dtw_fast_traj0.png}
-%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/hidden/frechet_traj0.png} \\
-%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/embed/hausdorff_traj0.png}
-%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/embed/dtw_fast_traj0.png}
-%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/embed/frechet_traj0.png}
-%       \\[0.1cm]
-%       {\tiny Fig 17: Distance matrices for hidden states (top) vs. text embeddings (bottom).}
-%     \end{column}
-%   \end{columns}
-% \end{frame}
-
-%\section{Demonstration and Screenshots}
-
-% % Slide 31: Full-Screen Screenshot Placeholder
-% \begin{frame}[plain]
-%   \begin{center}
-%     \includegraphics[width=\paperwidth,height=\paperheight,keepaspectratio]{screenshot1.png}
-%   \end{center}
-% \end{frame}
-
-%\section{Conclusions and Future Work}
-
-% Slide 32: Conclusions
-\begin{frame}{Conclusions}
-  \begin{itemize}
-    \item \textbf{Emergent Chaoticity}: LLM generative trajectories exhibit signatures of deterministic chaos: sensitivity to initial conditions and bounded strange attractor dynamics.
-    \item \textbf{Stretching and Folding Mechanics}: Identified stretching components (MLP expansion, Attention routing) balanced by folding components (RMSNorm radial projection/scaling).
-    \item \textbf{MFT Formulation}: Derived and validated a closed-form Mean-Field approximation of MLP isotropic stretching.
-    \item \textbf{Softmax Threshold bottleneck}: Perturbations remain latent in hidden states until crossing softmax thresholds, causing discrete token flips and subsequent trajectory divergence.
-  \end{itemize}
+% Slide 28B: Distance Distribution
+\begin{frame}{Distance Distribution}
+  The internal states at the first layers resemble a set of random vectors.
+  
+  \vspace{0.5cm}
+  
+  \centering
+  \begin{tabular}{ccc}
+    \includegraphics[width=0.31\textwidth]{plots/dimension/random_dist.png} &
+    \includegraphics[width=0.31\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first_dist.png} &
+    \includegraphics[width=0.31\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last_dist.png} \\
+    \small\textbf{RANDOM} & \small\textbf{FIRST LAYER} & \small\textbf{LAST LAYERS}
+  \end{tabular}
 \end{frame}
 
 % Slide 32: Conclusions
@@ -807,15 +669,18 @@
   \end{itemize}
 \end{frame}
 
-% % Slide 33: Future Work
-% \begin{frame}{Future Work}
-%   \begin{itemize}
-%     \item \textbf{Scaling Laws}: Investigating how chaotic dynamics scale with parameter count (e.g. from 1B to 70B+).
-%     \item \textbf{Architectural Influence}: Comparing encoder-only (bidirectional) vs. decoder-only (causal) and encoder-decoder systems.
-%     \item \textbf{Hyperparameter Space}: Assessing the roles of context window limits, activation functions, and normalization variants.
-%     \item \textbf{Reasoning Dynamics}: Detailed tracking of hidden states during Chain-of-Thought vs. direct generation.
-%   \end{itemize}
-% \end{frame}
+% Slide 36: Acknowledgements
+\begin{frame}{Acknowledgements}
+  \begin{itemize}
+    \item \textbf{Supervisors}: Special thanks to Dr. János Török and Kristóf Benedek for guidance.
+    \item \textbf{Funding}: Supported by the National Research, Development and Innovation Fund and the Ministry of Culture and Innovation of Hungary (TKP2021-NVA-02 or TKP2021-EGA-02).
+    \item \textbf{Compute}: Calculations performed on the HPC cluster of BME Department of Theoretical Physics.
+  \end{itemize}
+  \vfill
+  \centering
+  \textbf{Thank you for your attention!} \\
+  Questions?
+\end{frame}
 
 % Slide 34: Memory-Efficient Jacobian Spectral Norm
 \begin{frame}{Memory-Efficient Jacobian Spectral Norm}
@@ -839,25 +704,22 @@
       % \begin{itemize}
       %   \item Find $\lambda_{\max}(J^T J)$ without materializing $J$ or $J^T J$:
       % \end{itemize}
-      Initialize random unit vector $v \in \mathbb{R}^{N \times d}$.
+      random unit vector $v$.
 
       Iterate for $K$ steps:
 
-      textbf{JVP (Pushforward)}:
+      \textbf{JVP}:
         \begin{equation*}
           u = J v \quad \text{via} \quad \texttt{torch.func.jvp}
         \end{equation*}
 
-      VJP (Pullback):
+      \textbf{VJP}:
         \begin{equation*}
           w = J^T u \quad \text{via} \quad \texttt{torch.func.vjp}
         \end{equation*}
         (using reverse-mode autodiff)
 
       \textbf{Re-normalize}:
-        \begin{equation*}
-          v = \frac{w}{\|w\|_2}
-        \end{equation*}
 
       Output spectral norm:
           \begin{equation*}
@@ -868,10 +730,13 @@
 \end{frame}
 
 % Slide 35: The Correlation Dimension (Grassberger & Procaccia)
-\begin{frame}{The Correlation Dimension (Grassberger \& Procaccia)}
+\begin{frame}{Correlation Dimension (Grassberger \& Procaccia)}
+  \begin{equation*}
+        C(\epsilon) = \lim_{N_{\text{traj}} \to \infty} \frac{1}{N_{\text{traj}}(N_{\text{traj}}-1)} \sum_{i \ne j} \Theta(\epsilon - \|\mathbf{x}_i - \mathbf{x}_j\|_2)
+      \end{equation*}
   \begin{quote}
-    \small
-    ``We study the correlation exponent $\nu$ introduced recently as a characteristic measure of strange attractors which allows one to distinguish between deterministic chaos and random noise. The exponent $\nu$ is closely related to the fractal dimension and the information dimension, but its computation is considerably easier. Its usefulness in characterizing experimental data which stem from very high dimensional systems is stressed. Algorithms for extracting $\nu$ from the time series of a single variable are proposed. The relations between the various measures of strange attractors and between them and the Lyapunov exponents are discussed. It is shown that the conjecture of Kaplan and Yorke for the dimension gives an upper bound for $\nu$. Various examples of finite and infinite dimensional systems are treated, both numerically and analytically.''
+    \scriptsize
+    ``We study the correlation exponent $\nu$ introduced recently as a characteristic measure of strange attractors which allows one to distinguish between deterministic chaos and random noise. The exponent $\nu$ is closely related to the fractal dimension and the information dimension, but its computation is considerably easier. Its usefulness in characterizing experimental data which stem from very high dimensional systems is stressed.''
   \end{quote}
   
   \vfill
@@ -881,19 +746,6 @@
     \textbf{Measuring the Strangeness of Strange Attractors} \\
     \textit{Physica D: Nonlinear Phenomena}
   \end{flushright}
-\end{frame}
-
-% Slide 36: Acknowledgements
-\begin{frame}{Acknowledgements}
-  \begin{itemize}
-    \item \textbf{Supervisors}: Special thanks to Dr. János Török and Kristóf Benedek for guidance.
-    \item \textbf{Funding}: Supported by the National Research, Development and Innovation Fund and the Ministry of Culture and Innovation of Hungary (TKP2021-NVA-02 or TKP2021-EGA-02).
-    \item \textbf{Compute}: Calculations performed on the HPC cluster of BME Department of Theoretical Physics.
-  \end{itemize}
-  \vfill
-  \centering
-  \textbf{Thank you for your attention!} \\
-  Questions?
 \end{frame}
 
 \end{document}
