@@ -56,12 +56,24 @@
   {\small \textbf{BME} \\ 2026}
 \end{frame}
 
-% % Slide 2: Outline
-% \begin{frame}{Outline}
-%   \tableofcontents
-% \end{frame}
+% \section{Introduction and Motivation}
 
-%\section{Introduction and Motivation}
+% Slide 2: Introduction and Motivation
+\begin{frame}{Introduction and Motivation}
+  LLMs are highly non-linear systems. They are Deep Neural Networks trained on large amounts of data.
+  
+  \vspace{0.5cm}
+  
+  There is growing interest in interpretability and understanding the model's dynamics.
+  
+  \vspace{0.5cm}
+  
+  Reproducibility and determinism is important in order to do Reinforcement Learning on-policy. Quantifying sensitivity to perturbations and initial conditions is necessary.
+  
+  \vspace{0.5cm}
+  
+  They are an interesting case study for chaos theory.
+\end{frame}
 
 % Slide 3: LLMs as Dynamical Systems
 % \begin{frame}{LLMs as Dynamical Systems}
@@ -73,32 +85,32 @@
 %   \end{itemize}
 % \end{frame}
 
-% Slide 4: Interpretability: Mechanisms vs. Global Properties
-\begin{frame}{Interpretability: Mechanisms vs. Global Properties}
-  \begin{columns}
-    \begin{column}{0.5\textwidth}
-      \textbf{Mechanistic Interpretability}
-      \begin{itemize}
-        \item Bottom-up analysis.
-        \item Explains small-scale circuits, subnetworks, or attention patterns.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{Chaos-Theoretic Approach}
-      \begin{itemize}
-        \item Top-down analysis.
-        \item Quantifies global properties (stability, dimensionality, and attractor dynamics).
-      \end{itemize}
-    \end{column}
-  \end{columns}
-  \vspace{0.4cm}
-  \textbf{Key Challenges in LLM Chaos Analysis:}
-  \begin{itemize}
-    \item Discrete nature of tokens.
-    \item High-dimensionality of embedding spaces ($10^3$--$10^4$).
-    \item Defining trajectories and distances in semantic spaces.
-  \end{itemize}
-\end{frame}
+% % Slide 4: Interpretability: Mechanisms vs. Global Properties
+% \begin{frame}{Interpretability: Mechanisms vs. Global Properties}
+%   \begin{columns}
+%     \begin{column}{0.5\textwidth}
+%       \textbf{Mechanistic Interpretability}
+%       \begin{itemize}
+%         \item Bottom-up analysis.
+%         \item Explains small-scale circuits, subnetworks, or attention patterns.
+%       \end{itemize}
+%     \end{column}
+%     \begin{column}{0.5\textwidth}
+%       \textbf{Chaos-Theoretic Approach}
+%       \begin{itemize}
+%         \item Top-down analysis.
+%         \item Quantifies global properties (stability, dimensionality, and attractor dynamics).
+%       \end{itemize}
+%     \end{column}
+%   \end{columns}
+%   \vspace{0.4cm}
+%   \textbf{Key Challenges in LLM Chaos Analysis:}
+%   \begin{itemize}
+%     \item Discrete nature of tokens.
+%     \item High-dimensionality of embedding spaces ($10^3$--$10^4$).
+%     \item Defining trajectories and distances in semantic spaces.
+%   \end{itemize}
+% \end{frame}
 
 %\section{Preliminaries: Chaos \& LLMs}
 
@@ -716,60 +728,60 @@
   \end{columns}
 \end{frame}
 
-% Slide 29: Deterministic vs. Probabilistic Sampling
-\begin{frame}{Deterministic vs. Probabilistic Sampling}
-  \begin{columns}
-    \begin{column}{0.32\textwidth}
-      \textbf{Influence of Stochasticity ($T = 0.6$):}
-      \begin{itemize}
-        \item In first layers, deterministic and probabilistic curves match.
-        \item In the last layer, probabilistic sampling destroys the linear power-law region of the GP dimension curves.
-        \item Confirms that the structured deterministic attractor is an emergent property of the model's forward pass, collapsed under stochastic sampling.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.66\textwidth}
-      \centering
-      \includegraphics[width=0.49\textwidth]{plots/dimension/temperature06_childhood/cosine_sim_first_first_T06.png}
-      \includegraphics[width=0.49\textwidth]{plots/dimension/temperature06_childhood/cosine_sim_last_last_T06.png}
-      \\[0.1cm]
-      {\tiny Fig 16: GP dimension curves under probabilistic sampling ($T=0.6$) (first layer left, last layer right).}
-    \end{column}
-  \end{columns}
-\end{frame}
+% % Slide 29: Deterministic vs. Probabilistic Sampling
+% \begin{frame}{Deterministic vs. Probabilistic Sampling}
+%   \begin{columns}
+%     \begin{column}{0.32\textwidth}
+%       \textbf{Influence of Stochasticity ($T = 0.6$):}
+%       \begin{itemize}
+%         \item In first layers, deterministic and probabilistic curves match.
+%         \item In the last layer, probabilistic sampling destroys the linear power-law region of the GP dimension curves.
+%         \item Confirms that the structured deterministic attractor is an emergent property of the model's forward pass, collapsed under stochastic sampling.
+%       \end{itemize}
+%     \end{column}
+%     \begin{column}{0.66\textwidth}
+%       \centering
+%       \includegraphics[width=0.49\textwidth]{plots/dimension/temperature06_childhood/cosine_sim_first_first_T06.png}
+%       \includegraphics[width=0.49\textwidth]{plots/dimension/temperature06_childhood/cosine_sim_last_last_T06.png}
+%       \\[0.1cm]
+%       {\tiny Fig 16: GP dimension curves under probabilistic sampling ($T=0.6$) (first layer left, last layer right).}
+%     \end{column}
+%   \end{columns}
+% \end{frame}
 
-% Slide 30: Distance Matrices and Embeddings
-\begin{frame}{Distance Matrices and Embeddings}
-  \begin{columns}
-    \begin{column}{0.28\textwidth}
-      \textbf{Representational Differences:}
-      \begin{itemize}
-        \item Raw hidden states show very localized patterns (high frequency).
-        \item Sentence embeddings act as spatial pooling, smoothing local features and highlighting global semantic recurrence.
-        \item Fréchet and Cosine Distance do not capture diagonal lines in hidden state space but do in sentence embedding space.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.70\textwidth}
-      \centering
-      \includegraphics[width=0.32\textwidth]{plots/distance_matrix/hidden/hausdorff_traj0.png}
-      \includegraphics[width=0.32\textwidth]{plots/distance_matrix/hidden/dtw_fast_traj0.png}
-      \includegraphics[width=0.32\textwidth]{plots/distance_matrix/hidden/frechet_traj0.png} \\
-      \includegraphics[width=0.32\textwidth]{plots/distance_matrix/embed/hausdorff_traj0.png}
-      \includegraphics[width=0.32\textwidth]{plots/distance_matrix/embed/dtw_fast_traj0.png}
-      \includegraphics[width=0.32\textwidth]{plots/distance_matrix/embed/frechet_traj0.png}
-      \\[0.1cm]
-      {\tiny Fig 17: Distance matrices for hidden states (top) vs. text embeddings (bottom).}
-    \end{column}
-  \end{columns}
-\end{frame}
+% % Slide 30: Distance Matrices and Embeddings
+% \begin{frame}{Distance Matrices and Embeddings}
+%   \begin{columns}
+%     \begin{column}{0.28\textwidth}
+%       \textbf{Representational Differences:}
+%       \begin{itemize}
+%         \item Raw hidden states show very localized patterns (high frequency).
+%         \item Sentence embeddings act as spatial pooling, smoothing local features and highlighting global semantic recurrence.
+%         \item Fréchet and Cosine Distance do not capture diagonal lines in hidden state space but do in sentence embedding space.
+%       \end{itemize}
+%     \end{column}
+%     \begin{column}{0.70\textwidth}
+%       \centering
+%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/hidden/hausdorff_traj0.png}
+%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/hidden/dtw_fast_traj0.png}
+%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/hidden/frechet_traj0.png} \\
+%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/embed/hausdorff_traj0.png}
+%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/embed/dtw_fast_traj0.png}
+%       \includegraphics[width=0.32\textwidth]{plots/distance_matrix/embed/frechet_traj0.png}
+%       \\[0.1cm]
+%       {\tiny Fig 17: Distance matrices for hidden states (top) vs. text embeddings (bottom).}
+%     \end{column}
+%   \end{columns}
+% \end{frame}
 
 %\section{Demonstration and Screenshots}
 
-% Slide 31: Full-Screen Screenshot Placeholder
-\begin{frame}[plain]
-  \begin{center}
-    \includegraphics[width=\paperwidth,height=\paperheight,keepaspectratio]{screenshot1.png}
-  \end{center}
-\end{frame}
+% % Slide 31: Full-Screen Screenshot Placeholder
+% \begin{frame}[plain]
+%   \begin{center}
+%     \includegraphics[width=\paperwidth,height=\paperheight,keepaspectratio]{screenshot1.png}
+%   \end{center}
+% \end{frame}
 
 %\section{Conclusions and Future Work}
 
@@ -783,15 +795,27 @@
   \end{itemize}
 \end{frame}
 
-% Slide 33: Future Work
-\begin{frame}{Future Work}
+% Slide 32: Conclusions
+\begin{frame}{Conclusions}
   \begin{itemize}
-    \item \textbf{Scaling Laws}: Investigating how chaotic dynamics scale with parameter count (e.g. from 1B to 70B+).
-    \item \textbf{Architectural Influence}: Comparing encoder-only (bidirectional) vs. decoder-only (causal) and encoder-decoder systems.
-    \item \textbf{Hyperparameter Space}: Assessing the roles of context window limits, activation functions, and normalization variants.
-    \item \textbf{Reasoning Dynamics}: Detailed tracking of hidden states during Chain-of-Thought vs. direct generation.
+    \item LLMs exhibit chaotic behavior especially in the last layers: Sensitivity to initial conditions and bounded dynamics
+    \item Correlation dimension indicates deterministic chaos.
+    \item Recurrence Plots and RQA suggest similarity to other chaotic systems.
+    \item Identified stretching components (MLP expansion, Attention) balanced by folding components (normalization and residual connections).
+    \item Derived and validated a closed-form Mean-Field approximation of MLP stretching.
+    
   \end{itemize}
 \end{frame}
+
+% % Slide 33: Future Work
+% \begin{frame}{Future Work}
+%   \begin{itemize}
+%     \item \textbf{Scaling Laws}: Investigating how chaotic dynamics scale with parameter count (e.g. from 1B to 70B+).
+%     \item \textbf{Architectural Influence}: Comparing encoder-only (bidirectional) vs. decoder-only (causal) and encoder-decoder systems.
+%     \item \textbf{Hyperparameter Space}: Assessing the roles of context window limits, activation functions, and normalization variants.
+%     \item \textbf{Reasoning Dynamics}: Detailed tracking of hidden states during Chain-of-Thought vs. direct generation.
+%   \end{itemize}
+% \end{frame}
 
 % Slide 34: Memory-Efficient Jacobian Spectral Norm
 \begin{frame}{Memory-Efficient Jacobian Spectral Norm}
