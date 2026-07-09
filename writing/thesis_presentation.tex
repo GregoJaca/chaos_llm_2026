@@ -1,4 +1,6 @@
-\documentclass[10pt]{beamer}
+\documentclass[10pt,aspectratio=169]{beamer}
+\usepackage{pgfpages}
+\pgfpagesuselayout{resize to}[physical paper width=13.333in, physical paper height=7.5in]
 \usetheme{metropolis}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -67,22 +69,22 @@
 
 % \section{Introduction and Motivation}
 
-% Slide 2: Introduction and Motivation
-\begin{frame}{Introduction and Motivation}
-  LLMs are highly non-linear systems. They are Deep Neural Networks trained on large amounts of data.
+% % Slide 2: Introduction and Motivation
+% \begin{frame}{Introduction and Motivation}
+%   LLMs are highly non-linear systems. They are Deep Neural Networks trained on large amounts of data.
   
-  \vspace{0.5cm}
+%   \vspace{0.5cm}
   
-  There is growing interest in interpretability and understanding the model's dynamics.
+%   There is growing interest in interpretability and understanding the model's dynamics.
   
-  \vspace{0.5cm}
+%   \vspace{0.5cm}
   
-  Reproducibility and determinism is important in order to do Reinforcement Learning on-policy. Quantifying sensitivity to perturbations and initial conditions is necessary.
+%   Reproducibility and determinism is important in order to do Reinforcement Learning on-policy. Quantifying sensitivity to perturbations and initial conditions is necessary.
   
-  \vspace{0.5cm}
+%   \vspace{0.5cm}
   
-  They are an interesting case study for chaos theory.
-\end{frame}
+%   They are an interesting case study for chaos theory.
+% \end{frame}
 
 
 
@@ -107,37 +109,6 @@
     \item Dissipative systems converge to a bounded \textbf{strange attractor}.
     \item Stretching (stretching trajectories) + Folding (confinement to bounds) creates a fractal attractor structure of non-integer correlation dimension $D_2$.
   \end{itemize}
-\end{frame}
-
-% Slide 6: Recurrence Plots
-\begin{frame}{Recurrence Plots}
-  \begin{columns}
-    \begin{column}{0.35\textwidth}
-      % \textbf{Mathematical Formulation:}
-      \begin{equation*}
-        R_{i,j}(\epsilon) = \Theta(\epsilon - d(\mathbf{x}_i, \mathbf{x}_j))
-      \end{equation*}
-      \begin{itemize}
-        \item $\epsilon$: recurrence threshold.
-        \item $\Theta$: Heaviside step function.
-      \end{itemize}
-      \textbf{Qualitative Types:}
-      \begin{itemize}
-        \item Periodic: Long parallel diagonals.
-        \item Random: Uniform noise.
-        \item Chaotic: Interrupted diagonals.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.63\textwidth}
-      \centering
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/compare_systems/sine_rp.pdf}
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/compare_systems/lorenz_36_rp.pdf} \\
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/compare_systems/white_noise_rp.pdf}
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/compare_systems/brownian_rp_0.pdf}
-      \\[0.1cm]
-      {\tiny Fig 1: Recurrence plots of (a) periodic, (b) chaotic Lorenz, (c) white noise, (d) Brownian motion.}
-    \end{column}
-  \end{columns}
 \end{frame}
 
 
@@ -171,102 +142,56 @@
 
 
 % Slide 10: Dimensionality & Power Iteration
-\begin{frame}{Dimensionality \& Jacobian Power Iteration}
+\begin{frame}{Dimensionality \& Jacobian Analysis}
   \textbf{Correlation Dimension ($D_2$) Estimation:}
   \begin{itemize}
     \item Derived from correlation integral $C(\epsilon) \sim \epsilon^{D_2}$:
       \begin{equation*}
         C(\epsilon) = \lim_{N_{\text{traj}} \to \infty} \frac{1}{N_{\text{traj}}(N_{\text{traj}}-1)} \sum_{i \ne j} \Theta(\epsilon - \|\mathbf{x}_i - \mathbf{x}_j\|_2)
       \end{equation*}
+    \item Allows one to distinguish between deterministic chaos and random noise
   \end{itemize}
-  
-  \textbf{Attention Jacobian Power Iteration:}
-  \begin{itemize}
-    \item Dense Attention Jacobian $\mathbf{J}_{\text{Attn}} \in \mathbb{R}^{(Nd) \times (Nd)}$ is memory-prohibitive.
-    \item Spectral Norm $\|\mathbf{J}_{\text{Attn}}\|_2$ computed via JVP/VJP Power Iteration:
-      \begin{align*}
-        \mathbf{u}_k &= \mathbf{J}_{\text{Attn}} \mathbf{v}_k = \texttt{jvp}(\text{Attn}, \mathbf{X}, \mathbf{v}_k) \\
-        \mathbf{w}_k &= \mathbf{J}_{\text{Attn}}^T \mathbf{u}_k = \texttt{vjp}(\text{Attn}, \mathbf{X}, \mathbf{u}_k)
-      \end{align*}
-    \item Rayleigh quotient update: $\sigma_{\max}(\mathbf{J}_{\text{Attn}}) \approx \sqrt{\frac{\langle \mathbf{w}_k, \mathbf{v}_k \rangle}{\langle \mathbf{v}_k, \mathbf{v}_k \rangle}}$
-  \end{itemize}
-\end{frame}
 
-% Slide 10A: Perturbation Propagation and Operator Jacobians
-\begin{frame}{Perturbation Propagation and Operator Jacobians}
   \textbf{Linearized Perturbation Propagation:}
-  For a small input perturbation $\bm{\delta}_0$, the output perturbation after an operator $f(\mathbf{x})$ is governed by the local Jacobian matrix $\mathbf{J}_f(\mathbf{x}) = \frac{\partial f(\mathbf{x})}{\partial \mathbf{x}}$:
+  An input perturbation $\bm{\delta}_0$, propagates depending on the local Jacobian matrix $\mathbf{J}_f(\mathbf{x}) = \frac{\partial f(\mathbf{x})}{\partial \mathbf{x}}$:
   \begin{equation*}
     \bm{\delta}_1 = f(\mathbf{x} + \bm{\delta}_0) - f(\mathbf{x}) \approx \mathbf{J}_f(\mathbf{x}) \bm{\delta}_0
   \end{equation*}
   
-  \vspace{0.3cm}
-  
-  \textbf{Operator-Specific Jacobian Dynamics:}
-  \begin{itemize}
-    \item \textbf{Self-Attention ($\mathbf{J}_{\text{Attn}}$)}: Spatially couples tokens, routing and spreading the perturbation across the sequence dimension.
-    \item \textbf{MLP Block ($\mathbf{J}_{\text{MLP}}$)}: Operates token-wise; high-dimensional expansion causes isotropic amplification (stretching, typically $\|\mathbf{J}_{\text{MLP}}\|_2 > 1$).
-    \item \textbf{Normalization ($\mathbf{J}_{\text{Norm}}$)}: Rescales activations to a constant radial bound, acting as a contracting projection (folding component).
-  \end{itemize}
+  % \textbf{Attention Jacobian Power Iteration:}
+  % \begin{itemize}
+  %   \item Dense Attention Jacobian $\mathbf{J}_{\text{Attn}} \in \mathbb{R}^{(Nd) \times (Nd)}$ is memory-prohibitive.
+  %   \item Spectral Norm $\|\mathbf{J}_{\text{Attn}}\|_2$ computed via JVP/VJP Power Iteration:
+  %     \begin{align*}
+  %       \mathbf{u}_k &= \mathbf{J}_{\text{Attn}} \mathbf{v}_k = \texttt{jvp}(\text{Attn}, \mathbf{X}, \mathbf{v}_k) \\
+  %       \mathbf{w}_k &= \mathbf{J}_{\text{Attn}}^T \mathbf{u}_k = \texttt{vjp}(\text{Attn}, \mathbf{X}, \mathbf{u}_k)
+  %     \end{align*}
+  %   \item Rayleigh quotient update: $\sigma_{\max}(\mathbf{J}_{\text{Attn}}) \approx \sqrt{\frac{\langle \mathbf{w}_k, \mathbf{v}_k \rangle}{\langle \mathbf{v}_k, \mathbf{v}_k \rangle}}$
+  % \end{itemize}
 \end{frame}
+
+% % Slide 10A: Perturbation Propagation and Operator Jacobians
+% \begin{frame}{Perturbation Propagation and Operator Jacobians}
+%   \textbf{Linearized Perturbation Propagation:}
+%   For a small input perturbation $\bm{\delta}_0$, the output perturbation after an operator $f(\mathbf{x})$ is governed by the local Jacobian matrix $\mathbf{J}_f(\mathbf{x}) = \frac{\partial f(\mathbf{x})}{\partial \mathbf{x}}$:
+%   \begin{equation*}
+%     \bm{\delta}_1 = f(\mathbf{x} + \bm{\delta}_0) - f(\mathbf{x}) \approx \mathbf{J}_f(\mathbf{x}) \bm{\delta}_0
+%   \end{equation*}
+  
+%   \vspace{0.3cm}
+  
+%   \textbf{Operator-Specific Jacobian Dynamics:}
+%   \begin{itemize}
+%     \item \textbf{Self-Attention ($\mathbf{J}_{\text{Attn}}$)}: Spatially couples tokens, routing and spreading the perturbation across the sequence dimension.
+%     \item \textbf{MLP Block ($\mathbf{J}_{\text{MLP}}$)}: Operates token-wise; high-dimensional expansion causes isotropic amplification (stretching, typically $\|\mathbf{J}_{\text{MLP}}\|_2 > 1$).
+%     \item \textbf{Normalization ($\mathbf{J}_{\text{Norm}}$)}: Rescales activations to a constant radial bound, acting as a contracting projection (folding component).
+%   \end{itemize}
+% \end{frame}
 
 %\section{Results: Perturbation Propagation (Layers)}
 
-% Slide 12: MLP Static Weights
-\begin{frame}{MLP Static Weights}
-  \begin{columns}
-    \begin{column}{0.32\textwidth}
-      \textbf{SwiGLU MLP:}
-      $$ \text{MLP}(\mathbf{x}) = W_{\text{down}} \left( \text{SiLU}(W_{\text{gate}} \mathbf{x}) \odot (W_{\text{up}} \mathbf{x}) \right) $$
 
-      \vspace{0.15cm}
 
-      \textbf{Scaled Frobenius Norms:}
-      $$ \tilde{F}_{\text{gate}} = \frac{\|W_{\text{gate}}\|_F^2}{d}, \quad \tilde{F}_{\text{up}} = \frac{\|W_{\text{up}}\|_F^2}{d} $$
-
-      \vspace{0.15cm}
-
-      \begin{itemize}
-        \item Norms are $>1$ at all layers.
-        \item Indicates baseline capacity to expand perturbations.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.66\textwidth}
-      \centering
-      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-      \\[0.1cm]
-      {\tiny Fig 2: Scaled Frobenius norms of MLP static weights (DeepSeek).}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% Slide 13: MLP Activation Densities
-\begin{frame}{MLP Activation Densities}
-  \begin{columns}
-    \begin{column}{0.32\textwidth}
-      \textbf{Gate Activation Density:}
-      $$ \overline{s_x^2} = \frac{\|\text{SiLU}(W_{\text{gate}} \mathbf{x})\|_2^2}{d_{\text{ff}}} $$
-
-      \vspace{0.15cm}
-
-      \textbf{Derivative Density:}
-      $$ \overline{d_x^2} = \frac{\|(W_{\text{up}} \mathbf{x}) \odot \text{SiLU}'(W_{\text{gate}} \mathbf{x})\|_2^2}{d_{\text{ff}}} $$
-
-      \vspace{0.15cm}
-
-      \begin{itemize}
-        \item Drives dynamic Jacobian stretching.
-        \item Grows significantly in deeper layers.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.66\textwidth}
-      \centering
-      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_MLP/activation_densities_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
-      \\[0.1cm]
-      {\tiny Fig 3: Dynamic activation densities across layers (DeepSeek).}
-    \end{column}
-  \end{columns}
-\end{frame}
 
 % Slide 14: MLP Jacobian Norm and Isotropic Expansion
 \begin{frame}{MLP Jacobian Norm and Isotropic Expansion}
@@ -318,24 +243,7 @@
   \end{itemize}
 \end{frame}
 
-% Slide 16A: MFT Assumption Validation
-\begin{frame}{MFT Assumption Validation}
-  \begin{columns}
-    \begin{column}{0.30\textwidth}
-      \textbf{Assumption Validation:}
-      \begin{itemize}
-        \item Diagonal dominance ($R \approx 1$) and Uniformity ($CV \ll 1$) are well-satisfied, showing slight discrepancies only in the last layers.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.68\textwidth}
-      \centering
-      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption1_jacobian_base_All_Prompts_Aggregated_aggregated.png}
-      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption2_jacobian_base_All_Prompts_Aggregated_aggregated.png}
-      \\[0.1cm]
-      {\tiny Fig 5a: MFT assumptions: diagonal dominance (left) and uniformity (right).}
-    \end{column}
-  \end{columns}
-\end{frame}
+
 
 % Slide 16B: MFT Prediction Verification
 \begin{frame}{MFT Prediction Verification}
@@ -364,7 +272,7 @@
 % Slide 17: Attention Static Weights
 \begin{frame}{Attention Static Weights}
   \begin{columns}
-    \begin{column}{0.32\textwidth}
+    \begin{column}{0.38\textwidth}
       \textbf{Routing Matrix ($W_{QK}$):}
       $$W_{QK} = \frac{1}{\sqrt{d_k}} W_Q W_K^T$$
 
@@ -376,11 +284,11 @@
       \vspace{0.15cm}
 
       \begin{itemize}
-        \item Routing and mixing norms are consistently $> 1$ at all layers.
+        \item Norms are consistently $> 1$ at all layers.
         \item Confirms capacity to stretch perturbations.
       \end{itemize}
     \end{column}
-    \begin{column}{0.66\textwidth}
+    \begin{column}{0.60\textwidth}
       \centering
       \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_attn/attn_static_weights_jacobian_base_aggregated_harmonic_xscale-linear_yscale-log.png}
       \\[0.1cm]
@@ -390,27 +298,27 @@
 \end{frame}
 
 % Slide 18: Attention Mixing and Routing
-\begin{frame}{Attention Mixing and Routing}
+\begin{frame}{Attention Jacobian}
   \textbf{Self-Attention Output Formulation:}
   \begin{equation*}
     \mathbf{Y} = \mathbf{A} \mathbf{X} W_V W_O, \quad \delta \mathbf{Y} = \underbrace{(\delta \mathbf{A}) \mathbf{X} W_V W_O}_{\text{Nonlinear Routing}} + \underbrace{\mathbf{A} (\delta \mathbf{X}) W_V W_O}_{\text{Static Linear Mixing}}
   \end{equation*}
 
-  \textbf{Static Linear Mixing Bounds:}
+  \textbf{Linear Term:}
   \begin{equation*}
     \left\| (\mathbf{A} \delta \mathbf{V})_i \right\|_2 \le \max_j \|\delta \mathbf{v}_j\|_2 \le \left(\max_j \|\delta \mathbf{x}_j\|_2\right) \left\| W_V W_O \right\|_2
   \end{equation*}
   \begin{itemize}
-    \item Softmax row-stochasticity ($\sum_j A_{i,j}=1$) ensures linear mixing itself cannot autonomously amplify the perturbation.
+    \item Softmax row-stochasticity ($\sum_j A_{i,j}=1$) ensures linear term cannot autonomously amplify the perturbation.
   \end{itemize}
 
-  \textbf{Nonlinear Routing Bounds:}
+  \textbf{Nonlinear term:}
   \begin{equation*}
     \left\| \delta \mathbf{Y}_{\text{route}} \right\|_2 \le \frac{\|\mathbf{X}\|_2^2}{\sqrt{d_k}} \|\delta \mathbf{X}\|_2 \left\|W_V W_O\right\|_2 \left\|W_Q W_K^T\right\|_2
   \end{equation*}
   \begin{itemize}
     \item Bilinear coupling: stretching scales quadratically with sequence norm $\|\mathbf{X}\|_2$.
-    \item Max softmax sensitivity bound $\|\mathbf{J}_{\text{sm}}(\mathbf{A})\|_2 \le 0.5$ (Popoviciu's inequality).
+    % \item Max softmax sensitivity bound $\|\mathbf{J}_{\text{sm}}(\mathbf{A})\|_2 \le 0.5$ (Popoviciu's inequality).
   \end{itemize}
 \end{frame}
 
@@ -455,12 +363,13 @@
     \mathbf{J}_{\text{res}} = \mathbf{I} + \mathbf{J}_F
   \end{equation*}
   \begin{itemize}
-    \item Shifts eigenvalues of the sub-block Jacobian ($\lambda_i \to 1+\lambda_i$).
-    \item Preserves the radial components annihilated by $\mathbf{P}_{\perp}$.
+    % \item Shifts eigenvalues of the sub-block Jacobian ($\lambda_i \to 1+\lambda_i$).
+    \item Preserves the radial components eliminated by $\mathbf{P}_{\perp}$.
     \item Interplay: Normalization folding + Attention/MLP stretching keeps the residual stream bounded but chaotic.
   \end{itemize}
 \end{frame}
 
+% 
 % Slide 21: Finite Size Perturbation Propagation
 \begin{frame}{Finite Size Perturbation Propagation}
   \begin{columns}
@@ -491,11 +400,8 @@
         \log \|\delta \mathbf{x}_\ell\|_2 \approx \log A(\ell) + 1 \cdot \log r
       \end{equation*}
       \begin{itemize}
-        \item Exponents close to 1 ($0.993$ and $0.986$) confirm tangent map linearity for medium perturbations.
-      \end{itemize}
-      
-      \textbf{Numerical Precision Floor:}
-      \begin{itemize}
+        \item Exponents close to 1 indicate linearized regime.
+        \item Total layer Jacobian most active in the first and last layers
         \item At small perturbation radii, scaling breaks due to FP16 quantization limit:
           \begin{equation*}
             \Delta x = 2^{-11} \approx 4.88 \times 10^{-4}
@@ -504,8 +410,8 @@
     \end{column}
     \begin{column}{0.68\textwidth}
       \centering
-      \includegraphics[width=0.8\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png} \\
-      \includegraphics[width=0.8\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
+      \includegraphics[width=0.5\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_scaling_rainbow_median_xscale-log_yscale-log.png} \\
+      \includegraphics[width=0.5\textwidth]{plots_new/deepseek/perturbations/single_token_perturb_all_All_Prompts_Aggregated_aggregated_extracted_jacobians_together_harmonic_xscale-linear_yscale-log.png}
       \\[0.1cm]
       {\tiny Fig 9: Exponent scaling and linearized perturbation gain (DeepSeek).}
     \end{column}
@@ -566,96 +472,9 @@
 
 %\section{Results: Recurrence and Dimensionality}
 
-% Slide 26: Recurrence Plots: Layer Comparison
-\begin{frame}{Recurrence Plots: Layer Comparison}
-  \begin{columns}
-    \begin{column}{0.30\textwidth}
-      \textbf{Layer Differences:}
-      \begin{itemize}
-        \item RPs generated at fixed recurrence rate $\text{RR}=0.03$.
-        \item First Layer: Lacks coherent structures (shows embedding patterns).
-        \item Last Layer: Clear diagonal line structures emerge.
-      \end{itemize}
-      \textbf{Significance:}
-      \begin{itemize}
-        \item Fragmented diagonals reveal nearby trajectories remaining close for short intervals before separating.
-        \item Classic signature of chaotic attractor dynamics.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.68\textwidth}
-      \centering
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_first_rr_0.03.pdf}
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/compare_first_last/interstellar_propulsion_review_recurrence_last_rr_0.03.pdf} \\
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_first_rr_0.03.pdf}
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/compare_first_last/quantum_consciousness_hallucination_recurrence_last_rr_0.03.pdf}
-      \\[0.1cm]
-      {\tiny Fig 13: Recurrence plots of first vs. last layer.}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% Slide 27: Recurrence Plots: Semantic Features
-\begin{frame}{Recurrence Plots: Semantic Features}
-  \begin{columns}
-    \begin{column}{0.30\textwidth}
-      \textbf{Semantic Signatures in RPs:}
-      \begin{itemize}
-        \item \textbf{Chain-of-Thought Block}: Identified as a dark block at bottom left, indicating a stable "reasoning state".
-        \item \textbf{Templates/Lists}: Quasi-periodic grid-like patterns indicate repetitive output structure.
-        \item \textbf{Edge of Chaos}: Short interrupted diagonals correspond to chaotic transitions.
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.68\textwidth}
-      \centering
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/examples_llm/recurrence_traj_2_rr_0.05.pdf}
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/examples_llm/recurrence_traj_3_rr_0.05.pdf} \\
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/examples_llm/recurrence_traj_0_rr_0.05.pdf}
-      \includegraphics[width=0.48\textwidth]{figures_pdf/RP/examples_llm/recurrence_traj_6_rr_0.05.pdf}
-      \\[0.1cm]
-      {\tiny Fig 14: Last-layer RPs for different prompts (RR=0.05).}
-    \end{column}
-  \end{columns}
-\end{frame}
 
 
-% Slide 28A: Correlation Dimension
-\begin{frame}{Correlation Dimension}
-  % The Correlation Dimension $D_2$ is defined via the correlation sum $C(\epsilon)$:
-  \begin{equation*}
-    C(\epsilon) = \frac{1}{N(N-1)} \sum_{i \ne j} \Theta(\epsilon - \|\mathbf{x}_i - \mathbf{x}_j\|_2) % \quad \implies \quad C(\epsilon) \propto \epsilon^{D_2} \quad \text{as } \epsilon \to 0
-  \end{equation*}
 
-  Correlation dimension allows one to distinguish between deterministic chaos and random noise
-
-  Not enough datapoints to compute exact dimension.
-
-  
-  
-  \vspace{0.3cm}
-  
-  \centering
-  \begin{tabular}{ccc}
-    \includegraphics[width=0.31\textwidth]{plots/dimension/random.png} &
-    \includegraphics[width=0.31\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first.png} &
-    \includegraphics[width=0.31\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last.png} \\
-    \small{RANDOM} & \small{FIRST LAYER} & \small{LAST LAYERS}
-  \end{tabular}
-\end{frame}
-
-% Slide 28B: Distance Distribution
-\begin{frame}{Distance Distribution}
-  The internal states at the first layers resemble a set of random vectors.
-  
-  \vspace{0.5cm}
-  
-  \centering
-  \begin{tabular}{ccc}
-    \includegraphics[width=0.31\textwidth]{plots/dimension/random_dist.png} &
-    \includegraphics[width=0.31\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_first_first_dist.png} &
-    \includegraphics[width=0.31\textwidth]{plots/dimension/childhood_personality_development/cosine_sim_last_last_dist.png} \\
-    \small\textbf{RANDOM} & \small\textbf{FIRST LAYER} & \small\textbf{LAST LAYERS}
-  \end{tabular}
-\end{frame}
 
 % Slide 32: Conclusions
 \begin{frame}{Conclusions}
@@ -747,5 +566,92 @@
     \textit{Physica D: Nonlinear Phenomena}
   \end{flushright}
 \end{frame}
+
+
+
+
+% Slide 16A: MFT Assumption Validation
+\begin{frame}{MFT Assumption Validation}
+  \begin{columns}
+    \begin{column}{0.30\textwidth}
+      \textbf{Assumption Validation:}
+      \begin{itemize}
+        \item Diagonal dominance ($R \approx 1$) and Uniformity ($CV \ll 1$) are well-satisfied, showing slight discrepancies only in the last layers.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.68\textwidth}
+      \centering
+      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption1_jacobian_base_All_Prompts_Aggregated_aggregated.png}
+      \includegraphics[width=0.48\textwidth]{plots_new/deepseek/mft-check/mft_validation_plot_assumption2_jacobian_base_All_Prompts_Aggregated_aggregated.png}
+      \\[0.1cm]
+      {\tiny Fig 5a: MFT assumptions: diagonal dominance (left) and uniformity (right).}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+
+
+
+% Slide 13: MLP Activation Densities
+\begin{frame}{MLP Activation Densities}
+  \begin{columns}
+    \begin{column}{0.32\textwidth}
+      \textbf{Gate Activation Density:}
+      $$ \overline{s_x^2} = \frac{\|\text{SiLU}(W_{\text{gate}} \mathbf{x})\|_2^2}{d_{\text{ff}}} $$
+
+      \vspace{0.15cm}
+
+      \textbf{Derivative Density:}
+      $$ \overline{d_x^2} = \frac{\|(W_{\text{up}} \mathbf{x}) \odot \text{SiLU}'(W_{\text{gate}} \mathbf{x})\|_2^2}{d_{\text{ff}}} $$
+
+      \vspace{0.15cm}
+
+      \begin{itemize}
+        \item Drives dynamic Jacobian stretching.
+        \item Grows significantly in deeper layers.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.66\textwidth}
+      \centering
+      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_MLP/activation_densities_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+      \\[0.1cm]
+      {\tiny Fig 3: Dynamic activation densities across layers (DeepSeek).}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+
+
+% Slide 12: MLP Static Weights
+\begin{frame}{MLP Static Weights}
+  \begin{columns}
+    \begin{column}{0.32\textwidth}
+      \textbf{SwiGLU MLP:}
+      $$ \text{MLP}(\mathbf{x}) = W_{\text{down}} \left( \text{SiLU}(W_{\text{gate}} \mathbf{x}) \odot (W_{\text{up}} \mathbf{x}) \right) $$
+
+      \vspace{0.15cm}
+
+      \textbf{Scaled Frobenius Norms:}
+      $$ \tilde{F}_{\text{gate}} = \frac{\|W_{\text{gate}}\|_F^2}{d}, \quad \tilde{F}_{\text{up}} = \frac{\|W_{\text{up}}\|_F^2}{d} $$
+
+      \vspace{0.15cm}
+
+      \begin{itemize}
+        \item Norms are $>1$ at all layers.
+        \item Indicates baseline capacity to expand perturbations.
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.66\textwidth}
+      \centering
+      \includegraphics[width=0.99\textwidth]{plots_new/deepseek/jacobians_MLP/scaled_frobenius_jacobian_base_All_Prompts_Aggregated_aggregated_harmonic_xscale-linear_yscale-log.png}
+      \\[0.1cm]
+      {\tiny Fig 2: Scaled Frobenius norms of MLP static weights (DeepSeek).}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
 
 \end{document}
