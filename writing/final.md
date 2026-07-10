@@ -82,16 +82,15 @@ spin 1   pauli matrices are rank 2 (even though they are 3x3)
 
 
 
-you say that time is a classical parameter in non relativistic quantum mechanics, but there is the Heisenberg uncertainty relation between time and energy, no?
-
-what is the dispersion relation for sound waves
-are phonons like sound waves? I know phonons are modes of lattice vibrations, but maybe phonons have different dispersion relation
-
-blackbody radiation. do the classical derivation (which is wrong) more in detail. few words. use equations math and physics formulas. math is the language. you said that each quadratic DOF carries k_B T, also how is DOS derived. are the standing wave modes quantized?
-
-Compton effect can be done very simply using 4 vectors and relativity (insetad of doing a tedious more manual derivation). Is there a simpler derivation for Rutherford scattering. the one you show is a bit tedious. the quantum Born derivation was also kind of hard. I knew about the Born approximation for scattering, but derivation was tedious.
 
 
+
+solution to tight bind?
+bloch ?
+
+
+
+what is Heisenberg's uncertainty relation for two operators A, B
 
 
 
@@ -139,6 +138,14 @@ equipartition theorem, does each DOF have k_B T or k_B T /2 energy? then explain
 is 01 + 10 a singlet state? I though singlet was 01 - 10 ??
 In my notes I wrote that using the bell observables (-Z-X)/sqrt(2) and (-Z+X)/sqrrt(2) you can get perfect correlation or anticorrelation in every direction (you can create the correlation matrix), which is not possible classically.explain
 
+you say that time is a classical parameter in non relativistic quantum mechanics, but there is the Heisenberg uncertainty relation between time and energy, no?
+
+what is the dispersion relation for sound waves
+are phonons like sound waves? I know phonons are modes of lattice vibrations, but maybe phonons have different dispersion relation
+
+blackbody radiation. do the classical derivation (which is wrong) more in detail. few words. use equations math and physics formulas. math is the language. you said that each quadratic DOF carries k_B T, also how is DOS derived. are the standing wave modes quantized?
+
+Compton effect can be done very simply using 4 vectors and relativity (insetad of doing a tedious more manual derivation). Is there a simpler derivation for Rutherford scattering. the one you show is a bit tedious. the quantum Born derivation was also kind of hard. I knew about the Born approximation for scattering, but derivation was tedious.
 
 
 Principles:
@@ -161,19 +168,7 @@ also it's great when we have two different models (which are approximations), wh
 
 
 
-
-
-
-
-
-
-
-
-
-
-in the atomic chain, the kappa used for the hoke's law is different from the k wave vector
-
-
+in the atomic chain, the kappa used for the hoke's law is different from the k wave vector!
 
 
 
