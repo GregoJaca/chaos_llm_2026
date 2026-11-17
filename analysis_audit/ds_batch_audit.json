@@ -1,0 +1,32 @@
+{
+  "torch.bfloat16": {
+    "batch1_repeat_identical": true,
+    "batch16_vs_batch1_first": [
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "batch16_rows_vs_row0": [
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  },
+  "torch.float16": {
+    "batch1_repeat_identical": true,
+    "batch16_vs_batch1_first": [
+      -1,
+      -1,
+      -1,
+      -1
+    ],
+    "batch16_rows_vs_row0": [
+      -1,
+      -1,
+      -1,
+      -1
+    ]
+  }
+}

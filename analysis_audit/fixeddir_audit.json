@@ -1,0 +1,117 @@
+{
+  "50": {
+    "window": 50,
+    "radii": [
+      5e-05,
+      0.0002,
+      0.0004,
+      0.0006,
+      0.0008
+    ],
+    "n_dirs": 100,
+    "n_never": 100,
+    "n_constant": 0,
+    "n_variable": 0,
+    "frac_never": 1.0,
+    "frac_constant": 0.0,
+    "modal_T": []
+  },
+  "100": {
+    "window": 100,
+    "radii": [
+      5e-05,
+      0.0002,
+      0.0004,
+      0.0006,
+      0.0008
+    ],
+    "n_dirs": 100,
+    "n_never": 0,
+    "n_constant": 40,
+    "n_variable": 60,
+    "frac_never": 0.0,
+    "frac_constant": 0.4,
+    "modal_T": [
+      [
+        123,
+        84
+      ],
+      [
+        -1,
+        16
+      ]
+    ]
+  },
+  "200": {
+    "window": 200,
+    "radii": [
+      5e-05,
+      0.0002,
+      0.0004,
+      0.0006,
+      0.0008
+    ],
+    "n_dirs": 100,
+    "n_never": 8,
+    "n_constant": 0,
+    "n_variable": 92,
+    "frac_never": 0.08,
+    "frac_constant": 0.0,
+    "modal_T": [
+      [
+        -1,
+        63
+      ],
+      [
+        55,
+        20
+      ],
+      [
+        44,
+        7
+      ],
+      [
+        216,
+        2
+      ]
+    ]
+  },
+  "500": {
+    "window": 500,
+    "radii": [
+      5e-05,
+      0.0002,
+      0.0004,
+      0.0006,
+      0.0008
+    ],
+    "n_dirs": 100,
+    "n_never": 1,
+    "n_constant": 0,
+    "n_variable": 99,
+    "frac_never": 0.01,
+    "frac_constant": 0.0,
+    "modal_T": [
+      [
+        220,
+        33
+      ],
+      [
+        55,
+        20
+      ],
+      [
+        -1,
+        20
+      ],
+      [
+        165,
+        13
+      ],
+      [
+        44,
+        7
+      ]
+    ]
+  }
+}

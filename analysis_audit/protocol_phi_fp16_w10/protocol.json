@@ -1,0 +1,35 @@
+{
+  "model": "/u0/grego/LLM/models--microsoft--Phi-4-mini-instruct",
+  "model_path": "/u0/grego/LLM/models--microsoft--Phi-4-mini-instruct/snapshots/cfbefacb99257ffa30c83adab238a50856ac3083",
+  "dtype": "float16",
+  "attn": "sdpa",
+  "window": 10,
+  "max_new_tokens": 120,
+  "batch_size": 4,
+  "num_directions": 2,
+  "magnitudes": [
+    0.0,
+    5e-06
+  ],
+  "seed": 69,
+  "prompt": "Provide a comprehensive technical review of current and proposed propulsion systems for interstellar travel. Compare chemical rockets, nuclear propulsion, laser sails, antimatter drives, and other theoretical concepts in terms of energy requirements, achievable speeds, technological feasibility, and projected timelines for development. Include discussion of major projects in the history of the field.",
+  "prompt_len": 64,
+  "hidden_dim": 3072,
+  "torch": "2.5.1+cu121",
+  "transformers": "4.50.0",
+  "cuda": "12.1",
+  "gpu": "Tesla T4",
+  "elapsed_sec": 5.81,
+  "checks": {
+    "row0_reference_equals_reference": true,
+    "row1_reference_dup_equals_reference": true,
+    "solo_reference_equals_batched_reference": true,
+    "solo_first_mismatch": -1
+  },
+  "first_mismatch": {
+    "dir0_r5e-06": -1,
+    "dir1_r5e-06": -1
+  },
+  "git_commit": "d9a1890aad2bf7847818557ff46678fdefa7fd45",
+  "time": "2026-11-17T18:49:50"
+}

@@ -1,0 +1,35 @@
+[
+  {
+    "dir": "outputs_0.0001/run_2000_0.0001_interstellar_travel_seed_69",
+    "n_gen": 2000,
+    "longest_identical_run": 1,
+    "longest_token": 17375,
+    "exact_period": 8,
+    "repeated_5grams": 93,
+    "max_5gram_count": 109,
+    "repeated_10grams": 28,
+    "max_10gram_count": 107
+  },
+  {
+    "dir": "outputs_microsoft_0.00001/run_2000_0.00001_interstellar_travel_seed_69",
+    "n_gen": 4000,
+    "longest_identical_run": 1260,
+    "longest_token": 66305,
+    "exact_period": 1,
+    "repeated_5grams": 151,
+    "max_5gram_count": 1256,
+    "repeated_10grams": 110,
+    "max_10gram_count": 1251
+  },
+  {
+    "dir": "outputs_microsoft_0.00001/run_4000_0.00001_interstellar_travel_seed_69",
+    "n_gen": 4000,
+    "longest_identical_run": 37,
+    "longest_token": 22193,
+    "exact_period": 1,
+    "repeated_5grams": 145,
+    "max_5gram_count": 143,
+    "repeated_10grams": 106,
+    "max_10gram_count": 143
+  }
+]
