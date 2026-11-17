@@ -27,6 +27,8 @@ Use it to decide what to expand in the theory section.
 - **Implementation:** `scripts/fsle_a1.py`; data in `results/fsle_time.json`.
 - **Result:** for `ρ=2`, median `λ≈0.043` over the initial transient; for `ρ=4`, many runs are censored. This is a transient growth rate, not sustained exponential growth. The response decays after ~100 tokens.
 
+**Depth-axis FSLE (existing single-token data).** `d(layer)/d(0)` jumps by ~200–300 at layer 1, then is flat/decaying. The FSLE is `lnρ/1` and constant in `r`, because the entire growth is one layer. It is not evidence of sustained depth chaos. Implementation: `scripts/fsle_depth.py`; figure `fsle_depth.png`.
+
 ## 4. Depth map and depth spectrum
 
 - **Depth map:** for a fixed token, `h_{ℓ+1}=F_ℓ(h_ℓ)`, `J_ℓ=∂F_ℓ/∂h`.

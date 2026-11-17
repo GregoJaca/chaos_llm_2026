@@ -12,6 +12,7 @@ def main():
     ap.add_argument("--run", required=True)
     ap.add_argument("--tokens", default="16,50,123,143,200")
     ap.add_argument("--layers", default="0,7,14,21,27")
+    ap.add_argument("--full-layers", default="0,14,27")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
@@ -19,6 +20,7 @@ def main():
     pids = torch.tensor(d["prompt_ids"])[None].cuda(); gids = torch.tensor(d["gen_ids"])[None].cuda()
     P = int(meta["prompt_len"]); toks = [int(x) for x in args.tokens.split(",")]
     sel_layers = [int(x) for x in args.layers.split(",")]
+    full_layers = [int(x) for x in args.full_layers.split(",")]
     model, tok, _ = load_model(args.model, attn="eager"); set_window(model, meta["window"])
     E = full_embeddings(model, pids, gids); L = E.shape[1]
     captured = {}
@@ -43,8 +45,9 @@ def main():
             gate = mlp.gate_proj(x); up = mlp.up_proj(x); s = mlp.act_fn(gate)
             sig = torch.sigmoid(gate); ds = sig * (1 + gate * (1 - sig))
             J = mlp.down_proj.weight @ (s[:, None] * mlp.up_proj.weight + (up * ds)[:, None] * mlp.gate_proj.weight)
-            smax = float(torch.linalg.svdvals(J)[0])
-            rho = float(torch.linalg.eigvals(J).abs().max())
+            Jc = J.detach().cpu()
+            smax = float(torch.linalg.svdvals(Jc)[0])
+            rho = float(torch.linalg.eigvals(Jc).abs().max())
         return smax, rho
 
     def funcs(l, t):
@@ -74,19 +77,19 @@ def main():
                            matvec=lambda x: jv(torch.as_tensor(x, device="cuda", dtype=torch.float32)).cpu().numpy(),
                            rmatvec=lambda x: jtv(torch.as_tensor(x, device="cuda", dtype=torch.float32)).cpu().numpy(),
                            dtype=np.float32)
-        ev = eigs(A, k=1, which="LM", maxiter=40, tol=1e-4, return_eigenvectors=False)
+        ev = eigs(A, k=1, which="LM", maxiter=25, tol=1e-3, return_eigenvectors=False)
         return float(abs(ev[0]))
 
     t0 = time.time()
     mlp_s = np.zeros((len(toks), nL), np.float32); mlp_r = np.zeros_like(mlp_s); mlp_k = np.zeros_like(mlp_s)
     for ti, t in enumerate(toks):
-        for l in range(nL):
+        for l in sel_layers:
             s, r = mlp_metrics(l, t); mlp_s[ti, l] = s; mlp_r[ti, l] = r; mlp_k[ti, l] = s / max(r, 1e-30)
         print("MLP token", t, "done", flush=True)
 
     fs = np.full((len(toks), nL), np.nan, np.float32); fr = np.full_like(fs, np.nan); fk = np.full_like(fs, np.nan)
     for ti, t in enumerate(toks):
-        for l in sel_layers:
+        for l in full_layers:
             s, _ = power(l, t); r = rho_full(l, t)
             fs[ti, l] = s; fr[ti, l] = r; fk[ti, l] = s / max(r, 1e-30)
             print(f"full token {t} layer {l}: sigma {s:.3f} rho {r:.3f} kappa {s/max(r,1e-30):.3f}", flush=True)
