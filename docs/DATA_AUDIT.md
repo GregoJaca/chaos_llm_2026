@@ -256,3 +256,32 @@ Audit outputs are in `~/LLM/chaos_llm_2026/analysis_audit/`:
 - **UNVERIFIED:** a large-sample FP32 free-run check at window 200 (only 3 directions, 90 tokens were tested).
 - **UNVERIFIED:** whether the saved `outputs_OLD` FP16 baselines are stable for prompts other than `interstellar_travel`. All token-level runs in this repo use one prompt.
 - **UNVERIFIED:** the role of `repetition_penalty` in the old hidden-state datasets; `launch_sep` uses 1.1, the token-level pipeline uses 1.0.
+
+---
+
+## 10. Index conventions (use these everywhere)
+
+- Prompt positions: `0 … P-1`. Generated positions: `t = 0 … T-1`, where `t=0` is the **first generated token** (absolute position `P`).
+- When we say “the response grows over the first ~100 steps”, we mean the first ~100 **generated** tokens (`t=0…99`), **excluding** the prompt. The prompt response (`0…P-1`) is saved and reported separately.
+- For a current-state perturbation injected at generation step `s`, report time relative to injection: `τ = t - s`; `τ=0` is the injection step.
+- Always save all positions. In figures, label the axis explicitly (`generated token index` vs `absolute position`). Default reporting is generation-only; prompt response is a separate panel.
+- A “direction” is defined **at a specific injection site** (the full prompt embedding, or one token/layer/step). Directions at different sites are not comparable and must not be pooled without saying so.
+
+---
+
+## 11. Pitfalls (do not repeat)
+
+1. **Never compare a batch-1 baseline to a batch-N perturbed run.** Put `r=0` in the same batch.
+2. **Never use bf16/fp16 for small-`r` science.** Use FP32 for DeepSeek. If FP32 does not fit, reduce batch/sequence length, not precision.
+3. **Always verify the `r=0` control** before interpreting any divergence. If it fails, the run is invalid.
+4. **Do not average first-flip times `T`.** `T(r)` is a staircase pinned by near-ties. Use survival curves, hazards, and threshold distributions.
+5. **Do not treat teacher-forced response after the first flip as the actual free-run trajectory.** It is a counterfactual with the baseline tokens.
+6. **Do not pool directions across tokens/sites.** A fixed direction at token A and token B means different things.
+7. **Do not save full `N×N` distance matrices to disk.** Compute correlation sums in chunks and save only `C(ε)` curves.
+8. **Do not mix prompts for a single D₂ estimate** without also reporting per-prompt values. A mixture of trajectories is not one attractor.
+9. **Do not call a distance-curve FTLE a Lyapunov exponent.** The old `log(d(t)/d(0))/t` is not a tangent-map exponent.
+10. **Do not generate hidden states step-by-step without a KV cache.** It is O(T²) and unnecessarily slow; use a batched KV-cache loop or one teacher-forced forward pass.
+11. **Do not use `output_hidden_states=True` for all layers/tokens unless needed.** Save selected layers and norms; full tensors are large.
+12. **Do not interpret a single `σ_max > 1` as chaos.** A component can amplify one step while the product contracts. Report `σ_max`, `ρ`, `κ`, and the product’s singular values.
+13. **Do not choose one FSLE scale factor `ρ` and hide the choice.** Report `ρ ∈ {1.5, 2, 4}` (or show the curve is flat).
+14. **Do not report a single number when the object is a distribution.** Show 3 individual cases plus an aggregate; label what is aggregated.
