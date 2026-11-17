@@ -13,6 +13,7 @@ All A1 figures use the same 20 simplex directions. “Generated step” means to
 ## Thresholds / flux tube
 
 - **threshold_validation.png** — (left) `r_c(t,u)` for 3 directions, clipped at 100; (middle) `r_c` at t=16/123/143 across 20 directions; (right) predicted vs observed first-flip counts at r=0.1 and 0.3. Main result: no flips at r=0.1; at r=0.3 one direction flips at t=16, matching prediction.
+- **window_comparison.png** — observed flips and prediction-vs-observation for window 100 vs 200. Window 200 has a smaller margin at t=44, so it flips at lower r; this is a real window effect on the margin spectrum.
 - **predicted_T.png** — predicted first-flip time from teacher forcing at r=0.03/0.1/0.3.
 - **rstar_distribution.png** — distribution/ECDF of the flux-tube radius `r_* = min_t r_c(t,u)` over directions.
 - **rc_heatmap.png** — `log10 r_c(t,u)` over steps and directions, sorted by `r_*`. Mostly saturated (large thresholds) after t≈150; early steps and a few directions are fragile.

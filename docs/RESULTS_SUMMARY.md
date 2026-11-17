@@ -20,11 +20,12 @@ All A1 runs use the same 20 simplex directions; `r=0` is a row in the same batch
 
 ## 2. Margins and first-flip threshold
 
-- Smallest margins: t=123 (0.0202), t=143 (0.0204), t=116 (0.069), t=2 (0.0696), t=16 (0.120).
-- `r_c(t,u)=m_t/|δm_t(u)/r|`; `r_*(u)=min_t r_c`.
-- **No token flips at r=0.03 or r=0.1** for any of 20 directions, in 300 tokens.
-- At `r=0.3`, 1/20 directions flips at t=16. Teacher forcing predicts a flip at t=16 (and an additional predicted flip at t=123 that does not occur in the free run).
-- This is direct evidence for decision-boundary crossing, not smooth exponential instability.
+- Window 100: smallest margins t=123 (0.0202), t=143 (0.0204), t=116 (0.069), t=2 (0.0696), t=16 (0.120).
+- Window 200: smallest margins t=44 (0.0031), t=183 (0.0047), t=216 (0.0055), t=55 (0.0089).
+- Window 100: **no flips at r=0.03 or 0.1** for 20 directions; at r=0.3, 1/20 flips at t=16. Prediction: 1 at 16, 1 at 123.
+- Window 200: at r=0.1, 3/20 flip at 44/55; at r=0.3, ~12/20 flip at 44. Prediction at r=0.3: 13/20 (11 at 44, 1 at 55, 1 at 16). Very close.
+- This is a real attention-window effect on the **margin spectrum**: window 200 has a much smaller margin at t=44, so the same r crosses it. It is not a numerical artifact.
+- The first flip is at the near-tie with the smallest ratio `m_t/|δm_t|`, not necessarily the smallest margin. This is direct evidence for decision-boundary crossing, not smooth exponential instability.
 
 ## 3. FSLE
 

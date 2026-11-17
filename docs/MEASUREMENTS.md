@@ -25,7 +25,7 @@ Use it to decide what to expand in the theory section.
 - **Predicted first flip:** `T(r,u) = min{t: r ≥ r_c(t,u)}`.
 - **Flux-tube radius:** `r_*(u) = min_t r_c(t,u)`.
 - **Implementation:** `run_a1.py` stores `margins`, `dm`, `r_c`, `pred_T`; validation in `run_thresholds.py`.
-- **Result:** margins have near-ties at t=123 (0.0202) and t=143 (0.0204); the smallest margin is not the first flip because the response at t=16 is larger. `r_*` is ≈0.12–0.15 for many directions. Free-run: no flips at `r=0.1`; at `r=0.3`, 1/20 directions flips at t=16, matching the prediction. This is the strongest evidence for threshold-driven divergence.
+- **Result:** margins have near-ties at t=123 (0.0202) and t=143 (0.0204); the smallest margin is not necessarily the first flip because the response at t=16 is larger. `r_*` is ≈0.12–0.15 for many directions. Window 100: no flips at `r=0.1`; at `r=0.3`, 1/20 directions flips at t=16, matching the prediction. Window 200: at `r=0.1`, 3/20 flip at 44/55; at `r=0.3`, ~12/20 flip at 44; prediction 13/20. The attention window changes the margin spectrum, hence the threshold. This is the strongest evidence for threshold-driven divergence.
 
 ## 3. Time-axis FSLE
 
