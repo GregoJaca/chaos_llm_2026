@@ -11,6 +11,12 @@ Use it to decide what to expand in the theory section.
 - **Result:** the response grows for ~60–100 generated tokens, then decays. At `r=0.3`, the last-layer median response peaks near 1 and decays to ~0.1 at t=300. At `r=1e-3`, it stays ~1e-3. No sustained exponential growth on the token axis.
 - **Numerical floor:** below `r≈1e-4`, the response is dominated by FP32 forward error / RMSNorm ill-conditioning (a floor of ~1e-5 at layer 1, ~1e-3 at layer 27). The linear regime is roughly `r∈[1e-3, 10^-1]`.
 
+## 1b. Two-time response and current-state perturbation
+
+- **Definition:** `R(t,s)=||∂h_t/∂h_s||₂`; the largest change at step `t` caused by a unit change at step `s`. `λ(t,s)=log R(t,s)/(t-s)`.
+- **Implementation:** `src/chaos_llm/run_state.py`; injects a random unit vector at the input embedding of generated token `s` (not the residual stream), then measures `δh_t` for `t≥s`.
+- **Interpretation:** this is the complementary experiment to the prompt perturbation. It asks whether the *current* state is sensitive, without the persistent prompt perturbation in the KV cache. It is not a replacement for the prompt experiment; it is a different initial condition.
+
 ## 2. Margins, thresholds, predicted first flip
 
 - **Margin:** `m_t = z_t^(1) - z_t^(2)`.
