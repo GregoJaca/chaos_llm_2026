@@ -18,7 +18,7 @@ Status: 2026-11-17. Data: `results_pecs` (12 prompts, first/middle/last hidden s
 | data | D2 (N≈2000) | Eckmann–Ruelle bound | verdict |
 |---|---:|---:|---|
 | first-layer trajectory | 13–27 | 6.6 | **not reliable** (above bound) |
-| last-layer trajectory | 3–10 | 6.6 | some below, some above; no stable plateau |
+| last-layer trajectory | 2.97–11.31 | 6.6 | some below, some above; no stable plateau |
 | vocabulary matrix (5k rows) | 5.35 | 7.4 | reference; not a trajectory |
 
 - No stable plateau in the local slope for first/last-layer trajectories. The slope rises to a peak and falls; fitting it gives a number but not a scaling regime.
