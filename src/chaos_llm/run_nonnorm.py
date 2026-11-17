@@ -44,10 +44,18 @@ def main():
         with torch.no_grad():
             gate = mlp.gate_proj(x); up = mlp.up_proj(x); s = mlp.act_fn(gate)
             sig = torch.sigmoid(gate); ds = sig * (1 + gate * (1 - sig))
-            J = mlp.down_proj.weight @ (s[:, None] * mlp.up_proj.weight + (up * ds)[:, None] * mlp.gate_proj.weight)
-            Jc = J.detach().cpu()
-            smax = float(torch.linalg.svdvals(Jc)[0])
-            rho = float(torch.linalg.eigvals(Jc).abs().max())
+            J = (mlp.down_proj.weight @ (s[:, None] * mlp.up_proj.weight + (up * ds)[:, None] * mlp.gate_proj.weight)).detach().cpu()
+            # sigma_max via power iteration on J^T J
+            v = torch.randn(D); v /= v.norm()
+            for _ in range(20):
+                u = J @ v; w = J.T @ u; v = w / (w.norm() + 1e-30)
+            smax = float((J @ v).norm())
+            A = LinearOperator((D, D),
+                               matvec=lambda z: (J @ torch.as_tensor(z, dtype=torch.float32)).numpy(),
+                               rmatvec=lambda z: (J.T @ torch.as_tensor(z, dtype=torch.float32)).numpy(),
+                               dtype=np.float32)
+            ev = eigs(A, k=1, which="LM", maxiter=40, tol=1e-3, return_eigenvectors=False)
+            rho = float(abs(ev[0]))
         return smax, rho
 
     def funcs(l, t):
@@ -99,7 +107,7 @@ def main():
     for ti, t in enumerate(toks):
         vecs = []
         for l in range(nL):
-            _, v = power(l, t, iters=8); vecs.append(v.cpu().numpy())
+            _, v = power(l, t, iters=8); vecs.append(v.detach().cpu().numpy())
         for l in range(nL - 1):
             c = abs(float(np.dot(vecs[l], vecs[l + 1]))); c = min(1.0, max(-1.0, c))
             angles[ti, l] = np.degrees(np.arccos(c))

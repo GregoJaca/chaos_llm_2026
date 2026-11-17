@@ -34,8 +34,11 @@ All A1 runs use the same 20 simplex directions; `r=0` is a row in the same batch
 
 ## 5. Non-normality
 
-- Example: layer 14, token 50: `σ_max≈3.24`, `ρ≈1.36`, `κ≈2.4`.
-- Full layer-wise/non-normality plots are being generated. The point is: per-component `σ_max>1` can coexist with a contracting product; `κ` and the product singular values quantify it.
+- Full block, layer 0: `σ_max≈95–194`, `ρ≈11–39`, `κ≈5–10`.
+- Full block, layer 14: `σ_max≈3.1–3.3`, `ρ≈1.34–1.62`, `κ≈1.9–2.5`.
+- Full block, layer 27: `σ_max≈6.7–9.1`, `ρ≈1.70–1.85`, `κ≈3.6–5.3`.
+- MLP values and principal angles are in `results/nonnorm_w100/` and the `nonnorm_*` figures.
+- Interpretation: every block can amplify a single step (`σ_max>1`), and `κ>1` says the matrix is non-normal. The product can still contract because the expanding subspace rotates; the principal-angle plot is the direct evidence. This is the quantitative answer to “components amplify, composition may not.”
 
 ## 6. D2 / RQA (negative)
 
