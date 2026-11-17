@@ -1,0 +1,69 @@
+"""Depth tangent spectrum: propagate k tangent vectors through all layers per token."""
+import argparse, json, os, time
+import numpy as np, torch
+from torch.func import jvp
+from chaos_llm.protocol import load_model, prompt_ids, set_window, full_embeddings, save_json
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--model", default="~/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B")
+    ap.add_argument("--run", required=True)
+    ap.add_argument("--tokens", default="0,16,50,100,123,143,200,250")
+    ap.add_argument("--k", type=int, default=8)
+    ap.add_argument("--out", required=True)
+    args = ap.parse_args()
+    os.makedirs(args.out, exist_ok=True)
+    d = np.load(os.path.join(args.run, "a1.npz")); meta = json.load(open(os.path.join(args.run, "meta.json")))
+    pids = torch.tensor(d["prompt_ids"])[None].cuda(); gids = torch.tensor(d["gen_ids"])[None].cuda()
+    P = int(meta["prompt_len"]); pos_list = [int(x) for x in args.tokens.split(",") if int(x) < gids.shape[1]]
+
+    model, tok, _ = load_model(args.model, attn="eager"); set_window(model, meta["window"])
+    E = full_embeddings(model, pids, gids); L = E.shape[1]
+    with torch.inference_mode():
+        o = model(inputs_embeds=E, attention_mask=torch.ones((1, L), dtype=torch.long, device="cuda"),
+                  output_hidden_states=True, use_cache=False)
+    H0 = o.hidden_states[0]; D = H0.shape[-1]
+    pos_ids = torch.arange(L, device="cuda")[None]
+    pe = model.model.rotary_emb(H0, pos_ids)
+    mask = model.model._update_causal_mask(torch.ones((1, L), dtype=torch.long, device="cuda"), H0,
+                                           torch.arange(L, device="cuda"), None, output_attentions=False)
+    nL = len(o.hidden_states) - 1
+    k = args.k
+    lam = np.zeros((len(pos_list), nL, k), dtype=np.float32)
+    local = np.zeros((len(pos_list), nL), dtype=np.float32)
+    t0 = time.time()
+    for ti, gen_t in enumerate(pos_list):
+        t = P + gen_t
+        g = torch.Generator(device="cuda").manual_seed(1234 + ti)
+        Q = torch.linalg.qr(torch.randn(D, k, device="cuda", generator=g))[0]
+        cum = torch.zeros(k, device="cuda")
+        for l in range(nL):
+            layer = model.model.layers[l]
+            def f(Hin, layer=layer):
+                return layer(Hin, attention_mask=mask, position_ids=pos_ids,
+                             position_embeddings=pe, use_cache=False)[0]
+            Us = []
+            for i in range(k):
+                V = torch.zeros_like(o.hidden_states[l]); V[0, t] = Q[:, i]
+                with torch.no_grad():
+                    _, dy = jvp(f, (o.hidden_states[l],), (V,))
+                Us.append(dy[0, t])
+            U = torch.stack(Us, dim=1)  # [D,k]
+            local[ti, l] = U.norm(dim=0).mean().item()
+            Q, R = torch.linalg.qr(U)
+            cum += torch.log(torch.abs(torch.diag(R)) + 1e-30)
+            lam[ti, l] = (cum / (l + 1)).detach().cpu().numpy()
+        print(f'token {gen_t}: final lambda {lam[ti,-1].round(3).tolist()} h_depth {float(np.maximum(lam[ti,-1],0).sum()):.3f}', flush=True)
+
+    h_depth = np.maximum(lam[:, -1, :], 0).sum(axis=1)
+    np.savez(os.path.join(args.out, "depth.npz"), lam=lam, local_gain=local, h_depth=h_depth,
+             tokens=np.asarray(pos_list), layers=np.arange(nL), k=k)
+    save_json(os.path.join(args.out, "meta.json"),
+              dict(run=args.run, tokens=pos_list, k=k, n_layers=nL, hidden_dim=D,
+                   elapsed_sec=round(time.time() - t0, 1), model=args.model))
+    print("saved", args.out, "elapsed", round(time.time() - t0, 1))
+
+
+if __name__ == "__main__":
+    main()
