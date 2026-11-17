@@ -12,6 +12,12 @@ All A1 runs use the same 20 simplex directions; `r=0` is a row in the same batch
 - There is a numerical floor below `r≈1e-4` (FP32/RMSNorm ill-conditioning): response no longer scales with `r`. The usable linear range is roughly `r=1e-3…1e-1`.
 - No sustained exponential growth on the token axis.
 
+## 1b. Current-state perturbation and R(t,s)
+
+- Input-embedding perturbation at generated step `s=16,50,100`, `r=1e-3`, 8 directions.
+- The response `||δh_t||` starts at ~0.1 at `t=s` and decays; `R(t,s)` (median) starts near 1 and decays to ~0.1–0.3. There is a bump near t≈130 for `s=50` (a near-tie), not sustained growth.
+- This complements the prompt perturbation; the current state is also not exponentially unstable.
+
 ## 2. Margins and first-flip threshold
 
 - Smallest margins: t=123 (0.0202), t=143 (0.0204), t=116 (0.069), t=2 (0.0696), t=16 (0.120).
@@ -37,8 +43,9 @@ All A1 runs use the same 20 simplex directions; `r=0` is a row in the same batch
 - Full block, layer 0: `σ_max≈95–194`, `ρ≈11–39`, `κ≈5–10`.
 - Full block, layer 14: `σ_max≈3.1–3.3`, `ρ≈1.34–1.62`, `κ≈1.9–2.5`.
 - Full block, layer 27: `σ_max≈6.7–9.1`, `ρ≈1.70–1.85`, `κ≈3.6–5.3`.
-- MLP values and principal angles are in `results/nonnorm_w100/` and the `nonnorm_*` figures.
-- Interpretation: every block can amplify a single step (`σ_max>1`), and `κ>1` says the matrix is non-normal. The product can still contract because the expanding subspace rotates; the principal-angle plot is the direct evidence. This is the quantitative answer to “components amplify, composition may not.”
+- MLP alone is much more amplifying: layer 27 `σ_max≈59–95`, `ρ≈17–24`, `κ≈3.3–3.9`; layer 14 `σ_max≈12`, `ρ≈4.5`; layer 0 `σ_max≈8–14`, `ρ≈2.5–5`.
+- **Principal angles between consecutive top singular subspaces: median ≈79–84°.** The expanding direction is almost completely rotated at each layer.
+- Interpretation: the MLP amplifies strongly, but the full residual block is much tamer (`σ_max` 6–9 vs 60–95), and the product can contract because the expanding subspace rotates. This is the quantitative answer to “components amplify, composition may not.”
 
 ## 6. D2 / RQA (negative)
 

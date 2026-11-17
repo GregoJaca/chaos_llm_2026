@@ -40,7 +40,11 @@ All A1 figures use the same 20 simplex directions. “Generated step” means to
 
 ## Non-normality
 
-- **nonnorm_mlp.png** — MLP `σ_max`, `ρ`, `κ` vs layer for several tokens.
-- **nonnorm_full.png** — full-block `σ_max`, `ρ`, `κ` at selected layers/tokens.
-- **nonnorm_scatter.png** — `σ_max` vs `ρ`; points above the diagonal are non-normal.
-- **nonnorm_angles.png** — principal angles between top singular subspaces of consecutive layers.
+- **nonnorm_mlp.png** — MLP `σ_max`, `ρ`, `κ` vs selected layers for 3 tokens. MLP layer 27 is strongly amplifying.
+- **nonnorm_full.png** — full-block `σ_max`, `ρ`, `κ` at layers 0/14/27.
+- **nonnorm_scatter.png** — `σ_max` vs `ρ`; points above the diagonal are non-normal. Full block: `σ_max` 95–194 at layer 0, 3 at layer 14, 7–9 at layer 27.
+- **nonnorm_angles.png** — principal angles between top singular subspaces of consecutive layers; median ≈79–84°, i.e., the expanding direction rotates.
+
+## State perturbation
+
+- **state_response.png** — input-embedding perturbation at s=16/50/100, r=1e-3: `||δh_t||` and `R(t,s)`; response decays, with a near-tie bump near t≈130.

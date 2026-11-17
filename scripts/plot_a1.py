@@ -74,13 +74,13 @@ fig.tight_layout(); fig.savefig(os.path.join(OUT, 'response_vs_r.png'), dpi=200)
 # 5. r_c heatmap at r=0.1 (or nearest)
 r0 = 0.1
 i0 = int(np.argmin(np.abs(radii - r0)))
-rc0 = rc[i0]  # [K,T]
+rc0 = np.clip(rc[i0][:, :160], 1e-2, 10.0)  # [K,160]
 order = np.argsort(rc0.min(axis=1))
 fig, ax = plt.subplots(figsize=(11, 5))
-im = ax.imshow(np.log10(np.maximum(rc0[order], 1e-6)), aspect='auto', origin='lower',
-               cmap='viridis', vmin=-1, vmax=1.5)
+im = ax.imshow(np.log10(rc0[order]), aspect='auto', origin='lower',
+               cmap='viridis', vmin=-2, vmax=1)
 ax.set_xlabel('generated token index'); ax.set_ylabel('direction (sorted by min r_c)')
-ax.set_title(f'log10 local flip threshold r_c(t,u), r={radii[i0]:g}')
+ax.set_title(f'local flip threshold r_c(t,u), r={radii[i0]:g}, first 160 steps (clipped 0.01–10)')
 fig.colorbar(im, ax=ax, label='log10 r_c')
 fig.tight_layout(); fig.savefig(os.path.join(OUT, 'rc_heatmap.png'), dpi=200); plt.close(fig)
 

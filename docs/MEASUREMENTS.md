@@ -48,8 +48,9 @@ Use it to decide what to expand in the theory section.
 
 - **Definitions:** `σ_max=||J||₂` (largest singular value; worst one-step amplification), `ρ(J)=max_i|λ_i|` (spectral radius; asymptotic growth for repeated application of the same `J`), `κ=σ_max/ρ`.
 - **Implementation:** `src/chaos_llm/run_nonnorm.py` (`main`); data in `results/nonnorm_w100/`.
-- **Result:** at layer 14, token 50: `σ_max≈3.24`, `ρ≈1.36`, `κ≈2.4`. MLP and full-block values are being written; use the plots.
-- **Interpretation:** a component can amplify one step (`σ_max>1`) while the product contracts. The product singular values and principal angles, not per-component norms, answer the reviewer objection.
+- **Result:** full block, layer 0: `σ_max≈95–194`, `ρ≈11–39`, `κ≈5–10`; layer 14: `σ_max≈3.1–3.3`, `ρ≈1.34–1.62`, `κ≈1.9–2.5`; layer 27: `σ_max≈6.7–9.1`, `ρ≈1.70–1.85`, `κ≈3.6–5.3`. MLP alone: layer 27 `σ_max≈59–95`, `ρ≈17–24`, `κ≈3.3–3.9`.
+- **Principal angles:** median ≈79–84° between consecutive top singular subspaces. The expanding direction rotates almost completely each layer.
+- **Interpretation:** a component can amplify one step (`σ_max>1`) while the product contracts. The MLP amplifies much more than the full residual block; the rotation is the mechanism. The product singular values and principal angles, not per-component norms, answer the reviewer objection.
 
 ## 6. Correlation dimension and RQA
 
