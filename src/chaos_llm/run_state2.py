@@ -39,6 +39,7 @@ def main():
                     help='0 = input embeddings, L>0 = residual stream after block L-1')
     ap.add_argument('--batch-dirs', type=int, default=6)
     ap.add_argument('--seed', type=int, default=1000)
+    ap.add_argument('--window', type=int, default=0, help='override the run window')
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
@@ -51,7 +52,7 @@ def main():
     radii = [float(x) for x in args.radii.split(',')]
 
     model, tok, _ = load_model(args.model, attn='sdpa')
-    set_window(model, meta['window'])
+    set_window(model, args.window or meta['window'])
     D = model.config.hidden_size
     E = full_embeddings(model, pids, gids)
     with torch.inference_mode():

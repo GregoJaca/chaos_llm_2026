@@ -156,15 +156,16 @@ $\approx b\ln(0.25/0.15)\approx25$ tokens over that range.
 
 ![survival](figures/stablechaos_survival.png)
 
-**Axes.** $x$: generation step $t$. $y$: $S_r(t)=P(T>t)$ over 20 directions. Blue: observed,
-with a 95% bootstrap band. Red dashed: prediction from the threshold field, with **zero fitted
-parameters**. Green: the best exponential fit.
+**Axes.** $x$: generation step $t$. $y$: $S_r(t)=P(T>t)$ over 20 directions (free y-axis per
+panel so the steps are visible). Blue: observed. Red dashed: prediction from the threshold field,
+with **zero fitted parameters**.
 
-**Reading.** For $r\le0.1$ no dip is reachable: $S=1$ exactly, and the model predicts that. At
-$r=0.2$ and $0.25$ the threshold prediction reproduces the observed survival **exactly** (20/20
-directions, mean absolute deviation 0.00); at $r=0.3$ it is 19/20. The exponential fit is flat and
-cannot describe either the drop or the plateau. This is the proof figure: the discrete threshold
-field, not a rate, determines when the trajectories separate.
+**Reading.** For $r=0.05$ and $0.1$ no dip is reachable and **both curves are exactly 1**: nothing
+flips. At $r=0.2$ the single flip is predicted at the same step. At $r=0.3$ the model predicts one
+extra flip (19/20). At $r=0.5$ and $1$ the model predicts *more* flips than observed — it
+over-fires, one-sidedly, because the real perturbation contracts slightly instead of growing. So
+the threshold field describes the discrete steps correctly, but at large $r$ it is an
+over-estimate, never an under-estimate.
 
 ![scaling](figures/stablechaos_scaling.png)
 
@@ -229,34 +230,45 @@ mid/large radii because the real perturbation contracts slightly.
 
 ![window regimes](figures/window_regimes.png)
 
-**Data.** One prompt ($P=63$ tokens, ocean currents), one fixed 300-token sequence, prompt
-perturbation with $r=0.1$, 10 directions, teacher-forced, layer 27. Six windows:
-$W=50,100,200,400,800,4096$.
+**Data.** Ocean-currents prompt ($P=63$) and cybersecurity prompt ($P=62$); one fixed 300-token
+sequence each; prompt perturbation $r=0.1$, 10 directions, teacher-forced, layer 27; windows
+$W=50,100,200$.
 
-**Panel (a).** $x=t$; $y=a(t,27)=\|\delta h_{t,27}\|_2$ (log).
+**Panel (a)/(c).** $x=t$; $y=a(t,27)=\|\delta h_{t,27}\|_2$ (log). **Panel (b)/(d).** $x$: horizon
+$t$ (log); $y$: $\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$.
 
-**Panel (b).** $x$: horizon $t$ (log); $y$: finite-time rate
-$\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$.
+![growth summary](figures/window_growth_summary.png)
 
-**Panel (c).** $x$: $W$; $y$: $\lambda$ computed over $t\in[1,20]$ (green) and $t\in[200,299]$
-(red).
+**Data.** Five prompts at $W=100$ and three of them at $W=50$ (same protocol, 8 directions); local
+rate over 20-token windows, $\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)}$.
 
-**Reading — a real regime change at $W=P$.**
-- $W=50<P=63$: the prompt is *already* clipped at $t=0$. The response starts **5.6× larger**
-  (0.90 vs 0.16) and decays monotonically. $\lambda(t)<0$ at every horizon (early $-0.006$,
-  late $-0.016$).
-- $W>P$: the response starts at 0.161, rises for ≈20–35 tokens, then decays. $\lambda(t)$ is
-  positive early (+0.026), crosses zero, and stays negative.
-- $W=400,800,4096$ are identical over this 300-token run (no clipping), so they are one
-  condition, not three.
+**Reading — the window changes the growth regime, quantitatively.**
+- At $W=50<P$ the prompt is *already* clipped at $t=0$: the initial response is 3–6× larger, and
+  the growth is much weaker. Across the three prompts tested at both windows, the peak rate drops
+  from **0.030–0.076** ($W=100$) to **0.015–0.023** ($W=50$), and the fraction of tokens with a
+  positive rate drops from **0.25–0.49** to **0.16–0.18**.
+- At $W>P$ the shape is universal and simply shifted in time by $W-P$: $W=200$ and $W=100$ coincide
+  until $t=W-P$.
+- Growth is **positive in both regimes** at some tokens: this is a quantitative regime change, not
+  a change of sign. What changes is how fast and for how long the perturbation grows.
 
-So the answer to "are there different regimes depending on the window" is **yes at $W<P$**:
-truncating the prompt changes both the initial sensitivity and the sign of the early growth.
-For $W>P$ the shape is universal, shifted in time by $W-P$.
+**Pre-clipping control: there is no window effect before the context reaches $W$.**
 
-**Caveat.** "Larger initial response at $W=50$" does not mean "more sensitive to the same
-perturbation": at $W=50$ part of the prompt perturbation is invisible, so the effective
-perturbation is smaller while the measured response is larger.
+![preclip](figures/window_preclip_null.png)
+
+**Data.** Same prompt, same 200 tokens, **no perturbation** ($r=0$); hidden states compared across
+$W=50,100,200,4096$ at layers 1/7/14/27.
+
+**Axes.** $x$: token index (negative = prompt). $y$: relative difference
+$\|\delta h\|/\|h\|$ between the run at $W$ and the run at $W=4096$ (log).
+
+**Reading.** The difference is **exactly zero** (1e−12, float32 round-off) until $t=W-P$, then
+jumps to order 1. For $W=50$, the first difference appears at position 50 — inside the prompt —
+because the prompt itself is longer than the window. So with this protocol the window has no
+effect at all before the context reaches it. (If an earlier experiment showed otherwise, the
+likely causes are a different `use_sliding_window` setting, a model whose window is baked into
+the mask at all lengths, or mixed precision; the control above excludes all of them for this
+implementation.)
 
 ### N2. Where does a perturbation actually get amplified?
 
