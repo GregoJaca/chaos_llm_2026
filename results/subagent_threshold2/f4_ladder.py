@@ -80,11 +80,11 @@ def draw(ax, nm, radii_obs, xlo, xhi, cb_ticks):
 fig, (axa, axb) = plt.subplots(1, 2, figsize=(17, 7.4),
                                gridspec_kw=dict(width_ratios=[1, 1]))
 
-# (a) propulsion w100
+# (a) propulsion w100 (skip the tiny radii: they are off-scale on this ladder)
 c100 = C.load_case("w100")
 obs100 = []
 for e in C.load_free("all"):
-    if e["geom"] == "w100":
+    if e["geom"] == "w100" and e["r"] >= 0.03:
         obs100.append((e["r"], int((np.asarray(e["obs"]) >= 0).sum())))
 obs100 = sorted(obs100)
 draw(axa, "w100", obs100, 0.09, 3.6, [2, 14, 16, 116, 123, 143])

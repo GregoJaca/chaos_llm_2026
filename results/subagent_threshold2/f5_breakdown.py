@@ -90,20 +90,26 @@ ax.set_ylim(1e-3, 60)
 
 # ---------------------------------------------------------------- (b) counts
 free = C.load_free("all")
-w100_rows = [e for e in free if e["geom"] == "w100"]
+cases = {"w100": c, "w100tiny": ct}
+w100_rows = [e for e in free if e["geom"] in ("w100", "w100tiny")]
+w100_rows = sorted(w100_rows, key=lambda e: e["r"])
 rs = np.array([e["r"] for e in w100_rows])
 obs = np.array([int((np.asarray(e["obs"]) >= 0).sum()) for e in w100_rows])
-pred_sgn_all = c.pred("signed")                    # (n_r, K)
-ir_of = {float(r): i for i, r in enumerate(c.radii)}
-same = np.array([int((pred_sgn_all[ir_of[float(e["r"])]] >= 0).sum())
-                 for e in w100_rows])
+same = []
+for e in w100_rows:
+    case = cases[e["geom"]]
+    ir = int(np.argmin(np.abs(case.radii - e["r"])))
+    assert abs(case.radii[ir] - e["r"]) < 1e-12
+    same.append(int((case.pred("signed")[ir] >= 0).sum()))
+same = np.array(same)
 
-def extrap_pred(case, ir_from, r):
-    rc = case.rc_signed()[ir_from]
-    return np.array([int(np.argmax(rc[d] <= r)) if (rc[d] <= r).any() else -1
-                     for d in range(case.K)])
+def extrap_pred(rc_field, r):
+    return np.array([int(np.argmax(rc_field[d] <= r)) if (rc_field[d] <= r).any()
+                     else -1 for d in range(rc_field.shape[0])])
 
-ext = np.array([int((extrap_pred(c, 0, r) >= 0).sum()) for r in rs])
+rc0 = c.rc_signed()[0]      # linear threshold field from the r=0.001 gain
+rc0[~np.isfinite(rc0)] = 1e30
+ext = np.array([int((extrap_pred(rc0, r) >= 0).sum()) for r in rs])
 adv = np.array([int((np.asarray(e["pred"]) >= 0).sum()) for e in w100_rows])
 
 ax2.plot(rs, obs, "o-", color="k", lw=2.2, ms=8, label="observed (real generations)")
@@ -120,8 +126,9 @@ ax2.set_xticks(rs)
 ax2.set_xticklabels([f"{r:g}" for r in rs])
 ax2.set_xlabel("nudge strength r", fontsize=12)
 ax2.set_ylabel("number of the 20 directions whose text changed", fontsize=12)
-ax2.set_title("(b) propulsion prompt: how many directions flip, observed vs "
-              "three prediction variants", fontsize=12.3)
+ax2.set_title("(b) propulsion prompt, window 100 (9 nudge strengths, 1e-4 to 2):\n"
+              "how many directions flip - observed vs three prediction variants",
+              fontsize=12.3)
 ax2.legend(loc="upper left", fontsize=9.8, framealpha=0.95)
 ax2.grid(alpha=0.3, which="both", lw=0.5)
 ax2.text(0.032, 13.8,

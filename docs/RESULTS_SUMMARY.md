@@ -40,15 +40,17 @@ The window changes the **margin spectrum**, not just numerics. A smaller margin 
 - `m_t = z_t^(1)-z_t^(2)`, `δm_t(u)`; a flip requires `δm_t ≤ −m_t`.
 - The physically correct local threshold is **signed**:
   `r_c⁻(t,u) = m_t·r / max(−δm_t,0)`, and `T(r,u)=min{t:r≥r_c⁻}`.
-  The symmetric `|δm|` version is the adversarial rule and over-predicts flips; it was replaced.
-- Window 200/500: the shared t=44 near-tie (m=0.0031) controls 13–14/20 directions; 18/20 directions are margin-destroying there. Window 100: t=123 (m=0.020) controls 12/20; only 7/20 are margin-destroying.
-- Prediction scorecard (signed): exact flip-step agreement 20/20 and 19/20 for `r≤0.1`; 17–18/20 at `r=0.3`; 15/20 at `r=0.5`; 9–12/20 for `r=1–2`.
-- All `r=0.3` misses lie in a soft band `r_*⁻∈[0.26,0.40]`.
-- Small-`r` thresholds do **not** extrapolate to large `r`: median gain grows ~1.5× by `r=2`; the linear rule over-predicts (15 predicted vs 8 observed at `r=1`).
-- Window 50: min margin 0.167; no flips at `r=0.1/0.3`; only 1/20 flips at `r=0.5`.
-- Large `r`: 3/20 (r=0.5), 8/20 (r=1), 16/20 (r=2) flip; text remains coherent/non-degenerate at 300 tokens (distinct-token ratio ~0.26–0.30).
-- **Second prompt (childhood):** no flips at r=0.01; 5/20 at r=0.1; 13/20 at r=0.3 at near-ties 125/173.
-- **Third prompt (cybersecurity):** no flips at r=0.01/0.1; 3/20 at r=0.3 at near-ties 39/51. The threshold scale is prompt-dependent but the picture generalizes.
+  The symmetric `|δm|` version is adversarial and over-predicts.
+- **Two variants, keep them apart.** *Exact-radius*: measure `δm` with one teacher-forced pass at the kick size you want to predict. *Extrapolated*: use `δm` measured at a small radius and scale linearly. The first is nearly exact; the second is only valid up to `r≈0.3`.
+- **Exact-radius scorecard: 318/320 direction-runs correct (99.4%)** over 19 free-run experiments and 3 prompts: 57/59 flipping runs predicted to the exact word, 261/261 "no flip anywhere" correct, **0 false alarms, 0 missed flips**, 2 wrong steps. All 70 calls within a factor 2 of the threshold are correct.
+- The previously reported worse score came from the **sign-blind rule** as shipped: on the same 320 runs it gives 45 exact, 240 no-flip correct, 13 wrong steps, **21 false alarms, 1 miss** (89.1%). That is the version that produced "too many outliers".
+- The 2 remaining misses are both flips at **word 0**: at very large kicks the perturbed prompt itself is deformed, so the first decision is already different before teacher forcing can see it.
+- **Value of the prediction:** a flip is a point of no return. Of 75 flipped runs, **0 ever re-synchronise**; mean token agreement after the flip is 2.7%; the surviving fraction of the 300-word answer equals first-flip position / 300. The 305 no-flip runs are 100% identical. So one teacher-forced pass forecasts how much of the answer survives.
+- **When extrapolation breaks (r≥0.5):** the margin response turns superlinear (median gain ×1.55 by r=2) and becomes tie-dependent; steps are then predicted correctly in only 16/20 (r=0.5), 6/20 (r=1), 3/20 (r=2, 2/16 steps exact, worst 129 words). Below `r≈3e-4` the shift is at the float32 round-off floor. Clean linear window: `3e-3…0.3`.
+- Window 200/500: the t=44 near-tie (m=0.0031) controls most directions; window 100: t=123 (m=0.020). **w200 and w500 are effectively one experiment** (identical flip lists and reference text).
+- Window 50: min margin 0.167; no flips at `r=0.1/0.3`; 1/20 at `r=0.5`.
+- Large `r`: 3/20 (r=0.5), 8/20 (r=1), 16/20 (r=2) flip; text stays coherent at 300 tokens (distinct-token ratio ~0.26–0.30).
+- **Prompts:** childhood 0/20, 4/20, 12/20 at r=0.01/0.1/0.3 (ties 125/173); cyber 0/20, 0/20, 3/20 (ties 39/51). Same picture, different tie locations and threshold scale.
 
 This is direct evidence for decision-boundary crossing.
 

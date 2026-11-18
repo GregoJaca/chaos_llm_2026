@@ -25,13 +25,17 @@ import common2 as C
 pts = json.load(open("eval_points.json"))
 
 ROW_ORDER = [
-    ("free_w100_large.json", 0.03), ("free_w100_large.json", 0.1),
-    ("free_w100_large.json", 0.3), ("fr_w100_large.npz", 0.5),
-    ("fr_w100_large.npz", 1.0), ("fr_w100_large.npz", 2.0),
-    ("free_w200.json", 0.1), ("free_w200.json", 0.3),
-    ("free_w500.json", 0.1), ("free_w500.json", 0.3),
+    ("a1_ds_w100/free_run", 0.0001), ("a1_ds_w100/free_run", 0.001),
+    ("a1_ds_w100/free_run", 0.01),
+    ("a1_ds_w100/free_run_large", 0.03), ("a1_ds_w100/free_run_large", 0.1),
+    ("a1_ds_w100/free_run_large", 0.3),
+    ("fr_w100_large.npz", 0.5), ("fr_w100_large.npz", 1.0),
+    ("fr_w100_large.npz", 2.0),
+    ("a1_ds_w200_large/free_run", 0.1), ("a1_ds_w200_large/free_run", 0.3),
+    ("a1_ds_w500_large/free_run", 0.1), ("a1_ds_w500_large/free_run", 0.3),
     ("fr_cyber.npz", 0.01), ("fr_cyber.npz", 0.1), ("fr_cyber.npz", 0.3),
-    ("fr_childhood.npz", 0.01), ("fr_childhood.npz", 0.1), ("fr_childhood.npz", 0.3),
+    ("fr_childhood.npz", 0.01), ("fr_childhood.npz", 0.1),
+    ("fr_childhood.npz", 0.3),
 ]
 ROWS = {e["source"]: e for e in pts}  # placeholder, replaced below
 def find(src, r):
@@ -41,20 +45,17 @@ def find(src, r):
     raise KeyError((src, r))
 
 label_of = {
-    "free_w100_large.json": "propulsion, window 100",
-    "fr_w100_large.npz": "propulsion, window 100",
-    "free_w200.json": "propulsion, window 200",
-    "free_w500.json": "propulsion, window 500",
-    "fr_cyber.npz": "cybersecurity prompt",
-    "fr_childhood.npz": "childhood prompt",
+    "a1_ds_w100/free_run": "propulsion,\nwindow 100, tiny",
+    "a1_ds_w100/free_run_large": "propulsion,\nwindow 100",
+    "fr_w100_large.npz": "propulsion,\nwindow 100",
+    "a1_ds_w200_large/free_run": "propulsion,\nwindow 200",
+    "a1_ds_w500_large/free_run": "propulsion,\nwindow 500",
+    "fr_cyber.npz": "cybersecurity\nprompt",
+    "fr_childhood.npz": "childhood\nprompt",
 }
 row_labels = []
 for src, r in ROW_ORDER:
-    lab = label_of[src]
-    if "window" in lab:
-        row_labels.append(f"{lab.split(', ')[0]}\n{lab.split(', ')[1]}  r={r:g}")
-    else:
-        row_labels.append(f"{lab}\nr={r:g}")
+    row_labels.append(f"{label_of[src]}\nr={r:g}")
 
 # ---------------------------------------------------------------- panel (a)
 fig = plt.figure(figsize=(16.5, 7.6))
@@ -112,8 +113,8 @@ axa.text(0.03, 0.97,
          f"signed rule at the exact nudge: {n_sgn_exact}/{n_sgn_flip} flipping "
          f"runs predicted to the exact word\nworst miss: 22 steps (both remaining "
          f"misses are nudges 6-7x past threshold, not borderline calls)\n"
-         f"70 of 260 calls sit within a factor 2 of the threshold (pale dots) - "
-         f"all 70 are correct",
+         f"70 of 320 evaluable calls sit within a factor 2 of the threshold "
+         f"(pale dots) - all 70 are correct",
          transform=axa.transAxes, va="top", ha="left", fontsize=10.2,
          bbox=dict(fc="white", ec="0.7", alpha=0.95))
 
@@ -201,7 +202,7 @@ axb.set_xticklabels([(str(i + 1) if i < 20 else str(i - 22)) for i in
 axb.set_yticks(range(NY))
 axb.set_yticklabels(row_labels, fontsize=9.6)
 axb.set_xlabel("direction index (1-20 of the fixed direction set)", fontsize=11.5)
-axb.set_title("(b) all 320 direction-runs incl. no-flip calls; 260 evaluable "
+axb.set_title("(b) all 380 direction-runs incl. no-flip calls; 320 evaluable "
               "with the signed rule, hatched = geometry not stored locally",
               fontsize=12)
 for sp in axb.spines.values():
@@ -229,13 +230,13 @@ handles = [
 axb.legend(handles=handles, loc="lower left", fontsize=9.6, framealpha=0.97,
            bbox_to_anchor=(0.0, 0.0))
 axb.text(21, -2.75,
-         "signed rule total: 258/260 fully correct (99.2%)",
+         "signed rule total: 318/320 evaluable runs fully correct (99.4%)",
          fontsize=11, ha="center", va="center", weight="bold",
          bbox=dict(fc="#deebf7", ec="0.5"))
 axb.set_ylim(NY - 0.6, -3.1)
 
 fig.suptitle("Does the threshold rule actually predict the first changed word? "
-             "All 16 local free-run experiments (5 prompt/window settings, 20 "
+             "All 19 local free-run experiments (5 prompt/window settings, 20 "
              "directions each)", fontsize=13.5, y=0.99)
 fig.tight_layout(rect=(0, 0, 1, 0.97))
 fig.savefig("fig2_prediction_scorecard.png", dpi=165)

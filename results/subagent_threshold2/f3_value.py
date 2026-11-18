@@ -17,9 +17,11 @@ import matplotlib.pyplot as plt
 
 import common2 as C
 
-# gather all flipped runs with sequences
+# gather all flipped runs with sequences (all free-run records now ship them)
 runs = []   # dict(prompt, r, T, agree(bool array), frac_all, resynced)
+n_total = 0
 for e in C.load_free("all"):
+    n_total += len(e["obs"])
     if e["npz"] is None:
         continue
     f = e["npz"]
@@ -34,9 +36,10 @@ for e in C.load_free("all"):
         runs.append(dict(prompt=e["prompt"], r=float(e["r"]), d=d, T=T,
                          agree=a, frac_all=st["frac_identical_all"],
                          resynced=st["resynced"]))
-print(f"flipped runs with sequences: {len(runs)}; re-synced: "
-      f"{sum(r['resynced'] for r in runs)}")
-n_noflip = 320 - 75  # 75 flips observed overall; 46 of them have sequences
+n_flip_all = sum(int((np.asarray(e["obs"]) >= 0).sum()) for e in C.load_free("all"))
+n_noflip = n_total - n_flip_all
+print(f"total direction-runs {n_total}; flips {n_flip_all}; with sequences "
+      f"{len(runs)}; re-synced {sum(r['resynced'] for r in runs)}")
 pooled_after = np.mean([r["agree"][r["T"]:].mean() for r in runs])
 print(f"mean agreement after the flip: {pooled_after:.3f}")
 
@@ -125,14 +128,15 @@ ax2.annotate("the dots hug the line: a flip at word T costs\n"
              xy=(123, 0.423), xytext=(16, 0.02), fontsize=10.4,
              arrowprops=dict(arrowstyle="->", color="0.3", lw=1.1),
              bbox=dict(fc="white", ec="0.7"))
-ax2.annotate("flips at the very first words (5 runs)\nlose the entire answer",
+ax2.annotate("flips at the very first words "
+             f"({sum(1 for r in runs if r['T'] <= 2)} runs lose the entire answer)",
              xy=(2, 0.007), xytext=(60, 0.115), fontsize=10,
              arrowprops=dict(arrowstyle="->", color="0.3", lw=1.0),
              bbox=dict(fc="white", ec="0.7"))
 
 fig.suptitle("What the prediction is worth: the first changed word is a point "
-             "of no return (measured on 320 real generations, 3 prompts)",
-             fontsize=13.5)
+             "of no return (measured on all %d real generations, 3 prompts)"
+             % n_total, fontsize=13.5)
 fig.tight_layout(rect=(0, 0, 1, 0.97))
 fig.savefig("fig3_cost_of_a_flip.png", dpi=165)
 print("saved fig3_cost_of_a_flip.png")

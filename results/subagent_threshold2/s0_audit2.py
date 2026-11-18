@@ -72,24 +72,42 @@ for nm in ["w100", "w200", "w500", "cyber"]:
       f"radii {np.array2string(c.radii, precision=3)}")
 
 # ---------------------------------------------------------------- E: fr npz batches
-for fn in ["fr_w100_large.npz", "fr_cyber.npz", "fr_childhood.npz"]:
-    f = C.FreeNPZ(os.path.join(C.BASE, fn))
-    obs_rec = f.obs_recomputed()
-    ok = (obs_rec == f.obs).all()
-    p(f"[E] {fn}: obs recomputed from gen_ids == stored obs: {ok}")
-    if not ok:
-        bad = np.argwhere(obs_rec != f.obs)
-        p(f"    mismatches (ri,di,stored,recomputed): "
-          f"{[(int(i), int(d), int(f.obs[i,d]), int(obs_rec[i,d])) for i,d in bad[:10]]}")
-    # reference row identical across batches and equal to geometry baseline?
-    refs = [np.asarray(b[0]) for b in f.batches]
-    same_ref = all((refs[0] == r).all() for r in refs)
-    p(f"    all batch reference rows identical: {same_ref}")
-    if fn == "fr_w100_large.npz":
-        p(f"    reference == w100_layers unperturbed gen_ids: {(refs[0] == cL.gen_ids).all()}")
-    if fn == "fr_cyber.npz":
-        cy = C.load_case("cyber")
-        p(f"    reference == a1_cyber_w100 gen_ids: {(refs[0] == cy.gen_ids).all()}")
+GEOMS = {}
+for nm in ["w100", "w200", "w500", "cyber", "w100tiny"]:
+    GEOMS[nm] = C.load_case(nm)
+
+GEOM_OF_SOURCE = {
+    "a1_ds_w100/free_run_large": "w100", "a1_ds_w100/free_run": "w100tiny",
+    "a1_ds_w200_large/free_run": "w200", "a1_ds_w500_large/free_run": "w500",
+    "fr_w100_large.npz": "w100", "fr_cyber.npz": "cyber",
+}
+
+import json as _json
+for e in C.load_free("all"):
+    if e["npz"] is None:
+        continue
+    f, src = e["npz"], e["source"]
+    ri = int(np.argmin(np.abs(f.radii - e["r"])))
+    ok = (f.first_mismatch(ri, 0) == e["obs"][0])  # spot check d0
+    obs_row = np.array([f.first_mismatch(ri, d) for d in range(f.K)])
+    p(f"[E] {src} r={e['r']:g}: obs recomputed from gen_ids == stored obs: "
+      f"{(obs_row == np.asarray(e['obs'])).all()}")
+    g = GEOM_OF_SOURCE.get(src)
+    if g:
+        ref = np.asarray(f.batches[0][0])
+        p(f"    reference row == {g} geometry gen_ids: "
+          f"{(ref == GEOMS[g].gen_ids).all()}")
+
+# cross-check: npz supersets match their summary jsons exactly
+for src, fn in [("a1_ds_w100/free_run_large", "free_w100_large.json"),
+                ("a1_ds_w200_large/free_run", "free_w200.json"),
+                ("a1_ds_w500_large/free_run", "free_w500.json")]:
+    recs = [e for e in C.load_free("all") if e["source"] == src]
+    j = _json.load(open(os.path.join(C.BASE, fn)))
+    same = all((np.asarray(recs[i]["obs"]).tolist() == j["obs"][i]) and
+               (np.asarray(recs[i]["pred"]).tolist() == j["pred"][i])
+               for i in range(len(recs)))
+    p(f"[E] {src} == summary {fn} (obs and pred): {same}")
 
 # ---------------------------------------------------------------- F: twin jsons
 j = open(os.path.join(C.BASE, "free_w100_large.json")).read()
@@ -99,8 +117,8 @@ import json
 ja, jb = json.loads(j), json.loads(j2)
 p(f"    same obs: {ja['obs']==jb['obs']}, same pred: {ja['pred']==jb['pred']}, "
   f"runs: {ja['run']} vs {jb['run']}")
-p(f"    free_w100_large obs rows: {ja['obs']}")
-p(f"    free_w100_large pred rows: {ja['pred']}")
+p(f"[F] note: those jsons summarize {ja['run']}/free_run_large, whose raw npz "
+  f"(with sequences) is now used directly instead")
 
 # ---------------------------------------------------------------- G/H: controlling ties
 for nm in ["w100", "w200", "w500", "cyber"]:

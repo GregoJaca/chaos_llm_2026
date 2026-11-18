@@ -155,30 +155,33 @@ class FreeNPZ:
                          for ri in range(self.n_r)])
 
 
+EXTRA_RUNS = {
+    "a1_ds_w100/free_run_large": dict(dir=r"C:\Users\hjaca\research\chaos_llm_2026\results\a1_ds_w100\free_run_large", geom="w100", prompt="propulsion"),
+    "a1_ds_w200_large/free_run": dict(dir=r"C:\Users\hjaca\research\chaos_llm_2026\results\a1_ds_w200_large\free_run", geom="w200", prompt="propulsion"),
+    "a1_ds_w500_large/free_run": dict(dir=r"C:\Users\hjaca\research\chaos_llm_2026\results\a1_ds_w500_large\free_run", geom="w500", prompt="propulsion"),
+    "a1_ds_w100/free_run": dict(dir=r"C:\Users\hjaca\research\chaos_llm_2026\results\a1_ds_w100\free_run", geom="w100tiny", prompt="propulsion"),
+}
+
+
 def load_free(name):
-    """Free-run records: returns list of (radius, obs[K], pred[K], FreeNPZ|None,
-    geometry_name|None) tuples, geometry_name = teacher-forced case to score
-    against (None when only the shipped pred is usable)."""
+    """Free-run records: returns list of dicts, one per (source, radius):
+    obs[K], pred[K] (shipped), npz FreeNPZ (raw sequences) or None, geom =
+    teacher-forced case to score against (None when only the shipped pred is
+    usable). Sources with raw sequences supersede their summary jsons (same
+    obs, verified in s0_audit2)."""
     out = []
-    # w100 geometry, small radii (summary jsons; both jsons are twins -> keep one)
-    j = json.load(open(os.path.join(BASE, "free_w100_large.json")))
-    j2 = json.load(open(os.path.join(BASE, "free_w100_layers_large.json")))
-    same = (j["obs"] == j2["obs"]) and (j["radii"] == j2["radii"])
-    for i, r in enumerate(j["radii"]):
-        out.append(dict(source="free_w100_large.json", twin_json_identical=same,
-                        r=float(r), obs=np.asarray(j["obs"][i]),
-                        pred=np.asarray(j["pred"][i]), npz=None, geom="w100"))
-    # w100 geometry, large radii with sequences
+    # tiny + small + large radii w100, w200, w500 -- all with raw sequences
+    for src, meta in EXTRA_RUNS.items():
+        f = FreeNPZ(os.path.join(meta["dir"], "free_run.npz"))
+        for i, r in enumerate(f.radii):
+            out.append(dict(source=src, r=float(r), obs=f.obs[i], pred=f.pred[i],
+                            npz=f, geom=meta["geom"], prompt=meta["prompt"]))
+    # w100 large radii (already a local_data copy, with sequences)
     fr = FreeNPZ(os.path.join(BASE, "fr_w100_large.npz"))
     for i, r in enumerate(fr.radii):
         out.append(dict(source="fr_w100_large.npz", r=float(r), obs=fr.obs[i],
-                        pred=fr.pred[i], npz=fr, geom="w100"))
-    # w200 / w500 (summary jsons)
-    for nm, fn in [("w200", "free_w200.json"), ("w500", "free_w500.json")]:
-        jw = json.load(open(os.path.join(BASE, fn)))
-        for i, r in enumerate(jw["radii"]):
-            out.append(dict(source=fn, r=float(r), obs=np.asarray(jw["obs"][i]),
-                            pred=np.asarray(jw["pred"][i]), npz=None, geom=nm))
+                        pred=fr.pred[i], npz=fr, geom="w100",
+                        prompt="propulsion"))
     # cyber / childhood with sequences
     for nm, fn, geom in [("cyber", "fr_cyber.npz", "cyber"),
                          ("childhood", "fr_childhood.npz", None)]:

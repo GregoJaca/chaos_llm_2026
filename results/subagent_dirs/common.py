@@ -76,7 +76,8 @@ def load_state_mid():
     d = {k: z[k] for k in z.files}
     z.close()
     d["dh"] = d["dh"].astype(np.float64)
-    d["dm"] = d["dm"].astype(np.float64)
+    if "dm" in d:
+        d["dm"] = d["dm"].astype(np.float64)
     return d
 
 

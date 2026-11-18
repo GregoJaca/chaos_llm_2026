@@ -20,18 +20,47 @@
 [D] w200: min margin 0.0031 at t=44; top1=13 top2=311; radii [0.01 0.03 0.1  0.2  0.3 ]
 [D] w500: min margin 0.0031 at t=44; top1=13 top2=311; radii [0.01 0.03 0.1  0.3 ]
 [D] cyber: min margin 0.0174 at t=39; top1=11513 top2=3853; radii [0.01 0.1  0.3 ]
-[E] fr_w100_large.npz: obs recomputed from gen_ids == stored obs: True
-    all batch reference rows identical: True
-    reference == w100_layers unperturbed gen_ids: True
-[E] fr_cyber.npz: obs recomputed from gen_ids == stored obs: True
-    all batch reference rows identical: True
-    reference == a1_cyber_w100 gen_ids: True
-[E] fr_childhood.npz: obs recomputed from gen_ids == stored obs: True
-    all batch reference rows identical: True
+[E] a1_ds_w100/free_run_large r=0.03: obs recomputed from gen_ids == stored obs: True
+    reference row == w100 geometry gen_ids: True
+[E] a1_ds_w100/free_run_large r=0.1: obs recomputed from gen_ids == stored obs: True
+    reference row == w100 geometry gen_ids: True
+[E] a1_ds_w100/free_run_large r=0.3: obs recomputed from gen_ids == stored obs: True
+    reference row == w100 geometry gen_ids: True
+[E] a1_ds_w200_large/free_run r=0.1: obs recomputed from gen_ids == stored obs: True
+    reference row == w200 geometry gen_ids: True
+[E] a1_ds_w200_large/free_run r=0.3: obs recomputed from gen_ids == stored obs: True
+    reference row == w200 geometry gen_ids: True
+[E] a1_ds_w500_large/free_run r=0.1: obs recomputed from gen_ids == stored obs: True
+    reference row == w500 geometry gen_ids: True
+[E] a1_ds_w500_large/free_run r=0.3: obs recomputed from gen_ids == stored obs: True
+    reference row == w500 geometry gen_ids: True
+[E] a1_ds_w100/free_run r=0.0001: obs recomputed from gen_ids == stored obs: True
+    reference row == w100tiny geometry gen_ids: True
+[E] a1_ds_w100/free_run r=0.001: obs recomputed from gen_ids == stored obs: True
+    reference row == w100tiny geometry gen_ids: True
+[E] a1_ds_w100/free_run r=0.01: obs recomputed from gen_ids == stored obs: True
+    reference row == w100tiny geometry gen_ids: True
+[E] fr_w100_large.npz r=0.5: obs recomputed from gen_ids == stored obs: True
+    reference row == w100 geometry gen_ids: True
+[E] fr_w100_large.npz r=1: obs recomputed from gen_ids == stored obs: True
+    reference row == w100 geometry gen_ids: True
+[E] fr_w100_large.npz r=2: obs recomputed from gen_ids == stored obs: True
+    reference row == w100 geometry gen_ids: True
+[E] fr_cyber.npz r=0.01: obs recomputed from gen_ids == stored obs: True
+    reference row == cyber geometry gen_ids: True
+[E] fr_cyber.npz r=0.1: obs recomputed from gen_ids == stored obs: True
+    reference row == cyber geometry gen_ids: True
+[E] fr_cyber.npz r=0.3: obs recomputed from gen_ids == stored obs: True
+    reference row == cyber geometry gen_ids: True
+[E] fr_childhood.npz r=0.01: obs recomputed from gen_ids == stored obs: True
+[E] fr_childhood.npz r=0.1: obs recomputed from gen_ids == stored obs: True
+[E] fr_childhood.npz r=0.3: obs recomputed from gen_ids == stored obs: True
+[E] a1_ds_w100/free_run_large == summary free_w100_large.json (obs and pred): True
+[E] a1_ds_w200_large/free_run == summary free_w200.json (obs and pred): True
+[E] a1_ds_w500_large/free_run == summary free_w500.json (obs and pred): True
 [F] free_w100_large.json == free_w100_layers_large.json byte-identical: True
     same obs: True, same pred: True, runs: results/a1_ds_w100 vs results/a1_ds_w100
-    free_w100_large obs rows: [[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1]]
-    free_w100_large pred rows: [[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]]
+[F] note: those jsons summarize results/a1_ds_w100/free_run_large, whose raw npz (with sequences) is now used directly instead
 [H] w100: per-direction r_* (signed, gain@r=0.001) and controlling step:
     d10: r_*=   0.1276  t*= 16  m= 0.1200  dm@r0=-0.00094  destab
     d14: r_*=   0.3302  t*=123  m= 0.0202  dm@r0=-0.00006  destab

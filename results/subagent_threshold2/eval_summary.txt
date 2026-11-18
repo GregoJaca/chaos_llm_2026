@@ -1,18 +1,21 @@
 SCORECARD per (source, radius, rule). Rules: ship = delivered adversarial |dm| prediction; sgn = signed rule recomputed at the exact radius.
 exact = predicted step == observed step (both flips); noflip_ok = both -1; false = predicted flip, none observed; missed = flip observed, none predicted.
 
-    free_w100_large. r=0.03  | ship: exact  0 noflip 20 false  0 missed  0 steperr  0 | sgn: exact  0 noflip 20 false  0 missed  0 steperr  0
-    free_w100_large. r=0.1   | ship: exact  0 noflip 20 false  0 missed  0 steperr  0 | sgn: exact  0 noflip 20 false  0 missed  0 steperr  0
-    free_w100_large. r=0.3   | ship: exact  0 noflip 19 false  0 missed  1 steperr  0 | sgn: exact  1 noflip 19 false  0 missed  0 steperr  0 |off| med    0 max   0
+a1_ds_w100/free_run_l r=0.03  | ship: exact  0 noflip 20 false  0 missed  0 steperr  0 | sgn: exact  0 noflip 20 false  0 missed  0 steperr  0
+a1_ds_w100/free_run_l r=0.1   | ship: exact  0 noflip 20 false  0 missed  0 steperr  0 | sgn: exact  0 noflip 20 false  0 missed  0 steperr  0
+a1_ds_w100/free_run_l r=0.3   | ship: exact  0 noflip 19 false  0 missed  1 steperr  0 | sgn: exact  1 noflip 19 false  0 missed  0 steperr  0 |off| med    0 max   0
+a1_ds_w200_large/free r=0.1   | ship: exact  2 noflip 17 false  0 missed  0 steperr  1 |off| med    0 max  11 | sgn: exact  3 noflip 17 false  0 missed  0 steperr  0 |off| med    0 max   0
+a1_ds_w200_large/free r=0.3   | ship: exact 11 noflip  7 false  2 missed  0 steperr  0 |off| med    0 max   0 | sgn: exact 11 noflip  9 false  0 missed  0 steperr  0 |off| med    0 max   0
+a1_ds_w500_large/free r=0.1   | ship: exact  2 noflip 17 false  0 missed  0 steperr  1 |off| med    0 max  11 | sgn: exact  3 noflip 17 false  0 missed  0 steperr  0 |off| med    0 max   0
+a1_ds_w500_large/free r=0.3   | ship: exact 11 noflip  6 false  3 missed  0 steperr  0 |off| med    0 max   0 | sgn: exact 11 noflip  9 false  0 missed  0 steperr  0 |off| med    0 max   0
+     a1_ds_w100/free r=0.0001 | ship: exact  0 noflip 20 false  0 missed  0 steperr  0 | sgn: exact  0 noflip 20 false  0 missed  0 steperr  0
+     a1_ds_w100/free r=0.001 | ship: exact  0 noflip 20 false  0 missed  0 steperr  0 | sgn: exact  0 noflip 20 false  0 missed  0 steperr  0
+     a1_ds_w100/free r=0.01  | ship: exact  0 noflip 20 false  0 missed  0 steperr  0 | sgn: exact  0 noflip 20 false  0 missed  0 steperr  0
        fr_w100_large r=0.5   | ship: exact  2 noflip 13 false  4 missed  0 steperr  1 |off| med    0 max   2 | sgn: exact  3 noflip 17 false  0 missed  0 steperr  0 |off| med    0 max   0
        fr_w100_large r=1     | ship: exact  4 noflip  5 false  7 missed  0 steperr  4 |off| med    1 max 127 | sgn: exact  7 noflip 12 false  0 missed  0 steperr  1 |off| med    0 max  22
     ->  1 signed-rule misses;    0% of them have r within a factor 2 of the direction's threshold (rho in [0.5,2])
        fr_w100_large r=2     | ship: exact 11 noflip  1 false  3 missed  0 steperr  5 |off| med    0 max 129 | sgn: exact 15 noflip  4 false  0 missed  0 steperr  1 |off| med    0 max   2
     ->  1 signed-rule misses;    0% of them have r within a factor 2 of the direction's threshold (rho in [0.5,2])
-          free_w200. r=0.1   | ship: exact  2 noflip 17 false  0 missed  0 steperr  1 |off| med    0 max  11 | sgn: exact  3 noflip 17 false  0 missed  0 steperr  0 |off| med    0 max   0
-          free_w200. r=0.3   | ship: exact 11 noflip  7 false  2 missed  0 steperr  0 |off| med    0 max   0 | sgn: exact 11 noflip  9 false  0 missed  0 steperr  0 |off| med    0 max   0
-          free_w500. r=0.1   | ship: exact  2 noflip 17 false  0 missed  0 steperr  1 |off| med    0 max  11 | sgn: exact  3 noflip 17 false  0 missed  0 steperr  0 |off| med    0 max   0
-          free_w500. r=0.3   | ship: exact 11 noflip  6 false  3 missed  0 steperr  0 |off| med    0 max   0 | sgn: exact 11 noflip  9 false  0 missed  0 steperr  0 |off| med    0 max   0
             fr_cyber r=0.01  | ship: exact  0 noflip 20 false  0 missed  0 steperr  0 | sgn: exact  0 noflip 20 false  0 missed  0 steperr  0
             fr_cyber r=0.1   | ship: exact  0 noflip 20 false  0 missed  0 steperr  0 | sgn: exact  0 noflip 20 false  0 missed  0 steperr  0
             fr_cyber r=0.3   | ship: exact  2 noflip 15 false  2 missed  0 steperr  1 |off| med    0 max  22 | sgn: exact  3 noflip 17 false  0 missed  0 steperr  0 |off| med    0 max   0
@@ -20,19 +23,22 @@ exact = predicted step == observed step (both flips); noflip_ok = both -1; false
         fr_childhood r=0.1   | ship: exact  4 noflip 15 false  1 missed  0 steperr  0 |off| med    0 max   0
         fr_childhood r=0.3   | ship: exact  9 noflip  4 false  4 missed  0 steperr  3 |off| med    0 max  48
 
-GRAND TOTAL (signed rule, correct radius, all 260 direction-runs): exact 57, no-flip correct 201, false alarms 0, missed flips 0, wrong-step 2 => 99.2% fully correct
+GRAND TOTAL (signed rule, correct radius, all 320 direction-runs): exact 57, no-flip correct 261, false alarms 0, missed flips 0, wrong-step 2 => 99.4% fully correct
 
 FLIP COUNTS observed vs predicted per (source, r):
-    free_w100_large. r=0.03  obs  0/20 | ship  0 | sgn  0 | adv  0
-    free_w100_large. r=0.1   obs  0/20 | ship  0 | sgn  0 | adv  0
-    free_w100_large. r=0.3   obs  1/20 | ship  0 | sgn  1 | adv  2
+a1_ds_w100/free_run_l r=0.03  obs  0/20 | ship  0 | sgn  0 | adv  0
+a1_ds_w100/free_run_l r=0.1   obs  0/20 | ship  0 | sgn  0 | adv  0
+a1_ds_w100/free_run_l r=0.3   obs  1/20 | ship  0 | sgn  1 | adv  2
+a1_ds_w200_large/free r=0.1   obs  3/20 | ship  3 | sgn  3 | adv  3
+a1_ds_w200_large/free r=0.3   obs 11/20 | ship 13 | sgn 11 | adv 13
+a1_ds_w500_large/free r=0.1   obs  3/20 | ship  3 | sgn  3 | adv  3
+a1_ds_w500_large/free r=0.3   obs 11/20 | ship 14 | sgn 11 | adv 14
+     a1_ds_w100/free r=0.0001 obs  0/20 | ship  0 | sgn  0 | adv  0
+     a1_ds_w100/free r=0.001 obs  0/20 | ship  0 | sgn  0 | adv  0
+     a1_ds_w100/free r=0.01  obs  0/20 | ship  0 | sgn  0 | adv  0
        fr_w100_large r=0.5   obs  3/20 | ship  7 | sgn  3 | adv  7
        fr_w100_large r=1     obs  8/20 | ship 15 | sgn  8 | adv 15
        fr_w100_large r=2     obs 16/20 | ship 19 | sgn 16 | adv 19
-          free_w200. r=0.1   obs  3/20 | ship  3 | sgn  3 | adv  3
-          free_w200. r=0.3   obs 11/20 | ship 13 | sgn 11 | adv 13
-          free_w500. r=0.1   obs  3/20 | ship  3 | sgn  3 | adv  3
-          free_w500. r=0.3   obs 11/20 | ship 14 | sgn 11 | adv 14
             fr_cyber r=0.01  obs  0/20 | ship  0 | sgn  0 | adv  0
             fr_cyber r=0.1   obs  0/20 | ship  0 | sgn  0 | adv  0
             fr_cyber r=0.3   obs  3/20 | ship  5 | sgn  3 | adv  5

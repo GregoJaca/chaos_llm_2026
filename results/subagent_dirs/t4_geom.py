@@ -21,7 +21,7 @@ What we CAN test:
 import numpy as np
 import matplotlib.pyplot as plt
 
-from common import (L27, annot_heat, load_rollouts, load_w100, logd,
+from common import (BASE, L27, annot_heat, load_rollouts, load_w100, logd,
                     save_json, savefig, spear)
 
 z = load_w100()
@@ -87,33 +87,40 @@ N["cos12_median_r2"] = float(np.median(P2[0]))
 # input-space off-diagonal cosine for reference
 N["input_offdiag_cos"] = float(offd.mean())
 
-# (c) angle between the response and the baseline state.
-# The stored cos(h',h) equals 1/sqrt(1+(|dh|/|h|)^2) to within 1e-4 (verified),
-# i.e. the response is essentially transverse; solving exactly for the radial
-# component:  <dh,h> = c|h||h'| - |h|^2, |h'| = c|h| + sqrt(c^2|h|^2 - |h|^2 + |dh|^2)
-def cos_dh_h(ridx):
-    c = cos_h[ridx, :, L27]
-    d = dh[ridx, :, L27]
-    h = norm_h0[L27][None, :]
-    disc = np.maximum(c * c * h * h - h * h + d * d, 0)
-    y = c * h + np.sqrt(disc)
-    return (c * y - h) / np.maximum(d, 1e-30)
-
-a2 = cos_dh_h(11)
-med_ang = np.median(a2, axis=1)                # per-direction
-N["cos_dh_vs_h0_r2"] = {
-    "median": float(np.median(a2)), "median_abs": float(np.median(np.abs(a2))),
-    "p90_abs": float(np.percentile(np.abs(a2), 90)),
-    "genericity_scale": float(1 / np.sqrt(1536)),
-    "frac_abs_gt_0.1": float((np.abs(a2) > 0.1).mean()),
-    "per_direction": [float(x) for x in med_ang],
+# (c) angle between the response and the baseline state -- DIRECT computation
+# using the stored baseline hidden states (margins/w100.npz, h27; token axis
+# verified equal via gen_ids/top1). Only directions 0,1,2 have stored dh
+# vectors (dh_last). The stored `cos` array equals 1/sqrt(1+(|dh|/|h|)^2) to
+# ~1e-4 (verified), i.e. it is a derived near-transversality diagnostic; the
+# direct vectors are authoritative for the radial component.
+zm = np.load(BASE + r"\margins\w100.npz")
+h27 = zm["h27"].astype(np.float64)[:300]
+assert np.array_equal(zm["top1"][:300], z["top1"]), "token alignment failed"
+cos_direct = {}
+for ridx, rname in [(4, "r=0.1"), (11, "r=2")]:
+    per_dir = []
+    for d in range(3):
+        v = dh_last[ridx, d]
+        cs = (v * h27).sum(-1) / (np.linalg.norm(v, axis=-1) * np.linalg.norm(h27, axis=-1))
+        per_dir.append(cs)
+    C = np.stack(per_dir)                       # [3, T]
+    cos_direct[rname] = C
+    N[f"cos_dh_h27_direct_{rname}"] = {
+        "median_abs": float(np.median(np.abs(C))),
+        "frac_abs_gt_0.1": float((np.abs(C) > 0.1).mean()),
+        "per_dir_median": [float(np.median(C[d])) for d in range(3)],
+    }
+print("direct cos(dh,h27) r=2: per-dir medians",
+      N["cos_dh_h27_direct_r=2"]["per_dir_median"],
+      "|median|", round(N["cos_dh_h27_direct_r=2"]["median_abs"], 4))
+# transversality check on the stored cos array (for the record)
+c = cos_h[11, :, L27]; dnn = dh[11, :, L27]; h = norm_h0[L27][None, :]
+pred = 1.0 / np.sqrt(1.0 + (dnn / h) ** 2)
+N["stored_cos_vs_transverse_formula"] = {
+    "corr": float(np.corrcoef(c.ravel(), pred.ravel())[0, 1]),
+    "mean_abs_diff": float(np.abs(c - pred).mean()),
+    "note": "stored cos is a derived quantity; do not use it as an independent measurement",
 }
-g01 = np.median(dh[4, :, L27], axis=-1)
-N["spearman_absradial_vs_gain"] = spear(np.abs(med_ang), g01)
-print("cos(dh,h0) at r=2, L27: median %.3f, |.| median %.3f (genericity %.3f), "
-      "frac>0.1: %.2f, spearman(|radial|,gain) = %.2f" %
-      (np.median(a2), np.median(np.abs(a2)), 1 / np.sqrt(1536),
-       (np.abs(a2) > 0.1).mean(), N["spearman_absradial_vs_gain"]))
 
 # ---------------- FIGURE ----------------
 fig, axs = plt.subplots(2, 2, figsize=(12.5, 9))
@@ -131,7 +138,7 @@ ax = axs[0, 1]
 data = [P01[k] for k in range(3)] + [P2[k] for k in range(3)]
 lbls = ["dirs 0-1, r=0.1", "dirs 0-2, r=0.1", "dirs 1-2, r=0.1",
         "dirs 0-1, r=2", "dirs 0-2, r=2", "dirs 1-2, r=2"]
-bp = ax.boxplot(data, labels=lbls, showfliers=False, patch_artist=True)
+bp = ax.boxplot(data, tick_labels=lbls, showfliers=False, patch_artist=True)
 for p, c in zip(bp["boxes"], ["#aec7e8"] * 3 + ["#ffbb78"] * 3):
     p.set_facecolor(c)
 ax.axhline(0, color="k", lw=0.6, label="cos = 0 (independent responses)")
@@ -145,17 +152,22 @@ ax.set_title(f"(b) Do different directions push the hidden state the same way?\n
 ax.legend(fontsize=7)
 
 ax = axs[1, 0]
-o = np.argsort(med_ang)
-ax.bar(range(D), med_ang[o], color="gray")
-for k, d in enumerate(EX):
-    ax.bar(np.where(o == d)[0], med_ang[d], color=cols[k], label=f"dir {d}")
-ax.set_xticks(range(D)); ax.set_xticklabels([f"{i}" for i in o], fontsize=6)
-ax.set_xlabel("direction (sorted by radialness)")
-ax.set_ylabel("median over t of cos(delta h, baseline h)\n1 = pure inflation, 0 = pure rotation/deflection")
-ax.set_title(f"(c) Radial vs transverse response, r=2, layer 27\n"
-             f"median {np.median(a):.2f}; spread 10-90% = "
-             f"[{np.percentile(a,10):.2f}, {np.percentile(a,90):.2f}]; "
-             f"spearman vs gain = {N['spearman_radialness_vs_gain_r2']:.2f}")
+C2 = cos_direct["r=2"]
+bp = ax.boxplot([C2[d] for d in range(3)],
+                tick_labels=["dir 0", "dir 1", "dir 2"],
+                showfliers=False, patch_artist=True)
+for p, c in zip(bp["boxes"], cols):
+    p.set_facecolor(c); p.set_alpha(0.6)
+ax.axhline(0, color="k", lw=0.6)
+ax.axhline(1 / np.sqrt(1536), color="r", ls="--", lw=1,
+          label="genericity scale 1/sqrt(1536) = 0.026")
+ax.axhline(-1 / np.sqrt(1536), color="r", ls="--", lw=1)
+ax.set_xlabel("direction (vectors stored only for dirs 0,1,2)")
+ax.set_ylabel("cos(delta h_t, baseline h_t) per token, r=2, layer 27\n0 = pure deflection of the state")
+ax.set_title(f"(c) Radial component of the response (direct vectors)\n"
+             f"|cos| median {N['cos_dh_h27_direct_r=2']['median_abs']:.3f}; "
+             f"{N['cos_dh_h27_direct_r=2']['frac_abs_gt_0.1']*100:.0f}% of tokens |cos|>0.1; "
+             f"per-dir medians {[round(x,3) for x in N['cos_dh_h27_direct_r=2']['per_dir_median']]}")
 ax.legend(fontsize=7)
 
 ax = axs[1, 1]

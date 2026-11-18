@@ -223,7 +223,7 @@ ax.plot(eps / med, C, 'b-', lw=1.8, label=f'first layer C(eps), N={n}')
 ax.axhline(floor, color='r', ls='--', lw=1.0,
            label=f'duplicate floor C={floor:.3f} (constant at ALL eps)')
 ax.axhline(10.0 / n, color='gray', ls='--', lw=0.8, label='10/N')
-ax.annotate('2.6% of pairs are EXACT duplicates\n-> C(eps) never goes to 0;\nnaive small-eps fits give D2~0',
+ax.annotate('4.2% of pairs are EXACT duplicates\n(36 states repeated up to 305x)\n-> C(eps) floor = 0.042 at ALL eps;\nnaive small-eps fits give D2~0.02',
             xy=(0.05, 0.15), xycoords='axes fraction', fontsize=8, color='darkred')
 ax.set_xscale('log'); ax.set_yscale('log')
 ax.set_xlabel(r'$\epsilon$ / median dist'); ax.set_ylabel(r'$C(\epsilon)$')
