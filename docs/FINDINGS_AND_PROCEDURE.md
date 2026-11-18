@@ -23,12 +23,13 @@ This is the practical knowledge from the first DeepSeek-1.5B pass. Keep it with 
 2. **Prompt perturbations below ~1e-4.** FP32/RMSNorm ill-conditioning creates a response floor; the result stops scaling. The usable range is roughly `1e-3…0.1`; `r=1–2` is large but still coherent at short horizons.
 3. **Depth-axis FSLE.** It is `lnρ/1` and flat in `r`: everything happens in layer 1. The depth spectrum is more informative than the FSLE.
 4. **Depth expansion as “chaos.”** The absolute top exponents are positive, but this is residual-stream scale drift: normalize by the state norm and every block contracts (max relative exponent −0.034); the final RMSNorm projects it out. The depth FSLE ×206 absolute is ×0.46 relative. Do not sell absolute depth growth as sustained chaos.
-5. **D2/RQA as evidence of chaos.** At N=2–5k, D2 is static geometry; time-shuffled D2 is identical across 12 prompts. RQA DET is dominated by temporal correlation.
-6. **Naive `⟨T⟩(r)` scaling law.** The plan’s log-vs-power-law test is not the right observable; measure margins and thresholds instead.
-7. **600-token A1 in one batch.** Full-vocab FP32 logits + all layers OOM on T4. 500 tokens works with `batch-dirs=1` and cache clearing; otherwise reduce tokens or directions.
-8. **Old `launch_sep`/`launch_aug` data for sensitivity.** Dense Gaussian per-coordinate perturbation, no seed, `repetition_penalty=1.1`; not comparable to simplex `r`. Use only for qualitative RP/dimension.
-9. **Phi bf16 token-level runs.** `r=0` diverges due to bf16 batch shape; the data is invalid.
-10. **Partial `r=0` control.** If there is no `r=0` row in the same batch, do not trust the run.
+5. **D2/RQA as evidence of chaos.** At N=2–5k there is no D2 plateau; small-ε slopes exceed finite-N ceilings; Theiler windows do not help. Three of five long trajectories are near-exact repetition loops (P=53/74/69), so their low D2 is a degeneration artifact. Raw vs time-shuffled D2 equality is a **tautology** (shuffling preserves the point cloud). RQA DET is dominated by temporal correlation/loop copies. Strong negative.
+6. **One D2 lead, not a result.** The non-loop `launch` trajectory shows a kNN predictability gap +0.33 over phase/MIAAFT surrogates and +0.15 over its linear ceiling, but no continuation sharpness and only one trajectory. Treat as a lead; replicate on more non-loop prompts.
+7. **Naive `⟨T⟩(r)` scaling law.** The plan’s log-vs-power-law test is not the right observable; measure margins and thresholds instead.
+8. **600-token A1 in one batch.** Full-vocab FP32 logits + all layers OOM on T4. 500 tokens works with `batch-dirs=1` and cache clearing; otherwise reduce tokens or directions.
+9. **Old `launch_sep`/`launch_aug` data for sensitivity.** Dense Gaussian per-coordinate perturbation, no seed, `repetition_penalty=1.1`; not comparable to simplex `r`. Use only for qualitative RP/dimension.
+10. **Phi bf16 token-level runs.** `r=0` diverges due to bf16 batch shape; the data is invalid.
+11. **Partial `r=0` control.** If there is no `r=0` row in the same batch, do not trust the run.
 
 ## 3. Procedure for a new LLM
 

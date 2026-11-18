@@ -186,3 +186,24 @@ Six runs: `launch_pentek_{0,0.6}_{0.01,0.02,0.04}`. Each has `trajectories.pkl`,
 4. For ensemble data: confirm there is an `r=0` row in the same batch, or treat the dataset as non-reproducible.
 5. For hidden-state data: confirm the layer index, whether teacher-forced or free-running, and whether the token sequence is saved.
 6. For reuse: align rows by condition index and seed; confirm the same directions across radii.
+
+---
+
+## 9. New result folders (second pass)
+
+These are small metadata/figures; large .npz tensors are ignored by git.
+
+| Path | Contents |
+|---|---|
+| esults/a1_ds_w100_layers | 12 radii x 20 dirs x 8 layers, 300 tokens; universal curve/layers/directions |
+| esults/a1_ds_w200_large, 1_ds_w500_large, 1_ds_w50_large | window replication; margins/r_c/free-run |
+| esults/a1_childhood_w100, 1_cyber_w100 | prompt generality |
+| esults/a1_ds_w100_500tok, state_w100_500tok | longer 500-token runs |
+| esults/margins_windows | baseline margins 50/100/200/500/1000/4096, 600 tokens |
+| esults/nonnorm_w100_big | 5 layers x 6 tokens full-block/MLP sigma/rho/kappa + angles |
+| esults/depth_w100_k16 | top-16 depth spectrum, 8 tokens |
+| esults/state_w100_32dirs, state_w100_r*, state_mid_w100 | state directions, r-scan, mid-layer injection |
+| esults/d2 | D2 controls/explore JSON |
+| esults/subagent_* | subagent reports/figures/stats |
+
+Figure index: esults/figures/INDEX.md. Reviewer mapping: docs/REVIEWER_MAPPING.md.

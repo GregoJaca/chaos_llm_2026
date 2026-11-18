@@ -75,16 +75,18 @@ Full block, 6 tokens × 5 layers:
 - Misalignment budget `(σ−1)cos²θ` with measured σ and angles predicts measured chained gains within ≲2×. The measured product is ~13 orders below the naive σ_max-chain and ~5 below the ρ-chain.
 - Interpretation: components amplify one step, but the full block tames them and the amplification direction rotates; the composition contracts. This is the quantitative answer to “components amplify, composition may not.”
 
-## 6. D2 / RQA: conclusive negative
+## 6. D2 / RQA: conclusive negative, with a data-validity correction
 
-- Last-layer D2 varies 3–11 across 12 prompts; vocabulary null ≈5.0.
-- **Controls (one long trajectory):** raw D2 5.75, **time-shuffled 5.69**, phase-randomized surrogate 21.7, vocabulary 5.04.
-- **Across all 12 prompts:** raw D2 ≈ time-shuffled D2 (diagonal scatter).
-- TwoNN: last-layer ≈5–7; vocabulary ≈18.6.
-- Delay embedding D2 increases with embedding dimension (5→17); no low-dimensional delay attractor.
-- RQA DET 0.37–0.95, Theiler 20 barely changes it.
+- **Three of the five long trajectories are near-exact repetition loops** (`cyber` P=53, `future` P=74, `great` P=69; fidelity 1.7–1.8% of cloud scale, 86–91% recurring, cycle model explains 85–92% of variance). Their low D2/TwoNN/high predictability is repeated-text degeneration, reproduced by a trivial `period + drift + jitter` synthetic. **They must be excluded or regenerated.**
+- The two non-loop trajectories are the honest tests:
+  - No D2 plateau at any N; local slopes decline monotonically (e.g. interstellar 9.0→5.3→1.1); small-ε slopes exceed the Eckmann–Ruelle ceiling; Theiler 0→1000 changes nothing.
+  - `interstellar`: clean negative; kNN NSE equals its linear ceiling; no continuation sharpness.
+  - `launch`: **suggestive** kNN NSE 0.297 at h=8 vs −0.036±0.005 (phase), −0.034±0.011 (MIAAFT), +0.15 above ridge-PC50; but no continuation sharpness and one trajectory — a lead, not a result.
+- **Raw vs time-shuffled D2 is a tautology:** time-shuffling preserves the point cloud, and D2/TwoNN/MLE/PCA are point-cloud statistics. The earlier “raw≈shuffled” control cannot test dynamics.
+- Static geometry: locally thin (TwoNN 3.3–6.7, MLE 2–4) but globally spread (90% variance needs 161/223 PCs) → inhomogeneous token-state cloud, not an attractor. TwoNN/MLE have strong finite-N bias (iid-Gauss ~100).
+- RQA DET 0.37–0.95, Lmax up to 1775; dominated by temporal correlation and loop copies.
 
-Conclusion: the low D2 is a **static geometric property** of the hidden-state cloud, not temporal dynamics. D2/RQA do not provide evidence of low-dimensional chaos at this N. The negative result is robust because of the shuffled control.
+Conclusion: D2/RQA do **not** provide evidence of low-dimensional chaos. The strongest positive lead is a predictability gap on one non-loop trajectory; it needs replication.
 
 ## 7. What is different from before
 

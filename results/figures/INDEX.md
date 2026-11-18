@@ -104,10 +104,21 @@ Subagent report: `results/subagent_threshold/REPORT.md`.
 - **threshold_tubes_cases.png** — 3 individual threshold tubes (fragile/typical/resistant).
 - **threshold_ecdf.png**, **threshold_window_spectrum.png**, **threshold_linearity.png**.
 
+## D2 / RQA
+
+- **d2_loops_scan.png** — state distance vs lag; cyber/future/great collapse at P=53/74/69 (repetition loops); non-loop prompts do not. Reframes the dataset.
+- **d2_scaling_subagent.png** — C(ε) on a shared normalized axis for N=1024/2048/full + shuffled overlay; no plateau.
+- **d2_slopes_subagent.png** — local slopes vs ε, Theiler variants; slopes decline monotonically.
+- **d2_synthloop_C.png** — statics-only synthetic reproduces the loop C(ε) curve.
+- **d2_synthloop_pred.png** — trivial cycle+drift synthetic reproduces NSE≈0.999; statics alone predicts nothing.
+- **d2_intrinsic_dim.png** — TwoNN/MLE/PCA vs nulls; locally thin, globally spread; finite-N bias.
+- **d2_prediction.png**, **d2_continuation.png** — non-loop dynamics: launch NSE gap, no continuation sharpness; interstellar null.
+- **d2_curves.png**, **d2_vs_N.png**, **d2_distribution.png**, **d2_theiler.png**, **d2_controls.png**, **d2_raw_vs_shuffled.png**, **d2_delay_twonn.png** — earlier D2/RQA diagnostics.
+
 ## Subagent reports
 
 - `results/subagent_a1/REPORT.md`
 - `results/subagent_threshold/REPORT.md`
 - `results/subagent_state/REPORT.md`
 - `results/subagent_nonnorm/REPORT.md`
-- `results/subagent_d2/` (in progress)
+- `results/subagent_d2/REPORT.md`

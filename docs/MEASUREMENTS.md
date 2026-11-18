@@ -59,13 +59,15 @@ Use it to decide what to expand in the theory section.
 
 - **Definitions:** `C(ε)=2/(N(N-1))Σ_{i<j}Θ(ε-||x_i-x_j||)`, local slope `d log C/d log ε`; RQA on the thresholded recurrence matrix.
 - **Implementation:** `src/chaos_llm/analysis/dimension.py`; runner `scripts/run_d2.py`; data in `results/d2/`.
-- **Result (negative):**
-  - No stable local-slope plateau for first/last layer trajectories at N=2000–3000.
-  - First-layer D2 ≈13–27, far above the Eckmann–Ruelle bound `2 log10 N≈6.6`; not reliable.
-  - Last-layer D2 ≈3–10 and decreases with N for some prompts, but not consistently; it is not clearly below the vocabulary null (≈5.35).
-  - Theiler window (0/10/50) does not produce a plateau.
-  - RQA DET ≈0.37–0.95, Lmax up to ~1775; Theiler 20 barely changes it. This reflects strong temporal correlation, not necessarily deterministic chaos.
-- **Conclusion:** D2/RQA are **not** reliable evidence for low-dimensional chaos in this data. The honest claim is “no robust low-dimensional scaling at the accessible N.”
+- **Result (negative + data-validity correction):**
+  - Three of five long trajectories (`cyber` P=53, `future` P=74, `great` P=69) are near-exact repetition loops; their low D2/TwoNN/high predictability is repeated-text degeneration, reproduced by a trivial period+drift+jitter synthetic.
+  - Non-loop trajectories: no stable plateau; local slopes decline monotonically; small-ε slopes exceed the Eckmann–Ruelle bound; Theiler 0→1000 changes nothing.
+  - Raw vs time-shuffled D2 is a tautology: shuffling preserves the point cloud; D2/TwoNN/MLE/PCA are point-cloud statistics. Max `|Δlog C|≤0.018`.
+  - `interstellar`: clean negative; kNN NSE equals its linear ceiling.
+  - `launch`: suggestive kNN NSE 0.297 at h=8 vs −0.036±0.005 (phase), −0.034±0.011 (MIAAFT), +0.15 over ridge-PC50; but no continuation sharpness and one trajectory.
+  - TwoNN/MLE: locally thin (3–7) but globally spread (90% variance needs 161/223 PCs); finite-N bias (iid-Gauss ~100). Inhomogeneous token-state geometry, not an attractor.
+  - RQA DET 0.37–0.95; dominated by temporal correlation/loop copies.
+- **Conclusion:** D2/RQA are **not** reliable evidence for low-dimensional chaos. The only lead is the non-loop `launch` predictability gap, which needs replication.
 
 ## 7. Extra quantities that are nearly free
 

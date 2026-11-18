@@ -23,8 +23,9 @@ Status: agreed 2026-11-17. These are binding for the current revision unless cha
 
 - **A1:** prompt perturbation first, finite differences. Current-state perturbation later if time. Use 20–32 directions; radii for linear check `1e-4, 3e-4, 1e-3`; FSLE grid 16 radii (log-spaced) × 20 directions.
 - **A4/FSLE:** time-axis from A1 data; depth-axis from existing `results_perturbations*` hidden states. `ρ` is a choice; compute `ρ ∈ {1.5, 2, 4}` and assess. Consider the distance metric saturation (cosine max ~1, so `ρ` must be below saturation).
-- **Thresholds/`T(r,u)`:** measure `m_t` and `δm_t`; compute `r_c(t,u)=m_t/|δm_t/r|`; predict `T(r,u)=min{t:r≥r_c}`; validate with free-run at 2–3 radii.
-- **Depth map:** full layer tangent product per token; QR/Benettin depth spectrum; local layer gains; principal angles; `h_depth=Σ positive λ_i`. Use existing depth hidden states for FSLE, new JVP for spectrum.
+- **Thresholds/`T(r,u)`:** measure `m_t` and `δm_t`; use the **signed** threshold `r_c⁻=m_t·r/max(−δm_t,0)` (a flip requires `δm_t≤−m_t`; the symmetric `|δm|` rule over-predicts). Predict `T(r,u)=min{t:r≥r_c⁻}`; validate with free-run at 2–3 radii. Do not extrapolate beyond `r≈0.3`.
+- **D2/RQA:** correct methodology; exclude or regenerate repetition-loop trajectories (near-exact periods, high recurrence); do not use raw-vs-time-shuffled D2 as a dynamic control (it is a tautology for point-cloud statistics). Use no-plateau/finite-N ceilings and MIAAFT/phase predictability.
+- **Depth map:** full layer tangent product per token; QR/Benettin depth spectrum; local layer gains; principal angles; `h_depth=Σ positive λ_i`. Report **absolute and state-scale-normalized** exponents; the absolute expansion is radial drift and the final RMSNorm projects it out. Use existing depth hidden states for FSLE, new JVP for spectrum.
 - **Non-normality:** MLP dense Jacobian (analytic or autograd) → `σ_max`, `ρ`, `κ=σ_max/ρ`; full block at selected layers/tokens via matrix-free power iteration/Arnoldi. Plot layer-wise and token-wise, individual + aggregate.
 - **D2/RQA:** correct methodology; per-prompt primary; ensemble per-trajectory secondary; vocabulary null; Theiler window with and without; chunked distances, no `N×N` disk. RQA corrected and kept as a minimal robustness panel.
 - **Cycles/periodicity:** not studied.
