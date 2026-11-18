@@ -295,6 +295,20 @@ rate over 20-token windows, $\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-
 - Growth is **positive in both regimes** at some tokens: this is a quantitative regime change, not
   a change of sign. What changes is how fast and for how long the perturbation grows.
 
+![growth errors](figures/window_growth_errors.png)
+
+**The same comparison with the full distribution.** Data: 5 prompts measured at both windows, every
+direction, mean of $\lambda_{10}$ over $t\in[10,100]$.
+
+**Panel (a).** Points: prompt means; box: distribution over all directions; thin lines join the same
+prompt across windows. **Panel (b).** The two distributions.
+
+**Reading.** The distribution shifts by **≈0.003 nats/token** (means −0.0034 vs −0.0005;
+Mann–Whitney $p=1.7\times10^{-4}$ over 36 vs 40 direction-means). The distributions overlap: this is
+a consistent shift, not a clean separation. Given the confounding of the interval with the clip time
+(N6), the correct claim is "the window changes the early-time stretching rate by a measurable but
+small amount", not "there are two distinct dynamical regimes".
+
 **Pre-clipping control: there is no window effect before the context reaches $W$.**
 
 ![preclip](figures/window_preclip_null.png)
@@ -475,6 +489,20 @@ a time shift.
 **Consequence for the analysis.** Any statement about "the window changes the rate" must specify
 (a) the interval, (b) whether that interval is pre- or post-clip, and (c) the aligned time $\tau$.
 The clean comparisons are: pre-clip (all $W>P$ identical), and post-clip at fixed $\tau$.
+
+![lambda layers](figures/lambda_layers.png)
+
+**Layer dependence.** $\lambda_5(t)$ for shallow (1,2,3,7) and deep (14,21,27) layers, median and
+25–75% band. The shallow layers die to exact zero at $t=93/192/291$ (the flush cascade). Deep
+layers stay near $-0.01$ per token with only transient excursions. There is no depth at which the
+sustained rate is positive.
+
+![lambda radius](figures/lambda_radius.png)
+
+**Radius dependence.** In the linear regime the curves collapse: the tail rate is
+$-0.010\pm0.002$ for every radius from $10^{-3}$ to $0.3$. A rate that depends on the perturbation
+size is not a Lyapunov exponent; here the only radius dependence is the nonlinear onset above
+$r\approx0.3$.
 
 ### N7. The window also changes single-position perturbations
 
