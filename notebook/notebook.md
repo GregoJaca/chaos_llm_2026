@@ -222,6 +222,49 @@ teacher-forced pass predicts without fitting.
 reachable dip remains within the horizon". The teacher-forced linearisation over-fires at
 mid/large radii because the real perturbation contracts slightly.
 
+### Part 2.0b. The asymptotic stretching rate is negative in every configuration
+
+![forest](figures/lambda_fig09_forest.png)
+
+**Data.** 31 configurations: 7 layers, 12 radii, 6 windows × 2 prompts, 12 independent prompt
+runs. For each, the **sustained rate** is the mean of
+$\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)}$ over $t>150$.
+
+**Axes.** $x$: sustained rate in nats/token. Thin line: 95% bootstrap CI over directions. Thick
+line: conservative two-way bootstrap (directions + token blocks of 10). The black line is zero.
+
+**Reading.** **0 of 31 point estimates are positive** (range −0.039 to −0.002). **0 of 31
+direction-bootstrap CIs touch zero** (largest upper bound −0.0014). With the conservative
+bootstrap, 2 of 31 CIs reach +0.0008, but none is entirely positive. A sustained rate
+$\ge+0.001$/token is excluded everywhere. The best-estimate "Lyapunov-like" number is
+**−0.0043 nats/token, CI [−0.0055, −0.0030]**.
+
+![tail](figures/lambda_tail.png)
+
+**Reading.** Fit of the tail: an exponential relaxation to a **negative** asymptote wins on the
+windows, and a constant negative rate beats a power law on 9 of 10 layer/window grids. The
+asymptote is −0.004 to −0.011 per token, with CIs excluding zero from above.
+
+![lambda windows](figures/lambda_windows.png)
+
+**Reading — the window is a forgetting rate.** The sustained contraction scales with the eviction
+churn: $W=50$ gives −0.0175 [−0.0182, −0.0165], $W=100$ −0.0065, $W\ge200$ ≈ −0.005. The only
+early-rate CI that includes positive values is $W=100$'s +0.0109 [−0.0001, +0.0221], and it is
+gone by the tail. There is **no growth phase**: the response rises for exactly one token, then
+decays.
+
+![synthetic](figures/lambda_fig10_synthetic.png)
+
+**Control.** A synthetic expanding map with a genuine rate of +0.035/token and noise matched to
+the real data gives a CI of [+0.016, +0.038] — unmistakable in the same pipeline. The real data's
+CI [−0.0094, −0.0006] sits in the contracting-with-reset family. This is the strongest statement
+we can make about Lyapunov exponents: **there is no positive one detectable here, and the method
+would have found it.**
+
+**Jensen check.** The gap between the mean of per-direction rates and the rate of the mean curve is
+−0.0005/token, about 6× smaller than the bootstrap noise; 0 of 20 individual directions have a
+positive sustained rate.
+
 ---
 
 ## NEW (round 4): window regimes, where amplification happens, and the finite-time rate
@@ -406,7 +449,7 @@ The earlier single-window picture, for reference: layers 1, 2, 3 die at 92, 191,
 while layers 7+ keep a non-zero response for the whole run because they also carry the
 perturbation through the generated positions themselves.
 
-### N7. The stretching rate $\lambda(t)$: bands, tests, and a confound
+### N6. The stretching rate $\lambda(t)$: bands, tests, and a confound
 
 ![lambda bands](figures/lambda_bands_windows.png)
 
@@ -447,7 +490,7 @@ a time shift.
 (a) the interval, (b) whether that interval is pre- or post-clip, and (c) the aligned time $\tau$.
 The clean comparisons are: pre-clip (all $W>P$ identical), and post-clip at fixed $\tau$.
 
-### N6. The window also changes single-position perturbations
+### N7. The window also changes single-position perturbations
 
 ![state window](figures/state_window.png)
 
@@ -960,9 +1003,14 @@ What the data support:
 signatures reject exponential separation: flip times sit on a handful of discrete margin dips
 ($p<5\times10^{-6}$ under a continuous-separation null); the fitted hazard varies by ~90× with $r$
 and its confidence interval includes zero for $r\le0.5$; the perturbation norm never grows
-($\le1.02$); and there is a hard floor ($r\le0.1$ never flips in 300 tokens). The correct
-statement is: **no positive Lyapunov exponent is detectable in this system at these scales; the
-unpredictability is a finite-amplitude threshold crossing.**
+($\le1.02$); and there is a hard floor ($r\le0.1$ never flips in 300 tokens).
+
+**The rate itself is negative.** In 31 configurations (layers, radii, windows, prompts), the
+sustained stretching rate over $t>150$ has 0/31 positive point estimates and 0/31 direction-bootstrap
+CIs touching zero; the best estimate is −0.0043 nats/token [−0.0055, −0.0030]. A synthetic
+expanding map with a true rate of +0.035 is recovered cleanly by the same pipeline, so the method
+has the power to see one. The correct statement is: **no positive Lyapunov exponent is detectable
+in this system at these scales; the unpredictability is a finite-amplitude threshold crossing.**
 
 If a Lyapunov-like number is wanted, the honest report is a finite-time exponent with horizon and
 window stated, e.g. "$\lambda(t=50)=0.032$ nats/token at $W=100$, reference $t_0=5$", never a bare
