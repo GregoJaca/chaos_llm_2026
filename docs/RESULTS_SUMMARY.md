@@ -40,6 +40,8 @@ The window changes the **margin spectrum**, not just numerics. A smaller margin 
 - Small-`r` thresholds do **not** extrapolate to large `r`: median gain grows ~1.5× by `r=2`; the linear rule over-predicts (15 predicted vs 8 observed at `r=1`).
 - Window 50: min margin 0.167; no flips at `r=0.1/0.3`; only 1/20 flips at `r=0.5`.
 - Large `r`: 3/20 (r=0.5), 8/20 (r=1), 16/20 (r=2) flip; text remains coherent/non-degenerate at 300 tokens (distinct-token ratio ~0.26–0.30).
+- **Second prompt (childhood):** no flips at r=0.01; 5/20 at r=0.1; 13/20 at r=0.3 at near-ties 125/173.
+- **Third prompt (cybersecurity):** no flips at r=0.01/0.1; 3/20 at r=0.3 at near-ties 39/51. The threshold scale is prompt-dependent but the picture generalizes.
 
 This is direct evidence for decision-boundary crossing.
 
@@ -97,12 +99,13 @@ Conclusion: the low D2 is a **static geometric property** of the hidden-state cl
 
 ## 8. Limitations
 
-- One model, one prompt, windows 50–500, 300 tokens (margins 600).
-- Depth spectrum top-8 only; `h_depth` lower bound.
+- One model; three prompts (interstellar, childhood, cybersecurity); windows 50–500; 300 tokens (margins 600; A1 500 for one prompt).
+- Depth spectrum top-8/16 only; `h_depth` lower bound. Scale-normalized conclusion is robust across 8 tokens.
 - Full-block non-normality at 5 layers × 6 tokens; MLP same.
-- State injection at input embedding and one middle layer, not all layers.
+- State injection at input embedding and one middle layer; r-scan only 1e-3…3e-2.
 - D2 N=2–3k; the negative is about this range.
-- 600-token A1 hit the full-vocab logits memory ceiling; not pursued.
+- 600-token A1 hit the full-vocab logits memory ceiling; 500 tokens works with cache clearing.
+- Teacher-forced forwards use Qwen2’s `max_window_layers` behavior; early layers are full attention, so long-lag tails persist. Free-run generation is the windowed ground truth.
 
 ## 9. Files
 

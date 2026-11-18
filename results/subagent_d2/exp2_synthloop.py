@@ -30,17 +30,17 @@ def build_loop_model(X, P):
     Xv = X[:use].astype(np.float64)
     cyc = np.arange(use) // P
     ph = np.arange(use) % P
-    # phase means
+    # per-phase linear-in-cycle fit: x = a_p + c*b_p + e (OLS -> e mean-zero per phase)
     m = np.zeros((P, X.shape[1]))
-    for p in range(P):
-        m[p] = Xv[ph == p].mean(0)
-    # per-phase linear drift coefficient (least squares over cycles)
     g = np.zeros((P, X.shape[1]))
+    resid = np.empty((use, X.shape[1]))
     for p in range(P):
-        A = np.c_[cyc[ph == p], np.ones((ph == p).sum())]
-        coef, *_ = np.linalg.lstsq(A, Xv[ph == p], rcond=None)
+        sel = ph == p
+        A = np.c_[cyc[sel], np.ones(int(sel.sum()))]
+        coef, *_ = np.linalg.lstsq(A, Xv[sel], rcond=None)
         g[p] = coef[0]
-    resid = Xv - (m[ph] + cyc[:, None] * g[ph])
+        m[p] = coef[1]
+        resid[sel] = Xv[sel] - (m[p][None, :] + cyc[sel][:, None] * g[p][None, :])
     return m, g, resid, cyc, ph
 
 def synth_S1(X, P, m, g, resid, rng):
@@ -53,19 +53,16 @@ def synth_S1(X, P, m, g, resid, rng):
 
 
 def resid_cycle_autocorr(resid, P):
-    """Mean lag-1 autocorrelation (across cycles, per phase) of residuals."""
+    """Median lag-1 autocorrelation (across cycles, per phase) of residuals."""
     use = len(resid)
     nc = use // P
     R = resid[:nc * P].reshape(nc, P, -1)
-    acs = []
-    for p in range(P):
-        a, b = R[:-1, p], R[1:, p]
-        sa, sb = a.std(0), b.std(0)
-        good = (sa > 1e-9) & (sb > 1e-9)
-        if good.sum() < 10:
-            continue
-        acs.append(float(np.mean((a[:, good] * b[:, good]).sum(0) / ((sa[good] * sb[good]) * (nc - 1)))))
-    return float(np.mean(acs))
+    A = R[:-1] - R[:-1].mean(0, keepdims=True)  # [nc-1, P, d] centered per phase
+    B = R[1:] - R[1:].mean(0, keepdims=True)
+    num = (A * B).sum(0)  # [P, d]
+    den = A.std(0) * B.std(0) * (nc - 1) + 1e-12
+    rho_d = num / den
+    return float(np.clip(np.median(rho_d), -0.99, 0.999))
 
 
 def synth_S1b(X, P, m, g, resid, rho, rng):
@@ -79,7 +76,7 @@ def synth_S1b(X, P, m, g, resid, rho, rng):
     R = resid[:nc * P].reshape(nc, P, -1)
     sd = R.std(0)  # per-phase residual sd [P, d]
     E = np.empty_like(R)
-    E[0] = R[0][None, :] if False else rng.standard_normal((P, R.shape[2])) * sd
+    E[0] = rng.standard_normal((P, R.shape[2])) * sd
     for c in range(1, nc):
         E[c] = rho * E[c - 1] + np.sqrt(max(0.0, 1 - rho ** 2)) * rng.standard_normal((P, R.shape[2])) * sd
     e = E.reshape(use, -1)

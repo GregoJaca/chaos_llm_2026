@@ -41,16 +41,19 @@ Use it to decide what to expand in the theory section.
 - **Product and spectrum:** `M=J_{L-1}…J_0`, `λ_i=(1/L)log σ_i(M)`; top-`k` via QR/Benettin.
 - **Expansion entropy:** `h_depth=Σ_{λ_i>0} λ_i`.
 - **Implementation:** `src/chaos_llm/run_depth.py` (`main`); data in `results/depth_w100/`.
-- **Result:** all top-8 exponents are positive; final `λ_i≈0.08–0.18`, `h_depth≈0.6–1.4`. Layer 0 gain is 10–20; subsequent layers ≈1.1. The cumulative exponent starts at ~3 and decays to ~0.1: **the depth expansion is a transient input-layer effect followed by marginal expansion**, not a sustained large positive exponent.
-- **Caveat:** only the top 8 of 1536 directions are sampled; `h_depth` is a lower bound.
+- **Result:** absolute top-8 exponents are positive; final `λ_i≈0.08–0.18`, `h_depth≈0.6–1.4`. Layer 0 gain 10–20; later ≈1.1.
+- **But this is scale drift, not instability:** residual norm grows ×30 in block 0 and ×1.05–1.18/layer thereafter. Normalized by the state scale, every block contracts (×0.48–0.72 at block 0, ×0.89–0.95 after); maximum relative exponent over 8 tokens ×28 depths ×8 dirs is **−0.034**. Depth FSLE ×206 absolute becomes ×0.46 relative. The final RMSNorm projects out the radial drift.
+- What survives: a small sustained aligned drift **+0.02 nats/layer**, with late MLP σ_max rising 18→71 at block 27 but absorbed by faster scale growth.
+- **Caveat:** only the top 8/16 of 1536 directions are sampled; `h_depth` is a lower bound. Report both absolute and relative exponents.
 
 ## 5. Non-normality
 
 - **Definitions:** `σ_max=||J||₂` (largest singular value; worst one-step amplification), `ρ(J)=max_i|λ_i|` (spectral radius; asymptotic growth for repeated application of the same `J`), `κ=σ_max/ρ`.
-- **Implementation:** `src/chaos_llm/run_nonnorm.py` (`main`); data in `results/nonnorm_w100/`.
-- **Result:** full block, layer 0: `σ_max≈95–194`, `ρ≈11–39`, `κ≈5–10`; layer 14: `σ_max≈3.1–3.3`, `ρ≈1.34–1.62`, `κ≈1.9–2.5`; layer 27: `σ_max≈6.7–9.1`, `ρ≈1.70–1.85`, `κ≈3.6–5.3`. MLP alone: layer 27 `σ_max≈59–95`, `ρ≈17–24`, `κ≈3.3–3.9`.
-- **Principal angles:** median ≈79–84° between consecutive top singular subspaces. The expanding direction rotates almost completely each layer.
-- **Interpretation:** a component can amplify one step (`σ_max>1`) while the product contracts. The MLP amplifies much more than the full residual block; the rotation is the mechanism. The product singular values and principal angles, not per-component norms, answer the reviewer objection.
+- **Implementation:** `src/chaos_llm/run_nonnorm.py`; data in `results/nonnorm_w100_big/`.
+- **Result:** full block layer 0 `σ_max≈95–195`, `ρ≈11–39`, `κ≈5–8`; layers 7–21 `σ≈2.7–3.6`, `ρ≈1.3–2.1`, `κ≈1.7–2.5`; layer 27 `σ≈6.0–9.1`, `ρ≈1.7–2.0`, `κ≈3.0–5.3`. MLP alone layer 27 `σ≈58–93`, `ρ≈17–24`, `κ≈1.8–3.9`. Token 143/L14: `σ=9.2`, `ρ=1.57`, `κ=5.9`, a non-propagating near-tie outlier.
+- **Principal angles:** median **83.6°**, IQR 78.7–87.0°, no layer trend; `|cos|` median 0.111 vs random 0.020, `cos²≈0.012`.
+- **Mechanism:** misalignment budget `(σ−1)cos²θ` with measured σ and angles predicts the measured chained gains within ≲2×; the product is ~13 orders below the naive σ_max-chain and ~5 below the ρ-chain.
+- **Interpretation:** components amplify one step, but the full block tames them and the amplification direction rotates; the composition contracts. This is the quantitative answer to “components amplify, composition may not.”
 
 ## 6. Correlation dimension and RQA
 
@@ -74,9 +77,10 @@ Use it to decide what to expand in the theory section.
 
 ## 8. Promising directions for theory (only if supported by more data)
 
-- **Vertical expansion vs horizontal contraction:** depth map expands (λ≈0.1) while the token-axis response decays. A “stretch in depth, fold in time” picture is plausible.
-- **Transient non-normal amplification:** layer 0 gain 10–20, then marginal; `κ>1`. This is a concrete mechanism for “components amplify, composition may not.”
+- **Scale drift vs output-relevant dynamics:** the absolute depth expansion is radial; the output-relevant (post-RMSNorm/tangential) dynamics contract. A theory section should define depth exponents on the sphere, not on the raw residual stream.
+- **Transient non-normal amplification:** components amplify one step, but block composition damps and rotates; `κ>1`, median angle 83.6°, misalignment budget predicts chained gains. This is a concrete mechanism.
 - **Decision-boundary geometry:** `r_c(t,u)` distribution and `r_*`; the first flip is a near-tie crossing, not a smooth instability.
+- **Window as a control parameter:** the margin spectrum collapses ~50× from w50 to w200+ while trajectories stay close; clipping events (t≈35/135) causally change the response.
 - **Numerical floor as a physical scale:** below `r≈1e-4`, FP32 noise dominates; this is a practical reproducibility horizon.
 
 ## 9. Second-pass results
@@ -90,3 +94,4 @@ Use it to decide what to expand in the theory section.
 - **D2 controls:** raw D2 ≈ time-shuffled D2 across all 12 prompts (5.75 vs 5.69); phase surrogate 21.7; vocab 5.04. Low D2 is static geometry, not temporal dynamics. Delay D2 rises with embedding dimension.
 - **Large r:** flip fraction 3/20 (r=0.5), 8/20 (r=1), 16/20 (r=2); text remains coherent at 300 tokens.
 - **Second prompt (childhood):** no flips at r=0.01; 5/20 at r=0.1; 13/20 at r=0.3, at near-ties 125/173. Generalizes.
+- **Third prompt (cybersecurity):** no flips at r=0.01/0.1; 3/20 at r=0.3 at near-ties 39/51. Generalizes.

@@ -36,6 +36,7 @@ DeepSeek-1.5B, FP32, window 100 unless stated; prompt `interstellar_travel`; 300
 - **threshold_geometry.png** — earlier symmetric-|δm| version; kept for comparison.
 - **threshold_validation.png** — earlier r_c and counts.
 - **large_r_summary.png** — flip fraction at r=0.5/1/2 and token-diversity proxy.
+- **prompt_generality.png** — flip fraction at r=0.1/0.3 for interstellar/childhood/cybersecurity; controlling near-ties annotated.
 
 Subagent report: `results/subagent_threshold/REPORT.md`.
 
