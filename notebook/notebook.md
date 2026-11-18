@@ -406,6 +406,27 @@ The earlier single-window picture, for reference: layers 1, 2, 3 die at 92, 191,
 while layers 7+ keep a non-zero response for the whole run because they also carry the
 perturbation through the generated positions themselves.
 
+### N6. The window also changes single-position perturbations
+
+![state window](figures/state_window.png)
+
+**Data.** Single-position perturbation at $s=16,50,100$, $r=0.1$, 12 directions, teacher-forced,
+same prompt; the attention window is overridden to $W=50,200,4096$.
+
+**Panel (a).** $x$: lag $\tau=t-s$; $y$: $a(s+\tau,27)$ (log). Solid: $s=16$; dashed: $s=50$.
+**Panel (b).** Depth profile of the $s=16$ perturbation. **Panel (c).** Immediate response and
+half-life at $s=16$ for the three windows.
+
+**Reading.** With $W=50<P$ the immediate response is **1.7× larger** (20.0 vs 11.7) and its
+half-life is **4× longer** (8 vs 2 tokens). $W=200$ and $W=4096$ are identical, as they must be
+when the context never reaches the window. So the window is not only a prompt-perturbation
+effect: it changes how strongly a *local* perturbation is felt and how long it persists.
+
+**Interpretation.** A shorter window removes context; the same local change is a larger fraction
+of what each layer can see, so the response is larger and lasts longer. This is the same direction
+as the prompt result (N1) and suggests a single mechanism: the window sets how much averaging
+each representation receives.
+
 ---
 
 Each block states: data, axes (with formulas), curves, reading. All perturbations are FP32,
