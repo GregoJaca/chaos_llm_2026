@@ -392,6 +392,28 @@ direction. Green line: perturbation position. Red line: first changed token.
 $s=50\to t=143$. After the change, agreement falls to ≈40% and the texts never re-converge. The
 latency is real, not an artifact of teacher forcing.
 
+### C5. Which positions matter, and when it acts
+
+![position map](figures/state_position_map.png)
+
+**Data.** Free runs with a single-position perturbation, 24 directions, at positions
+$s=8,16,32,50,75,100,150,200$, two radii ($r=0.1$ and $r=0.3$). A "flip" is the first token that
+differs from the unperturbed run.
+
+**Panel (a).** $x$: perturbation position $s$; $y$: fraction of the 24 directions that change any
+later token. Blue: $r=0.1$ (two runs, positions 8–50 and 8–200). Red: $r=0.3$.
+
+**Panel (b).** A point per (position, direction) that flips: $x=s$, $y$ = token where the first
+change happens. Dotted lines: near-tie tokens, labelled with their baseline gap $m_t$.
+
+**Reading.** Position dominates. At $r=0.3$: 17/24 directions flip when the perturbation is at
+$s=16$, 6/24 at $s=32$, 11/24 at $s=50$, and **zero** at $s\ge75$. At $r=0.1$ only $s=16$ (4/24)
+and $s=50$ (1/24) act. When a perturbation acts, it acts at one of four tokens: $t=40$ (early, gap
+0.188 but the response is still large) or $t=116/123/143$ (the smallest gaps, 0.069/0.020/0.020).
+Nothing acts between them. This is the decision-boundary picture at the level of a single token:
+the perturbation must survive to a place where the *product* of response and closeness is large
+enough.
+
 ## D. Prompt perturbation: two kinds of flips
 
 ![two kinds](figures/flip_is_a_close_call.png)
@@ -639,7 +661,8 @@ exponent".
 7. **Layer-14 injection is too weak to flip anything.** At matched $r$ it is 11–38× weaker at the
    output, and its margin change is ~10× too small to cross any gap.
 8. **Single-position perturbations rarely change the text.** At $r=0.1$: 4/24 directions at
-   $s=16$, 1/24 at $s=50$, zero elsewhere and zero for $r\le0.03$.
+   $s=16$, 1/24 at $s=50$, zero elsewhere. At $r=0.3$: 17/24 at $s=16$, 6/24 at $s=32$, 11/24 at
+   $s=50$, and **zero for every tested position $s\ge75$**.
 9. **Below $r\approx3\times10^{-4}$** the response is at the float32 round-off and stops scaling.
 10. **The first-layer D2 is high and meaningless** (352k exact duplicate pairs).
 11. **600-token A1 in one batch** OOMs on a 15 GB T4; 500 works with `batch-dirs=1`.
