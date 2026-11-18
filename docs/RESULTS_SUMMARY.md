@@ -69,6 +69,18 @@ New deep run: 8 injection steps (8/16/32/50/75/100/150/200), 24 directions, 4 ra
 
 Earlier (r=1e-3, 32 directions, 4 steps) results that still hold: PC1 explains 94–97% of log-curve variance; median pairwise correlation 0.94–0.98; `R(t,s)` is not a function of lag (rescaled curves differ ×1.6); bumps are not pinned to margin near-ties.
 
+## 3b. Are perturbation directions equivalent?
+
+**No — and the way they differ is informative.**
+
+- **A single scalar gain does not describe a direction.** Gains span ×7–12 even at r=1e-3 (this is real, not noise: rank correlation 0.80–0.98 across three different continuations, i.e. a direction that is strong stays strong on a different text). A stable "hot trio" (directions 10/11/12) is hot in all three continuations.
+- **Shape differs beyond the gain:** 6% of log-variance, split-half reliability r=0.999, significant for 20/20 directions. The old "PC1 explains 94–97%" measures the shared backbone (the token profile of ||δh||, pairwise corr 0.89–0.92), not equivalence; after removing each direction's gain, PC1 is only 0.24.
+- **The decisive difference is the sign of the margin shift.** Signed `δm` curves are essentially uncorrelated across directions (r≈0.05); 16/20 directions have a significant sign bias; at the same close call (t=123) different directions push the decision in *opposite* directions (response spans −0.073…+0.253). This is why flips are direction-stratified: at r=0.5 exactly the hot trio flips (3/20), at r=2 16/20.
+- **No discrete clusters:** k=1 wins a parametric-bootstrap model comparison (P(k>1)=0.10–0.18). The structure is a continuum plus reproducible outliers, not groups.
+- **Random current-state directions are much more equivalent** than prompt directions (gain spread ≤2.1×; rank correlation across injection steps ≈0.04), so "directions are equivalent" was closer to true for the old state data than for the prompt data.
+
+Practical rule: average over directions only when reporting the shared backbone; never assume a single direction's gain or sign applies to another.
+
 ## 4. Depth: what actually grows, and what does not
 
 Measured from the same A1 run (prompt perturbation, r=0.1, median over 20 directions and 300 positions):
@@ -100,18 +112,25 @@ Full block, 6 tokens × 5 layers:
 - Misalignment budget `(σ−1)cos²θ` with measured σ and angles predicts measured chained gains within ≲2×. The measured product is ~13 orders below the naive σ_max-chain and ~5 below the ρ-chain.
 - Interpretation: within one block a component can amplify, but the block composition is strongly non-normal and the amplification direction rotates, so the same-position product contracts. Across the whole network the prompt perturbation still grows, because attention carries it to other positions (see section 4). “Components amplify, composition may not” holds for the fixed-position product, not for the full response.
 
-## 6. D2 / RQA: conclusive negative, with a data-validity correction
+## 6. D2 / RQA: conclusive negative, and why the curves "looked different" before
 
-- **Three of the five long trajectories are near-exact repetition loops** (`cyber` P=53, `future` P=74, `great` P=69; fidelity 1.7–1.8% of cloud scale, 86–91% recurring, cycle model explains 85–92% of variance). Their low D2/TwoNN/high predictability is repeated-text degeneration, reproduced by a trivial `period + drift + jitter` synthetic. **They must be excluded or regenerated.**
-- The two non-loop trajectories are the honest tests:
-  - No D2 plateau at any N; local slopes decline monotonically (e.g. interstellar 9.0→5.3→1.1); small-ε slopes exceed the Eckmann–Ruelle ceiling; Theiler 0→1000 changes nothing.
-  - `interstellar`: clean negative; kNN NSE equals its linear ceiling; no continuation sharpness.
-  - `launch`: **suggestive** kNN NSE 0.297 at h=8 vs −0.036±0.005 (phase), −0.034±0.011 (MIAAFT), +0.15 above ridge-PC50; but no continuation sharpness and one trajectory — a lead, not a result.
+- **No scaling region exists on any non-loop trajectory.** The whole rise of `C(ε)` spans 0.16–0.19 decades with local slope 9→1.5; the part that is simultaneously below the finite-N ceiling `2 log10 N` and above the depletion floor `10/N` is **0.00–0.04 decades wide**. A plateau is geometrically impossible for this point cloud.
+- **What does *not* change the shape:** centering vs not (Euclidean distances are translation-invariant, max |Δlog C| = 0.00), N (512→4096 only moves the depletion edge), ε normalization, z-scoring, cosine (which makes it steeper).
+- **The five "good-looking" shapes that were probably seen before, all reproduced exactly:**
+  1. **Repetition loops** — cyber's best 1-decade fit: D2=1.11, r²=0.999 (a loop tube). Repeated text, not chaos.
+  2. **First layer** — 352,035 exact duplicate pairs (4.2% of all pairs; 36 states repeated up to 305×) give a flat floor `C=0.042` at every ε.
+  3. **Delay embedding with m=2** — textbook: slope 1.95 over 0.96 decades, r²=0.999, "converging" D2(N)=1.89→1.95 — but **white noise at m=2 gives the identical curve**, as do phase-randomised, IAAFT and time-shuffled controls. It is the fill dimension of any 2-D cloud.
+  4. **First PC "saturation" at D2≈2.3** — IAAFT nulls land at 1.7–2.4 with the same pattern (effective rank of a red, heavy-tailed marginal).
+  5. Artifacts of the `cdist` self-pair floor and a linear ε grid (staircase).
+- **The detector is not the problem:** at the same N it measures Hénon (D2=1.157, flat over 2.57 decades) and Lorenz (D2=1.984, r²=1.000) cleanly.
+- Theiler windows change nothing for the raw cloud except removing loop-copy pairs below C<1e-4 — exactly the repeated-point mechanism.
+- Non-loop dynamics: `interstellar` is a clean negative (kNN NSE equals its linear ceiling); `launch` has a suggestive +0.15 NSE over its linear ceiling but no continuation sharpness (one trajectory).
+- **Dataset issue:** three of the first five 1000-token trajectories are near-exact loops (P=53/74/69; 86–91% of states recur within 5%). They are excluded from dynamics; 16 fresh 1000-token trajectories were collected and screened.
+
+Conclusion: D2/RQA carry no evidence of low-dimensional chaos here. Every quoted D2 value is a window/tube/fill-dimension/duplicate artifact. Settling it would need ~10⁵-step non-repetitive trajectories.
 - **Raw vs time-shuffled D2 is a tautology:** time-shuffling preserves the point cloud, and D2/TwoNN/MLE/PCA are point-cloud statistics. The earlier “raw≈shuffled” control cannot test dynamics.
 - Static geometry: locally thin (TwoNN 3.3–6.7, MLE 2–4) but globally spread (90% variance needs 161/223 PCs) → inhomogeneous token-state cloud, not an attractor. TwoNN/MLE have strong finite-N bias (iid-Gauss ~100).
 - RQA DET 0.37–0.95, Lmax up to 1775; dominated by temporal correlation and loop copies.
-
-Conclusion: D2/RQA do **not** provide evidence of low-dimensional chaos. The strongest positive lead is a predictability gap on one non-loop trajectory; it needs replication.
 
 ## 7. What is different from before
 
