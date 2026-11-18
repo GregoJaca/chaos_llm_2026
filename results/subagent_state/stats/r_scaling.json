@@ -1,0 +1,132 @@
+{
+  "protocol": "prompt perturbation, teacher-forced (proxy for state injection)",
+  "radii": [
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    0.2,
+    0.3,
+    0.5,
+    0.7,
+    1.0,
+    1.5,
+    2.0
+  ],
+  "layer": 27,
+  "note": "no state-injection data at r!=1e-3 exists locally",
+  "local_alpha": [
+    {
+      "r_lo": 0.001,
+      "r_hi": 0.003,
+      "alpha_median_over_t": 0.912914246701554,
+      "alpha_iqr_over_t": [
+        0.7577339523953858,
+        0.9516337541492847
+      ],
+      "frac_t_alpha_within_0p9_1p1": 0.5833333333333334
+    },
+    {
+      "r_lo": 0.003,
+      "r_hi": 0.01,
+      "alpha_median_over_t": 0.9759721604621974,
+      "alpha_iqr_over_t": [
+        0.9542094269247,
+        0.9890941837266911
+      ],
+      "frac_t_alpha_within_0p9_1p1": 0.98
+    },
+    {
+      "r_lo": 0.01,
+      "r_hi": 0.03,
+      "alpha_median_over_t": 0.9976264928609997,
+      "alpha_iqr_over_t": [
+        0.9918565757835062,
+        1.0034893552400577
+      ],
+      "frac_t_alpha_within_0p9_1p1": 1.0
+    },
+    {
+      "r_lo": 0.03,
+      "r_hi": 0.1,
+      "alpha_median_over_t": 1.0072070855608954,
+      "alpha_iqr_over_t": [
+        1.0005505247887612,
+        1.0188933755468703
+      ],
+      "frac_t_alpha_within_0p9_1p1": 1.0
+    },
+    {
+      "r_lo": 0.1,
+      "r_hi": 0.2,
+      "alpha_median_over_t": 1.0410059328796948,
+      "alpha_iqr_over_t": [
+        1.0103026735245766,
+        1.071555790701277
+      ],
+      "frac_t_alpha_within_0p9_1p1": 0.88
+    },
+    {
+      "r_lo": 0.2,
+      "r_hi": 0.3,
+      "alpha_median_over_t": 1.1126312899724715,
+      "alpha_iqr_over_t": [
+        1.0575939270088621,
+        1.184775143287672
+      ],
+      "frac_t_alpha_within_0p9_1p1": 0.4166666666666667
+    },
+    {
+      "r_lo": 0.3,
+      "r_hi": 0.5,
+      "alpha_median_over_t": 1.231401645279707,
+      "alpha_iqr_over_t": [
+        1.1465177870621144,
+        1.2860084368412719
+      ],
+      "frac_t_alpha_within_0p9_1p1": 0.16
+    },
+    {
+      "r_lo": 0.5,
+      "r_hi": 0.7,
+      "alpha_median_over_t": 1.258905064488427,
+      "alpha_iqr_over_t": [
+        1.149132237809245,
+        1.384407455926678
+      ],
+      "frac_t_alpha_within_0p9_1p1": 0.14333333333333334
+    },
+    {
+      "r_lo": 0.7,
+      "r_hi": 1.0,
+      "alpha_median_over_t": 1.1447477399902437,
+      "alpha_iqr_over_t": [
+        1.0853396169968625,
+        1.234680872460484
+      ],
+      "frac_t_alpha_within_0p9_1p1": 0.31666666666666665
+    },
+    {
+      "r_lo": 1.0,
+      "r_hi": 1.5,
+      "alpha_median_over_t": 1.1502420528541837,
+      "alpha_iqr_over_t": [
+        1.0663142067179467,
+        1.2747092591425195
+      ],
+      "frac_t_alpha_within_0p9_1p1": 0.38666666666666666
+    },
+    {
+      "r_lo": 1.5,
+      "r_hi": 2.0,
+      "alpha_median_over_t": 1.0913560971678669,
+      "alpha_iqr_over_t": [
+        0.9963681715701327,
+        1.2201849295227123
+      ],
+      "frac_t_alpha_within_0p9_1p1": 0.45666666666666667
+    }
+  ],
+  "nonlinearity_onset_r_median_alpha": 0.3
+}

@@ -6,14 +6,16 @@ This is the practical knowledge from the first DeepSeek-1.5B pass. Keep it with 
 
 1. **FP32 + in-batch `r=0`.** Every reliable result came from this. The old batch-1 baseline vs batch-N perturbed data was contaminated; the zero-perturbation control catches it.
 2. **Teacher forcing for the smooth response.** One baseline forward + one forward per direction gives `δh_t`, `δm_t`, and thresholds without generation. This is the workhorse.
-3. **Margins + local threshold.** `m_t`, `δm_t(u)`, `r_c=m_t/|δm_t/r|`, `T=min{t:r≥r_c}` predicted free-run flips across windows 100/200/500 and two prompts.
-4. **Scaling collapse by `r`.** For layers 7–27, `δh_t/r` collapses the curves; `α≈0.95–0.98`. `√r` does not collapse. The response is linear in `r` over the usable range.
-5. **Layer-resolved response.** Early layers (1–3) decay; deep layers (7–27) rise to `t≈84` then decay. The layer dependence is real and easy to show.
-6. **Margin spectrum vs window.** Window 50 has no fragile steps; 100 has one at t=123; 200/500 have several (t=44/55/…) and many margins <0.05. This is a clean, real attention effect.
-7. **Non-normality / principal angles.** `σ_max>1` while the product contracts; median rotation between top singular subspaces is 82–85°. This is a quantitative explanation of “components amplify, composition may not.”
-8. **Shuffled control for D2.** The low last-layer D2 (~5–7) is a static geometric property: time-shuffled data gives the same D2. This is a strong negative, not a bug.
-9. **Direction correlation.** For both prompt and state perturbations, direction response curves are highly correlated (median 0.92–0.98). No strong special-direction clusters; report a distribution, not a single direction.
-10. **Middle-layer residual injection** produces a ~10× smaller response than input-embedding injection. Input injection is the more sensitive perturbation.
+3. **Margins + signed local threshold.** `m_t`, `δm_t(u)`, `r_c⁻=m_t·r/max(−δm_t,0)`, `T=min{t:r≥r_c⁻}` predicted free-run flips across windows 100/200/500 and two prompts. The symmetric `|δm|` version is adversarial and over-predicts; use the signed version.
+4. **Scaling collapse by `r`.** For `r≤0.3`, `δh=r·G(t,ℓ)` with `α=1.00±0.02` and collapse CV 2.0–3.3%; `√r` does not collapse. No time-dependent exponent is needed. Deviations at `r=1e-3` are FP32 floor; at `r≥0.5` the response is mildly superlinear.
+5. **The regimes are window-driven.** Shallow layers go bitwise zero at t*=92/191/290 (window−1); deep layers rise to t≈17, surge pre-flush, then decay. w100 jumps ×1.73 at t=35 and w200 ×1.51 at t=135, with wider windows as byte-identical controls. Depth gain `A(ℓ)~ℓ^0.64` (×12 from L1 to L27), front-loaded.
+6. **Directions: same shape, scalar gain.** Gains span ×1.13–18.97 at L27 (dir10 strongest), depth-stable; one mode explains 72% of log-variance, but the response is not rank-1 (direction-specific token oscillations).
+7. **Margin spectrum vs window.** Window 50 has no fragile steps; 100 has one at t=123; 200/500 have several (t=44/55/…) and many margins <0.05. This is a real attention effect.
+8. **Scale-normalized depth contraction.** Absolute depth growth is residual-stream scale drift (×30 block 0, ×1.05–1.18/layer). Normalized by the state scale, every block contracts; max relative exponent −0.034. FSLE ×206 absolute becomes ×0.46 relative; h_depth is gauge drift. Report absolute and relative.
+9. **Non-normality / rotation.** `σ_max>1` while the product contracts; median rotation 83.6°; misalignment budget `(σ−1)cos²θ` predicts chained gains within ≲2×. This is the quantitative composition answer.
+10. **Shuffled control for D2.** The low last-layer D2 (~5–7) is static geometry: time-shuffled data gives the same D2. Strong negative.
+11. **State direction equivalence.** PC1 explains 94–97% of log-curve variance; median direction correlation 0.94–0.98; no clusters/special directions. `R(t,s)` is not a function of lag (collapse fails ×1.6). Layer-14 injection is 9–36× weaker and plateaus at ≈2.9e-4.
+12. **Signed threshold limit.** Predictions 19–20/20 at `r≤0.1`, 17–18/20 at `r=0.3`, 15/20 at `r=0.5`, 9–12/20 at `r=1–2`; gain grows ~1.5× by `r=2`, so do not extrapolate beyond `r≈0.3`.
 
 ## 2. What did not work / was misleading
 

@@ -1,0 +1,5 @@
+identical prefix: w100==w200 for t<=34 and w200==w500 for t<=134: True
+t=35 clip event (w100): G_w100(35)/G_w200(35) = 1.73; G_w100(35)/G_w100(34) = 2.06
+t=135 clip event (w200): G_w200(135)/G_w500(135) = 1.51
+first differing generated token: {'w100_w200': 40, 'w100_w500': 40, 'w200_w500': 142}
+tail exp rates [150,280] (CONFOUNDED: streams differ after t=40): {'w100': np.float64(-0.01), 'w200': np.float64(-0.0075), 'w500': np.float64(-0.0009)}

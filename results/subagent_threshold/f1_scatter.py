@@ -31,8 +31,9 @@ def scatter_panel(ax, c, r_hi=0.3, r_lo=0.1, has_lo=True):
         xs = np.logspace(-2.7, 1.6, 10)
         ax.plot(xs, xs / rc_v, style, color="0.35", lw=1.0 if rc_v != 0.3 else 1.4,
                 zorder=3)
-        ax.annotate(f"$r_c$={rc_v}", xy=(3.0, 3.0 / rc_v), fontsize=7.5, color="0.25",
-                    xytext=(2, -1), textcoords="offset points", rotation=0)
+        m_lab = min(30.0, 8.0 * rc_v)
+        ax.annotate(f"$r_c$={rc_v}", xy=(m_lab, m_lab / rc_v), fontsize=7.5, color="0.25",
+                    ha="left", va="top", xytext=(0, -2), textcoords="offset points")
 
     # observed flips, from free runs
     obs_hi = {r_hi: None}

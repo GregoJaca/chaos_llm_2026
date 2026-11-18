@@ -1,0 +1,39 @@
+=== DEPTH SPECTRUM (diagonal-block tangent product, 8 tokens) ===
+state scale: block0 x30.3 (range 19.0-35.7), total x531
+aligned gain block0 per token: [22.11 25.36 10.27 10.59 18.25 16.32 16.72 18.12]
+relative gain block0 per token: [0.718 0.72  0.54  0.476 0.511 0.546 0.59  0.559]
+blocks 1-6: aligned 1.017 scale 1.100 rel 0.910
+blocks 7-13: aligned 0.997 scale 1.056 rel 0.944
+blocks 14-20: aligned 1.013 scale 1.091 rel 0.931
+blocks 21-27: aligned 1.054 scale 1.184 rel 0.886
+max relative exponent over all tokens/layers/dirs: -0.0385
+transient share S(0)/S(27): [0.806 0.634 0.976 0.827 0.948 0.814 0.795 0.891]
+sustained abs/rel mean top8: [ 0.025  0.057 -0.002  0.008  0.006  0.027  0.019  0.016]
+  relative:                   [-0.073 -0.042 -0.125 -0.11  -0.098 -0.08  -0.09  -0.084]
+product top-1 abs: [ 50.1 166.2  10.3  18.2  19.5  30.5  38.8  24.8]
+product top-1 rel: [0.114 0.329 0.02  0.034 0.033 0.055 0.072 0.051]
+
+=== FSLE depth ===
+total growth d(27)/d(0): {0.0001: 205.9, 0.001: 203.0, 0.01: 206.1, 0.1: 215.0}
+share of final reached by recorded layer 2: {'0.0001': 1.16, '0.001': 1.19, '0.01': 1.18, '0.1': 1.13}
+scale-normalized total: {'0.0001': 0.456, '0.001': 0.449, '0.01': 0.456, '0.1': 0.476}
+
+=== NON-NORMALITY ===
+full L0: smax 95-195 kappa 5.0-8.2
+full L14 (excl t143): smax 3.10-3.35, kappa 1.93-2.47
+token143 L14: smax 9.21 rho 1.57 kappa 5.87 (margin 0.020)
+full L27: smax 6.0-9.1 kappa 3.0-5.4
+MLP smax by layer: {0: 11.5, 7: 10.8, 14: 12.6, 21: 18.2, 27: 71.3}
+MLP rho  by layer: {0: 3.2, 7: 4.6, 14: 4.4, 21: 7.6, 27: 23.3}
+angles: median 83.6 IQR 78.7-87.0 min 54.5 (t=16, l=25) max 90.0
+|cos| median 0.111 vs random-expected 0.020; cos^2 median 0.0124
+angle layer trend: +0.036 deg/layer, p=0.66
+misalignment model: pred ln-gain L14 0.028 (measured blocks 14-21 0.013); L27 0.082 (measured 21-27 0.052)
+gain budget (nats/layer): {"0": {"log_smax": 4.891006015539485, "log_aligned": 2.787168964743614, "log_scale": 3.4127069281974003}, "14": {"log_smax": 1.1826797547300927, "log_aligned": 0.028338473523035645, "log_scale": 0.08667489914295293}, "27": {"log_smax": 2.0672979868936525, "log_aligned": 0.04439253662712872, "log_scale": 0.1689222204575522}}
+naive sigma-chain x2.5e+15; rho-chain x5.5e+06; measured aligned product x27.6; FSLE x206; state scale x531
+
+=== exploratory (N=8) ===
+margins at depth tokens: [0.333 0.12  7.168 0.812 0.02  0.02  5.046 4.841]
+spearman h_depth vs margin: -0.45 (p=0.26); vs block0 gain: 0.79 (p=0.02); vs scale growth: -0.45 (p=0.26)
+tangential fraction of response (r=2) by layer: [0.    0.858 0.967 0.934 1.003 0.99  0.993 1.001]
+context fixed-t response rel (r=0.03): {"0": [0.0, 0.000132, 0.000202, 0.000209, 0.000208, 0.000205, 0.000141, 0.000101], "16": [0.0, 8.5e-05, 0.000138, 0.000148, 0.000142, 0.000198, 0.000291, 0.000242], "50": [0.0, 3.9e-05, 5.4e-05, 8.7e-05, 0.000119, 0.000202, 0.000143, 0.000134], "100": [0.0, 0.0, 1.3e-05, 3.8e-05, 7.3e-05, 0.000101, 0.000165, 0.000136], "143": [0.0, 0.0, 3e-06, 1e-05, 4.3e-05, 5.8e-05, 9.5e-05, 8.1e-05]}

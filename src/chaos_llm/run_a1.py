@@ -16,6 +16,13 @@ from chaos_llm.protocol import (
 )
 
 
+def hard_window_mask(L, W, device="cuda"):
+    m = torch.full((1, 1, L, L), torch.finfo(torch.float32).min, device=device)
+    for i in range(L):
+        m[0, 0, i, max(0, i - W + 1):i + 1] = 0
+    return m
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="~/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B")
@@ -26,6 +33,7 @@ def main():
     ap.add_argument("--radii", default="1e-6,2.15e-6,4.64e-6,1e-5,2.15e-5,4.64e-5,1e-4,2.15e-4,4.64e-4,1e-3,2.15e-3,4.64e-3,1e-2")
     ap.add_argument("--seed", type=int, default=69)
     ap.add_argument("--batch-dirs", type=int, default=4)
+    ap.add_argument("--hard-window", action="store_true")
     ap.add_argument("--layers", default="0,7,14,21,27")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -58,7 +66,8 @@ def main():
     torch.cuda.empty_cache()
 
     Efull = full_embeddings(model, pids, gen_ids)
-    out0 = model(inputs_embeds=Efull, attention_mask=torch.ones((1, Efull.shape[1]), dtype=torch.long, device="cuda"),
+    am = hard_window_mask(Efull.shape[1], args.window) if args.hard_window else torch.ones((1, Efull.shape[1]), dtype=torch.long, device="cuda")
+    out0 = model(inputs_embeds=Efull, attention_mask=am,
                  output_hidden_states=True, use_cache=False)
     logits0 = out0.logits[0]  # [L,V]
     pos = torch.arange(P - 1, P + T - 1, device="cuda")

@@ -259,9 +259,8 @@ def miaaft(X, niter=12, rng=None, shared=True):
         if n % 2 == 0:
             Fnew[-1] = F[-1]
         r = np.fft.irfft(Fnew, n=n, axis=0)
-        for c in range(d):  # rank-order match marginals exactly
-            ranks = np.argsort(np.argsort(r[:, c], kind='stable'), kind='stable')
-            y[:, c] = sorted_cols[ranks, c]
+        ranks = np.argsort(np.argsort(r, axis=0, kind='stable'), axis=0, kind='stable')
+        y = np.take_along_axis(np.broadcast_to(sorted_cols, r.shape), ranks, axis=0)
     # quality: spectrum + marginal + cross-spectrum match
     Fy = np.fft.rfft(y, axis=0)
     spec_corr = float(np.corrcoef(np.abs(F[:, 1:]).ravel(), np.abs(Fy[:, 1:]).ravel())[0, 1])
@@ -322,13 +321,15 @@ def ou_null(X, rng=None, match='lag1'):
 
 
 def cov_gauss(X, rng=None):
-    """Gaussian with exactly the empirical covariance (PCA-score resampling)."""
+    """Gaussian with exactly the empirical covariance (eigh on the cov matrix)."""
     rng = rng or RNG
-    Xc = X - X.mean(0, keepdims=True)
-    U, S, Vt = np.linalg.svd(Xc, full_matrices=False)
-    scores = rng.standard_normal((len(X), len(S)))
-    scores *= S / np.sqrt(max(1, len(X) - 1))  # per-PC variance matches sample cov
-    return (scores @ Vt + X.mean(0, keepdims=True)).astype(np.float32)
+    Xc = (X - X.mean(0, keepdims=True)).astype(np.float64)
+    C = (Xc.T @ Xc) / max(1, len(X) - 1)
+    w, V = np.linalg.eigh(C)  # ascending
+    w = np.maximum(w[::-1], 0)
+    V = V[:, ::-1]
+    scores = rng.standard_normal((len(X), len(w))) * np.sqrt(w)[None, :]
+    return (scores @ V.T + X.mean(0, keepdims=True)).astype(np.float32)
 
 
 def iid_gauss(X, rng=None):
@@ -360,17 +361,18 @@ def knn_neighbors(X, k, W, test_slice, block=256):
         rows = np.arange(len(tt))[:, None]
         dsq = Dm[rows, sel]
         o = np.argsort(dsq, axis=1)
-        out_i[a:a + len(tt)] = sel[o]
-        out_d[a:a + len(tt)] = np.sqrt(np.maximum(dsq[o], 0))
+        out_i[a:a + len(tt)] = np.take_along_axis(sel, o, axis=1)
+        out_d[a:a + len(tt)] = np.sqrt(np.maximum(np.take_along_axis(dsq, o, axis=1), 0))
     return out_i, out_d
 
 
-def predict_from_neighbors(X, nb_idx, nb_d, horizons, k=12, weight=True):
-    """Simplex-style weighted k-NN forecast of x(t+h) from cached neighbours."""
+def predict_from_neighbors(X, nb_idx, nb_d, horizons, k=12, weight=True, test_offset=0):
+    """Simplex-style weighted k-NN forecast of x(t+h) from cached neighbours.
+
+    test_offset = time index of test row 0.
+    """
     Xd = np.asarray(X, dtype=np.float32)
     n, d = Xd.shape
-    T = n - max(horizons) - 1
-    mu = Xd.mean(0)
     out = {}
     for h in horizons:
         kk = min(k, nb_idx.shape[1])
@@ -385,9 +387,9 @@ def predict_from_neighbors(X, nb_idx, nb_d, horizons, k=12, weight=True):
         valid = sel + h < n
         P = np.einsum('ij,ijd->id', w * valid, Xd[np.clip(sel + h, 0, n - 1)])
         P /= np.maximum((w * valid).sum(1, keepdims=True), 1e-9)
-        tt = np.arange(len(nb_idx))
+        tt = test_offset + np.arange(len(nb_idx))
         Y = Xd[np.clip(tt + h, 0, n - 1)]
-        mlib = Xd[:T].mean(0)
+        mlib = Xd[:test_offset].mean(0)
         nse = float(1 - ((P - Y) ** 2).sum() / (((mlib - Y) ** 2).sum() + 1e-12))
         Pz = (P - P.mean(0)) / (P.std(0) + 1e-9)
         Yz = (Y - Y.mean(0)) / (Y.std(0) + 1e-9)
@@ -405,8 +407,9 @@ def ridge_pcskill(X, horizons, npc=50, lam=1.0, test_frac=0.5):
     n = len(Xd)
     mu = Xd.mean(0); sd = Xd.std(0) + 1e-9
     Z = (Xd - mu) / sd
-    U, S, Vt = np.linalg.svd(Z, full_matrices=False)
-    P = Vt[:npc]  # [npc, d]
+    C = (Z.T @ Z) / max(1, n - 1)
+    w, V = np.linalg.eigh(C)
+    P = V[:, ::-1][:, :npc].T  # [npc, d]
     Zp = Z @ P.T  # [n, npc]
     ntr = int(n * test_frac)
     out = {}
@@ -428,7 +431,7 @@ def ridge_pcskill(X, horizons, npc=50, lam=1.0, test_frac=0.5):
     return out
 
 
-def continuation_curves(X, nb_idx, nb_d, horizons, nbins=12, ref_scale=None):
+def continuation_curves(X, nb_idx, nb_d, horizons, nbins=12, ref_scale=None, test_offset=0):
     """Kaplan-Glass-style determinism test from cached neighbours.
 
     For test points t with neighbour i at distance r = ||x_t - x_i||, compare
@@ -440,7 +443,7 @@ def continuation_curves(X, nb_idx, nb_d, horizons, nbins=12, ref_scale=None):
     n = len(Xd)
     if ref_scale is None:
         ref_scale = median_pairwise_dist(Xd)
-    tt = np.arange(len(nb_idx))
+    tt = test_offset + np.arange(len(nb_idx))
     bins = np.geomspace(0.003, 1.0, nbins + 1) * ref_scale
     out = {}
     for h in horizons:
@@ -460,7 +463,7 @@ def continuation_curves(X, nb_idx, nb_d, horizons, nbins=12, ref_scale=None):
     return out
 
 
-def determinism_score(X, nb_idx, nb_d, h, qlo=0.05, ref_scale=None):
+def determinism_score(X, nb_idx, nb_d, h, qlo=0.05, ref_scale=None, test_offset=0):
     """Median rc/r for the closest 5% of neighbour pairs -> sharp map test.
 
     det = median(rc / r): 0 for deterministic Lipschitz flow at small r;
@@ -468,7 +471,7 @@ def determinism_score(X, nb_idx, nb_d, h, qlo=0.05, ref_scale=None):
     """
     Xd = np.asarray(X, dtype=np.float32)
     n = len(Xd)
-    tt = np.arange(len(nb_idx))
+    tt = test_offset + np.arange(len(nb_idx))
     r = nb_d.ravel()
     thr = np.quantile(r, qlo)
     m = r <= max(thr, 1e-9)

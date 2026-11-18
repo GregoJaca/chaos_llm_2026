@@ -26,11 +26,18 @@ DeepSeek-1.5B, FP32, window 100 unless stated; prompt `interstellar_travel`; 300
 
 ## Thresholds / flux tube
 
-- **threshold_geometry.png** — (left) margin vs gain with iso-r_c lines; (middle) r_* vs controlling near-tie; (right) predicted-vs-observed confusion matrix.
-- **threshold_validation.png** — r_c for 3 directions and predicted-vs-observed counts.
-- **rstar_distribution.png** — distribution/ECDF of r_* over directions.
-- **rc_heatmap.png** — log10 r_c(t,u) over steps/directions, clipped; mostly robust except near-ties.
-- **large_r_summary.png** — flip fraction at r=0.5/1/2 and token-diversity proxy; text remains non-degenerate at 300 tokens.
+- **threshold_margin_gain.png** — margin vs signed gain, iso-r_c lines, observed flips; best mechanism figure.
+- **threshold_control_map.png** — signed `r_c⁻(t,u)` heatmaps, rows sorted by danger; which near-tie controls each direction (t=44 for w≥200, t=123 for w100).
+- **threshold_ecdf.png** — signed `r_*⁻` ECDF per window; median 1.7 (w100) vs 0.26 (w200/500).
+- **threshold_window_spectrum.png** — margin traces per window; floor collapses 50× while trajectories stay close.
+- **threshold_prediction_scorecard.png** — observed vs predicted class table and diagonal plot; 19–20/20 at r≤0.1, breakdown at r≥1.
+- **threshold_linearity.png** — gain growth and threshold drift with r; small-r thresholds do not extrapolate.
+- **threshold_tubes_cases.png** — 3 individual threshold tubes (fragile, typical, resistant).
+- **threshold_geometry.png** — earlier symmetric-|δm| version; kept for comparison.
+- **threshold_validation.png** — earlier r_c and counts.
+- **large_r_summary.png** — flip fraction at r=0.5/1/2 and token-diversity proxy.
+
+Subagent report: `results/subagent_threshold/REPORT.md`.
 
 ## FSLE / depth
 
@@ -57,13 +64,49 @@ DeepSeek-1.5B, FP32, window 100 unless stated; prompt `interstellar_travel`; 300
 - **state_shift.png** — R(t,s) vs lag τ; near-tie bumps at different lags.
 - **state_mid_compare.png** — input embedding vs layer-14 residual injection; residual is ~10× weaker.
 
-## D2 / RQA
+## A1 subagent deep dive
 
-- **d2_curves.png** — C(ε) and local slope; peak, not plateau.
-- **d2_vs_N.png** — D2 vs N.
-- **d2_distribution.png** — D2 across 12 prompts.
-- **d2_theiler.png** — Theiler sensitivity.
-- **d2_scaling_examples.png** — clean scaling examples.
-- **d2_controls.png** — raw vs shuffled vs phase vs vocab; raw≈shuffled.
-- **d2_raw_vs_shuffled.png** — all 12 prompts: raw D2 ≈ shuffled D2.
-- **d2_delay_twonn.png** — delay-embedding D2 and TwoNN.
+- **a1_universal_curve.png** — `G(t)=δh/r` universal curve; 7 radii collapse (CV 2–3%); 3 directions; direction gain differs.
+- **a1_window_causality.png** — w100 jump ×1.73 at t=35, w200 ×1.51 at t=135, wider windows byte-identical controls; window-driven regimes.
+- **a1_regime_fits.png** — rise/plateau/surge/tail fits; flush times; exponential vs power-law.
+- **a1_depth_layers.png** — depth sets gain/rise time/memory; gain `A(ℓ)~ℓ^0.64`, front-loaded.
+- **a1_direction_gain.png** — directions: same shape, scalar gain ×1.13–18.97; dir10 strongest.
+- **a1_collapse_L27.png** — raw vs /r at L27; r≥0.5 peels up.
+- **a1_large_r_subagent.png** — large-r shape/superlinearity; no saturation, bounded.
+- **a1_collapse_quality.png** — collapse CV by layer/time.
+- **a1_direction_corr.png** — pairwise prompt-direction correlation.
+
+## Non-normality / depth: scale-normalized
+
+- **depth_scale_normalization.png** — headline: absolute growth vs state-scale growth; scale-normalized gain <1 at every block; FSLE ×206 absolute → ×0.46 relative.
+- **nonnorm_gain_budget.png** — component σ_max, misalignment model, measured aligned gain, scale growth; chained bounds.
+- **nonnorm_mechanism.png** — toy non-normal rotation mechanism.
+- **depth_gain_heatmaps.png** — layer/token gain structure.
+- **depth_growth_subagent.png** — depth growth.
+- **nonnorm_big_report.png** — σ_max/ρ/κ and angles.
+
+## State subagent deep dive
+
+- **state_response_field.png** — (s,t) response field: causal wedge, ×13 gain variation, fast-drop/slow-tail, bumps.
+- **state_lag_view.png** — lag-coordinate field and collapse failure (×1.58).
+- **state_direction_corr_subagent.png** — direction correlation heatmaps; no clusters.
+- **state_mid_vs_emb.png** — input vs layer-14 injection; mid is 9–36× weaker, flatter tail.
+- **state_collapse_subagent.png** — all collapse attempts and failure factors.
+- **state_s_dependence.png**, **state_r_scaling_subagent.png** — gain/decay vs s and r proxy.
+- **state_r_scaling.png**, **state_r_decay.png** — new state r-scan (1e-3…3e-2); response linear in r.
+
+## Signed threshold (best threshold set)
+
+- **threshold_margin_gain.png** — margin vs signed gain, iso-r_c lines, observed flips.
+- **threshold_control_map.png** — signed `r_c⁻` heatmaps, rows sorted by danger; controlling near-tie.
+- **threshold_prediction_scorecard.png** — observed vs predicted classes; 19–20/20 at r≤0.1.
+- **threshold_tubes_cases.png** — 3 individual threshold tubes (fragile/typical/resistant).
+- **threshold_ecdf.png**, **threshold_window_spectrum.png**, **threshold_linearity.png**.
+
+## Subagent reports
+
+- `results/subagent_a1/REPORT.md`
+- `results/subagent_threshold/REPORT.md`
+- `results/subagent_state/REPORT.md`
+- `results/subagent_nonnorm/REPORT.md`
+- `results/subagent_d2/` (in progress)

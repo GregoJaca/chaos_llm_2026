@@ -21,11 +21,11 @@ Use it to decide what to expand in the theory section.
 
 - **Margin:** `m_t = z_t^(1) - z_t^(2)`.
 - **Margin response:** `δm_t(u) = δz_t^(1) - δz_t^(2)`, using baseline top-1/top-2 indices.
-- **Local flip threshold:** `r_c(t,u) = m_t / |δm_t(u)/r|`.
-- **Predicted first flip:** `T(r,u) = min{t: r ≥ r_c(t,u)}`.
-- **Flux-tube radius:** `r_*(u) = min_t r_c(t,u)`.
-- **Implementation:** `run_a1.py` stores `margins`, `dm`, `r_c`, `pred_T`; validation in `run_thresholds.py`.
-- **Result:** margins have near-ties at t=123 (0.0202) and t=143 (0.0204); the smallest margin is not necessarily the first flip because the response at t=16 is larger. `r_*` is ≈0.12–0.15 for many directions. Window 100: no flips at `r=0.1`; at `r=0.3`, 1/20 directions flips at t=16, matching the prediction. Window 200: at `r=0.1`, 3/20 flip at 44/55; at `r=0.3`, ~12/20 flip at 44; prediction 13/20. The attention window changes the margin spectrum, hence the threshold. This is the strongest evidence for threshold-driven divergence.
+- **Signed local flip threshold:** `r_c⁻(t,u) = m_t·r / max(−δm_t(u),0)`. A flip requires `δm_t ≤ −m_t`; the symmetric `|δm|` version is adversarial and over-predicts.
+- **Predicted first flip:** `T(r,u) = min{t: r ≥ r_c⁻(t,u)}`.
+- **Flux-tube radius:** `r_*(u) = min_t r_c⁻(t,u)`.
+- **Implementation:** `run_a1.py` stores `margins`, `dm`, `r_c`, `pred_T` (symmetric); the signed analysis is in `results/subagent_threshold/` (`s1_signed.py`, figures).
+- **Result:** margins have near-ties at t=123 (0.0202) and t=143 (0.0204) for window 100, and t=44 (0.0031)/t=55 (0.0089) for window 200. Window 200: 13–14/20 directions controlled by t=44; 18/20 directions are margin-destroying there. Window 100: t=123 controls 12/20; only 7/20 are margin-destroying. Signed prediction matches free-run 20/20 and 19/20 at `r≤0.1`, 17–18/20 at `r=0.3`, 15/20 at `r=0.5`, 9–12/20 at `r=1–2`. Small-`r` thresholds do not extrapolate: gain grows ~1.5× by `r=2`.
 
 ## 3. Time-axis FSLE
 
@@ -81,10 +81,12 @@ Use it to decide what to expand in the theory section.
 
 ## 9. Second-pass results
 
-- **A1 scaling:** for layers 7–27, `δh_t ∝ r^α` with `α≈0.95–0.98`; dividing by `r` collapses the curves. Layers 1–3 become sublinear late. Deep layers peak at t≈84 (log-slope +0.005…+0.013/token), then decay (−0.010…−0.012/token). Layers 1–7 decay from the start.
+- **A1 universal curve:** for `r≤0.3`, `δh=r·G(t,ℓ)` exactly; collapse CV 2.0–3.3%; fitted `α=1.00±0.02`, no time/layer dependence. Shape rise → pre-flush surge (peak t≈17 then ×1.9–2.5 at t≈70–90) → tail; shallow layers go bitwise zero at t*=92/191/290 (window−1). w100 jumps ×1.73 at t=35, w200 ×1.51 at t=135, with wider windows as controls. Depth gain `A(ℓ)~ℓ^0.64`. Directions share shape and differ by scalar gain ×1.13–18.97.
 - **Margins vs window:** min margin 0.167 (w50), 0.0201 (w100), 0.0031 (w200/500); count(m<0.05) 0,2,8,11,12. Window changes the margin spectrum.
-- **State directions:** pairwise correlation of log response curves median 0.94–0.98; 88–100% above 0.9. No strong clusters. Middle-layer residual injection is ~10× weaker than input injection.
-- **Non-normality:** full block layer 0 `σ_max≈95–195`, `ρ≈11–39`, `κ≈5–8`; layers 7–21 `σ≈3`, `ρ≈1.3–2.1`; layer 27 `σ≈6–9`, `ρ≈1.7–2.0`. Median principal angle 82–85°. MLP alone is much more amplifying (layer 27 `σ≈59–95`).
-- **D2 controls:** raw D2 ≈ time-shuffled D2 across all 12 prompts (e.g., 5.75 vs 5.69); phase-randomized 21.7; vocab 5.04. Low D2 is **static geometry**, not temporal dynamics. Delay D2 rises with embedding dimension.
-- **Large r:** flip fraction 3/20 (r=0.5), 8/20 (r=1), 16/20 (r=2); text remains coherent at 300 tokens. No obvious garbage at this horizon.
-- **Second prompt (childhood):** no flips at r=0.01; 5/20 at r=0.1; 13/20 at r=0.3, at near-ties 125/173. The threshold picture generalizes.
+- **Signed threshold:** `r_c⁻=m·r/max(−δm,0)`; 19–20/20 exact at r≤0.1, 17–18/20 at 0.3, 15/20 at 0.5, 9–12/20 at r=1–2. Gain grows 1.5× by r=2; no extrapolation.
+- **State directions:** PC1 explains 94–97% of log-curve variance; median correlation 0.94–0.98; no clusters/special directions. `R(t,s)` is not a function of lag (collapse fails ×1.6). Middle-layer injection 9–36× weaker and plateaus at ≈2.9e-4. State response linear in r over 1e-3…3e-2.
+- **Depth is scale drift:** residual norm ×30 in block 0, ×1.05–1.18/layer. Normalized, every block contracts (max relative exponent −0.034); FSLE ×206 absolute → ×0.46 relative; `h_depth` is gauge drift. A small +0.02 nats/layer aligned drift remains; late MLP σ rise (18→71) is absorbed by scale growth.
+- **Non-normality:** full block layer 0 `σ_max≈95–195`, `ρ≈11–39`, `κ≈5–8`; layers 7–21 `σ≈3`; layer 27 `σ≈6–9`, `ρ≈1.7–2.0`. Median principal angle 83.6°; misalignment budget predicts chained gains within ≲2×. Token 143/L14 is a non-propagating κ=5.9 outlier.
+- **D2 controls:** raw D2 ≈ time-shuffled D2 across all 12 prompts (5.75 vs 5.69); phase surrogate 21.7; vocab 5.04. Low D2 is static geometry, not temporal dynamics. Delay D2 rises with embedding dimension.
+- **Large r:** flip fraction 3/20 (r=0.5), 8/20 (r=1), 16/20 (r=2); text remains coherent at 300 tokens.
+- **Second prompt (childhood):** no flips at r=0.01; 5/20 at r=0.1; 13/20 at r=0.3, at near-ties 125/173. Generalizes.

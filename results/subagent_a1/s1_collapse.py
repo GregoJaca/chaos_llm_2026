@@ -42,8 +42,7 @@ for row, (title, idir) in enumerate(rows):
                             lw=0, label="IQR, r=0.1")
         ax_raw.legend(loc="upper right")
     ax_raw.set_yscale("log"); ax_n.set_yscale("log")
-    ax_raw.set_ylim(3e-4, 60); ax_n.set_ylim(3e-4 / 0.3, 60 / 0.001)
-    ax_n.set_ylim(1e-1, 2e4)
+    ax_raw.set_ylim(3e-4, 900); ax_n.set_ylim(1e-1, 2e4)
     ax_raw.set_ylabel(r"$\delta h(t)$  [emb.-norm units]")
     ax_n.set_ylabel(r"$\delta h(t)\,/\,r$")
     ax_raw.set_title(f"{title} — raw", loc="left")
@@ -140,8 +139,8 @@ a1 = np.polyfit(np.log(radii[large_idx]),
                 np.log(dhm[large_idx, 1, 0] / radii[large_idx]), 1)[0]
 ax.annotate(f"slope L27 = {a27:.2f}\n(superlinear)", xy=(0.55, 2.4),
             color=C.lcolor(27, layers), fontsize=10)
-ax.annotate(f"slope L1 = {a1:.2f}\n(linear)", xy=(0.55, 0.19),
-            color=C.lcolor(1, layers), fontsize=10)
+ax.annotate(f"slope L1 = {a1:.2f}\n($\\approx$linear, mildly\nsublinear at r=2)",
+            xy=(0.55, 0.17), color=C.lcolor(1, layers), fontsize=10)
 ax.set_title("(b) response per unit $r$ vs $r$: flat $\\leq$0.3,\n"
              "superlinear at depth for $r\\geq$0.5", loc="left")
 ax.legend(loc="lower left", ncol=1)
@@ -149,19 +148,25 @@ ax.legend(loc="lower left", ncol=1)
 # (c) exponent of the large-r regime vs layer, at two times
 ax = axes[1, 0]
 lr = np.log(radii[large_idx])
-for tmark, ls in [(0, "-"), (50, "--")]:
-    alphas = []
+for tmark, ls in [(0, "-"), (200, "--")]:
+    alphas, lx = [], []
     for li, l in enumerate(layers):
         if l == 0:
             continue
+        fl = D["flush"].get(int(l))
+        if fl is not None and tmark >= fl:
+            continue
         y = np.log(dhm[large_idx, li, tmark])
         alphas.append(np.polyfit(lr, y, 1)[0])
-    ax.plot([l for l in layers if l > 0], alphas, ls, "o-", ms=4,
-            label=f"t = {tmark}")
+        lx.append(int(l))
+    ax.plot(lx, alphas, ls, "o-", ms=4, label=f"t = {tmark}")
 ax.axhline(1.0, color="k", ls=":", lw=0.9)
 ax.annotate("linear response\n(exponent 1)", xy=(2.5, 1.02), fontsize=9)
-ax.set_xlabel("layer"); ax.set_ylabel(r"fit exponent $\alpha(l,t)$ over $r\in[0.5,2]$")
-ax.set_title("(c) large-r exponent grows with depth (and t)", loc="left")
+ax.annotate("exponent is set by DEPTH;\ntime drift is mild,\nnon-monotonic",
+            xy=(9, 1.32), fontsize=9.5, color="0.2")
+ax.set_xlabel("layer")
+ax.set_ylabel(r"fit exponent $\alpha(l,t)$ over $r\in[0.5,2]$")
+ax.set_title("(c) large-r exponent: mainly a function of depth", loc="left")
 ax.legend()
 
 # (d) alpha(l,t) heatmap, large-r set
@@ -176,11 +181,11 @@ for i, li in enumerate(LG):
         y = np.log(dhm[large_idx, li, t])
         A[i, t] = np.polyfit(lr, y, 1)[0]
 im = ax.imshow(A, origin="lower", aspect="auto", cmap="magma",
-               extent=[0, 300, -0.5, len(LG) - 0.5], vmin=0.95, vmax=2.0)
+               extent=[0, 300, -0.5, len(LG) - 0.5], vmin=0.7, vmax=1.5)
 ax.set_yticks(range(len(LG))); ax.set_yticklabels([str(layers[li]) for li in LG])
 ax.set_xlabel("generated token t"); ax.set_ylabel("layer")
-ax.set_title(r"(d) $\alpha(l,t)$ in the nonlinear regime: grows with depth AND time",
-             loc="left")
+ax.set_title(r"(d) $\alpha(l,t)$, $r\in[0.5,2]$: bands, not structure;"
+             "\nno time-dependent exponent needed at small r", loc="left")
 cb = fig.colorbar(im, ax=ax, pad=0.015)
 cb.set_label(r"$\alpha$")
 for i, li in enumerate(LG):
@@ -188,9 +193,10 @@ for i, li in enumerate(LG):
     if fl is not None:
         ax.axvline(fl, color="w", ls="--", lw=1.2)
 
-fig.suptitle("Collapse quality (w100): one exponent ($\\alpha{=}1$) works for "
-             "$r\\leq0.3$ at every layer;\nlarge $r$ needs a depth- and "
-             "time-dependent exponent — no single global power law", y=0.99)
+fig.suptitle("Collapse quality (w100): ONE exponent ($\\alpha{=}1$) collapses all "
+             "$r\\leq0.3$ at every layer and time;\nlarge $r$ needs a per-layer "
+             "exponent $\\alpha(l)\\approx0.96\\to1.45$ (mild time drift) — "
+             "no single global power law", y=0.99)
 fig.tight_layout(rect=(0, 0, 1, 0.955))
 C.save(fig, "fig2_collapse_quality.png")
 
@@ -198,12 +204,21 @@ C.save(fig, "fig2_collapse_quality.png")
 print("alpha(l, t=0, large-r set):",
       {int(layers[li]): round(np.polyfit(lr, np.log(dhm[large_idx, li, 0]), 1)[0], 3)
        for li, l in enumerate(layers) if l > 0})
-print("alpha(l, t=50, large-r set):",
-      {int(layers[li]): round(np.polyfit(lr, np.log(dhm[large_idx, li, 50]), 1)[0], 3)
-       for li, l in enumerate(layers) if l > 0})
-# global single-exponent fit over ALL r at L27 (does one exponent work everywhere?)
-y = np.log(dhm[:, li27, 0])
-ag = np.polyfit(np.log(radii), y, 1)[0]
-resid = y - np.polyval([ag, np.polyfit(np.log(radii), y, 1)[1]], np.log(radii))
-print(f"single global exponent L27 all-r: alpha={ag:.3f}, "
-      f"max |resid|={np.abs(resid).max():.2f} (spread over 3.6 decades of r)")
+print("alpha(l, t=200, large-r set):",
+      {int(layers[li]): round(np.polyfit(lr, np.log(dhm[large_idx, li, 200]), 1)[0], 3)
+       for li, l in enumerate(layers) if l > 0
+       if int(l) not in D["flush"] or 200 < D["flush"][int(l)]})
+# regime-split residuals vs single global exponent at L27
+y_all = np.log(dhm[:, li27, 0])
+lr_all = np.log(radii)
+ag = np.polyfit(lr_all, y_all, 1)[0]
+resid_global = np.abs(y_all - (ag * lr_all + np.polyfit(lr_all, y_all, 1)[1])).max()
+res_small = np.abs(
+    np.log(dhm[small_idx, li27, 0]) - np.polyfit(np.log(radii[small_idx]),
+    np.log(dhm[small_idx, li27, 0]), 1)[0] * np.log(radii[small_idx]) -
+    np.polyfit(np.log(radii[small_idx]), np.log(dhm[small_idx, li27, 0]), 1)[1]).max()
+res_large = np.abs(
+    np.log(dhm[large_idx, li27, 0]) - np.polyfit(lr, np.log(dhm[large_idx, li27, 0]),
+    1)[0] * lr - np.polyfit(lr, np.log(dhm[large_idx, li27, 0]), 1)[1]).max()
+print(f"L27 t=0: single global exponent alpha={ag:.3f}, max|resid|={resid_global:.3f} "
+      f"decades; split regimes: max|resid| small={res_small:.3f}, large={res_large:.3f}")

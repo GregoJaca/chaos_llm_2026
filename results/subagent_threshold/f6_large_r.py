@@ -73,6 +73,8 @@ base = c100.rc[2]           # r_ref = 0.01 slice
 radii = c100.radii
 xs, bands = [], []
 for ir, r in enumerate(radii):
+    if r < 0.01:            # below float32 resolution of hidden norms ~ skip
+        continue
     ok = np.isfinite(c100.rc[ir]) & np.isfinite(base)
     ratio = c100.rc[ir][ok] / base[ok]
     q = np.quantile(ratio, [0.05, 0.25, 0.5, 0.75, 0.95])
@@ -90,7 +92,7 @@ for ir, r in enumerate(radii):
         ok = np.isfinite(c100.rc[ir]) & np.isfinite(base)
         ratio = c100.rc[ir][ok] / base[ok]
         out = ((ratio > 2) | (ratio < 0.5)).mean()
-        ax.annotate(f"{out*100:.0f}% out", xy=(r, bands[ir, 4]), xytext=(0, 4),
+        ax.annotate(f"{out*100:.0f}% out", xy=(r, np.quantile(ratio, 0.95)), xytext=(0, 4),
                     textcoords="offset points", fontsize=7, ha="center")
 ax.set_xscale("log")
 ax.set_yscale("log")
@@ -102,13 +104,15 @@ ax.grid(alpha=0.3, which="both")
 
 # ---------- Panel C: median gain vs r ----------
 ax = axes[2]
+sel = [ir for ir, r in enumerate(radii) if r >= 0.01]
 gm = []
-for ir, r in enumerate(radii):
+for ir in sel:
     g = c100.gain[ir]
     ok = np.isfinite(g) & (g > 0)
     gm.append(np.median(g[ok]))
-ax.loglog(radii, gm, "o-", color="tab:purple", lw=1.5)
-ax.loglog(radii[2:8], gm[2] * (radii[2:8] / radii[2]) * 0 + gm[2], "--", color="0.4",
+rs_sel = np.array(radii)[sel]
+ax.loglog(rs_sel, gm, "o-", color="tab:purple", lw=1.5)
+ax.loglog(rs_sel, np.full(len(rs_sel), gm[0]), "--", color="0.4",
           lw=1.0, label="linear extrapolation from r=0.01")
 ax.set_xscale("log")
 ax.set_yscale("log")
@@ -117,8 +121,7 @@ ax.set_ylabel("median gain  $|\\delta m|/r$")
 ax.set_title("Gain grows superlinearly for r>0.3", fontsize=10)
 ax.legend(fontsize=8)
 ax.grid(alpha=0.3, which="both")
-q = np.quantile(c100.gain[-1][np.isfinite(c100.gain[-1])], [0.25, 0.75])
-ax.annotate(f"r=2: median gain {gm[-1]:.3f}\n(= {gm[-1]/gm[2]:.2f}x the r=0.01 gain)",
+ax.annotate(f"r=2: median gain {gm[-1]:.3f}\n(= {gm[-1]/gm[0]:.2f}x the r=0.01 gain)",
             xy=(0.97, 0.05), xycoords="axes fraction", ha="right", fontsize=8)
 
 fig.suptitle("Small-r thresholds do not extrapolate: superlinear gain makes r_c(r) "
@@ -126,4 +129,4 @@ fig.suptitle("Small-r thresholds do not extrapolate: superlinear gain makes r_c(
 fig.tight_layout(rect=[0, 0, 1, 0.92])
 fig.savefig(OUT + r"\fig6_large_r_linearity.png", dpi=160)
 print("saved fig6")
-print("median gain by r:", dict(zip([f"{r:g}" for r in radii], np.round(gm, 4))))
+print("median gain by r:", dict(zip([f"{r:g}" for r in rs_sel], np.round(gm, 4))))

@@ -65,25 +65,22 @@ def window_block(fig, gs, name):
     axh.set_yticklabels([f"d{d}  {rstar[d]:.3g}" for d in order], fontsize=6)
     axh.set_xlabel("generation step $t$")
     axh.set_ylabel("directions sorted by $r_*^-$", fontsize=8)
+    cnt = {}
+    for tt in tstar:
+        cnt[int(tt)] = cnt.get(int(tt), 0) + 1
+    txt = "controlling steps: " + ", ".join(
+        f"t={k}: {v}/20" for k, v in sorted(cnt.items(), key=lambda kv: -kv[1]))
+    axh.text(0.5, -0.22, txt, transform=axh.transAxes, ha="center", va="top", fontsize=8)
     return im, rstar, tstar, obs, order
 
 
 fig = plt.figure(figsize=(13, 11))
-outer = gridspec.GridSpec(3, 1, hspace=0.32, figure=fig)
+outer = gridspec.GridSpec(3, 1, hspace=0.42, figure=fig)
 info = []
 for i, name in enumerate(["w100", "w200", "w500"]):
     inner = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=outer[i],
                                              height_ratios=[1.15, 2.6], hspace=0.06)
     info.append(window_block(fig, inner, name))
-
-# counts of controlling steps, annotated under each block
-for i, (name, (im, rstar, tstar, obs, order)) in enumerate(zip(["w100", "w200", "w500"], info)):
-    cnt = {}
-    for tt in tstar:
-        cnt[int(tt)] = cnt.get(int(tt), 0) + 1
-    txt = ", ".join(f"t={k}: {v}/20" for k, v in sorted(cnt.items(), key=lambda kv: -kv[1]))
-    fig.text(0.5, 0.965 - i * 0.335, f"controlling steps ({name}):  {txt}", ha="center",
-             fontsize=8.5)
 
 cax = fig.add_axes([0.92, 0.09, 0.012, 0.2])
 cb = fig.colorbar(info[0][0], cax=cax)

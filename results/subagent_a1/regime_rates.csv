@@ -1,0 +1,8 @@
+layer,t_peak,rise_rate,plateau_decay_rate,tail_exp_rate,tail_exp_R2,tail_pow_exp,tail_pow_R2,surge_G80_over_G50
+1,0,nan,-0.0210,nan,nan,nan,nan,0.23
+2,0,nan,-0.0195,nan,nan,nan,nan,0.55
+3,0,nan,-0.0094,nan,nan,nan,nan,2.49
+7,0,nan,-0.0019,-0.0130,0.959,-2.403,0.950,1.53
+14,0,nan,0.0041,-0.0082,0.832,-1.565,0.887,1.76
+21,14,0.0096,0.0119,-0.0105,0.950,-1.972,0.964,2.16
+27,17,0.0225,0.0193,-0.0119,0.953,-2.228,0.973,1.88

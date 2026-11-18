@@ -31,7 +31,7 @@ for ax, (d, blurb) in zip(axes, CASES):
     ax.semilogy(t, np.maximum(c.m, 1e-4), lw=0.6, color="0.55", label="$m_t$ margin")
     for r, col in [(0.1, "tab:blue"), (0.3, "tab:green")]:
         ax.axhline(r, color=col, lw=1.0, ls="--")
-        ax.annotate(f"r={r}", xy=(597, r), fontsize=8, color=col, ha="right",
+        ax.annotate(f"r={r}", xy=(296, r), fontsize=8, color=col, ha="right",
                     va="bottom", xytext=(0, 2), textcoords="offset points")
     tstar = int(np.argmin(rcd))
     ax.plot(tstar, max(rcd[tstar], 1e-4), "o", ms=9, mfc="white", mec="k", mew=1.2, zorder=6)

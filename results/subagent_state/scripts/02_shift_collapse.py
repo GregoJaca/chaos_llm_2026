@@ -38,15 +38,6 @@ stats = {"common_lag_range": [5, 149],
 tau_lo, tau_hi = 5, 149
 
 
-def spread_factor(Rbar):
-    """Rbar: [4, lags] with lag axis tau=0..; returns RMS dex spread on common range."""
-    taus = np.arange(Rbar.shape[1])
-    common = (taus >= tau_lo) & (taus <= tau_hi)
-    L = log10safe(Rbar[:, common])
-    sd = L.std(axis=0)
-    return float(np.sqrt(np.mean(sd ** 2))), float(np.sqrt(np.mean(sd ** 2)))  # dex
-
-
 def spread_stats(Rbar):
     taus = np.arange(Rbar.shape[1])
     common = (taus >= tau_lo) & (taus <= tau_hi)
@@ -90,34 +81,56 @@ for si, s in enumerate(steps):
                          bump_t=[int(c + s) for c in cand[:8]])
 stats["bumps"] = bumps
 
-# ---- (f) near-tie alignment check: dh at near-tie tokens vs local baseline
+# ---- (f) near-tie alignment check: two tests.
+# (i) coarse: dh at near-tie tokens vs local baseline (window includes any bump
+#     within +-4 tokens, so this is insensitive by construction);
+# (ii) sensitive: lagged correlation of the bump residual vs -log margin.
 nt = np.where(m < 0.2)[0]
-enrich = {}
+S = -np.log10(np.maximum(m, 1e-3))
+Lall = log10safe(med)
+bumpres = np.zeros_like(Lall)
+for si in range(len(steps)):
+    bumpres[si] = Lall[si] - median_filter(Lall[si], size=15, mode="nearest")
+enrich, xcorr = {}, {}
 for si, s in enumerate(steps):
     tt = nt[(nt > s + 2)]
-    if len(tt) == 0:
+    if len(tt):
+        x = med[si]
+        ratios = [x[t] / np.median(x[max(s, t - 4):t + 5]) for t in tt]
+        enrich[int(s)] = dict(tokens=[int(t) for t in tt],
+                              ratios=[float(r) for r in ratios],
+                              median_ratio=float(np.median(ratios)))
+    else:
         enrich[int(s)] = None
-        continue
-    x = med[si]
-    ratios = []
-    for t in tt:
-        loc = np.median(x[max(s, t - 4):t + 5])
-        ratios.append(x[t] / loc)
-    enrich[int(s)] = dict(tokens=[int(t) for t in tt], ratios=[float(r) for r in ratios],
-                          median_ratio=float(np.median(ratios)))
+    rows = []
+    for dl in range(-8, 9):
+        t0 = int(s) + 10
+        a = bumpres[si, t0:]
+        idx = np.arange(t0, T) + dl
+        ok = (idx >= 0) & (idx < T)
+        b = S[idx[ok]]
+        n = min(len(a), len(b))
+        rows.append((dl, float(np.corrcoef(a[:n], b[:n])[0, 1])))
+    best = max(rows, key=lambda r: r[1])
+    xcorr[int(s)] = dict(best_lag=best[0], best_corr=best[1],
+                         corr_lag0=[r[1] for r in rows if r[0] == 0][0],
+                         note="corr(bump residual of log dh at t, -log margin at t+lag)")
 stats["near_tie_enrichment"] = dict(
-    note="dh at near-tie tokens divided by local (9-token) median dh; ~1 means NO alignment",
+    note="ratio dh(t)/local 9-token median at near-tie t; window contains any +-4 bump, "
+         "so ~1 means 'not elevated above its own neighborhood', see margin_crosscorr",
     by_s=enrich)
+stats["margin_crosscorr"] = xcorr
 
-# ---- separability of the log median field on common t grid (t>=150)
+# ---- separability of the log median field on common t grid (t>=150):
+# model F(s,t) ~ a(s) + b(t) + c; residual = doubly-centered field
 F = log10safe(med[:, 150:])                     # [4, 150]
 Fdc = F - F.mean(1, keepdims=True) - F.mean(0, keepdims=True) + F.mean()
 U, Sv, Vt = np.linalg.svd(Fdc, full_matrices=False)
-resid = Fdc - np.outer(U[:, 0] * Sv[0], Vt[0])
+Ffit = F.mean() + (F - F.mean()).mean(1, keepdims=True) + (F - F.mean()).mean(0, keepdims=True)
 stats["separability_t_ge_150"] = dict(
-    rank1_var_share=float(Sv[0] ** 2 / np.sum(Sv ** 2)),
-    resid_std_dex=float(resid.std()), resid_factor=float(10 ** resid.std()),
-    resid_p90_abs_dex=float(np.quantile(np.abs(resid), .9)))
+    add_resid_std_dex=float(Fdc.std()), add_resid_factor=float(10 ** Fdc.std()),
+    add_resid_p90_abs_dex=float(np.quantile(np.abs(Fdc), .9)),
+    nonsep_pc1_share=float(Sv[0] ** 2 / np.sum(Sv ** 2)))
 # same on the widest 2-s common grids
 pair_sep = {}
 for i, j in [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]:
@@ -221,7 +234,7 @@ ax2.plot(np.arange(T), np.maximum(m, 1e-3), lw=0.8, color="k", alpha=0.6)
 ax2.set_yscale("log")
 ax2.set_ylabel("baseline margin (log)", fontsize=8)
 ax.set_title("(f) vs absolute t; gray lines = margin near-ties (<0.2)\n"
-             "bumps do NOT sit on near-ties", fontsize=9)
+             "bumps only loosely track margin dips (see stats: margin_crosscorr)", fontsize=9)
 ax.grid(alpha=0.25)
 ax.legend(fontsize=8, loc="upper right")
 
@@ -234,15 +247,14 @@ fig, axs = plt.subplots(1, 3, figsize=(14, 3.4), sharey=True)
 vmax = np.max(np.abs(Fdc))
 for ax, (mat, ttl) in zip(axs, [
         (F, r"$\log_{10}$ median $\|\delta h_t\|$ (field)"),
-        (F.mean() + (F - F.mean()).mean(1, keepdims=True) + (F - F.mean()).mean(0, keepdims=True)[None, :] - F.mean(),
-         "rank-1 reconstruction a(s)+b(t)")]):
+        (Ffit, "additive fit a(s)+b(t)+c")]):
     im = ax.imshow(mat, aspect="auto", cmap="viridis", origin="lower")
     ax.set_title(ttl, fontsize=9)
     ax.set_xlabel("t (from 150)")
     ax.set_ylabel("s index (16,50,100,150)")
     fig.colorbar(im, ax=ax, fraction=0.046)
-im = axs[2].imshow(resid, aspect="auto", cmap="RdBu_r", vmin=-vmax, vmax=vmax, origin="lower")
-axs[2].set_title(f"residual (std {resid.std():.3f} dex = x{10**resid.std():.2f})", fontsize=9)
+im = axs[2].imshow(Fdc, aspect="auto", cmap="RdBu_r", vmin=-vmax, vmax=vmax, origin="lower")
+axs[2].set_title(f"residual (std {Fdc.std():.3f} dex = x{10**Fdc.std():.2f})", fontsize=9)
 axs[2].set_xlabel("t (from 150)")
 fig.colorbar(im, ax=axs[2], fraction=0.046)
 fig.suptitle("Separability of the response field on the common grid t>=150", fontsize=10)
@@ -255,5 +267,6 @@ print("spread factors (tau 5-149):",
 print("bumps:", {k: v["first_bump_t"] for k, v in bumps.items()})
 print("near-tie enrichment medians:", {k: (v["median_ratio"] if v else None)
                                         for k, v in stats["near_tie_enrichment"]["by_s"].items()})
+print("margin crosscorr:", {k: (v["best_lag"], round(v["best_corr"], 3)) for k, v in xcorr.items()})
 print("separability:", stats["separability_t_ge_150"])
 print("pairwise field residual factors:", pair_sep)

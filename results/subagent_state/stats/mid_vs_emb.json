@@ -1,0 +1,104 @@
+{
+  "common_s": [
+    16,
+    50,
+    100
+  ],
+  "n_dirs_emb": 32,
+  "n_dirs_mid": 8,
+  "seeds": "emb 1000+i, mid 2000+i (unpaired)",
+  "median_norm_h27": 545.31591796875,
+  "per_s": {
+    "16": {
+      "dh_at_s_emb": 0.12366876751184464,
+      "dh_at_s_mid": 0.0034067583037540317,
+      "ratio_at_s": 36.30101007622686,
+      "ratio_area_lag5_30": 31.491175247599255,
+      "initial_drop_tau0_to_tau5": {
+        "emb": 0.18658805614300678,
+        "mid": 0.23808043109598329
+      },
+      "slope_emb_dex_per_token": 0.02309340998184969,
+      "slope_mid_dex_per_token": 0.01923581343416648,
+      "slope_ratio_mid_over_emb": 0.8329568240153752,
+      "tail_t_ge_150": {
+        "emb": {
+          "level": 0.0061743485275655985,
+          "rel_variation": 0.25196675339694746,
+          "lag1_autocorr": 1.0000000000000002
+        },
+        "mid": {
+          "level": 0.00029286752396728843,
+          "rel_variation": 0.10461569084774992,
+          "lag1_autocorr": 0.9999999999999998
+        },
+        "ratio_level": 21.08239399140492
+      },
+      "dir_spread_emb_dex": 0.11846761906426093,
+      "dir_spread_mid_dex": 0.037603580097355344,
+      "max_rel_to_norm_emb": 0.00038207792922877735,
+      "max_rel_to_norm_mid": 8.049513272633692e-06
+    },
+    "50": {
+      "dh_at_s_emb": 0.009606517851352692,
+      "dh_at_s_mid": 0.001024614495690912,
+      "ratio_at_s": 9.37573876980423,
+      "ratio_area_lag5_30": 6.643428479309593,
+      "initial_drop_tau0_to_tau5": {
+        "emb": 0.7482082507668504,
+        "mid": 0.44257325406614184
+      },
+      "slope_emb_dex_per_token": -0.02633010693434494,
+      "slope_mid_dex_per_token": -0.0031713744006933906,
+      "slope_ratio_mid_over_emb": 0.12044669657443191,
+      "tail_t_ge_150": {
+        "emb": {
+          "level": 0.0021338839433155954,
+          "rel_variation": 0.18338422493073267,
+          "lag1_autocorr": 0.9999999999999998
+        },
+        "mid": {
+          "level": 0.000283016765024513,
+          "rel_variation": 0.0813067160227239,
+          "lag1_autocorr": 1.0000000000000002
+        },
+        "ratio_level": 7.539779288802106
+      },
+      "dir_spread_emb_dex": 0.07991399925370138,
+      "dir_spread_mid_dex": 0.02945252231518451,
+      "max_rel_to_norm_emb": 2.4064116089099676e-05,
+      "max_rel_to_norm_mid": 2.0326785679825615e-06
+    },
+    "100": {
+      "dh_at_s_emb": 0.01259899651631713,
+      "dh_at_s_mid": 0.0010744701721705496,
+      "ratio_at_s": 11.725775961621856,
+      "ratio_area_lag5_30": 5.134333723534004,
+      "initial_drop_tau0_to_tau5": {
+        "emb": 0.23845992955609815,
+        "mid": 0.3643209339357483
+      },
+      "slope_emb_dex_per_token": -0.016506579085436953,
+      "slope_mid_dex_per_token": -0.003978437800054689,
+      "slope_ratio_mid_over_emb": 0.24102133939822176,
+      "tail_t_ge_150": {
+        "emb": {
+          "level": 0.0009677234193077311,
+          "rel_variation": 0.1376018521986707,
+          "lag1_autocorr": 1.0
+        },
+        "mid": {
+          "level": 0.00028627130086533725,
+          "rel_variation": 0.08126456555416124,
+          "lag1_autocorr": 1.0
+        },
+        "ratio_level": 3.3804416173836116
+      },
+      "dir_spread_emb_dex": 0.07216340036761365,
+      "dir_spread_mid_dex": 0.019077837052997863,
+      "max_rel_to_norm_emb": 3.4429333004700426e-05,
+      "max_rel_to_norm_mid": 2.273884159119481e-06
+    }
+  },
+  "note_tail": "the mid tail plateau is a real structured signal, not fp32 noise: dh(t<s)=0 exactly, lag-1 autocorr > 0.5, tight across directions"
+}

@@ -99,7 +99,7 @@
     }
   },
   "near_tie_enrichment": {
-    "note": "dh at near-tie tokens divided by local (9-token) median dh; ~1 means NO alignment",
+    "note": "ratio dh(t)/local 9-token median at near-tie t; window contains any +-4 bump, so ~1 means 'not elevated above its own neighborhood', see margin_crosscorr",
     "by_s": {
       "16": {
         "tokens": [
@@ -163,11 +163,37 @@
       "150": null
     }
   },
+  "margin_crosscorr": {
+    "16": {
+      "best_lag": 1,
+      "best_corr": 0.34782794196862105,
+      "corr_lag0": 0.11040696404227145,
+      "note": "corr(bump residual of log dh at t, -log margin at t+lag)"
+    },
+    "50": {
+      "best_lag": 2,
+      "best_corr": 0.15958176200836602,
+      "corr_lag0": -0.004568318731293711,
+      "note": "corr(bump residual of log dh at t, -log margin at t+lag)"
+    },
+    "100": {
+      "best_lag": 6,
+      "best_corr": 0.0729884242977544,
+      "corr_lag0": 0.015956169909552675,
+      "note": "corr(bump residual of log dh at t, -log margin at t+lag)"
+    },
+    "150": {
+      "best_lag": -3,
+      "best_corr": 0.4409140700101748,
+      "corr_lag0": -0.2382474032881205,
+      "note": "corr(bump residual of log dh at t, -log margin at t+lag)"
+    }
+  },
   "separability_t_ge_150": {
-    "rank1_var_share": 0.7027637663598616,
-    "resid_std_dex": 0.036221982813070146,
-    "resid_factor": 1.0869810749784108,
-    "resid_p90_abs_dex": 0.06059389285483542
+    "add_resid_std_dex": 0.06643873354930312,
+    "add_resid_factor": 1.165302648579526,
+    "add_resid_p90_abs_dex": 0.0873886669342264,
+    "nonsep_pc1_share": 0.7027637663598616
   },
   "pairwise_field_resid_factor_t_ge_max_s": {
     "s16_s50": 1.506682779716049,
