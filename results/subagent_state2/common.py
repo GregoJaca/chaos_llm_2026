@@ -48,7 +48,10 @@ def load_l14():
     for i_s, s in enumerate(steps):
         dh[:, i_s, :, :, :s] = np.nan
         dm[:, i_s, :, :s] = np.nan
-    M = np.nanmean(dh, axis=2)
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', RuntimeWarning)   # empty slices in causal region
+        M = np.nanmean(dh, axis=2)
     return dict(dh=dh, dm=dm, M=M, steps=steps, radii=radii, layers=layers,
                 margins=d['margins'].astype(np.float64))
 
@@ -60,7 +63,7 @@ def base_state_norms(D):
         vals = []
         for i_s, s in enumerate(D['steps']):
             c = 1.0 - D['cos'][3, i_s, :, i_l, s]
-            ok = c > 2e-6                      # float32 reliability floor for cos
+            ok = c > 8e-7                      # float32 reliability floor for cos (~7 ulps)
             h = D['dh'][3, i_s, ok, i_l, s] / np.sqrt(2 * c[ok])
             vals.append(np.median(h) if ok.sum() > 5 else np.nan)
         norms[int(L)] = np.array(vals)

@@ -32,7 +32,7 @@ def token_props(ids):
     bi_rep = sum(v for v in bi.values() if v > 1) / (n - 1)
     # longest repeated k-gram
     longest = 0
-    for k in range(2, 60):
+    for k in range(2, 220):
         seen = set()
         found = False
         for t in range(n - k + 1):
@@ -122,7 +122,7 @@ def make_fig(res, corr, pred):
         ax.plot([v[ri]], [gap_s[ri]], "o", ms=5.5, color="tab:red")
         ax.annotate("renewable", (v[ri], gap_s[ri]), fontsize=6, color="tab:red",
                     xytext=(4, 4), textcoords="offset points")
-        rho, p = corr[k]["gap_surr"]
+        rho, p = corr[k]["gap_surr"] if k in corr else (np.nan, np.nan)
         ax.set_xlabel(lab)
         ax.set_ylabel("NSE gap vs best surrogate, h=8")
         concl = "no association" if p > 0.05 else ("positive" if rho > 0 else "negative")

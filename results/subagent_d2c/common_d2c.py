@@ -129,35 +129,6 @@ def erlegal_width(eps, C, s, N, c_lo_mult=10.0, c_hi=0.5):
     return round(tot, 4), round(bestw, 4)
 
 
-def naive_best_fit(eps, C, min_pts=5, r2_min=0.99):
-    """Widest window with linear log-log fit r^2 >= r2_min (the 'innocent notebook'
-    fit that produced the earlier artifacts)."""
-    le = np.log10(eps)
-    lc = np.log10(np.maximum(C, 1e-300))
-    n = len(eps)
-    best = None
-    for a in range(n):
-        if C[a] <= 0:
-            continue
-        for b in range(a + min_pts - 1, n):
-            x = le[a:b + 1]
-            y = lc[a:b + 1]
-            p = np.polyfit(x, y, 1)
-            yh = p[0] * x + p[1]
-            ssr = float(((y - yh) ** 2).sum())
-            sst = float(((y - y.mean()) ** 2).sum())
-            r2 = 1.0 - ssr / sst if sst > 0 else 1.0
-            if r2 >= r2_min:
-                w = float(x[-1] - x[0])
-                if best is None or w > best["width_dec"]:
-                    best = dict(
-                        width_dec=round(w, 4), slope=round(float(p[0]), 3),
-                        r2=round(r2, 5), i0=a, i1=b,
-                        C_lo=float(C[a]), C_hi=float(C[b]),
-                    )
-    return best
-
-
 # ---------------- surrogates ----------------
 
 def _common_phases(T, rng):
@@ -178,7 +149,7 @@ def phase_surrogate(Y, rng):
     rot = np.exp(1j * _common_phases(T, rng))
     Zf = Yf * rot[:, None]
     if T % 2 == 0:
-        Zf[:, -1] = Yf[:, -1] * rng.choice([-1.0, 1.0])
+        Zf[-1, :] = Yf[-1, :] * rng.choice([-1.0, 1.0])
     return np.fft.irfft(Zf, n=T, axis=0)
 
 
@@ -194,22 +165,91 @@ def _rank_match(Z, Ysorted):
 
 def miiaft(Y, rng, n_iter=40):
     """Multivariate IAAFT: per-column marginal preserved exactly (final rank
-    match), per-column spectrum + (approximately, via common-phase init)
-    cross-spectrum preserved."""
-    T, d = Y.shape
-    Ysorted = np.sort(Y, axis=0)
-    Yf = np.fft.rfft(Y, axis=0)
+    match), per-column spectrum preserved to ~0.5%, cross-spectrum approximately
+    (common-phase init; typical lag-1 cross-cov error ~0.1). Transposed layout
+    for speed; rank matching via gather, not scatter."""
+    YT = np.ascontiguousarray(np.asarray(Y, dtype=np.float64).T)   # (d, T)
+    d, T = YT.shape
+    Ysorted = np.sort(YT, axis=1)
+    Yf = np.fft.rfft(YT, axis=1)
     amp = np.abs(Yf)
-    Z = phase_surrogate(Y, rng)
+    rot = np.exp(1j * _common_phases(T, rng))                      # (F,)
+    Zf = Yf * rot[None, :]
+    if T % 2 == 0:
+        Zf[:, -1] = Yf[:, -1] * rng.choice([-1.0, 1.0])
+    ZT = np.fft.irfft(Zf, n=T, axis=1)
     for _ in range(n_iter):
-        Z = _rank_match(Z, Ysorted)
-        Zf = np.fft.rfft(Z, axis=0)
-        Zf = amp * np.exp(1j * np.angle(Zf))
-        Zf[:, 0] = Yf[:, 0]
+        order = np.argsort(ZT, axis=1, kind="stable")
+        Z2T = np.take_along_axis(Ysorted, order, axis=1)
+        Zf2 = np.fft.rfft(Z2T, axis=1)
+        Zf2 = amp * np.exp(1j * np.angle(Zf2))
+        Zf2[:, 0] = Yf[:, 0]
         if T % 2 == 0:
-            Zf[:, -1] = np.real(Zf[:, -1])
-        Z = np.fft.irfft(Zf, n=T, axis=0)
-    return _rank_match(Z, Ysorted)
+            Zf2[:, -1] = np.real(Zf2[:, -1])
+        ZT = np.fft.irfft(Zf2, n=T, axis=1)
+    order = np.argsort(ZT, axis=1, kind="stable")
+    outT = np.take_along_axis(Ysorted, order, axis=1)
+    return np.ascontiguousarray(outT.T)
+
+
+def cloud_miiaft(Xc, rng, n_top=50, n_iter=25):
+    """Statics-preserving cloud surrogate: MIAAFT on the top-n_top PCs (which
+    carry the shape of the distance distribution) + multivariate phase
+    randomization of the low-variance tail; full-rank reconstruction."""
+    U, sv, Vh = np.linalg.svd(Xc, full_matrices=False)
+    Ytop = U[:, :n_top] * sv[:n_top]
+    Ztop = miiaft(Ytop, rng, n_iter=n_iter)
+    Ytail = U[:, n_top:] * sv[n_top:]
+    Ztail = phase_surrogate(Ytail, rng) if Ytail.shape[1] > 0 else np.zeros((Xc.shape[0], 0))
+    return np.hstack([Ztop, Ztail]) @ Vh
+
+
+def naive_best_fit(eps, C, min_pts=5, r2_min=0.99):
+    """Widest window with linear log-log fit r^2 >= r2_min (the 'innocent
+    notebook' fit that produced the earlier artifacts). Vectorized prefix-sum
+    implementation over all windows."""
+    le = np.log10(eps)
+    lc = np.log10(np.maximum(C, 1e-300))
+    ok = np.where(C > 0)[0]
+    if ok.size == 0:
+        return None
+    k0 = int(ok[0])
+    x, y = le[k0:], lc[k0:]
+    n = x.size
+    if n < min_pts:
+        return None
+    cx = np.concatenate(([0.0], np.cumsum(x)))
+    cy = np.concatenate(([0.0], np.cumsum(y)))
+    cxx = np.concatenate(([0.0], np.cumsum(x * x)))
+    cyy = np.concatenate(([0.0], np.cumsum(y * y)))
+    cxy = np.concatenate(([0.0], np.cumsum(x * y)))
+    A = np.arange(n)[:, None]
+    B = np.arange(min_pts - 1, n)[None, :]
+    aa, bb = np.where(B >= A + min_pts - 1)
+    m = bb - aa + 1
+    Sx = cx[bb + 1] - cx[aa]
+    Sy = cy[bb + 1] - cy[aa]
+    Sxx = cxx[bb + 1] - cxx[aa]
+    Syy = cyy[bb + 1] - cyy[aa]
+    Sxy = cxy[bb + 1] - cxy[aa]
+    num = m * Sxy - Sx * Sy
+    den1 = m * Sxx - Sx ** 2
+    den2 = m * Syy - Sy ** 2
+    good = (den1 > 0) & (den2 > 0)
+    slope = np.zeros_like(num)
+    r2 = np.full_like(num, -1.0)
+    slope[good] = num[good] / den1[good]
+    r2[good] = (num[good] ** 2) / (den1[good] * den2[good])
+    width = x[bb] - x[aa]
+    sel = good & (r2 >= r2_min)
+    if not sel.any():
+        return None
+    j = int(np.argmax(np.where(sel, width, -1.0)))
+    return dict(
+        width_dec=round(float(width[j]), 4), slope=round(float(slope[j]), 3),
+        r2=round(float(r2[j]), 5), i0=int(aa[j] + k0), i1=int(bb[j] + k0),
+        C_lo=float(C[aa[j] + k0]), C_hi=float(C[bb[j] + k0]),
+    )
 
 
 def iaaft_scalar(y, rng, n_iter=100):

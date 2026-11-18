@@ -20,8 +20,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from common_d2c import (PROMPTS, REP, OUT, load, distm, c_eps_curve, eps_grid_from_med,
                         log_slope, smooth3, widest_run, run_is_er_legal, erlegal_width,
-                        naive_best_fit, phase_surrogate, miiaft, rqa_from_D,
-                        pair_values, save_json, rng_for)
+                        naive_best_fit, phase_surrogate, miiaft, cloud_miiaft,
+                        rqa_from_D, pair_values, save_json, rng_for)
 
 plt.rcParams.update({"figure.dpi": 150, "font.size": 8.5,
                      "axes.titlesize": 9.0, "axes.titleweight": "bold",
@@ -62,6 +62,7 @@ def main():
         Xc = X - X.mean(0)
         U, sv, Vh = np.linalg.svd(Xc, full_matrices=False)
         Y = U[:, :999] * sv[:999]          # full-rank PC scores (rank <= 999)
+        Ytop = U[:, :50] * sv[:50]        # top-50 PC scores (cloud shape carrier)
         # time-shuffle: exact identity for w=0, check in integer counts
         rng = rng_for(name, 1)
         D_data = distm(Xc)
@@ -84,13 +85,12 @@ def main():
             m = Cs_w50_data > 1e-4
             dev_w50.append(float(np.max(np.abs(np.log10(np.maximum(Cs, 1e-300)[m])
                                                - np.log10(Cs_w50_data[m])))))
-        # phase + MIAAFT cloud surrogates
+        # phase surrogates (full-rank, exact cross-periodogram) + cloud MIAAFT
+        # (top-50 MIAAFT + phase-rand tail, full-rank reconstruction)
         ph_curves, ia_curves = [], []
         ph_nbf, ia_nbf = [], []
-        D_data_N1000 = D_data
-        rqa_data = rqa_from_D(D_data_N1000)
+        rqa_data = rqa_from_D(D_data)
         rqa_ph, rqa_ia, rqa_sh = [], [], []
-        Xs_pool = []
         for s_i in range(N_SURR_PH):
             Zp = phase_surrogate(Y, rng_for(name, 100 + s_i)) @ Vh[:999]
             Dp = distm(Zp)
@@ -98,25 +98,23 @@ def main():
             ph_curves.append(Cph)
             ph_nbf.append(naive_best_fit(eps, Cph))
             rqa_ph.append(rqa_from_D(Dp))
-            Xs_pool.append((Zp, Dp))
         for s_i in range(N_SURR_IA):
-            Zi = miiaft(Y, rng_for(name, 200 + s_i), n_iter=40) @ Vh[:999]
+            Zi = cloud_miiaft(Xc, rng_for(name, 200 + s_i))
             Di = distm(Zi)
             Cia = c_eps_curve(Di, eps, 0)
             ia_curves.append(Cia)
             ia_nbf.append(naive_best_fit(eps, Cia))
             rqa_ia.append(rqa_from_D(Di))
-            Xs_pool.append((Zi, Di))
         for s_i in range(N_SHUF):
             perm = rng_for(name, 300 + s_i).permutation(X.shape[0])
             Dsh = distm(Xc[perm])
             rqa_sh.append(rqa_from_D(Dsh))
-        # MIAAFT cross-spectrum fidelity (lag-1 cross-covariance Frobenius error)
-        C1 = (Y[:-1].T @ Y[1:]) / (Y.shape[0] - 1)
+        # MIAAFT cross-spectrum fidelity on the top-50 block (lag-1 cross-cov)
+        C1 = (Ytop[:-1].T @ Ytop[1:]) / (Ytop.shape[0] - 1)
         fid = []
-        for s_i in range(N_SURR_IA):
-            Zi = miiaft(Y, rng_for(name, 400 + s_i), n_iter=40)
-            C1s = (Zi[:-1].T @ Zi[1:]) / (Y.shape[0] - 1)
+        for s_i in range(3):
+            Zt = miiaft(Ytop, rng_for(name, 400 + s_i), n_iter=25)
+            C1s = (Zt[:-1].T @ Zt[1:]) / (Ytop.shape[0] - 1)
             fid.append(float(np.linalg.norm(C1s - C1) / np.linalg.norm(C1)))
         res[name] = dict(
             med_dist=med_full, min_dist=float(pair_values(D_data, 0).min()),
@@ -133,10 +131,10 @@ def main():
         )
         c = res[name]
         r = c["cfgs"]["N1000_w0"]
+        rwd = f"{r['run']['width_dec']:.2f}" if r["run"] else " none"
+        nbs = f"{r['nbf']['slope']:.2f}" if r["nbf"] else " none"
         print(f"{name[:34]:36s} med={med_full:7.2f} er_w={r['er_tot']:+.3f} "
-              f"run={r['run']['width_dec'] if r['run'] else None: >6} "
-              f"legal={r['erlegal_run']} nbf={r['nbf']['slope'] if r['nbf'] else None}",
-              flush=True)
+              f"run={rwd: >6} legal={r['erlegal_run']} nbf={nbs}", flush=True)
         save_json(res, "d2_results.json")
     save_json(res, "d2_results.json")
     make_fig1(res)

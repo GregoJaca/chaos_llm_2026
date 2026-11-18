@@ -272,11 +272,13 @@ def make_fig3(res):
 
 
 def make_fig4(res):
+    for n in PROMPTS:
+        res[n]["kg"] = {int(k): v for k, v in res[n]["kg"].items()}
     fig, axes = plt.subplots(2, 2, figsize=(9.5, 7.0))
     gap_traj = max(PROMPTS, key=lambda n: res[n]["gap_iaaft_h8"])
     # (a) KG ratio curves at h=8, example
     ax = axes[0, 0]
-    r = res[gap_traj]["kg"]["8"]
+    r = res[gap_traj]["kg"][8]
     qs = np.linspace(0, 100, 9)
     x = np.arange(8) + 0.5
     ax.plot(x, np.array(r["data"]["bins"]), "o-", color="tab:blue", label="data")
@@ -292,8 +294,8 @@ def make_fig4(res):
     ax.legend(fontsize=6.5)
     # (b) paired small-r ratio at h=8 across 16
     ax = axes[0, 1]
-    d = np.array([res[n]["kg"]["8"]["data"]["small"] for n in PROMPTS])
-    ia = np.array([np.median([q["small"] for q in res[n]["kg"]["8"]["iaaft"]]) for n in PROMPTS])
+    d = np.array([res[n]["kg"][8]["data"]["small"] for n in PROMPTS])
+    ia = np.array([np.median([q["small"] for q in res[n]["kg"][8]["iaaft"]]) for n in PROMPTS])
     ax.plot([0.8, 1.3], [0.8, 1.3], "k--", lw=0.8)
     ax.plot(ia, d, "o", ms=4)
     ri = PROMPTS.index(REP)

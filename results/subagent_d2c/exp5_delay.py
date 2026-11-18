@@ -1,12 +1,13 @@
 """Exp 5: delay-embedding D2(m) test, m = 2..10, tau = 1, PC1 observable.
 
 For each m: C(eps) on the m-dimensional delay embedding of PC1, Theiler window
-w = m (covers the coordinate-overlap zone), 96-point log grid over
-[1e-3, 3] x embedding-median distance. D2(m) := median smoothed local slope
-over C in [0.05, 0.2]; also the widest slope-stable run (the honest plateau
-detector from exp1). Controls: univariate IAAFT surrogates of PC1 (n=5) run
-through the identical pipeline -> the band that a red heavy-tailed marginal
-produces by itself (fill dimension / effective-rank artifact).
+w = m-1 (tau=1: excludes all pairs whose embedding vectors share a coordinate),
+96-point log grid over [1e-3, 3] x embedding-median distance. D2(m) := median
+smoothed local slope over C in [0.05, 0.2]; also the widest slope-stable run
+(the honest plateau detector from exp1). Controls: univariate IAAFT surrogates
+of PC1 (n=5) run through the identical pipeline -> the band that a red
+heavy-tailed marginal produces by itself (fill dimension / effective-rank
+artifact), and a same-marginal white-noise reference.
 
 Output: delay_results.json, fig5_delay_embedding.png
 """
@@ -33,12 +34,12 @@ def embed(y, m, tau=1):
     return y[np.arange(T)[:, None] + ix[None, :]]
 
 
-def d2_of(emb, med_ref=None):
+def d2_of(emb, med_ref=None, w=0):
     V = emb - emb.mean(0)
     D = distm(V)
     med = float(np.median(D[np.triu_indices(D.shape[0], 1)]))
     eps = eps_grid_from_med(med)
-    C = c_eps_curve(D, eps, w=0)
+    C = c_eps_curve(D, eps, w=w)
     s = smooth3(log_slope(eps, C))
     band = (C >= 0.05) & (C <= 0.2)
     d2 = float(np.median(s[band])) if band.any() else np.nan
@@ -62,15 +63,16 @@ def main():
         rows = dict(d2_data=[], run_width=[], run_slope=[], run_legal=[],
                     d2_iaaft=[], d2_wn=[])
         for m in MS:
-            ed = d2_of(embed(pc1, m))
+            w_theiler = (m - 1)  # tau=1: exclude pairs sharing any coordinate
+            ed = d2_of(embed(pc1, m), w=w_theiler)
             rows["d2_data"].append(round(ed["d2"], 3))
             rw = ed["run"]
             rows["run_width"].append(round(rw["width_dec"], 3) if rw else 0.0)
             rows["run_slope"].append(round(rw["slope"], 3) if rw else None)
             rows["run_legal"].append(bool(rw and run_is_er_legal(rw, ed["N"])))
-            eis = [d2_of(embed(z, m))["d2"] for z in ia]
+            eis = [d2_of(embed(z, m), w=w_theiler)["d2"] for z in ia]
             rows["d2_iaaft"].append([round(float(v), 3) for v in eis])
-            rows["d2_wn"].append(round(float(d2_of(embed(wn[0], m))["d2"]), 3))
+            rows["d2_wn"].append(round(float(d2_of(embed(wn[0], m), w=w_theiler)["d2"]), 3))
         res[name] = dict(pc1_acf_lag1=round(float(acf[1]), 3),
                          pc1_tau_acf=tau_acf, **rows)
         print(f"{name[:34]:36s} D2(m=2..10) data: {rows['d2_data']}", flush=True)
@@ -90,8 +92,8 @@ def make_fig(res):
     ax.plot(MS, MS, "k:", lw=0.9, label="white-noise fill dim = m")
     ax.set_xlabel("embedding dimension m (tau=1)")
     ax.set_ylabel("D2(m) = slope at C in [0.05, 0.2]")
-    ax.set_title("(a) D2(m) data (lines) vs IAAFT bands (fills, n=5):\n"
-                 "data rides its red-marginal null; nothing saturates below the band", fontsize=7.5)
+    ax.set_title("(a) D2(m) data (lines) vs IAAFT bands (fills, n=5): data sits BELOW\n"
+                 "the band at every m - but 11/16 keep growing with m (no attractor plateau)", fontsize=7.5)
     ax.legend(fontsize=6.2)
     ax = axes[0, 1]
     dev = []
@@ -106,8 +108,9 @@ def make_fig(res):
              for m in MS]
     ax.set_xlabel("embedding dimension m")
     ax.set_ylabel("D2(m) data - mean IAAFT D2(m)")
-    txt = "; ".join(f"m{m}: {k}/16" for m, k in below[::2])
-    ax.set_title(f"(b) Data minus IAAFT across 16 (mean +/- s.d.). Below the IAAFT\nband minimum: {txt}", fontsize=7.5)
+    txt = "; ".join(f"m{m}: {k}/16" for m, k in below if m in (2, 4, 6, 8, 10))
+    ax.set_title(f"(b) Data minus IAAFT across 16: systematic negative offset (thinner\n"
+                 f"than 2nd-order). Below the band minimum: {txt}", fontsize=7.5)
     # (c) m=2 trap
     ax = axes[1, 0]
     name = FIG_TRAJS[0]
@@ -115,19 +118,20 @@ def make_fig(res):
     Xc = X - X.mean(0)
     U, sv, _ = np.linalg.svd(Xc, full_matrices=False)
     pc1 = (U[:, 0] * sv[0]); pc1 = pc1 - pc1.mean()
-    ed = d2_of(embed(pc1, 2))
-    ax.plot(ed["eps"], ed["C"], "o-", ms=2.5, lw=1, color="tab:blue", label="data PC1, m=2")
+    ed = d2_of(embed(pc1, 2), w=1)
+    ax.plot(ed["eps"], ed["C"], "o-", ms=2.5, lw=1, color="tab:blue", label="data PC1, m=2 (w=1)")
     for s_i, cc in zip(range(3), ["tab:green", "tab:purple", "tab:gray"]):
         z = iaaft_scalar(pc1, rng_for(name, 90 + s_i))
-        e2 = d2_of(embed(z, 2))
+        e2 = d2_of(embed(z, 2), w=1)
         ax.plot(e2["eps"], e2["C"], "-", lw=0.9, color=cc,
                 label=["IAAFT (n=3 shown)"][s_i] if s_i == 0 else None)
     wnz = pc1[rng_for(name, 81).permutation(pc1.size)]
-    e3 = d2_of(embed(wnz, 2))
+    e3 = d2_of(embed(wnz, 2), w=1)
     ax.plot(e3["eps"], e3["C"], ":", lw=1.2, color="k", label="white noise, same marginal")
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_xlabel("$\\epsilon$ (PC1 units)"); ax.set_ylabel("C($\\epsilon$)")
-    ax.set_title("(c) The m=2 'textbook' curve is the fill dimension: data = IAAFT =\nwhite noise (slope ~1.9 over ~1 decade) - identical to the old-data trap", fontsize=7.5)
+    ax.set_title("(c) The m=2 'textbook' curve is the fill dimension: data = IAAFT =\n"
+                 "same-marginal white noise (slope ~1.8) - 15/16 such runs fail ER-legality", fontsize=7.5)
     ax.legend(fontsize=6.5)
     # (d) stable-run widths at m=2 across 16
     ax = axes[1, 1]
@@ -136,9 +140,10 @@ def make_fig(res):
     ax.bar(range(16), w2, color=["tab:red" if not lg else "tab:green" for lg in l2])
     ax.set_xlabel("trajectory")
     ax.set_ylabel("widest slope-stable run at m=2 (decades)")
-    ax.set_title(f"(d) m=2 stable-run widths: median {np.median(w2):.2f} dec, "
-                 f"{sum(l2)}/16 ER-legal\n(green = legal) - the plateau exists but is the 2-D fill dimension", fontsize=7.5)
-    fig.suptitle("Fig 5 - Delay embedding D2(m): every apparent plateau or saturation matches its IAAFT null", fontsize=9.5)
+    ax.set_title(f"(d) m=2 stable-run widths: median {np.median(w2):.2f} dec at slope ~1.9 (fill dim)\n"
+                 f"ER-legal only {sum(l2)}/16 - and that one (music, slope 0.82) is a repetition loop", fontsize=7.5)
+    fig.suptitle("Fig 5 - Delay embedding D2(m): the m=2 fill-dimension trap persists; at m>=4 data is below IAAFT\n"
+                 "(real temporal structure) but keeps growing - no attractor; the 2 saturators are repetitive quasi-cycles", fontsize=9.5)
     fig.savefig(OUT / "fig5_delay_embedding.png")
     plt.close(fig)
 

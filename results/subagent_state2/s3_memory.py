@@ -59,7 +59,7 @@ for offset, lbl in [(0, 'dh[t] (same position)'), (1, 'dh[t-1] (logits position)
     X, Y, TAU = pooled(offset)
     print(f'-- pairing |dm[t]| with {lbl} --')
     for lo, hi in bins:
-        m = (TAU >= lo) & (TAU < hi)
+        m = (TAU >= lo) & (TAU < hi) & (X > 0) & (Y > 0)
         r = spearmanr(X[m], Y[m]).statistic
         rp = pearsonr(np.log10(X[m]), np.log10(Y[m])).statistic
         print(f'   tau {lo:3d}-{hi if hi < 10**6 else 299:3d}: n={m.sum():5d}  '
@@ -104,18 +104,16 @@ ax.text(150, 2 * FLOOR, 'float32 floor of cos', fontsize=7)
 ax.set_yscale('log')
 ax.set_xlabel('lag τ = t − s (tokens)')
 ax.set_ylabel('1 − cos(h_pert, h_base)   [≈ (Δh/‖h‖)²/2]')
-ax.set_title('(a) perturbed state stays a near-copy of the baseline (cos>0.999):\n'
-             'response is a small sideways displacement, shrinking with lag', fontweight='bold')
+ax.set_title('(a) response is a small sideways displacement of the state (cos > 0.9997);\n'
+             'relative size 1−cos shrinks with lag — float32 floor limits the range',
+             fontweight='bold')
 ax.grid(alpha=0.25, lw=0.4)
 
 ax = axes[0, 1]
 labels, sp_vals, n_pts = [], [], []
 for lo, hi in bins:
     m = (TAU >= lo) & (TAU < hi)
-    Xd, Yd = np.concatenate([dh[3, i_s, :, 3, t] for i_s, s in enumerate(steps)
-                             for t in range(int(s) + 1, 300) if lo <= t - s < hi]),
     labels.append(f'{lo}–{hi if hi < 10**6 else 299}')
-    # recompute pooled with offset=1 (best pairing, verified below in printout)
     sp_vals.append(spearmanr(X[m], Y[m]).statistic)
     n_pts.append(int(m.sum()))
 ax.bar(range(len(sp_vals)), sp_vals, color='#4292c4')
@@ -125,8 +123,8 @@ ax.set_xticks(range(len(labels)))
 ax.set_xticklabels(labels)
 ax.set_xlabel('lag bin τ = t − s (tokens)')
 ax.set_ylabel("Spearman corr( ‖Δh(t−1)‖ , |Δ margin(t)| )")
-ax.set_title('(b) the margin response tracks the hidden response at ALL lags\n'
-             '(pooled over 8 s × 24 directions) — memory stays decision-relevant',
+ax.set_title('(b) the margin response tracks the hidden response at every lag\n'
+             '(Spearman +0.48 near the head, rising to +0.65 in the tail)',
              fontweight='bold')
 ax.grid(alpha=0.3, lw=0.4, axis='y')
 ax.set_ylim(0, 1.0)
@@ -142,8 +140,9 @@ for i, v in enumerate(pers):
     ax.text(i, v + 0.01, f'{v:+.2f}', ha='center', fontsize=7)
 ax.set_xlabel('injection position s')
 ax.set_ylabel('Spearman corr over 24 dirs:\nhead ‖Δh(τ=0)‖ vs tail ‖Δh(τ=80–99)‖')
-ax.set_title('(c) the same injected directions that respond big at τ=0 also carry the tail\n'
-             '(corr 0.4–0.9): memory is not re-mixed into new directions', fontweight='bold')
+ax.set_title('(c) the same injected directions carry head and tail: corr +0.4…+0.9\n'
+             'for 7/8 s (exception s=150, whose head itself oscillates)',
+             fontweight='bold')
 ax.grid(alpha=0.3, lw=0.4, axis='y')
 
 ax = axes[1, 1]
@@ -163,8 +162,8 @@ ax.annotate('flip t=123\nmargin=0.02', xy=(123, med[123 - 16]), xytext=(140, med
 ax.axvline(113, color='0.5', ls=':', lw=1)
 ax.annotate('echo t=113\nmargin=2.6', xy=(113, med[113 - 16]), xytext=(30, med[113 - 16] * 0.4),
             arrowprops=dict(arrowstyle='->', lw=0.8), fontsize=7)
-ax.set_title('(d) big hidden responses (echo t=113) ≠ fragile decisions (t=123):\n'
-             'two different mechanisms — recall bumps vs small-margin crossings',
+ax.set_title('(d) big hidden responses (echo t=113) ≠ fragile decisions (t=123, margin 0.02):\n'
+             'dh mildly anticorrelates with margin (Spearman −0.48) but flips need BOTH',
              fontweight='bold')
 
 fig.suptitle('Where the memory lives: same directions, sideways to the state, '
