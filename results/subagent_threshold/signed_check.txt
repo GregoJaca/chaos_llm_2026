@@ -1,0 +1,44 @@
+== signed (destabilizing) vs absolute threshold prediction of observed flips ==
+    config     r | obs flips  pred|dm| predsigned | exact |dm| exact sign | flip-call |dm|  flip-call sign
+      w100  0.03 |         0         0          0 |         20         20 |             20              20
+      w100   0.1 |         0         0          0 |         20         20 |             20              20
+      w100   0.3 |         1         0          3 |         19         18 |             19              18
+      w200   0.1 |         3         3          2 |         19         19 |             20              19
+      w200   0.3 |        11        13         12 |         18         17 |             18              17
+      w500   0.1 |         3         3          2 |         19         19 |             20              19
+      w500   0.3 |        11        14         12 |         17         17 |             17              17
+     w100L   0.5 |         3         7          3 |         15         17 |             16              18
+     w100L   1.0 |         8        15          4 |          9         10 |             13              12
+     w100L   2.0 |        16        19         13 |         12          5 |             17              13
+
+TOTAL over 10 configs x 20 dirs = 200:
+  flip-call correct: |dm| 180/200, signed 173/200
+  exact-step correct: |dm| 168, signed 162
+  (both predictors tie overall; the difference is WHERE: signed fixes flip-step
+   attribution at r<=0.5 and flip-calls at r=0.5; both break down at r>=1.)
+
+w200 r=0.3 detail: dir, r*|dm|, r*signed, obs, pred|dm|, pred_signed
+  d 0:   0.138    0.138  obs= 44  pred|dm|= 44  predsign= 44
+  d 1:   0.072    0.072  obs= 44  pred|dm|= 44  predsign= 44
+  d 2:   0.214    0.214  obs= 44  pred|dm|= 44  predsign= 44
+  d 3:   0.112    0.112  obs= 44  pred|dm|= 44  predsign= 44
+  d 4:   0.306    0.306  obs= -1  pred|dm|= -1  predsign= -1
+  d 5:   0.278    0.327  obs= -1  pred|dm|=183  predsign= -1
+  d 6:   0.295    0.295  obs= -1  pred|dm|= 44  predsign= 44
+  d 7:   0.635    0.635  obs= -1  pred|dm|= -1  predsign= -1
+  d 8:   0.220    0.344  obs= -1  pred|dm|= 55  predsign= -1
+  d 9:   0.254    0.254  obs= 44  pred|dm|= 44  predsign= 44
+  d10:   0.013    0.045  obs= 16  pred|dm|= 16  predsign= 16
+  d11:   0.112    0.112  obs= 44  pred|dm|= 44  predsign= 44
+  d12:   0.185    0.185  obs= 44  pred|dm|= 44  predsign= 44
+  d13:   0.550    3.542  obs= -1  pred|dm|= -1  predsign= -1
+  d14:   0.328    0.328  obs= -1  pred|dm|= -1  predsign= -1
+  d15:   0.396    0.396  obs= 44  pred|dm|= -1  predsign= -1
+  d16:   0.145    0.145  obs= 44  pred|dm|= 44  predsign= 44
+  d17:   0.254    0.254  obs= 44  pred|dm|= 44  predsign= 44
+  d18:   0.456    1.674  obs= -1  pred|dm|= -1  predsign= -1
+  d19:   0.258    0.258  obs= -1  pred|dm|= 44  predsign= 44
+
+w200 t=44: destabilizing (dm<0): 18/20, stabilizing (dm>0): 2/20
+w500 t=44: destabilizing (dm<0): 18/20, stabilizing (dm>0): 2/20
+w100 t=123: destabilizing: 7/20, stabilizing: 13/20

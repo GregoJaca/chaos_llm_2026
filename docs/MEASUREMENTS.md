@@ -78,3 +78,13 @@ Use it to decide what to expand in the theory section.
 - **Transient non-normal amplification:** layer 0 gain 10–20, then marginal; `κ>1`. This is a concrete mechanism for “components amplify, composition may not.”
 - **Decision-boundary geometry:** `r_c(t,u)` distribution and `r_*`; the first flip is a near-tie crossing, not a smooth instability.
 - **Numerical floor as a physical scale:** below `r≈1e-4`, FP32 noise dominates; this is a practical reproducibility horizon.
+
+## 9. Second-pass results
+
+- **A1 scaling:** for layers 7–27, `δh_t ∝ r^α` with `α≈0.95–0.98`; dividing by `r` collapses the curves. Layers 1–3 become sublinear late. Deep layers peak at t≈84 (log-slope +0.005…+0.013/token), then decay (−0.010…−0.012/token). Layers 1–7 decay from the start.
+- **Margins vs window:** min margin 0.167 (w50), 0.0201 (w100), 0.0031 (w200/500); count(m<0.05) 0,2,8,11,12. Window changes the margin spectrum.
+- **State directions:** pairwise correlation of log response curves median 0.94–0.98; 88–100% above 0.9. No strong clusters. Middle-layer residual injection is ~10× weaker than input injection.
+- **Non-normality:** full block layer 0 `σ_max≈95–195`, `ρ≈11–39`, `κ≈5–8`; layers 7–21 `σ≈3`, `ρ≈1.3–2.1`; layer 27 `σ≈6–9`, `ρ≈1.7–2.0`. Median principal angle 82–85°. MLP alone is much more amplifying (layer 27 `σ≈59–95`).
+- **D2 controls:** raw D2 ≈ time-shuffled D2 across all 12 prompts (e.g., 5.75 vs 5.69); phase-randomized 21.7; vocab 5.04. Low D2 is **static geometry**, not temporal dynamics. Delay D2 rises with embedding dimension.
+- **Large r:** flip fraction 3/20 (r=0.5), 8/20 (r=1), 16/20 (r=2); text remains coherent at 300 tokens. No obvious garbage at this horizon.
+- **Second prompt (childhood):** no flips at r=0.01; 5/20 at r=0.1; 13/20 at r=0.3, at near-ties 125/173. The threshold picture generalizes.

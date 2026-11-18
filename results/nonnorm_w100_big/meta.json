@@ -1,0 +1,21 @@
+{
+  "run": "results/a1_ds_w100",
+  "tokens": [
+    16,
+    44,
+    50,
+    123,
+    143,
+    200
+  ],
+  "layers": [
+    0,
+    7,
+    14,
+    21,
+    27
+  ],
+  "n_layers": 28,
+  "elapsed_sec": 172.0,
+  "model": "~/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B"
+}

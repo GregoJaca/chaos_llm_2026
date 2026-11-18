@@ -1,51 +1,69 @@
 # Figure index
 
-DeepSeek-1.5B, FP32, window 100, prompt `interstellar_travel`, 300 generated tokens.
-All A1 figures use the same 20 simplex directions. “Generated step” means token index after the prompt.
+DeepSeek-1.5B, FP32, window 100 unless stated; prompt `interstellar_travel`; 300 generated tokens (margins 600).
+“Generated step” is after the prompt. All A1 runs use in-batch `r=0`.
 
-## A1 / response
+## A1 / response / scaling
 
-- **a1_response_individual.png** — 3 individual directions: last-layer `||δh_t||` vs generated step, for r=1e-3, 1e-2, 0.1, 0.3. Shows the transient rise and decay.
-- **a1_response_aggregate.png** — median and IQR over 20 directions for the same radii. The aggregate is smooth; the individual curves are noisy.
-- **margins.png** — baseline top1–top2 margin vs step. The smallest margins are at t=123 (0.0202) and t=143 (0.0204).
-- **response_vs_r.png** — median last-layer response vs r at selected steps. Shows a numerical floor below r≈1e-4 and near-linear scaling above r≈1e-3.
+- **a1_response_individual.png** — 3 directions, last-layer `||δh_t||` for several r; gray dotted lines are t=16/123/143 near-ties.
+- **a1_response_aggregate.png** — median/IQR over 20 directions.
+- **a1_collapse_by_layer.png** — raw (left) and `δh/r` (right) for layers 1/2/3/7/14/27; curves collapse on the right for deep layers.
+- **a1_scaling_collapse.png** — raw vs `/r` vs `/√r` vs `/r^α(t)`; `/r` is the winner.
+- **a1_exponent_vs_time.png** — fitted exponent α(t) per layer; α≈0.95–0.98 for deep layers, lower late/early.
+- **a1_exponent_vs_layer.png** — α at selected times vs layer.
+- **a1_alpha_heatmap.png** — α(t,ℓ) heatmap.
+- **a1_layers_fixed_r.png** — fixed r=0.1/0.3, response vs token for layers 0/1/2/3/7/14/21/27.
+- **a1_layers_r0.1.png** — compact layer comparison at r=0.1.
+- **a1_direction_corr.png** — pairwise correlation of prompt-direction curves; median 0.92, no strong groups.
+- **margins.png** — baseline margin vs step (window 100).
+- **response_vs_r.png** — median response vs r at selected steps; floor below r≈1e-4.
+
+## Margins / attention window
+
+- **margins_windows.png** — 2×2 margin traces for windows 50/100/200/500; minima annotated.
+- **margins_vs_window.png** — min margin, count(m<0.05), median margin vs window.
+- **window_comparison.png** — observed flips and prediction vs observation for windows 100/200.
 
 ## Thresholds / flux tube
 
-- **threshold_validation.png** — (left) `r_c(t,u)` for 3 directions, clipped at 100; (middle) `r_c` at t=16/123/143 across 20 directions; (right) predicted vs observed first-flip counts at r=0.1 and 0.3. Main result: no flips at r=0.1; at r=0.3 one direction flips at t=16, matching prediction.
-- **window_comparison.png** — observed flips and prediction-vs-observation for window 100 vs 200. Window 200 has a smaller margin at t=44, so it flips at lower r; this is a real window effect on the margin spectrum.
-- **predicted_T.png** — predicted first-flip time from teacher forcing at r=0.03/0.1/0.3.
-- **rstar_distribution.png** — distribution/ECDF of the flux-tube radius `r_* = min_t r_c(t,u)` over directions.
-- **rc_heatmap.png** — `log10 r_c(t,u)` over steps and directions, sorted by `r_*`. Mostly saturated (large thresholds) after t≈150; early steps and a few directions are fragile.
+- **threshold_geometry.png** — (left) margin vs gain with iso-r_c lines; (middle) r_* vs controlling near-tie; (right) predicted-vs-observed confusion matrix.
+- **threshold_validation.png** — r_c for 3 directions and predicted-vs-observed counts.
+- **rstar_distribution.png** — distribution/ECDF of r_* over directions.
+- **rc_heatmap.png** — log10 r_c(t,u) over steps/directions, clipped; mostly robust except near-ties.
+- **large_r_summary.png** — flip fraction at r=0.5/1/2 and token-diversity proxy; text remains non-degenerate at 300 tokens.
 
-## FSLE
+## FSLE / depth
 
-- **fsle_time.png** — time-axis FSLE from A1 separations; `λ≈0.043` for `ρ=2`, with censoring for `ρ=4`. This is a transient growth rate, not sustained exponential growth.
-- **fsle_individual.png** — 3 individual separation curves at several r; shows rise then decay.
-- **fsle_depth.png** — depth-axis separation `d(layer)/d(0)` from existing single-token hidden states. The first layer gives a huge jump (~200×), then the curves are flat/decaying. FSLE is trivial (τ=1) because the growth is one layer.
-
-## Depth map / spectrum
-
-- **depth_individual.png** — top-3 cumulative depth exponents vs layer for 3 tokens. They start high (~3) and decay to ~0.1; the first layer dominates.
-- **depth_aggregate.png** — median/IQR top exponent vs layer.
-- **depth_spectrum.png** — top-8 exponents at the final layer for several tokens. All positive, ~0.08–0.18.
-- **depth_local_gain.png** — mean local layer gain `||J_l q||` vs layer. Layer 0 gain 10–20; later layers ≈1.1.
-- **h_depth.png** — `h_depth = Σ_{λ_i>0} λ_i` per token, a lower bound from the top 8 directions.
-
-## D2 / RQA
-
-- **d2_curves.png** — correlation sum and local slope for one prompt (first, last, vocab). The local slope is a peak, not a plateau.
-- **d2_vs_N.png** — D2 vs N for 3 prompts. First-layer D2 is ~20 and flat; last-layer decreases for some prompts but not consistently.
-- **d2_distribution.png** — D2 across 12 prompts for first/last layer and the vocabulary null.
-- **d2_theiler.png** — local slope and Theiler-window sensitivity. Theiler 0/10/50 does not create a plateau.
+- **fsle_time.png** — time-axis FSLE; λ≈0.043 for ρ=2, transient.
+- **fsle_individual.png** — 3 separation curves at several r.
+- **fsle_depth.png** — depth separation `d(layer)/d(0)`; first-layer jump then flat.
+- **fsle_depth_detail.png** — separate y axes per r; shows the jump is one layer.
+- **depth_local_gain_existing.png** — local depth gain; numerical-floor spikes, diagnostic only.
+- **depth_individual.png**, **depth_aggregate.png**, **depth_spectrum.png**, **depth_local_gain.png**, **h_depth.png** — depth spectrum k=8; top exponents ~0.08–0.18, h_depth 0.6–1.4.
+- **depth_w100_k16** (k=16) — all 16 exponents positive, h_depth 1.2–2.7.
 
 ## Non-normality
 
-- **nonnorm_mlp.png** — MLP `σ_max`, `ρ`, `κ` vs selected layers for 3 tokens. MLP layer 27 is strongly amplifying.
-- **nonnorm_full.png** — full-block `σ_max`, `ρ`, `κ` at layers 0/14/27.
-- **nonnorm_scatter.png** — `σ_max` vs `ρ`; points above the diagonal are non-normal. Full block: `σ_max` 95–194 at layer 0, 3 at layer 14, 7–9 at layer 27.
-- **nonnorm_angles.png** — principal angles between top singular subspaces of consecutive layers; median ≈79–84°, i.e., the expanding direction rotates.
+- **nonnorm_mlp_big.png** — MLP σ_max, ρ, κ vs selected layers, 6 tokens.
+- **nonnorm_full_big.png** — full-block σ_max, ρ, κ at 5 layers × 6 tokens; layer 0 huge, layers 7–21 ~3, layer 27 6–9.
+- **nonnorm_scatter_big.png** — σ_max vs ρ; points above diagonal are non-normal.
+- **nonnorm_angles_big.png** — principal angles between consecutive top singular subspaces; median 82–85°.
 
-## State perturbation
+## State / R(t,s)
 
-- **state_response.png** — input-embedding perturbation at s=16/50/100, r=1e-3: `||δh_t||` and `R(t,s)`; response decays, with a near-tie bump near t≈130.
+- **state_response.png** — input-embedding injection at s=16/50/100; δh_t and R(t,s).
+- **state_directions.png** — 32 directions per s, median/IQR.
+- **state_direction_corr.png** — pairwise direction correlation; median 0.94–0.98.
+- **state_shift.png** — R(t,s) vs lag τ; near-tie bumps at different lags.
+- **state_mid_compare.png** — input embedding vs layer-14 residual injection; residual is ~10× weaker.
+
+## D2 / RQA
+
+- **d2_curves.png** — C(ε) and local slope; peak, not plateau.
+- **d2_vs_N.png** — D2 vs N.
+- **d2_distribution.png** — D2 across 12 prompts.
+- **d2_theiler.png** — Theiler sensitivity.
+- **d2_scaling_examples.png** — clean scaling examples.
+- **d2_controls.png** — raw vs shuffled vs phase vs vocab; raw≈shuffled.
+- **d2_raw_vs_shuffled.png** — all 12 prompts: raw D2 ≈ shuffled D2.
+- **d2_delay_twonn.png** — delay-embedding D2 and TwoNN.

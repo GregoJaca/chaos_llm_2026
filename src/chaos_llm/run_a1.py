@@ -54,6 +54,8 @@ def main():
     assert torch.equal(gen[0], gen[1]), "r=0 duplicate rows differ"
     gen_ids = gen[0:1]
     T = gen_ids.shape[1]
+    del Eref, gen
+    torch.cuda.empty_cache()
 
     Efull = full_embeddings(model, pids, gen_ids)
     out0 = model(inputs_embeds=Efull, attention_mask=torch.ones((1, Efull.shape[1]), dtype=torch.long, device="cuda"),

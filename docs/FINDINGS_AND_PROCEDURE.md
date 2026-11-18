@@ -1,0 +1,86 @@
+# Findings, procedure, and transfer to other LLMs
+
+This is the practical knowledge from the first DeepSeek-1.5B pass. Keep it with `DECISIONS.md` and `RESULTS_SUMMARY.md`.
+
+## 1. What worked
+
+1. **FP32 + in-batch `r=0`.** Every reliable result came from this. The old batch-1 baseline vs batch-N perturbed data was contaminated; the zero-perturbation control catches it.
+2. **Teacher forcing for the smooth response.** One baseline forward + one forward per direction gives `δh_t`, `δm_t`, and thresholds without generation. This is the workhorse.
+3. **Margins + local threshold.** `m_t`, `δm_t(u)`, `r_c=m_t/|δm_t/r|`, `T=min{t:r≥r_c}` predicted free-run flips across windows 100/200/500 and two prompts.
+4. **Scaling collapse by `r`.** For layers 7–27, `δh_t/r` collapses the curves; `α≈0.95–0.98`. `√r` does not collapse. The response is linear in `r` over the usable range.
+5. **Layer-resolved response.** Early layers (1–3) decay; deep layers (7–27) rise to `t≈84` then decay. The layer dependence is real and easy to show.
+6. **Margin spectrum vs window.** Window 50 has no fragile steps; 100 has one at t=123; 200/500 have several (t=44/55/…) and many margins <0.05. This is a clean, real attention effect.
+7. **Non-normality / principal angles.** `σ_max>1` while the product contracts; median rotation between top singular subspaces is 82–85°. This is a quantitative explanation of “components amplify, composition may not.”
+8. **Shuffled control for D2.** The low last-layer D2 (~5–7) is a static geometric property: time-shuffled data gives the same D2. This is a strong negative, not a bug.
+9. **Direction correlation.** For both prompt and state perturbations, direction response curves are highly correlated (median 0.92–0.98). No strong special-direction clusters; report a distribution, not a single direction.
+10. **Middle-layer residual injection** produces a ~10× smaller response than input-embedding injection. Input injection is the more sensitive perturbation.
+
+## 2. What did not work / was misleading
+
+1. **Averaging first-flip time `T`.** It is a staircase pinned by near-ties. Use survival/hazard/threshold distributions.
+2. **Prompt perturbations below ~1e-4.** FP32/RMSNorm ill-conditioning creates a response floor; the result stops scaling. The usable range is roughly `1e-3…0.1`; `r=1–2` is large but still coherent at short horizons.
+3. **Depth-axis FSLE.** It is `lnρ/1` and flat in `r`: everything happens in layer 1. The depth spectrum is more informative than the FSLE.
+4. **Depth expansion as “chaos.”** The top exponents are positive, but the cumulative exponent decays from ~3 to ~0.1; the expansion is an input-layer transient, then marginal. Do not sell it as sustained chaos.
+5. **D2/RQA as evidence of chaos.** At N=2–5k, D2 is static geometry; time-shuffled D2 is identical across 12 prompts. RQA DET is dominated by temporal correlation.
+6. **Naive `⟨T⟩(r)` scaling law.** The plan’s log-vs-power-law test is not the right observable; measure margins and thresholds instead.
+7. **600-token A1 in one batch.** Full-vocab FP32 logits + all layers OOM on T4. 500 tokens works with `batch-dirs=1` and cache clearing; otherwise reduce tokens or directions.
+8. **Old `launch_sep`/`launch_aug` data for sensitivity.** Dense Gaussian per-coordinate perturbation, no seed, `repetition_penalty=1.1`; not comparable to simplex `r`. Use only for qualitative RP/dimension.
+9. **Phi bf16 token-level runs.** `r=0` diverges due to bf16 batch shape; the data is invalid.
+10. **Partial `r=0` control.** If there is no `r=0` row in the same batch, do not trust the run.
+
+## 3. Procedure for a new LLM
+
+### Calibration (cheap, 10–20 min)
+1. Load the model in **FP32** if it fits; otherwise choose one precision and never mix. For a T4, ~1.5B FP32 fits; ~3.8B does not.
+2. Pick 2–3 prompts and a window; generate a baseline with **two identical `r=0` rows in one batch**; verify bit-identical.
+3. Compute the baseline `m_t` for 300–600 tokens; record the smallest margins and their steps. This tells you the useful `r` scale.
+4. Choose `r` grid from the numerical floor to ~10× the smallest margin. For DeepSeek-1.5B, useful `r≈1e-3…0.3`; start there.
+5. Test one `r` above the expected threshold and inspect generated text (coherence, repetition). Do not assume large `r` is garbage; DeepSeek stays coherent at r=2/300 tokens.
+
+### A1 (response/scaling)
+1. Use 20 directions (simplex or random unit), 8–12 `r` values, layers `1,2,3,7,14,21,27` (and 0 for embedding).
+2. Save norms/cosines, `m_t`, `dm`, `r_c`, `pred_T`. Full vectors only for 3 directions.
+3. Fit `log δh` vs `log r` in the linear range; report `α(t,ℓ)`. Try `δh/r` and `δh/r^α` collapse.
+4. Plot 3 individual directions + median/IQR; raw and normalized side by side; label the separating parameter (`r`, layer, time).
+
+### Threshold/flux tube
+1. Compute `r_c(t,u)`; `r_*(u)=min_t r_c`; `T(r,u)=min{t:r≥r_c}`.
+2. Validate with free-run at 2–3 `r` (batch includes `r=0`); compare predicted vs observed flips.
+3. Report `r_*` distribution, controlling near-tie, and a confusion matrix; avoid direction-index-only plots.
+4. Repeat for 2–3 windows; the margin spectrum changes, so the threshold changes.
+
+### State / R(t,s)
+1. Inject at input embedding at s=16/50/100/150, 32 directions, `r=1e-3`; optionally inject at a middle residual layer.
+2. Compute pairwise direction correlations; cluster. Expect high correlation; report it.
+3. Plot `R(t,s)` vs lag; do not force a collapse if near-ties occur at different lags.
+4. Compare input vs middle-layer injection; residual injection is weaker.
+
+### Depth/non-normality
+1. Depth spectrum: k=8–16 tangent vectors, QR per layer, per token; save `λ_i`, `h_depth`, local gains.
+2. Full-block `σ_max` by power iteration, `ρ` by ARPACK; MLP dense `J` with power/ARPACK (do not use dense eig on GPU; 1536² eig ≈23 s).
+3. Principal angles between top singular subspaces; expect large rotation.
+4. Plot individual tokens + aggregate; do not overclaim if it is only a layer-0 transient.
+
+### D2/RQA
+1. Center, chunked distances, percentile epsilon grid, local-slope plateau, N convergence.
+2. **Always run a time-shuffled control and a phase-randomized surrogate.** If raw ≈ shuffled, D2 is static geometry.
+3. Never save N×N matrices. Save only eps/C/slope/summary.
+4. Treat D2/RQA as descriptive unless they beat controls.
+
+## 4. Compute/resource notes
+
+- One GPU job at a time; use background with notifications; no polling.
+- FP32 DeepSeek-1.5B: ~6 GB weights; A1 batch 1 at 500 tokens fits with cache clearing; 600 tokens OOM on T4 with full-vocab logits.
+- Teacher forcing is cheap; generation is the expensive part.
+- Depth/non-normality: power/ARPACK, not dense eig; k=8–16.
+- CPU analyses (D2, depth FSLE, plots) can run in parallel; local laptop with numpy/matplotlib is enough for copied tensors.
+- For a new model, scale `r` with the embedding/activation scale and re-calibrate margins; do not copy DeepSeek’s `r`.
+
+## 5. User feedback to keep in mind
+
+- Prefer longer, deeper runs over many tiny results; keep the GPU busy but avoid OOM.
+- Figures: always think about which parameter separates curves; try to make curves overlap by normalizing; show 3 individual + aggregate; annotate what gray lines/parameters mean.
+- Direction dependence and aggregation are hard; quantify, don’t hand-wave.
+- Use subagents (GLM 5.3 preferred) for parallel non-GPU analysis; give them context and let them explore.
+- Write down positive and negative results; keep a procedure for reproducing on other LLMs.
+- Share plots progressively; the user is the final judge.

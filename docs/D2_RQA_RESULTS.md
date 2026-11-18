@@ -15,21 +15,31 @@ Status: 2026-11-17. Data: `results_pecs` (12 prompts, first/middle/last hidden s
 
 ## Results
 
-| data | D2 (N≈2000) | Eckmann–Ruelle bound | verdict |
+| data | D2 (N≈2000–3000) | Eckmann–Ruelle bound | verdict |
 |---|---:|---:|---|
-| first-layer trajectory | 13–27 | 6.6 | **not reliable** (above bound) |
-| last-layer trajectory | 2.97–11.31 | 6.6 | some below, some above; no stable plateau |
-| vocabulary matrix (5k rows) | 5.35 | 7.4 | reference; not a trajectory |
+| first-layer trajectory | 13–27 | 6.6 | **not reliable** (above bound; duplicates) |
+| last-layer trajectory | 2.97–11.31 | 6.6 | varies; no stable plateau |
+| vocabulary matrix (3k rows) | 5.04 | 7.0 | reference; not a trajectory |
 
-- No stable plateau in the local slope for first/last-layer trajectories. The slope rises to a peak and falls; fitting it gives a number but not a scaling regime.
-- First-layer D2 is high-dimensional, as expected for embeddings.
-- Last-layer D2 is lower, but it is not clearly below the vocabulary null and does not converge consistently.
+**Essential controls (one long trajectory):**
+
+| series | D2 | TwoNN |
+|---|---:|---:|
+| raw last-layer | 5.75 | 5.36 |
+| time-shuffled | 5.69 | 4.90 |
+| phase-randomized | 21.72 | 26.44 |
+| vocabulary | 5.04 | 18.55 |
+
+Across all 12 prompts, raw D2 ≈ time-shuffled D2. So the low D2 is a **static geometric property**, not temporal dynamics. Delay embedding increases D2 with embedding dimension (5→17), i.e. no low-dimensional delay attractor.
+
+- No stable plateau in the local slope for first/last-layer trajectories.
+- First-layer D2 is high-dimensional; last-layer D2 is lower, but equal to its time-shuffled control.
 - Theiler windows 0/10/50 do not change the conclusion.
 - RQA: DET 0.37–0.95, Lmax up to 1775; Theiler 20 barely changes DET. This is dominated by temporal correlation and near-repeats, not evidence of deterministic chaos.
 
 ## Interpretation
 
-The old claim “last layer looks low-dimensional / chaotic, first layer looks random” is **not supported** by a proper plateau/convergence analysis. The honest statement is: with the accessible `N` (2–5k) and these trajectories, we cannot estimate a robust low correlation dimension. This is a negative result, and it should be reported as such. It also means D2/RQA should not carry the main chaos claim.
+The old claim “last layer looks low-dimensional / chaotic, first layer looks random” is **not supported**. The last-layer point cloud has an effective dimension of ~5–7, but it is a **static** property: time-shuffling gives the same D2. D2/RQA therefore do not carry the main chaos claim. This is a strong negative result, precisely because the shuffled control is diagonal across prompts.
 
 ## Files
 

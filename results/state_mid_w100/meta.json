@@ -1,0 +1,14 @@
+{
+  "run": "results/a1_ds_w100",
+  "steps": [
+    16,
+    50,
+    100
+  ],
+  "dirs": 8,
+  "r": 0.001,
+  "inject_layer": 14,
+  "measure_layer": 27,
+  "prompt_len": 65,
+  "T": 300
+}
