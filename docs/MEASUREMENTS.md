@@ -74,7 +74,7 @@ Use it to decide what to expand in the theory section.
 - **Hidden-state norm by layer:** from the same A1 forward (`norm_h0`); shows radial scaling.
 - **Top1/top2 token identities at near-ties:** from `run_a1.py`; useful for “forking token” examples.
 - **Cosine response:** `cos` array in `a1.npz`; separates angular from radial response.
-- **Attention entropy:** not computed yet; cheap if we add hooks.
+- **Attention entropy:** computed for windows 50/100/200, layers 7/14/21/27; correlation with margin is +0.32–0.38 at w100, ~0 at w200, and near-tie values are mixed. No clean relation to the first flip; exploratory negative.
 - **Per-layer response gain:** `depth_local_gain`; already available.
 
 ## 8. Promising directions for theory (only if supported by more data)

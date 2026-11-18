@@ -87,3 +87,11 @@ This is the practical knowledge from the first DeepSeek-1.5B pass. Keep it with 
 - Use subagents (GLM 5.3 preferred) for parallel non-GPU analysis; give them context and let them explore.
 - Write down positive and negative results; keep a procedure for reproducing on other LLMs.
 - Share plots progressively; the user is the final judge.
+
+## 6. Exploratory negatives
+
+- **Attention entropy as a near-tie explanation:** computed for w50/100/200, layers 7/14/21/27; correlation with margin +0.32–0.38 at w100, ~0 at w200; near-tie values mixed. No clean relation.
+- **Lag collapse of R(t,s):** fails at ×1.5–1.6 RMS under amplitude/lag normalization; curves differ in kind.
+- **Direction clustering at r=1e-3:** no clusters, no special directions, no cross-s persistence.
+- **D2 on repetition loops:** low values are degeneration; exclude/regenerate.
+- **600-token A1 in one batch:** OOM; 500 works with cache clearing.

@@ -95,6 +95,7 @@ Subagent report: `results/subagent_threshold/REPORT.md`.
 - **state_collapse_subagent.png** — all collapse attempts and failure factors.
 - **state_s_dependence.png**, **state_r_scaling_subagent.png** — gain/decay vs s and r proxy.
 - **state_r_scaling.png**, **state_r_decay.png** — new state r-scan (1e-3…3e-2); response linear in r.
+- **attention_entropy.png** — attention entropy vs token/margin for windows 50/100/200; weak/mixed relation to near-ties (exploratory negative).
 
 ## Signed threshold (best threshold set)
 
