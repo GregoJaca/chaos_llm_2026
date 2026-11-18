@@ -100,16 +100,19 @@ for W in cd:
                 cd_stats[(W, r, L, key)] = boot_med_ci([q[key] for q in rates])
 print("\ncross-dataset (different token streams), lam_rise L=27:")
 for r in [0.01, 0.1, 0.3]:
-    print(f"  r={r}: " + "  ".join(f"W={W}: {cd_stats[(W, r, 27, 'lam_rise')][0]:+.4f}" for W in [100, 200, 500] if (W, r, 27, 'lam_rise') in cd_stats))
+    print(f"  r={r}: " + "  ".join(
+        f"W={W}: {cd_stats[(W, r, 27, 'lam_rise')][0]:+.4f}[{cd_stats[(W, r, 27, 'lam_rise')][1]:+.4f},{cd_stats[(W, r, 27, 'lam_rise')][2]:+.4f}]"
+        for W in [100, 200, 500] if (W, r, 27, 'lam_rise') in cd_stats))
+print("note: for W>=150 the window is inactive up to t=W-65, so early segments are identical across those W;")
 
 # ---------------- B) radius dependence (w100_layers, all 12 radii) ----------------
 z = np.load(os.path.join(BASE, "w100_layers", "a1.npz"))
 radii = z["radii"]; layers = z["layers"]; dh0 = z["dh_norm"].astype(np.float64)
 rad_stats = {}
+Ll = list(layers)
 for ri, r in enumerate(radii):
     for L in [7, 27]:
-        li = int(np.where(layers == L)[0][0])
-        rates = get_rates(dh0, radii, layers, ri, r, L)
+        rates = get_rates(dh0, radii, Ll, ri, r, L)
         for key in ["lam_rise", "lam_decay", "tau_exp", "t_peak"]:
             rad_stats[(float(r), L, key)] = boot_med_ci([q[key] for q in rates])
 
@@ -128,7 +131,7 @@ b_tau, se_tau, r2_tau, n_tau = loglog_slope(rs, tau_med)
 # bootstrap beta over dirs (reuses cached per-direction tau values)
 rng = np.random.default_rng(3)
 n_dir = dh0.shape[1]
-rates27 = {float(r): get_rates(dh0, radii, layers, int(np.where(radii == r)[0][0]), float(r), 27) for r in rs}
+rates27 = {float(r): get_rates(dh0, radii, Ll, int(np.where(radii == r)[0][0]), float(r), 27) for r in rs}
 bs = []
 for b in range(500):
     idx = rng.integers(0, n_dir, n_dir)
@@ -178,7 +181,7 @@ lam_by_L = {}
 for L in [7, 14, 21, 27]:
     li = int(np.where(layers == L)[0][0])
     ri = int(np.argmin(np.abs(radii - 0.1)))
-    vals = [q["lam_rise"] for q in get_rates(dh0, radii, layers, ri, 0.1, L)]
+    vals = [q["lam_rise"] for q in get_rates(dh0, radii, Ll, ri, 0.1, L)]
     lam_by_L[L] = boot_med_ci(vals)
 print("C) lam_rise by layer (r=0.1):", {L: np.round(lam_by_L[L][0], 4) for L in lam_by_L})
 

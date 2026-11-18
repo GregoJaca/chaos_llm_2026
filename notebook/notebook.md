@@ -130,6 +130,99 @@ It is a finite-time stretching rate along one trajectory, not a Lyapunov exponen
 
 # Part 2. Every figure
 
+## Part 2.0 — The central result: this is stable chaos, not exponential chaos
+
+![flip data](figures/stablechaos_flips.png)
+
+**The question.** Does a perturbed generation diverge because infinitesimal differences grow
+exponentially (ordinary chaos), or because a finite perturbation crosses a local decision
+boundary after shadowing the original for a long time (stable chaos / flux tubes)?
+
+**Definitions.** For one prompt, one window and one radius $r$, run $n=20$ directions.
+$T$ is the first generated token that differs from the unperturbed reference ($T=\infty$ if none
+within 300 tokens). The **survival curve** is $S_r(t)=P(T>t)$, estimated as the fraction of
+directions with $T>t$. The **threshold field** $r_c(u,t)$ is computed from one teacher-forced pass
+(margin over margin shrink, B1) and predicts a flip at the first $t$ with $r_c(u,t)<r$.
+
+**Panel (a).** All 34 flips of the main prompt, as (radius, flip step). **Panel (b).** The flip
+steps against the baseline margin at those steps. **Panel (c).** Calibration.
+
+**Reading.** The 34 flips land on **8 steps only** — $\{0,2,14,16,24,116,123,143\}$ — and those are
+the lowest-margin steps of the reference (ranks 0,1,2,3,5,6 among 300). A continuous-separation
+null would give ≈32 distinct steps; the probability of ≤8 distinct steps under that null is
+$p<5\times10^{-6}$ (Monte Carlo, $2\times10^5$ draws). Direction 10 flips at the **same step 16**
+for $r=0.15,0.2,0.25$, whereas exponential separation would move the flip time by
+$\approx b\ln(0.25/0.15)\approx25$ tokens over that range.
+
+![survival](figures/stablechaos_survival.png)
+
+**Axes.** $x$: generation step $t$. $y$: $S_r(t)=P(T>t)$ over 20 directions. Blue: observed,
+with a 95% bootstrap band. Red dashed: prediction from the threshold field, with **zero fitted
+parameters**. Green: the best exponential fit.
+
+**Reading.** For $r\le0.1$ no dip is reachable: $S=1$ exactly, and the model predicts that. At
+$r=0.2$ and $0.25$ the threshold prediction reproduces the observed survival **exactly** (20/20
+directions, mean absolute deviation 0.00); at $r=0.3$ it is 19/20. The exponential fit is flat and
+cannot describe either the drop or the plateau. This is the proof figure: the discrete threshold
+field, not a rate, determines when the trajectories separate.
+
+![scaling](figures/stablechaos_scaling.png)
+
+**Axes and content.** (a) mean flip time $\langle T\rangle$ vs $r$; (b) the same on log axes with
+the $\log(1/r)$ law; (c) per-direction observed vs predicted flip step; (d) the fitted exponential
+hazard $\lambda(r)$ with bootstrap confidence intervals.
+
+**Reading — the exponential-separation hypothesis is rejected by four independent tests.**
+1. **Flip times are discrete** (previous figure), not smoothly distributed.
+2. **The fitted hazard is radius-dependent by ~90×** — $\lambda(r)=5\times10^{-5}$ at $r=0.2$–$0.3$
+   up to $4.3\times10^{-3}$/token at $r=2$, with confidence intervals that include **zero for
+   $r\le0.5$**. Ordinary chaos requires one $r$-independent positive rate.
+3. **The perturbation never amplifies:** $\|\delta h_{27}(50)\|/\|\delta h_{27}(1)\|=0.70$–$1.02$
+   for $r=0.01$–$2$; it is flat-to-contracting, then decays as the perturbed position leaves the
+   window.
+4. **A hard floor:** the smallest critical radius in 300 steps is $r_c^{\min}\approx0.13$, and
+   **0 of 40 runs flip at $r\le0.1$**. A positive Lyapunov exponent would make any infinitesimal
+   perturbation separate eventually.
+
+The $\log(1/r)$ law is also quantitatively unstable: its slope $b$ is 49.5 (95% CI 36–64) over all
+radii but 80.6 when the fully censored radii are dropped, and the implied rate $1/b=0.02$/token
+exceeds every directly fitted hazard by 5–400×. The parameter-free threshold prediction tracks the
+same means better (MAD 21.8 vs 25.3 tokens).
+
+![flux tube](figures/stablechaos_fluxtube.png)
+
+**Axes.** (a) token agreement with the reference after the first flip, as a function of tokens
+since the flip. (b) mismatch raster. (c) perturbation norm vs step.
+
+**Reading.** Inside the tube the two runs are **identical** (same tokens, non-growing state
+distance). The exit is abrupt and permanent: after the first flipped token the main-prompt runs
+**never** rejoin the reference ($P(\text{rejoin at }T+1)=0/27$), with only a brief ~15-token
+structural echo on the childhood prompt. This is the "flux tube": exact shadowing, then a sudden
+exit at a decision boundary.
+
+**Error asymmetry.** Across all tests the threshold model over-fires 26 times and misses once
+(sign test $p=4.2\times10^{-7}$); where both fire, the free run flips *later* than predicted in
+14/16 cases. The real system is slightly **more** contractive than the teacher-forced
+linearisation — the opposite of amplification.
+
+![windows](figures/stablechaos_windows.png)
+
+**Reading.** Longer windows lower and multiply the margin dips: $\min m_t$ goes 0.0202 ( $W=100$ )
+→ 0.0031 ( $W=200,500$ ), and the predicted flip fraction at $r=0.3$ rises 0.10 → 0.65 → 0.70. The
+mechanism is unchanged; only the boundary field moves. This is the architectural dependence the
+project set out to measure.
+
+**Verdict.** The system is in the **stable-chaos / flux-tube regime**. There is no positive
+Lyapunov exponent at these scales: trajectories shadow each other exactly until a finite
+perturbation crosses a local margin threshold, at a step and for a direction that one
+teacher-forced pass predicts without fitting.
+
+**Caveats.** 300-token horizon, greedy decoding, three prompts. "Permanent plateau" means "no
+reachable dip remains within the horizon". The teacher-forced linearisation over-fires at
+mid/large radii because the real perturbation contracts slightly.
+
+---
+
 ## NEW (round 4): window regimes, where amplification happens, and the finite-time rate
 
 ### N1. Does the attention window change the dynamical regime?
@@ -748,9 +841,17 @@ What the data support:
 - the actual mechanism of unpredictability is a **decision-boundary crossing** at a close call,
   not exponential separation of nearby trajectories.
 
+**The stable-chaos test in Part 2.0 settles the question empirically.** Four independent
+signatures reject exponential separation: flip times sit on a handful of discrete margin dips
+($p<5\times10^{-6}$ under a continuous-separation null); the fitted hazard varies by ~90× with $r$
+and its confidence interval includes zero for $r\le0.5$; the perturbation norm never grows
+($\le1.02$); and there is a hard floor ($r\le0.1$ never flips in 300 tokens). The correct
+statement is: **no positive Lyapunov exponent is detectable in this system at these scales; the
+unpredictability is a finite-amplitude threshold crossing.**
+
 If a Lyapunov-like number is wanted, the honest report is a finite-time exponent with horizon and
-window stated, e.g. "$\lambda(t=50)=0.04$ nats/token at $W=100$", never a bare "Lyapunov
-exponent".
+window stated, e.g. "$\lambda(t=50)=0.032$ nats/token at $W=100$, reference $t_0=5$", never a bare
+"Lyapunov exponent".
 
 ---
 
@@ -767,8 +868,12 @@ exponent".
 - The output is invariant to the state's length (normalization).
 
 **Not trivial (measured, not implied).**
+- The **stable-chaos regime**: flips at 8 discrete margin dips ($p<5\times10^{-6}$), a hazard with
+  a confidence interval containing zero, a non-growing perturbation norm, and a hard floor at
+  $r\approx0.13$.
 - The **quantitative** threshold law: one teacher-forced pass predicts the first changed word in
-  318/320 cases including all 70 borderline calls, with zero false alarms.
+  318/320 cases including all 70 borderline calls, with zero false alarms; part 2.0 shows the
+  survival curves are reproduced with zero fitted parameters at $r\le0.25$.
 - The **window law** $D=W-P$, exact to the token on two prompts and five window sizes with
   identical inputs; and the text needs 4–6 extra tokens to split.
 - The **survival law**: after a flip the text never re-converges, so the surviving fraction is
@@ -777,6 +882,8 @@ exponent".
   autoregressively.
 - **Direction structure**: magnitudes stable across texts (rank correlation 0.8–0.98) while signs
   at a given word are not (mean correlation $-0.05$); flips are stratified by direction.
+- The **layer-resolved amplification**: none at an ordinary position, ≈3× at a sensitive one,
+  concentrated in the last layers.
 - The **rotation mechanism**: components amplify ($\sigma_{\max}$ up to 195) yet the product does
   not, because the amplifying direction rotates by 84° per layer; the budget
   $(\sigma-1)\cos^2\theta$ closes the gap within a factor 2.
