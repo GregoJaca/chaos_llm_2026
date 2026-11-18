@@ -130,6 +130,103 @@ It is a finite-time stretching rate along one trajectory, not a Lyapunov exponen
 
 # Part 2. Every figure
 
+## NEW (round 4): window regimes, where amplification happens, and the finite-time rate
+
+### N1. Does the attention window change the dynamical regime?
+
+![window regimes](figures/window_regimes.png)
+
+**Data.** One prompt ($P=63$ tokens, ocean currents), one fixed 300-token sequence, prompt
+perturbation with $r=0.1$, 10 directions, teacher-forced, layer 27. Six windows:
+$W=50,100,200,400,800,4096$.
+
+**Panel (a).** $x=t$; $y=a(t,27)=\|\delta h_{t,27}\|_2$ (log).
+
+**Panel (b).** $x$: horizon $t$ (log); $y$: finite-time rate
+$\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$.
+
+**Panel (c).** $x$: $W$; $y$: $\lambda$ computed over $t\in[1,20]$ (green) and $t\in[200,299]$
+(red).
+
+**Reading — a real regime change at $W=P$.**
+- $W=50<P=63$: the prompt is *already* clipped at $t=0$. The response starts **5.6× larger**
+  (0.90 vs 0.16) and decays monotonically. $\lambda(t)<0$ at every horizon (early $-0.006$,
+  late $-0.016$).
+- $W>P$: the response starts at 0.161, rises for ≈20–35 tokens, then decays. $\lambda(t)$ is
+  positive early (+0.026), crosses zero, and stays negative.
+- $W=400,800,4096$ are identical over this 300-token run (no clipping), so they are one
+  condition, not three.
+
+So the answer to "are there different regimes depending on the window" is **yes at $W<P$**:
+truncating the prompt changes both the initial sensitivity and the sign of the early growth.
+For $W>P$ the shape is universal, shifted in time by $W-P$.
+
+**Caveat.** "Larger initial response at $W=50$" does not mean "more sensitive to the same
+perturbation": at $W=50$ part of the prompt perturbation is invisible, so the effective
+perturbation is smaller while the measured response is larger.
+
+### N2. Where does a perturbation actually get amplified?
+
+![layer probe](figures/layer_probe.png)
+
+**Data.** Inject a perturbation of size $r=0.05$ into the residual stream **at one layer $L$**
+and one position, then read the response at every layer $\ell>L$. 6 directions; HF convention:
+`hidden_states[l]` is the input of block $l$, so the perturbation first appears at $\ell=L+1$.
+Left: position $s=50$ (an ordinary position). Middle: $s=16$ (a position with a small gap).
+Right: total gain at the last layer vs injection layer.
+
+**Axes.** $x$: layers after the injection $\ell-L$ (log). $y$: $a(\ell)/r$, the response
+relative to the injected size. A value of 1 means "no amplification, no decay".
+
+**Reading — and the reconciliation of three earlier, apparently contradictory statements.**
+- At an **ordinary position** ($s=50$) a local perturbation **never amplifies**: the gain is
+  0.5–1.25, i.e. it decays slightly with distance. Injecting later leaves less distance to decay,
+  hence the mild upward trend with $L$.
+- At a **sensitive position** ($s=16$) the same perturbation is amplified **≈3×**, and the growth
+  happens mostly in the last layers (the curves bend upward at $\ell-L\gtrsim10$).
+- The earlier "depth gain $A(\ell)\propto\ell^{0.64}$" (A4) is a different object: it is the
+  response at generated positions to a perturbation applied to **all prompt tokens**, so it
+  measures how much *prompt content* each depth integrates, not the amplification of a local
+  kick. The earlier "all growth in layer 1" came from the depth-FSLE / same-position product and
+  from the state-norm jump at the embedding→residual transition; it is not the gain of a
+  perturbation.
+
+**Answer to "first or last layers?"** For a local perturbation: **neither** at an ordinary
+position (no gain), **the last layers** at a sensitive position. For a prompt-wide perturbation:
+the response grows with depth because deeper layers see more of the prompt, not because any
+single block amplifies.
+
+### N3. The nonlinearity at large $r$ is a power law
+
+![gain scaling](figures/threshold_gain_scaling.png)
+
+**Data.** All 12 radii, 20 directions, 300 steps; teacher-forced margin changes.
+
+**Panel (a).** $x$: $r$ (log); $y$: $g(r)=\mathrm{median}\,|\delta m_t|/r$, the logit-gap change
+per unit radius. **Panel (b).** Same quantity for three individual close calls.
+
+**Reading.** $g$ is **flat at 0.0083–0.0093 for $r\in[0.01,0.3]$** (linear response), rises at
+the float32 floor below $r\approx3\times10^{-4}$ (noise$/r$), and above $r=0.3$ follows a
+**power law $g\propto r^{0.19}$** (×1.55 by $r=2$). The extra growth is not universal: one close
+call ($t=2$) doubles while $t=123$ and $t=16$ stay flat until $r\approx0.7$. This is why a
+threshold measured at small $r$ over-predicts flips at large $r$ (B5), and it is a genuine
+sublinear power law, not an exponential.
+
+### N4. The finite-time rate: positive, then negative
+
+The quantity plotted in N1(b) is
+$$\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}.$$
+For $W>P$ it is **positive for the first ~10–40 tokens** (peak $\lambda\approx0.026$ nats/token for
+$W=100$; the peak is higher if measured from $t=1$ to $t=3$), then crosses zero and becomes
+negative. For $W<P$ it is negative from the start. No window, radius or layer tested gives a
+sustained positive rate over 300 tokens.
+
+This is the closest legitimate analogue of a Lyapunov exponent in this system: a finite-time
+stretching rate with a stated horizon. Read as a number: $\lambda(t=20)\approx+0.02$,
+$\lambda(t=100)\approx+0.005$, $\lambda(t=299)\approx-0.002$ for $W=100$.
+
+---
+
 Each block states: data, axes (with formulas), curves, reading. All perturbations are FP32,
 greedy, teacher-forced unless stated.
 
@@ -547,6 +644,16 @@ low-dimensional attractor. On non-loop trajectories the whole rise of $C$ spans 
 and the interval that is both below $2\log_{10}N$ and above $10/N$ is 0.00–0.04 decades wide: no
 plateau exists. The estimator is not at fault — at the same $N$ it recovers Hénon ($D_2=1.157$)
 and Lorenz ($D_2=1.984$).
+
+**Update (16 fresh 1000-token trajectories).** 0 of 64 (trajectory × $N$ × Theiler) configurations
+contain a slope-stable interval inside the legal band. Eight of the sixteen trajectories are
+quasi-loops with periods 12–81 and narrow relative distance (0.018–0.035 of the cloud scale); they
+have wide "plateaus" that are loop knees. The eight non-repetitive ones have an ER-legal width of
+**0.000 decades**. Predictability with $k$-nearest neighbours replicates only on the eight
+quasi-loops (NSE gaps +0.27…+0.67 over surrogates); on the eight non-repetitive ones the gap is
++0.018 (median) versus MIAAFT and +0.002 versus a linear ridge, i.e. nothing. The earlier
+`launch` lead does not replicate. Two surrogate-implementation bugs were found and fixed in that
+pass, so older MIAFT-based numbers should be re-checked; the clean statement is the one above.
 
 ![d2 delay](figures/d2_delay_embedding.png)
 

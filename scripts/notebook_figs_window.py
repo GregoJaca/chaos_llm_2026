@@ -47,13 +47,13 @@ ax.legend(fontsize=8, loc="lower left")
 ax.grid(alpha=0.25)
 
 ax = axs[1]
-lo, hi = 20, 55
+lo, hi = 0, 60
 ax.semilogy(t[lo:hi], a100[lo:hi], "o-", ms=3, lw=1.2, color="tab:blue", label=r"$W=100$")
 ax.semilogy(t[lo:hi], a1000[lo:hi], "s--", ms=3, lw=1.2, color="black", label=r"$W=1000$")
 ax.axvline(35, color="tab:red", ls="--", lw=1)
 ax.set_xlabel(r"$t$")
 ax.set_ylabel(r"$\|\delta h_{t,27}\|$")
-ax.set_title(r"(b) Zoom on $t\in[20,55]$: identical before 35, separate after", fontsize=10)
+ax.set_title(r"(b) $t\in[0,60]$: identical up to 34, separate after", fontsize=10)
 ax.legend(fontsize=8)
 ax.grid(alpha=0.25)
 

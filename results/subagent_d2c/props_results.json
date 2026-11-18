@@ -1,0 +1,446 @@
+{
+ "props": {
+  "interstellar_travel": {
+   "unique_frac": 0.283,
+   "entropy_bits": 7.115,
+   "top_share": 0.06,
+   "bigram_rep_frac": 0.597,
+   "longest_rep_ngram": 119,
+   "med_dist": 121.88,
+   "step_over_med": 0.797,
+   "loop_dist": 0.882,
+   "loop_P": 2,
+   "norm_cv": 0.1475,
+   "pc_participation": 21.25,
+   "n90": 170
+  },
+  "childhood_experiences": {
+   "unique_frac": 0.245,
+   "entropy_bits": 6.839,
+   "top_share": 0.062,
+   "bigram_rep_frac": 0.613,
+   "longest_rep_ngram": 32,
+   "med_dist": 117.78,
+   "step_over_med": 0.835,
+   "loop_dist": 0.896,
+   "loop_P": 2,
+   "norm_cv": 0.1521,
+   "pc_participation": 26.66,
+   "n90": 160
+  },
+  "cybersecurity": {
+   "unique_frac": 0.041,
+   "entropy_bits": 4.821,
+   "top_share": 0.075,
+   "bigram_rep_frac": 0.983,
+   "longest_rep_ngram": 219,
+   "med_dist": 87.09,
+   "step_over_med": 0.904,
+   "loop_dist": 0.035,
+   "loop_P": 53,
+   "norm_cv": 0.2721,
+   "pc_participation": 11.8,
+   "n90": 28
+  },
+  "healthy_habits": {
+   "unique_frac": 0.316,
+   "entropy_bits": 7.4,
+   "top_share": 0.075,
+   "bigram_rep_frac": 0.542,
+   "longest_rep_ngram": 14,
+   "med_dist": 120.34,
+   "step_over_med": 0.814,
+   "loop_dist": 0.88,
+   "loop_P": 2,
+   "norm_cv": 0.152,
+   "pc_participation": 27.52,
+   "n90": 176
+  },
+  "transformer_architecture": {
+   "unique_frac": 0.088,
+   "entropy_bits": 4.915,
+   "top_share": 0.194,
+   "bigram_rep_frac": 0.896,
+   "longest_rep_ngram": 49,
+   "med_dist": 92.94,
+   "step_over_med": 0.926,
+   "loop_dist": 0.127,
+   "loop_P": 50,
+   "norm_cv": 0.2669,
+   "pc_participation": 10.94,
+   "n90": 60
+  },
+  "astronomy_observations": {
+   "unique_frac": 0.335,
+   "entropy_bits": 7.417,
+   "top_share": 0.074,
+   "bigram_rep_frac": 0.465,
+   "longest_rep_ngram": 14,
+   "med_dist": 121.17,
+   "step_over_med": 0.823,
+   "loop_dist": 0.88,
+   "loop_P": 2,
+   "norm_cv": 0.1611,
+   "pc_participation": 26.65,
+   "n90": 195
+  },
+  "evolution_of_language": {
+   "unique_frac": 0.327,
+   "entropy_bits": 7.217,
+   "top_share": 0.064,
+   "bigram_rep_frac": 0.458,
+   "longest_rep_ngram": 18,
+   "med_dist": 118.9,
+   "step_over_med": 0.811,
+   "loop_dist": 0.857,
+   "loop_P": 2,
+   "norm_cv": 0.1713,
+   "pc_participation": 27.16,
+   "n90": 200
+  },
+  "history_of_computing": {
+   "unique_frac": 0.05,
+   "entropy_bits": 5.421,
+   "top_share": 0.08,
+   "bigram_rep_frac": 0.996,
+   "longest_rep_ngram": 219,
+   "med_dist": 89.23,
+   "step_over_med": 0.871,
+   "loop_dist": 0.047,
+   "loop_P": 63,
+   "norm_cv": 0.2041,
+   "pc_participation": 15.24,
+   "n90": 42
+  },
+  "history_of_mathematics": {
+   "unique_frac": 0.402,
+   "entropy_bits": 7.631,
+   "top_share": 0.053,
+   "bigram_rep_frac": 0.334,
+   "longest_rep_ngram": 9,
+   "med_dist": 124.83,
+   "step_over_med": 0.784,
+   "loop_dist": 0.846,
+   "loop_P": 2,
+   "norm_cv": 0.1223,
+   "pc_participation": 35.5,
+   "n90": 259
+  },
+  "renewable_energy_economics": {
+   "unique_frac": 0.012,
+   "entropy_bits": 3.585,
+   "top_share": 0.084,
+   "bigram_rep_frac": 1.0,
+   "longest_rep_ngram": 219,
+   "med_dist": 86.48,
+   "step_over_med": 0.953,
+   "loop_dist": 0.018,
+   "loop_P": 12,
+   "norm_cv": 0.3624,
+   "pc_participation": 4.75,
+   "n90": 9
+  },
+  "history_of_music": {
+   "unique_frac": 0.064,
+   "entropy_bits": 4.575,
+   "top_share": 0.111,
+   "bigram_rep_frac": 0.95,
+   "longest_rep_ngram": 219,
+   "med_dist": 98.53,
+   "step_over_med": 0.877,
+   "loop_dist": 0.019,
+   "loop_P": 17,
+   "norm_cv": 0.2451,
+   "pc_participation": 14.06,
+   "n90": 24
+  },
+  "ocean_currents": {
+   "unique_frac": 0.06,
+   "entropy_bits": 5.382,
+   "top_share": 0.113,
+   "bigram_rep_frac": 0.985,
+   "longest_rep_ngram": 219,
+   "med_dist": 97.33,
+   "step_over_med": 0.864,
+   "loop_dist": 0.049,
+   "loop_P": 81,
+   "norm_cv": 0.2562,
+   "pc_participation": 13.72,
+   "n90": 41
+  },
+  "sleep_and_memory": {
+   "unique_frac": 0.019,
+   "entropy_bits": 3.402,
+   "top_share": 0.333,
+   "bigram_rep_frac": 0.994,
+   "longest_rep_ngram": 219,
+   "med_dist": 94.35,
+   "step_over_med": 0.992,
+   "loop_dist": 0.025,
+   "loop_P": 27,
+   "norm_cv": 0.2156,
+   "pc_participation": 9.05,
+   "n90": 16
+  },
+  "software_engineering_practices": {
+   "unique_frac": 0.343,
+   "entropy_bits": 7.46,
+   "top_share": 0.067,
+   "bigram_rep_frac": 0.378,
+   "longest_rep_ngram": 7,
+   "med_dist": 124.44,
+   "step_over_med": 0.823,
+   "loop_dist": 0.872,
+   "loop_P": 2,
+   "norm_cv": 0.1511,
+   "pc_participation": 21.93,
+   "n90": 191
+  },
+  "urban_transportation": {
+   "unique_frac": 0.034,
+   "entropy_bits": 4.267,
+   "top_share": 0.077,
+   "bigram_rep_frac": 0.984,
+   "longest_rep_ngram": 219,
+   "med_dist": 81.81,
+   "step_over_med": 0.906,
+   "loop_dist": 0.094,
+   "loop_P": 79,
+   "norm_cv": 0.288,
+   "pc_participation": 10.07,
+   "n90": 23
+  },
+  "volcanoes_and_plate_tectonics": {
+   "unique_frac": 0.346,
+   "entropy_bits": 7.454,
+   "top_share": 0.066,
+   "bigram_rep_frac": 0.467,
+   "longest_rep_ngram": 16,
+   "med_dist": 125.23,
+   "step_over_med": 0.818,
+   "loop_dist": 0.881,
+   "loop_P": 2,
+   "norm_cv": 0.132,
+   "pc_participation": 23.62,
+   "n90": 192
+  }
+ },
+ "spearman_vs": {
+  "unique_frac": {
+   "gap_surr": [
+    -0.691,
+    0.003
+   ],
+   "gap_iaaft": [
+    -0.862,
+    0.0
+   ],
+   "gap_ridge": [
+    -0.479,
+    0.0602
+   ],
+   "knn_h1": [
+    -0.862,
+    0.0
+   ]
+  },
+  "entropy_bits": {
+   "gap_surr": [
+    -0.726,
+    0.0014
+   ],
+   "gap_iaaft": [
+    -0.809,
+    0.0001
+   ],
+   "gap_ridge": [
+    -0.471,
+    0.0658
+   ],
+   "knn_h1": [
+    -0.891,
+    0.0
+   ]
+  },
+  "top_share": {
+   "gap_surr": [
+    0.864,
+    0.0
+   ],
+   "gap_iaaft": [
+    0.827,
+    0.0001
+   ],
+   "gap_ridge": [
+    0.506,
+    0.0454
+   ],
+   "knn_h1": [
+    0.798,
+    0.0002
+   ]
+  },
+  "bigram_rep_frac": {
+   "gap_surr": [
+    0.741,
+    0.001
+   ],
+   "gap_iaaft": [
+    0.924,
+    0.0
+   ],
+   "gap_ridge": [
+    0.474,
+    0.0639
+   ],
+   "knn_h1": [
+    0.868,
+    0.0
+   ]
+  },
+  "longest_rep_ngram": {
+   "gap_surr": [
+    0.741,
+    0.001
+   ],
+   "gap_iaaft": [
+    0.833,
+    0.0001
+   ],
+   "gap_ridge": [
+    0.605,
+    0.013
+   ],
+   "knn_h1": [
+    0.863,
+    0.0
+   ]
+  },
+  "med_dist": {
+   "gap_surr": [
+    -0.653,
+    0.0061
+   ],
+   "gap_iaaft": [
+    -0.738,
+    0.0011
+   ],
+   "gap_ridge": [
+    -0.532,
+    0.0338
+   ],
+   "knn_h1": [
+    -0.75,
+    0.0008
+   ]
+  },
+  "step_over_med": {
+   "gap_surr": [
+    0.731,
+    0.0013
+   ],
+   "gap_iaaft": [
+    0.793,
+    0.0002
+   ],
+   "gap_ridge": [
+    0.397,
+    0.1275
+   ],
+   "knn_h1": [
+    0.821,
+    0.0001
+   ]
+  },
+  "loop_dist": {
+   "gap_surr": [
+    -0.656,
+    0.0058
+   ],
+   "gap_iaaft": [
+    -0.774,
+    0.0004
+   ],
+   "gap_ridge": [
+    -0.5,
+    0.0484
+   ],
+   "knn_h1": [
+    -0.792,
+    0.0003
+   ]
+  },
+  "loop_P": {
+   "gap_surr": [
+    0.811,
+    0.0001
+   ],
+   "gap_iaaft": [
+    0.754,
+    0.0007
+   ],
+   "gap_ridge": [
+    0.823,
+    0.0001
+   ],
+   "knn_h1": [
+    0.716,
+    0.0018
+   ]
+  },
+  "norm_cv": {
+   "gap_surr": [
+    0.697,
+    0.0027
+   ],
+   "gap_iaaft": [
+    0.709,
+    0.0021
+   ],
+   "gap_ridge": [
+    0.518,
+    0.04
+   ],
+   "knn_h1": [
+    0.738,
+    0.0011
+   ]
+  },
+  "pc_participation": {
+   "gap_surr": [
+    -0.75,
+    0.0008
+   ],
+   "gap_iaaft": [
+    -0.826,
+    0.0001
+   ],
+   "gap_ridge": [
+    -0.579,
+    0.0187
+   ],
+   "knn_h1": [
+    -0.759,
+    0.0007
+   ]
+  },
+  "n90": {
+   "gap_surr": [
+    -0.75,
+    0.0008
+   ],
+   "gap_iaaft": [
+    -0.879,
+    0.0
+   ],
+   "gap_ridge": [
+    -0.426,
+    0.0995
+   ],
+   "knn_h1": [
+    -0.897,
+    0.0
+   ]
+  }
+ }
+}

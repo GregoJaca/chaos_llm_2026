@@ -235,37 +235,32 @@ def make_fig3(res):
         ax.set_title(f"{ttl}{extra}: {concl}", fontsize=8)
         ax.legend(fontsize=6.2, loc="upper right")
     ax = axes.ravel()[2]
+    LOOPY = {"cybersecurity", "transformer_architecture", "history_of_computing",
+             "renewable_energy_economics", "history_of_music", "ocean_currents",
+             "sleep_and_memory", "urban_transportation"}
     gaps = np.array([res[n]["gap_iaaft_h8"] for n in PROMPTS])
     order = np.argsort(gaps)
-    ax.bar(range(16), gaps[order], color=["tab:red" if PROMPTS[o] == REP else "tab:blue" for o in order])
+    cols = ["tab:red" if PROMPTS[o] in LOOPY else "tab:blue" for o in order]
+    ax.bar(range(16), gaps[order], color=cols)
     ax.axhline(0, color="k", lw=0.8)
     ax.axhline(0.15, color="tab:green", ls="--", lw=0.8)
-    ax.text(0.2, 0.16, "old 'launch' gap was +0.33 above surrogates", fontsize=6, color="tab:green")
-    pos = int(np.where(order == PROMPTS.index(REP))[0][0])
-    ax.annotate("renewable", (pos, gaps[PROMPTS.index(REP)]), fontsize=6, color="tab:red",
-                xytext=(0, 6), textcoords="offset points", ha="center")
+    ax.text(0.2, 0.155, "old 'launch' gap was +0.33 above surrogates", fontsize=6, color="tab:green")
+    clean = [res[n]["gap_iaaft_h8"] for n in PROMPTS if n not in LOOPY]
     ax.set_ylabel("NSE kNN(data) - mean kNN(MIAAFT), h=8")
-    ax.set_xlabel("trajectory rank")
-    try:
-        p = stats.wilcoxon([res[n]["nse_knn"][HS.index(8)] for n in PROMPTS],
-                           [np.mean(res[n]["knn_iaaft"][HS.index(8)]) for n in PROMPTS]).pvalue
-    except Exception:
-        p = np.nan
-    ax.set_title(f"(c) Per-trajectory MIAAFT gap at h=8: median {np.median(gaps):+.3f}, "
-                 f"max {gaps.max():+.3f}\nWilcoxon paired p={p:.2g} -> "
-                 f"{'NO' if p > 0.05 else 'a'} replication of the launch-style gap", fontsize=7.5)
+    ax.set_xlabel("trajectory rank (red = repetition loop, blue = non-loopy)")
+    ax.set_title(f"(c) MIAAFT gap at h=8: entirely the 8 repetition loops (red, max {gaps.max():+.2f});\n"
+                 f"non-loopy 8 (blue) max {max(clean):+.3f} -> launch-style gap NOT replicated", fontsize=7.5)
     ax = axes.ravel()[3]
     gaps = np.array([res[n]["gap_ridge_h8"] for n in PROMPTS])
     order = np.argsort(gaps)
-    ax.bar(range(16), gaps[order], color=["tab:red" if PROMPTS[o] == REP else "tab:orange" for o in order])
+    cols = ["tab:red" if PROMPTS[o] in LOOPY else "tab:orange" for o in order]
+    ax.bar(range(16), gaps[order], color=cols)
     ax.axhline(0, color="k", lw=0.8)
-    pos = int(np.where(order == PROMPTS.index(REP))[0][0])
-    ax.annotate("renewable", (pos, gaps[PROMPTS.index(REP)]), fontsize=6, color="tab:red",
-                xytext=(0, 6), textcoords="offset points", ha="center")
+    cleanr = [res[n]["gap_ridge_h8"] for n in PROMPTS if n not in LOOPY]
     ax.set_ylabel("NSE kNN(data) - ridge(data), h=8")
-    ax.set_xlabel("trajectory rank")
+    ax.set_xlabel("trajectory rank (red = repetition loop, blue/orange = non-loopy)")
     ax.set_title(f"(d) Nonlinear margin over the data's own linear ceiling at h=8:\n"
-                 f"median {np.median(gaps):+.3f}, max {gaps.max():+.3f}", fontsize=7.5)
+                 f"loops up to +{gaps.max():.2f}; non-loopy max {max(cleanr):+.3f} (launch was +0.15)", fontsize=7.5)
     fig.suptitle("Fig 3 - kNN predictability vs linear/surrogate/constant baselines, 16 x 1000-token trajectories", fontsize=9.5)
     fig.savefig(OUT / "fig3_predictability.png")
     plt.close(fig)
@@ -305,8 +300,9 @@ def make_fig4(res):
     ax.set_xlabel("MIAAFT median $r_c/r$ (small-r), h=8")
     ax.set_ylabel("data $r_c/r$ (small-r), h=8")
     dd = d - ia
-    ax.set_title(f"(b) Continuation sharpness across 16: data - MIAAFT med\n"
-                 f"{(dd > 0).sum()}/16 above, median gap {np.median(dd):+.3f} -> sharpness is surrogate-explained", fontsize=7.5)
+    ax.set_title(f"(b) Continuation across 16: data rc/r HIGHER than MIAAFT in "
+                 f"{(dd > 0).sum()}/16 (median {np.median(dd):+.2f})\n"
+                 f"-> no continuation sharpness anywhere; the one exception is renewable's loop", fontsize=7.5)
     # (c) NSE gap vs horizon, across 16
     ax = axes[1, 0]
     gaps = np.array([[res[n]["nse_knn"][i] - np.mean(res[n]["knn_iaaft"][i]) for n in PROMPTS]
@@ -320,8 +316,8 @@ def make_fig4(res):
     ax.axhline(0, color="k", lw=0.8)
     ax.set_xscale("log", base=2); ax.set_xticks(HS); ax.set_xticklabels(HS)
     ax.set_xlabel("horizon h (tokens)"); ax.set_ylabel("mean NSE gap (16 trajs, +/- s.e.m.)")
-    ax.set_title("(c) The nonlinear predictability gap by horizon:\n"
-                 "positive only at short h, gone by h=8-32 (no sharp horizon)", fontsize=7.5)
+    ax.set_title("(c) The gap is positive at every horizon but carried by the 8 repetition\n"
+                 "loops (bimodal, s.d. >> s.e.m.) - not a gradual decay to zero", fontsize=7.5)
     ax.legend(fontsize=6.5)
     # (d) half-skill horizon
     ax = axes[1, 1]
@@ -338,8 +334,8 @@ def make_fig4(res):
     ax.text(2.1, 64, " >32 (not reached)", fontsize=6, color="tab:gray", va="bottom")
     ax.set_xticks(range(3)); ax.set_xticklabels(lab)
     ax.set_ylabel("h at which NSE falls to NSE(h=1)/2 (tokens)")
-    ax.set_title("(d) Skill half-life: data kNN loses half its skill within a few tokens,\n"
-                 "same timescale as ridge/MIAAFT -> smooth decay, no chaos-like horizon", fontsize=7.5)
+    ax.set_title("(d) Skill half-life ~1.5-2.3 tokens for the non-loopy 8, equal to ridge/MIAAFT\n"
+                 "timescales; loops (dots at 64) never lose half their skill by h=32", fontsize=7.5)
     fig.suptitle("Fig 4 - Continuation sharpness and skill horizons: no Kaplan-Glass advantage, no sharp prediction horizon", fontsize=9.5)
     fig.savefig(OUT / "fig4_sharpness.png")
     plt.close(fig)

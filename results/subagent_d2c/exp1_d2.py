@@ -49,7 +49,18 @@ def analyze_config(X, N, w, med):
 
 def main():
     res = {}
+    resume_path = OUT / "d2_results.json"
+    if resume_path.exists():
+        import json as _json
+        try:
+            with open(resume_path) as f:
+                res = _json.load(f)
+            print(f"resuming with {len(res)} trajectories already computed", flush=True)
+        except Exception:
+            res = {}
     for name in PROMPTS:
+        if name in res:
+            continue
         X, _ = load(name)
         med_full = float(np.median(pair_values(distm(X - X.mean(0)))))
         cfgs = {}

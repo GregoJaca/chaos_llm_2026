@@ -180,7 +180,9 @@ def miiaft(Y, rng, n_iter=40):
     ZT = np.fft.irfft(Zf, n=T, axis=1)
     for _ in range(n_iter):
         order = np.argsort(ZT, axis=1, kind="stable")
-        Z2T = np.take_along_axis(Ysorted, order, axis=1)
+        # rank match: position m gets the value whose rank equals rank(Z[m]) =
+        # position of m in `order`, i.e. gather with argsort(order)
+        Z2T = np.take_along_axis(Ysorted, np.argsort(order, axis=1), axis=1)
         Zf2 = np.fft.rfft(Z2T, axis=1)
         Zf2 = amp * np.exp(1j * np.angle(Zf2))
         Zf2[:, 0] = Yf[:, 0]
@@ -188,7 +190,7 @@ def miiaft(Y, rng, n_iter=40):
             Zf2[:, -1] = np.real(Zf2[:, -1])
         ZT = np.fft.irfft(Zf2, n=T, axis=1)
     order = np.argsort(ZT, axis=1, kind="stable")
-    outT = np.take_along_axis(Ysorted, order, axis=1)
+    outT = np.take_along_axis(Ysorted, np.argsort(order, axis=1), axis=1)
     return np.ascontiguousarray(outT.T)
 
 

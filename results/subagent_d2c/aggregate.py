@@ -114,8 +114,8 @@ saturators = []
 for n in PROMPTS:
     r = dl[n]
     ia = np.array(r["d2_iaaft"])
-    b = sum(1 for mi in range(2, 10) if r["d2_data"][mi] < ia[mi].min())
-    below += b; tot += 8
+    b = sum(1 for mi in range(2, 9) if r["d2_data"][mi] < ia[mi].min())
+    below += b; tot += 7
     d68 = r["d2_data"][4] - r["d2_data"][2]  # m=6 minus m=4 growth
     if r["d2_data"][8] < r["d2_data"][2]:
         saturators.append((n, r["d2_data"]))
