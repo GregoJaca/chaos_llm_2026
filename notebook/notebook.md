@@ -406,6 +406,47 @@ The earlier single-window picture, for reference: layers 1, 2, 3 die at 92, 191,
 while layers 7+ keep a non-zero response for the whole run because they also carry the
 perturbation through the generated positions themselves.
 
+### N7. The stretching rate $\lambda(t)$: bands, tests, and a confound
+
+![lambda bands](figures/lambda_bands_windows.png)
+
+**Data.** Fixed-token runs on the ocean-currents prompt, $r=0.1$, layer 27, 10 directions,
+windows $W=50,100,200$. The local rate is
+$$\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)}.$$
+
+**Axes.** $x$: $t$. $y$: $\lambda_{10}$ in nats/token. Thick line: median over directions.
+Band: 10–90% over directions.
+
+**Reading.** The rate fluctuates strongly from token to token; the direction spread is comparable
+to the mean. Averaged over a long interval the differences are significant (next figure), but any
+single-token statement is noise-dominated.
+
+![lambda test](figures/lambda_window_test.png)
+
+**Data.** For each direction, the mean of $\lambda_{10}$ over $t\in[10,100]$; 10 directions per
+window. Points: directions; red line: median; bar: inter-quartile range.
+
+**Reading.** $W=100$ gives a **positive** mean rate (+0.008 nats/token), while $W=50$ and $W=200$
+give **negative** means (−0.007 and −0.008). Mann–Whitney $p=1.8\times10^{-4}$ for both
+comparisons. The effect is real and directional, but see the confound below before interpreting it
+as a "regime".
+
+![tau rate](figures/window_tau_rate.png)
+
+**The confound.** Panel (b) compares the same fixed interval $t\in[10,100]$ for four windows. But
+the window starts clipping at $t=W-P$: 0 for $W=50$, 37 for $W=100$, 137 for $W=200$, 337 for
+$W=400$. So the interval contains a different mix of pre-clip and post-clip behaviour for each $W$;
+the comparison is not like-for-like.
+
+**Panel (a)** aligns the curves by $\tau=t-(W-P)$, the time since the context exceeded the window.
+The curves do **not** collapse: after its clip, $W=100$ rises (the response gains from the newly
+truncated context), while $W=200$ keeps decaying. That is a genuine dynamical difference, not just
+a time shift.
+
+**Consequence for the analysis.** Any statement about "the window changes the rate" must specify
+(a) the interval, (b) whether that interval is pre- or post-clip, and (c) the aligned time $\tau$.
+The clean comparisons are: pre-clip (all $W>P$ identical), and post-clip at fixed $\tau$.
+
 ### N6. The window also changes single-position perturbations
 
 ![state window](figures/state_window.png)
