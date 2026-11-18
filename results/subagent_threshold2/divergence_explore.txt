@@ -1,0 +1,94 @@
+========================================================================
+fr_w100_large.npz  r=0.5  prompt=propulsion  obs flips: 3/20
+  d10 T= 16  frac_ident_after=0.007 all=0.060 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d11 T=  2  frac_ident_after=0.017 all=0.023 resynced=False resync_step=-1 first10=0.00 lasthalf=0.01
+  d12 T=123  frac_ident_after=0.023 all=0.423 resynced=False resync_step=-1 first10=0.00 lasthalf=0.02
+========================================================================
+fr_w100_large.npz  r=1  prompt=propulsion  obs flips: 8/20
+  d 0 T=  2  frac_ident_after=0.003 all=0.010 resynced=False resync_step=-1 first10=0.10 lasthalf=0.00
+  d 5 T=123  frac_ident_after=0.023 all=0.423 resynced=False resync_step=-1 first10=0.00 lasthalf=0.02
+  d 6 T=  2  frac_ident_after=0.003 all=0.010 resynced=False resync_step=-1 first10=0.10 lasthalf=0.00
+  d10 T=  0  frac_ident_after=0.007 all=0.007 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d11 T=  2  frac_ident_after=0.013 all=0.020 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d12 T=123  frac_ident_after=0.023 all=0.423 resynced=False resync_step=-1 first10=0.00 lasthalf=0.02
+  d17 T=143  frac_ident_after=0.025 all=0.490 resynced=False resync_step=-1 first10=0.00 lasthalf=0.03
+  d18 T=143  frac_ident_after=0.025 all=0.490 resynced=False resync_step=-1 first10=0.00 lasthalf=0.03
+========================================================================
+fr_w100_large.npz  r=2  prompt=propulsion  obs flips: 16/20
+  d 0 T=  2  frac_ident_after=0.010 all=0.017 resynced=False resync_step=-1 first10=0.10 lasthalf=0.00
+  d 1 T=  0  frac_ident_after=0.007 all=0.007 resynced=False resync_step=-1 first10=0.00 lasthalf=0.01
+  d 2 T= 14  frac_ident_after=0.014 all=0.060 resynced=False resync_step=-1 first10=0.00 lasthalf=0.01
+  d 3 T=116  frac_ident_after=0.000 all=0.387 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d 4 T=  2  frac_ident_after=0.003 all=0.010 resynced=False resync_step=-1 first10=0.10 lasthalf=0.00
+  d 5 T=143  frac_ident_after=0.025 all=0.490 resynced=False resync_step=-1 first10=0.00 lasthalf=0.03
+  d 6 T=  2  frac_ident_after=0.013 all=0.020 resynced=False resync_step=-1 first10=0.10 lasthalf=0.00
+  d 7 T=123  frac_ident_after=0.023 all=0.423 resynced=False resync_step=-1 first10=0.00 lasthalf=0.02
+  d 9 T=  2  frac_ident_after=0.010 all=0.017 resynced=False resync_step=-1 first10=0.10 lasthalf=0.01
+  d10 T=  0  frac_ident_after=0.023 all=0.023 resynced=False resync_step=-1 first10=0.00 lasthalf=0.02
+  d11 T=  2  frac_ident_after=0.007 all=0.013 resynced=False resync_step=-1 first10=0.00 lasthalf=0.01
+  d12 T=  2  frac_ident_after=0.007 all=0.013 resynced=False resync_step=-1 first10=0.10 lasthalf=0.01
+  d14 T=  2  frac_ident_after=0.007 all=0.013 resynced=False resync_step=-1 first10=0.10 lasthalf=0.01
+  d17 T= 24  frac_ident_after=0.004 all=0.083 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d18 T=143  frac_ident_after=0.025 all=0.490 resynced=False resync_step=-1 first10=0.00 lasthalf=0.03
+  d19 T=143  frac_ident_after=0.025 all=0.490 resynced=False resync_step=-1 first10=0.00 lasthalf=0.03
+========================================================================
+fr_cyber.npz  r=0.01  prompt=cyber  obs flips: 0/20
+========================================================================
+fr_cyber.npz  r=0.1  prompt=cyber  obs flips: 0/20
+========================================================================
+fr_cyber.npz  r=0.3  prompt=cyber  obs flips: 3/20
+  d 1 T= 39  frac_ident_after=0.034 all=0.160 resynced=False resync_step=-1 first10=0.10 lasthalf=0.05
+  d 7 T= 51  frac_ident_after=0.008 all=0.177 resynced=False resync_step=-1 first10=0.00 lasthalf=0.01
+  d13 T= 39  frac_ident_after=0.034 all=0.160 resynced=False resync_step=-1 first10=0.10 lasthalf=0.05
+========================================================================
+fr_childhood.npz  r=0.01  prompt=childhood  obs flips: 0/20
+========================================================================
+fr_childhood.npz  r=0.1  prompt=childhood  obs flips: 4/20
+  d 4 T=125  frac_ident_after=0.006 all=0.420 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d12 T=173  frac_ident_after=0.126 all=0.630 resynced=False resync_step=-1 first10=0.70 lasthalf=0.05
+  d14 T=125  frac_ident_after=0.006 all=0.420 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d17 T=125  frac_ident_after=0.006 all=0.420 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+========================================================================
+fr_childhood.npz  r=0.3  prompt=childhood  obs flips: 12/20
+  d 0 T=173  frac_ident_after=0.126 all=0.630 resynced=False resync_step=-1 first10=0.70 lasthalf=0.05
+  d 4 T=125  frac_ident_after=0.006 all=0.420 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d 5 T=173  frac_ident_after=0.126 all=0.630 resynced=False resync_step=-1 first10=0.70 lasthalf=0.05
+  d 7 T=173  frac_ident_after=0.126 all=0.630 resynced=False resync_step=-1 first10=0.70 lasthalf=0.05
+  d 9 T=173  frac_ident_after=0.126 all=0.630 resynced=False resync_step=-1 first10=0.70 lasthalf=0.05
+  d11 T=173  frac_ident_after=0.126 all=0.630 resynced=False resync_step=-1 first10=0.70 lasthalf=0.05
+  d12 T=173  frac_ident_after=0.126 all=0.630 resynced=False resync_step=-1 first10=0.70 lasthalf=0.05
+  d14 T=125  frac_ident_after=0.006 all=0.420 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d15 T=125  frac_ident_after=0.006 all=0.420 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d16 T=125  frac_ident_after=0.006 all=0.420 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d17 T=125  frac_ident_after=0.006 all=0.420 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+  d18 T=125  frac_ident_after=0.006 all=0.420 resynced=False resync_step=-1 first10=0.00 lasthalf=0.00
+========================================================================
+AGGREGATE: mean token agreement vs steps after the first flip (block=10)
+     fr_w100_large r=0.5  nflip= 3 blocks0-10,10-20,...: [0.   0.   0.   0.   0.03 0.   0.03 0.   0.07 0.   0.03 0.07]
+     fr_w100_large r=1    nflip= 8 blocks0-10,10-20,...: [0.03 0.   0.03 0.03 0.03 0.03 0.   0.01 0.04 0.04 0.   0.03]
+     fr_w100_large r=2    nflip=16 blocks0-10,10-20,...: [0.04 0.01 0.03 0.02 0.01 0.01 0.01 0.01 0.03 0.03 0.01 0.03]
+fr_cyber.npz r=0.01: no flips
+fr_cyber.npz r=0.1: no flips
+          fr_cyber r=0.3  nflip= 3 blocks0-10,10-20,...: [0.07 0.   0.   0.   0.   0.   0.   0.07 0.   0.03 0.   0.  ]
+fr_childhood.npz r=0.01: no flips
+      fr_childhood r=0.1  nflip= 4 blocks0-10,10-20,...: [0.17 0.15 0.   0.   0.   0.07 0.05 0.03 0.   0.   0.   0.  ]
+      fr_childhood r=0.3  nflip=12 blocks0-10,10-20,...: [0.35 0.3  0.   0.   0.   0.05 0.1  0.05 0.   0.   0.   0.  ]
+========================================================================
+POOLED per prompt: frac of flipped runs fully re-synced (last 50 identical)
+     fr_w100_large r=0.5 : flipped  3, re-synced  0, mean frac identical after flip 0.015
+     fr_w100_large r=1   : flipped  8, re-synced  0, mean frac identical after flip 0.015
+     fr_w100_large r=2   : flipped 16, re-synced  0, mean frac identical after flip 0.013
+          fr_cyber r=0.01: flipped  0, re-synced  0, mean frac identical after flip nan
+          fr_cyber r=0.1 : flipped  0, re-synced  0, mean frac identical after flip nan
+          fr_cyber r=0.3 : flipped  3, re-synced  0, mean frac identical after flip 0.026
+      fr_childhood r=0.01: flipped  0, re-synced  0, mean frac identical after flip nan
+      fr_childhood r=0.1 : flipped  4, re-synced  0, mean frac identical after flip 0.036
+      fr_childhood r=0.3 : flipped 12, re-synced  0, mean frac identical after flip 0.066
+========================================================================
+Difference counts: total differing tokens / 300 per flipped run
+     fr_w100_large r=0.5 : n_diff tokens [173, 282, 293]
+     fr_w100_large r=1   : n_diff tokens [153, 153, 173, 173, 294, 297, 297, 298]
+     fr_w100_large r=2   : n_diff tokens [153, 153, 153, 173, 184, 275, 282, 293, 294, 295, 295, 296, 296, 296, 297, 298]
+          fr_cyber r=0.3 : n_diff tokens [247, 252, 252]
+      fr_childhood r=0.1 : n_diff tokens [111, 174, 174, 174]
+      fr_childhood r=0.3 : n_diff tokens [111, 111, 111, 111, 111, 111, 174, 174, 174, 174, 174, 174]

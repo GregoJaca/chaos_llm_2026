@@ -1,6 +1,13 @@
 # Results summary (DeepSeek-1.5B, FP32)
 
-Window 100 unless stated. Prompt `interstellar_travel`, 300 generated tokens. All A1 runs use in-batch `r=0`; duplicate `r=0` rows are bit-identical.
+Window 100 unless stated. Prompt `interstellar_travel` (65 tokens), 300 generated tokens. All A1 runs use in-batch `r=0`; duplicate `r=0` rows are bit-identical.
+
+## 0. Corrections to earlier claims (read first)
+
+1. **"The depth expansion is only radial scale drift; every block contracts."** This is true for a *fixed token position* (the same-position tangent product) but **false for the prompt-perturbation response**. Measured directly: from layer 2 to layer 27 the perturbation grows ×365 while the state length grows ×12.5, so the *relative* perturbation grows ×29. Only the last block contracts slightly (×0.82). The difference is cross-position attention spreading, which the same-position tangent product cannot see. Do not use the "all blocks contract" sentence for the response.
+2. **Teacher forcing is an exact simulator up to the first flip.** One teacher-forced pass on the perturbed prompt reproduces whether the free run flips, the exact step, and the exact new token (29/29 flips, 0 false positives in 140 cases; 111/111 no-flip cases). After the flip the two runs have different prefixes and comparison stops being meaningful. This is a stronger and simpler validation than the linear-threshold scorecard.
+3. **Window causality is now demonstrated with identical inputs.** With one fixed token sequence and five windows (100/150/200/300/1000), each curve is bit-identical to the 1000-token control until exactly `t = window − prompt_len`, then departs (35/85/135/235 for windows 100/150/200/300). See `a1_window_fixed_inputs.png`.
+4. **Flips are of two kinds.** 17/27 observed flips happen at the response peak ("immediate"); 10/27 happen at a later close call after the response has already faded to <30% of its peak ("delayed", t=116/123/143). A single-token kick at s=16 changes no token immediately but changes the token at t=123, i.e. 107 tokens later. See `flip_is_a_close_call.png`, `state_current_depth.png`.
 
 ## 1. A1 response: one universal curve, window-driven regimes
 
@@ -45,23 +52,39 @@ The window changes the **margin spectrum**, not just numerics. A smaller margin 
 
 This is direct evidence for decision-boundary crossing.
 
-## 3. Current-state perturbation and R(t,s)
+## 3. Current-state (single-token) perturbation
 
-- Input-embedding injection at `s=16/50/100/150`, 32 directions, `r=1e-3`; state r-scan at 3e-3/1e-2/3e-2.
-- **Directions are mostly equivalent:** PC1 explains 94–97% of log-curve variance; median pairwise r=0.94–0.98; residual direction effects are only ×1.15–1.23; no clusters, no special directions, and no direction keeps its deviation across different `s`.
-- **`R(t,s)` is not a function of lag:** normalization by `dh(s)`, early peak, or `dh(s+5)` leaves ×1.56–1.63 RMS spread (max ×2.5). Lag/s rescaling and first-bump alignment fail. The field is only approximately separable (`log dh≈a(s)+b(t)`, ×1.17 late).
-- Bumps are **not** pinned to margin near-ties (enrichment ≈1; lagged correlation with −log margin only 0.07–0.44, s-dependent phase).
-- Gain at injection varies ×13 across s (10–124); decay is two-timescale (half-life 2–8 tokens, then e-folding 30–125). `s=16` is special because it is a near-tie injection, not a regime change.
-- **Response is linear in r** over 1e-3…3e-2 at injection (slope ≈1); s=16 gain ~10× larger than s=50/100.
-- Layer-14 residual injection is **9–36× weaker at injection**; it does not decay faster after ~5 tokens — its tail is flatter and plateaus at a persistent ≈2.9e-4 footprint (real, not FP32 noise).
-## 4. Depth map / FSLE: the “expansion” is scale drift
+New deep run: 8 injection steps (8/16/32/50/75/100/150/200), 24 directions, 4 radii (3e-3/1e-2/3e-2/1e-1), 4 measured layers (7/14/21/27), injection at the input embedding; plus a layer-14 injection run.
 
-- Absolute depth separation `d(layer)/d(0)` jumps ~200–300 at layer 1, then flat; FSLE `lnρ/1`, r-independent.
-- The residual-stream norm grows ×30 in block 0 and ×1.05–1.18/layer thereafter (×441–591 total).
-- **Normalized by the local state scale, every block contracts:** block 0 ×0.48–0.72; later ×0.89–0.95. The maximum scale-normalized exponent over 8 tokens × 28 depths × 8 directions is **−0.034 nats/layer**.
-- Depth FSLE: ×206 absolute growth becomes **×0.46 relative**.
-- The top-8 absolute exponents (λ≈0.08–0.18, `h_depth≈0.6–1.4`) are the entropy of radial drift; the final RMSNorm projects it out before logits. Report both absolute and relative.
-- What survives: a small sustained aligned drift **+0.02 nats/layer**, with a late-depth component rise (MLP σ_max 18→71 at block 27) absorbed by faster scale growth.
+- **Linear in r at every position:** fitted slope 0.99–1.00 between r=3e-3 and r=1e-1.
+- **Where the kick lands matters much more than its size:** the immediate response at `t=s` varies ×13 across positions (0.26 at s=75 to 3.49 at s=16). `s=16` is a near-tie position of this prompt.
+- **The response is fast but not gone:** median half-life 1–7 tokens; a long low tail remains (decay continues to the end of the window).
+- **Depth:** the kick is amplified into the last layers (×3–4 from L7 to L27 for s=16). Relative to the model’s own state length, the effect shrinks with depth for ordinary positions (s=50/100/200: ×0.05–0.09 from L7 to L27) but stays flat for the near-tie position s=16 (×0.6) — a sensitive position keeps its relative influence.
+- **Effect on the text:** at r=0.1 a kick changes a later top-1 token for only 4/24 directions at s=16 and 1/24 at s=50; at r≤0.03 no token changes at all. A single-token kick is a very weak control.
+- **Latency:** the kicks that do act sit latent. All four s=16 directions that change a token change it at t=123, i.e. **107 tokens after the kick**; the s=50 direction changes it at t=143 (93 tokens later). Nothing happens at the kick itself.
+- **Injection depth:** a residual kick at layer 14 is **9–36× weaker** at layer 27 than the same-size kick at the input, and its tail is flatter (persistent ≈3e-2 footprint).
+- **Directions:** the 24 Gaussian directions are equivalent in the same sense as before (spread of immediate response ×1.2–1.5 at fixed s); no clusters.
+
+Earlier (r=1e-3, 32 directions, 4 steps) results that still hold: PC1 explains 94–97% of log-curve variance; median pairwise correlation 0.94–0.98; `R(t,s)` is not a function of lag (rescaled curves differ ×1.6); bumps are not pinned to margin near-ties.
+
+## 4. Depth: what actually grows, and what does not
+
+Measured from the same A1 run (prompt perturbation, r=0.1, median over 20 directions and 300 positions):
+
+| layer | state length `|h|` | perturbation `|δh|` | `|δh|/|h|` |
+|---:|---:|---:|---:|
+| 2 | 43.6 | 4.1e-4 | 9.3e-6 |
+| 3 | 51.8 | 1.3e-3 | 2.5e-5 |
+| 7 | 76.0 | 1.3e-2 | 1.8e-4 |
+| 14 | 107.1 | 2.7e-2 | 2.5e-4 |
+| 21 | 199.4 | 6.6e-2 | 3.3e-4 |
+| 27 | 545.3 | 1.5e-1 | 2.7e-4 |
+
+- The state length grows ×12.5 from layer 2 to 27; the perturbation grows ×365. **The relative perturbation grows ×29.** The expansion is therefore not only a change of scale.
+- The perturbation is almost exactly parallel to the state: the stored cosine is 0.99999994, at float32 resolution, i.e. an angle of ≲0.02°. The small perpendicular part is what can change the logits.
+- Only the final block contracts relative size (×0.82), consistent with the final normalisation step.
+- **What the same-position tangent product says (and why it differs):** a fixed token position’s depth map has aligned gain ≈1.0–1.1 per block while the state scale grows ≈1.1–1.2 per block, so a *same-position* perturbation loses relative size (max normalised exponent −0.034). This is a component-level statement. The full prompt-perturbation response also spreads *across positions* through attention, and that cross-position path is what produces the ×365 growth. The same-position product cannot see it, so it must not be used to describe the response.
+- Practical consequence: report both numbers, and never claim “the depth expansion is only radial drift” for the full response.
 
 ## 5. Non-normality: composition answer
 
@@ -73,7 +96,7 @@ Full block, 6 tokens × 5 layers:
 - MLP alone (layer 27): `σ_max≈58–93`, `ρ≈17–24`, `κ≈1.8–3.9`.
 - Principal angles: median **83.6°**, IQR 78.7–87.0°, no layer trend; `|cos|` 5× random but `cos²≈0.012`.
 - Misalignment budget `(σ−1)cos²θ` with measured σ and angles predicts measured chained gains within ≲2×. The measured product is ~13 orders below the naive σ_max-chain and ~5 below the ρ-chain.
-- Interpretation: components amplify one step, but the full block tames them and the amplification direction rotates; the composition contracts. This is the quantitative answer to “components amplify, composition may not.”
+- Interpretation: within one block a component can amplify, but the block composition is strongly non-normal and the amplification direction rotates, so the same-position product contracts. Across the whole network the prompt perturbation still grows, because attention carries it to other positions (see section 4). “Components amplify, composition may not” holds for the fixed-position product, not for the full response.
 
 ## 6. D2 / RQA: conclusive negative, with a data-validity correction
 

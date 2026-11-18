@@ -1,0 +1,59 @@
+{
+ "layer27_linear": {
+  "shape_var_fraction": 0.9778527114285218,
+  "split_half_r": 0.9990947906582193,
+  "frac_tokens_Fsig_at_5pct": 1.0,
+  "Teff": 6.823928279855509,
+  "n_dirs_p_lt_0.05": 20,
+  "n_dirs_p_lt_0.01": 20
+ },
+ "layer27_saturated": {
+  "shape_var_fraction": 0.978460847444862,
+  "split_half_r": 0.9986184513418557,
+  "frac_tokens_Fsig_at_5pct": 1.0,
+  "n_dirs_p_lt_0.05": 20
+ },
+ "layer14_linear": {
+  "shape_var_fraction": 0.935480121197932,
+  "split_half_r": 0.9982102762711327
+ },
+ "layer21_linear": {
+  "shape_var_fraction": 0.9778692104922204,
+  "split_half_r": 0.9989423245855269
+ },
+ "pairwise_corr_logcurves_r0.1_L27": {
+  "with_gain": 0.9179405948233017,
+  "gain_removed": 0.9179405948233017
+ },
+ "log_response_decomposition_r0.1_L27": {
+  "gain(level) share": 0.2966761730999903,
+  "common token-profile share": 0.642315794465236,
+  "direction-specific shape share": 0.06100803243477354,
+  "rms_gain_log_units": 0.6113763972162891,
+  "rms_common_log_units": 0.8995838185981714,
+  "rms_dirshape_log_units": 0.27724316213560124
+ },
+ "dirshape_share_post95": 0.02675849287634556,
+ "shape_corr_with": {
+  "token_position": {
+   "median": 0.042827791784485515,
+   "n_sig": 16
+  },
+  "log_margin": {
+   "median": -0.010398935799752056,
+   "n_sig": 13
+  },
+  "log_baseline_norm": {
+   "median": -0.02005404577175412,
+   "n_sig": 7
+  }
+ },
+ "dev_PCs": {
+  "pc1_frac": 0.29000636289547804,
+  "pc2_frac": 0.24120124506969928,
+  "pc3_frac": 0.13133018522061554
+ },
+ "dev_pc1_vs_gain_spearman": -0.34285714285714286,
+ "dev_pc2_vs_gain_spearman": -0.18796992481203004,
+ "dev_pc3_vs_gain_spearman": 0.1894736842105263
+}

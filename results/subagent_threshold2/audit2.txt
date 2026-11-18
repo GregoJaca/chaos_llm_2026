@@ -1,0 +1,119 @@
+[A] w100: shipped r_c == r*|dm|^-1 formula, max rel err 5.821e-11 (over 71709 finite entries); 0.4% sentinels
+[B] w100: shipped pred_T == adversarial first-crossing: True
+[C] w100: directions where signed != adversarial pred, per radius row: [np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(1), np.int64(5), np.int64(9), np.int64(11), np.int64(8), np.int64(7)]
+[A] w200: shipped r_c == r*|dm|^-1 formula, max rel err 5.821e-11 (over 29936 finite entries); 0.2% sentinels
+[B] w200: shipped pred_T == adversarial first-crossing: True
+[C] w200: directions where signed != adversarial pred, per radius row: [np.int64(0), np.int64(1), np.int64(1), np.int64(0), np.int64(2)]
+[A] w500: shipped r_c == r*|dm|^-1 formula, max rel err 5.821e-11 (over 23950 finite entries); 0.2% sentinels
+[B] w500: shipped pred_T == adversarial first-crossing: True
+[C] w500: directions where signed != adversarial pred, per radius row: [np.int64(0), np.int64(1), np.int64(1), np.int64(3)]
+[A] cyber: shipped r_c == r*|dm|^-1 formula, max rel err 5.821e-11 (over 17981 finite entries); 0.1% sentinels
+[B] cyber: shipped pred_T == adversarial first-crossing: True
+[C] cyber: directions where signed != adversarial pred, per radius row: [np.int64(0), np.int64(0), np.int64(3)]
+[A] w100tiny: shipped r_c == r*|dm|^-1 formula, max rel err 7.276e-12 (over 74822 finite entries); 4.0% sentinels
+[B] w100tiny: shipped pred_T == adversarial first-crossing: True
+[C] w100tiny: directions where signed != adversarial pred, per radius row: [np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0), np.int64(0)]
+[D] w100_layers vs a1_ds_w100 (tiny radii): identical generated tokens: True; max |margins diff| = 0.00e+00
+[D] w100_layers radii: [1.0e-03 3.0e-03 1.0e-02 3.0e-02 1.0e-01 2.0e-01 3.0e-01 5.0e-01 7.0e-01 1.0e+00 1.5e+00 2.0e+00]
+[D] w100tiny radii:    [1.00e-06 2.15e-06 4.64e-06 1.00e-05 2.15e-05 4.64e-05 1.00e-04 2.15e-04 4.64e-04 1.00e-03 2.15e-03 4.64e-03 1.00e-02]
+[D] w100: min margin 0.0202 at t=123; top1=1817 top2=1128; radii [1.0e-03 3.0e-03 1.0e-02 3.0e-02 1.0e-01 2.0e-01 3.0e-01 5.0e-01 7.0e-01 1.0e+00 1.5e+00 2.0e+00]
+[D] w200: min margin 0.0031 at t=44; top1=13 top2=311; radii [0.01 0.03 0.1  0.2  0.3 ]
+[D] w500: min margin 0.0031 at t=44; top1=13 top2=311; radii [0.01 0.03 0.1  0.3 ]
+[D] cyber: min margin 0.0174 at t=39; top1=11513 top2=3853; radii [0.01 0.1  0.3 ]
+[E] fr_w100_large.npz: obs recomputed from gen_ids == stored obs: True
+    all batch reference rows identical: True
+    reference == w100_layers unperturbed gen_ids: True
+[E] fr_cyber.npz: obs recomputed from gen_ids == stored obs: True
+    all batch reference rows identical: True
+    reference == a1_cyber_w100 gen_ids: True
+[E] fr_childhood.npz: obs recomputed from gen_ids == stored obs: True
+    all batch reference rows identical: True
+[F] free_w100_large.json == free_w100_layers_large.json byte-identical: True
+    same obs: True, same pred: True, runs: results/a1_ds_w100 vs results/a1_ds_w100
+    free_w100_large obs rows: [[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1]]
+    free_w100_large pred rows: [[-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], [-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1]]
+[H] w100: per-direction r_* (signed, gain@r=0.001) and controlling step:
+    d10: r_*=   0.1276  t*= 16  m= 0.1200  dm@r0=-0.00094  destab
+    d14: r_*=   0.3302  t*=123  m= 0.0202  dm@r0=-0.00006  destab
+    d11: r_*=   0.3644  t*=123  m= 0.0202  dm@r0=-0.00006  destab
+    d 8: r_*=   0.4065  t*=123  m= 0.0202  dm@r0=-0.00005  destab
+    d19: r_*=   0.5562  t*=123  m= 0.0202  dm@r0=-0.00004  destab
+    d 1: r_*=   0.6605  t*=123  m= 0.0202  dm@r0=-0.00003  destab
+    d15: r_*=   0.7045  t*=123  m= 0.0202  dm@r0=-0.00003  destab
+    d 7: r_*=   0.7549  t*=123  m= 0.0202  dm@r0=-0.00003  destab
+    d17: r_*=   1.0700  t*=143  m= 0.0204  dm@r0=-0.00002  destab
+    d 9: r_*=   1.1264  t*=143  m= 0.0204  dm@r0=-0.00002  destab
+    d13: r_*=   1.2589  t*=143  m= 0.0204  dm@r0=-0.00002  destab
+    d12: r_*=   1.2739  t*= 14  m= 0.0875  dm@r0=-0.00007  destab
+    d 0: r_*=   1.4794  t*= 14  m= 0.0875  dm@r0=-0.00006  destab
+    d 6: r_*=   1.5097  t*=123  m= 0.0202  dm@r0=-0.00001  destab
+    d18: r_*=   1.5287  t*= 14  m= 0.0875  dm@r0=-0.00006  destab
+    d 2: r_*=   2.1838  t*= 14  m= 0.0875  dm@r0=-0.00004  destab
+    d16: r_*=   2.6976  t*= 14  m= 0.0875  dm@r0=-0.00003  destab
+    d 5: r_*=   3.0403  t*=  2  m= 0.0696  dm@r0=-0.00002  destab
+    d 4: r_*=   3.2757  t*= 14  m= 0.0875  dm@r0=-0.00003  destab
+    d 3: r_*=   3.6186  t*=116  m= 0.0690  dm@r0=-0.00002  destab
+[H] w200: per-direction r_* (signed, gain@r=0.01) and controlling step:
+    d10: r_*=   0.0450  t*= 55  m= 0.0089  dm@r0=-0.00197  destab
+    d 1: r_*=   0.0715  t*= 44  m= 0.0031  dm@r0=-0.00043  destab
+    d11: r_*=   0.1120  t*= 44  m= 0.0031  dm@r0=-0.00028  destab
+    d 3: r_*=   0.1120  t*= 44  m= 0.0031  dm@r0=-0.00028  destab
+    d 0: r_*=   0.1376  t*= 44  m= 0.0031  dm@r0=-0.00023  destab
+    d16: r_*=   0.1450  t*= 44  m= 0.0031  dm@r0=-0.00021  destab
+    d12: r_*=   0.1845  t*= 44  m= 0.0031  dm@r0=-0.00017  destab
+    d 2: r_*=   0.2137  t*= 44  m= 0.0031  dm@r0=-0.00014  destab
+    d17: r_*=   0.2538  t*= 44  m= 0.0031  dm@r0=-0.00012  destab
+    d 9: r_*=   0.2538  t*= 44  m= 0.0031  dm@r0=-0.00012  destab
+    d19: r_*=   0.2578  t*= 44  m= 0.0031  dm@r0=-0.00012  destab
+    d 6: r_*=   0.2953  t*= 44  m= 0.0031  dm@r0=-0.00010  destab
+    d 4: r_*=   0.3064  t*= 44  m= 0.0031  dm@r0=-0.00010  destab
+    d 5: r_*=   0.3268  t*=181  m= 0.0049  dm@r0=-0.00015  destab
+    d14: r_*=   0.3283  t*=183  m= 0.0047  dm@r0=-0.00014  destab
+    d 8: r_*=   0.3443  t*=181  m= 0.0049  dm@r0=-0.00014  destab
+    d15: r_*=   0.3961  t*= 44  m= 0.0031  dm@r0=-0.00008  destab
+    d 7: r_*=   0.6353  t*=216  m= 0.0055  dm@r0=-0.00009  destab
+    d18: r_*=   1.6737  t*= 14  m= 0.0875  dm@r0=-0.00052  destab
+    d13: r_*=   3.5421  t*=  2  m= 0.0696  dm@r0=-0.00020  destab
+[H] w500: per-direction r_* (signed, gain@r=0.01) and controlling step:
+    d10: r_*=   0.0450  t*= 55  m= 0.0089  dm@r0=-0.00197  destab
+    d 1: r_*=   0.0715  t*= 44  m= 0.0031  dm@r0=-0.00043  destab
+    d11: r_*=   0.1120  t*= 44  m= 0.0031  dm@r0=-0.00028  destab
+    d 3: r_*=   0.1120  t*= 44  m= 0.0031  dm@r0=-0.00028  destab
+    d 0: r_*=   0.1376  t*= 44  m= 0.0031  dm@r0=-0.00023  destab
+    d16: r_*=   0.1450  t*= 44  m= 0.0031  dm@r0=-0.00021  destab
+    d12: r_*=   0.1845  t*= 44  m= 0.0031  dm@r0=-0.00017  destab
+    d 2: r_*=   0.2137  t*= 44  m= 0.0031  dm@r0=-0.00014  destab
+    d17: r_*=   0.2538  t*= 44  m= 0.0031  dm@r0=-0.00012  destab
+    d 9: r_*=   0.2538  t*= 44  m= 0.0031  dm@r0=-0.00012  destab
+    d19: r_*=   0.2578  t*= 44  m= 0.0031  dm@r0=-0.00012  destab
+    d 6: r_*=   0.2953  t*= 44  m= 0.0031  dm@r0=-0.00010  destab
+    d 4: r_*=   0.3064  t*= 44  m= 0.0031  dm@r0=-0.00010  destab
+    d15: r_*=   0.3961  t*= 44  m= 0.0031  dm@r0=-0.00008  destab
+    d 7: r_*=   0.4883  t*=220  m= 0.0073  dm@r0=-0.00015  destab
+    d 8: r_*=   0.5413  t*= 44  m= 0.0031  dm@r0=-0.00006  destab
+    d 5: r_*=   0.7159  t*=242  m= 0.0112  dm@r0=-0.00016  destab
+    d13: r_*=   0.7827  t*=242  m= 0.0112  dm@r0=-0.00014  destab
+    d14: r_*=   0.8156  t*= 55  m= 0.0089  dm@r0=-0.00011  destab
+    d18: r_*=   0.9767  t*=220  m= 0.0073  dm@r0=-0.00007  destab
+[H] cyber: per-direction r_* (signed, gain@r=0.01) and controlling step:
+    d 1: r_*=   0.1287  t*= 39  m= 0.0174  dm@r0=-0.00135  destab
+    d13: r_*=   0.1736  t*= 39  m= 0.0174  dm@r0=-0.00100  destab
+    d19: r_*=   0.3489  t*= 39  m= 0.0174  dm@r0=-0.00050  destab
+    d 7: r_*=   0.4747  t*= 51  m= 0.0595  dm@r0=-0.00125  destab
+    d10: r_*=   0.5838  t*= 34  m= 0.0706  dm@r0=-0.00121  destab
+    d 9: r_*=   0.7662  t*= 17  m= 0.0181  dm@r0=-0.00024  destab
+    d 0: r_*=   0.9170  t*=  1  m= 0.0467  dm@r0=-0.00051  destab
+    d11: r_*=   1.1587  t*= 17  m= 0.0181  dm@r0=-0.00016  destab
+    d17: r_*=   1.1651  t*= 22  m= 0.0346  dm@r0=-0.00030  destab
+    d15: r_*=   1.2348  t*= 15  m= 0.0926  dm@r0=-0.00075  destab
+    d18: r_*=   1.3833  t*=  1  m= 0.0467  dm@r0=-0.00034  destab
+    d 4: r_*=   1.5324  t*= 17  m= 0.0181  dm@r0=-0.00012  destab
+    d 8: r_*=   1.7594  t*= 17  m= 0.0181  dm@r0=-0.00010  destab
+    d 3: r_*=   1.9794  t*= 17  m= 0.0181  dm@r0=-0.00009  destab
+    d 6: r_*=   2.3104  t*= 51  m= 0.0595  dm@r0=-0.00026  destab
+    d 2: r_*=   2.4818  t*= 22  m= 0.0346  dm@r0=-0.00014  destab
+    d12: r_*=   3.3469  t*= 15  m= 0.0926  dm@r0=-0.00028  destab
+    d14: r_*=   3.6234  t*= 22  m= 0.0346  dm@r0=-0.00010  destab
+    d16: r_*=   5.3107  t*= 79  m= 0.1864  dm@r0=-0.00035  destab
+    d 5: r_*=  10.9422  t*= 30  m= 0.4832  dm@r0=-0.00044  destab
+[G] childhood: no local teacher-forced npz; shipped pred used as-is (same adversarial convention as all other shipped pred_T).

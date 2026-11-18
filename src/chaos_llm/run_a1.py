@@ -34,6 +34,8 @@ def main():
     ap.add_argument("--seed", type=int, default=69)
     ap.add_argument("--batch-dirs", type=int, default=4)
     ap.add_argument("--hard-window", action="store_true")
+    ap.add_argument("--fixed-tokens-from", default="",
+                    help="npz file (or dir containing a1.npz) whose prompt_ids/gen_ids are reused")
     ap.add_argument("--layers", default="0,7,14,21,27")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -56,14 +58,26 @@ def main():
         base_prompt = model.get_input_embeddings()(pids)[0]
 
     t0 = time.time()
-    # baseline: two identical rows in one batch, verify
-    Eref = base_prompt[None].expand(2, -1, -1)
-    gen = generate(model, Eref, args.max_new_tokens)
-    assert torch.equal(gen[0], gen[1]), "r=0 duplicate rows differ"
-    gen_ids = gen[0:1]
-    T = gen_ids.shape[1]
-    del Eref, gen
-    torch.cuda.empty_cache()
+    if args.fixed_tokens_from:
+        fpath = args.fixed_tokens_from
+        if os.path.isdir(fpath):
+            fpath = os.path.join(fpath, "a1.npz")
+        fd = np.load(fpath, allow_pickle=True)
+        pids = torch.as_tensor(fd["prompt_ids"], device="cuda", dtype=torch.long)[None]
+        P = int(pids.shape[1])
+        gen_ids = torch.as_tensor(fd["gen_ids"], device="cuda", dtype=torch.long)[None, :args.max_new_tokens]
+        T = int(gen_ids.shape[1])
+        with torch.inference_mode():
+            base_prompt = model.get_input_embeddings()(pids)[0]
+    else:
+        # baseline: two identical rows in one batch, verify
+        Eref = base_prompt[None].expand(2, -1, -1)
+        gen = generate(model, Eref, args.max_new_tokens)
+        assert torch.equal(gen[0], gen[1]), "r=0 duplicate rows differ"
+        gen_ids = gen[0:1]
+        T = gen_ids.shape[1]
+        del Eref, gen
+        torch.cuda.empty_cache()
 
     Efull = full_embeddings(model, pids, gen_ids)
     am = hard_window_mask(Efull.shape[1], args.window) if args.hard_window else torch.ones((1, Efull.shape[1]), dtype=torch.long, device="cuda")
@@ -134,6 +148,7 @@ def main():
     meta = dict(model=args.model, model_path=model_path, dtype="float32", window=args.window,
                 prompt=text, prompt_len=int(P), max_new_tokens=int(T), num_directions=K,
                 radii=radii, layers=layers, seed=args.seed,
+                fixed_tokens_from=args.fixed_tokens_from or None,
                 baseline_duplicate_identical=True, torch=torch.__version__,
                 transformers=__import__("transformers").__version__, elapsed_sec=round(time.time() - t0, 1))
     np.savez(os.path.join(args.out, "a1.npz"),

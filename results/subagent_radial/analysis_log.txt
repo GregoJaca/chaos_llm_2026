@@ -1,0 +1,51 @@
+VALIDATION
+  margins h27 IS the a1 baseline: ||h27|| matches norm_h0 to 1.3e-07 (median rel)
+  stored cos matches cos(h+dh, h) recomputed from stored vectors: max |diff| = 2.2e-07
+  response vectors at r=1e-3 vs r=1e-2: median cos = 0.906  -> small-radius vectors are real signal, not noise
+
+ANGLE OF THE NUDGE vs THE STATE (deepest saved layer, exact vectors)
+  r=0.001   angle(dh,h) median 86.1 deg (q10 80.9, q90 89.2); radial share of length 0.068
+  r=0.01    angle(dh,h) median 86.4 deg (q10 80.9, q90 89.4); radial share of length 0.063
+  r=0.1     angle(dh,h) median 86.3 deg (q10 80.8, q90 89.4); radial share of length 0.065
+  r=0.3     angle(dh,h) median 86.2 deg (q10 80.9, q90 89.3); radial share of length 0.066
+  r=1       angle(dh,h) median 86.3 deg (q10 81.1, q90 89.2); radial share of length 0.065
+  r=2       angle(dh,h) median 86.1 deg (q10 80.8, q90 89.3); radial share of length 0.069
+  reference: a direction-less random vector in 1536-D would sit at 88.54 deg with radial share 0.026
+
+STATE LENGTH
+  ||h|| median by layer: [  1.21  35.4   43.56  51.8   76.02 107.06 199.36 545.32]
+  block-0 gain x29.3; total gain x452
+
+RELATIVE GAIN PER BAND (nudge growth divided by state-length growth, per token)
+  r=0.01 L3->L7: median x5.644 (q10 0.977 q90 18.245) fraction of tokens below 1: 0.12
+  r=0.01 L7->L14: median x1.455 (q10 1.050 q90 2.409) fraction of tokens below 1: 0.08
+  r=0.01 L14->L21: median x1.332 (q10 0.955 q90 1.734) fraction of tokens below 1: 0.13
+  r=0.01 L21->L27: median x0.840 (q10 0.710 q90 1.107) fraction of tokens below 1: 0.84
+
+FP32 FLOOR AT r=1e-3 (per-entry comparison with 0.1 x the r=1e-2 response)
+  L1: rank-corr 0.991; median inflation x1.07; additive floor ~4.0e-06
+  L2: rank-corr 0.997; median inflation x1.21; additive floor ~4.2e-06
+  L3: rank-corr 0.988; median inflation x1.58; additive floor ~8.1e-06
+  L7: rank-corr 0.997; median inflation x1.15; additive floor ~2.2e-05
+  L14: rank-corr 0.993; median inflation x1.13; additive floor ~3.9e-05
+  L21: rank-corr 0.997; median inflation x1.12; additive floor ~7.5e-05
+  L27: rank-corr 0.997; median inflation x1.12; additive floor ~1.7e-04
+
+MARGIN-CHANGE CORRELATIONS (deepest saved layer, dirs 0-2 pooled)
+  r=0.01 : spearman |dm|~tangential 0.643 | ~radial 0.482 | effective logit gain |dm|/(b/||h||) median 4.14 (q10 0.76 q90 11.32)
+  r=0.1  : spearman |dm|~tangential 0.640 | ~radial 0.462 | effective logit gain |dm|/(b/||h||) median 4.17 (q10 0.72 q90 11.37)
+  r=0.3  : spearman |dm|~tangential 0.614 | ~radial 0.437 | effective logit gain |dm|/(b/||h||) median 4.23 (q10 0.78 q90 11.56)
+  r=1    : spearman |dm|~tangential 0.577 | ~radial 0.460 | effective logit gain |dm|/(b/||h||) median 4.31 (q10 0.82 q90 13.26)
+  r=2    : spearman |dm|~tangential 0.594 | ~radial 0.448 | effective logit gain |dm|/(b/||h||) median 4.35 (q10 0.75 q90 13.90)
+  |dm| vs tangential b across radii 3e-3..2 (medians): log-log slope 1.027
+
+JVP DEPTH SPECTRUM (the project's two numbers, recomputed)
+  absolute: sum of positive top-8 exponents h_depth = [1.073 1.358 0.644 0.731 0.87  1.006 0.944 0.948] (mean 0.947 nats/layer)
+  relative: sum after removing per-layer state-length growth = [-0.667 -0.42  -1.146 -1.065 -0.954 -0.797 -0.852 -0.82 ] (median -0.836 nats/layer)
+  maximum relative exponent over all tokens/layers/directions: -0.0385  (project docs cite -0.034; same conclusion)
+
+FSLE DEPTH CURVES (old ensemble runs) + state-length normalization
+  r=0.0001: absolute x205.9 total (peak x244 at layer 9); relative: x6.61 at layer 2 -> x0.456 at layer 27
+  r=0.001: absolute x203.0 total (peak x251 at layer 7); relative: x6.71 at layer 2 -> x0.449 at layer 27
+  r=0.01: absolute x206.1 total (peak x251 at layer 8); relative: x6.76 at layer 2 -> x0.456 at layer 27
+  r=0.1: absolute x215.0 total (peak x262 at layer 8); relative: x6.72 at layer 2 -> x0.476 at layer 27
