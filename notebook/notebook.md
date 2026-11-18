@@ -343,27 +343,48 @@ This is the closest legitimate analogue of a Lyapunov exponent here: a **finite-
 rate with a stated horizon and reference point. It is not an asymptotic exponent, because the map
 changes every step (Part 3).
 
-### N5. What a "window flush" is
+### N5. Window flush: an exact, predictive law
 
-![window flush](figures/window_flush.png)
+![window flush scaling](figures/window_flush_scaling.png)
 
-**Data.** Prompt perturbation, $r=0.1$, 20 directions, $W=100$, $P=65$; response read at layers
-1, 2, 3 and 27.
+**Data.** Prompt perturbation, $r=0.1$, teacher-forced on a fixed 500-token sequence; prompt length
+$P=65$; windows $W=100,150,200,300,500$; 4 directions (and a second run with 20 directions at
+$W=100$). $t^*_\ell$ is the first generated token at which the response at layer $\ell$ is
+**exactly** zero.
 
-**Axes.** $x$: $t$. $y$: $a(t,\ell)=\|\delta h_{t,\ell}\|_2$ (log). Panel (b) zooms on $t\in[80,120]$.
+**Panel (a).** $x$: predicted $t^*_1=p_{\mathrm{last}}+(W-P)$, where $p_{\mathrm{last}}$ is the
+largest prompt position that carries a non-zero perturbation (computed from the stored subspace
+indices). $y$: measured $t^*_1$. Five windows plus the 20-direction reference.
 
-**Reading.** The perturbation is stored in the key/value cache of the **prompt** tokens. As the
-generation advances, those prompt tokens leave the sliding window. When the last perturbed prompt
-token leaves the receptive field of a layer, that layer's response becomes **exactly zero**:
-layer 1 at $t=92$, layer 2 at $t=191$, layer 3 at $t=290$. The spacing is $W-1=99$: once layer 1
-has lost the perturbation, layer 2 can only see layer-1 states from earlier positions, so it
-survives one more window before it too goes to zero. Deeper layers (7, 14, 21, 27) keep a
-non-zero response for the whole 300-token run because they also carry the perturbation through
-the generated positions themselves.
+**Panel (b).** $x$: $\ell-1$; $y$: $(t^*_\ell-t^*_1)/(W-1)$ for every layer and window. All points
+collapse onto $y=x$.
 
-So a "flush" is not a numerical artifact: it is the moment when a layer stops being able to see
-any perturbed token. It also explains why the shallow-layer curves in A4 collapse while deep
-layers decay more slowly.
+**Panel (c).** The response curves at $W=100$ (20 directions); the drops to $10^{-9}$ are the
+numerical zero.
+
+**The law, verified exactly:**
+$$t^*_1=p_{\mathrm{last}}+(W-P),\qquad t^*_\ell=t^*_1+(\ell-1)(W-1).$$
+Measured vs predicted: 78/78, 128/128, 178/178, 278/278, 478/478 for the four-direction set, and
+92/92 for the twenty-direction set. The layer spacing is exactly $W-1=99$ (100), 149 (150),
+199 (200).
+
+**Why.** A perturbed prompt token at position $p$ is visible to a query at position $q$ only while
+$p\ge q-W+1$. The response at layer 1 therefore dies at the first $q$ where the last perturbed
+prompt token is out of reach, i.e. $t=q-P=p_{\mathrm{last}}+W-P$. Layer $\ell$ is fed by layer
+$\ell-1$ states; the last of those that still carries the perturbation sits at $t^*_{\ell-1}$ and
+remains visible to layer $\ell$ for $W-1$ more tokens. Hence the cascade with spacing $W-1$.
+
+**What this means.** The "flush" is not a numerical artifact and not a gradual dilution only: the
+response is non-zero while at least one perturbed token is reachable, and **exactly zero**
+afterwards. It also explains why the death time changes when the direction set changes: the
+simplex directions perturb different prompt positions, so $p_{\mathrm{last}}$ differs (57 for the
+20-direction set, 43 for the 4-direction set).
+
+![window flush example](figures/window_flush.png)
+
+The earlier single-window picture, for reference: layers 1, 2, 3 die at 92, 191, 290 (spacing 99),
+while layers 7+ keep a non-zero response for the whole run because they also carry the
+perturbation through the generated positions themselves.
 
 ---
 
