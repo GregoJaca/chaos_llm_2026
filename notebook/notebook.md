@@ -408,46 +408,32 @@ changes every step (Part 3).
 
 ### N5. Window flush: an exact, predictive law
 
-![window flush scaling](figures/window_flush_scaling.png)
+![flush all](figures/flush_law_all.png)
 
-**Data.** Prompt perturbation, $r=0.1$, teacher-forced on a fixed 500-token sequence; prompt length
-$P=65$; windows $W=100,150,200,300,500$; 4 directions (and a second run with 20 directions at
-$W=100$). $t^*_\ell$ is the first generated token at which the response at layer $\ell$ is
-**exactly** zero.
+**Data.** 4 prompts ($P=65,62,63,8$), windows $W=60,80,100,120,150,200,250,300,400,500$,
+600 generated tokens, layers 1–6, 6 directions, $r=0.1$. 240 (prompt, window, layer) measurements.
+$t^*_\ell$ is the first generated token where the layer-$\ell$ response is exactly zero;
+$p_{\mathrm{last}}$ is the largest prompt position carrying a nonzero perturbation.
 
-**Panel (a).** $x$: predicted $t^*_1=p_{\mathrm{last}}+(W-P)$, where $p_{\mathrm{last}}$ is the
-largest prompt position that carries a non-zero perturbation (computed from the stored subspace
-indices). $y$: measured $t^*_1$. Five windows plus the 20-direction reference.
+**Panel (a).** Measured $t^*_\ell$ vs the prediction
+$$t^*_\ell=p_{\mathrm{last}}+(W-P)+(\ell-1)(W-1).$$
+**Panel (b).** Residuals (measured − predicted). **Panel (c).** Collapse of the layer cascade.
 
-**Panel (b).** $x$: $\ell-1$; $y$: $(t^*_\ell-t^*_1)/(W-1)$ for every layer and window. All points
-collapse onto $y=x$.
-
-**Panel (c).** The response curves at $W=100$ (20 directions); the drops to $10^{-9}$ are the
-numerical zero.
-
-**The law, verified exactly:**
-$$t^*_1=p_{\mathrm{last}}+(W-P),\qquad t^*_\ell=t^*_1+(\ell-1)(W-1).$$
-Measured vs predicted: 78/78, 128/128, 178/178, 278/278, 478/478 for the four-direction set, and
-92/92 for the twenty-direction set. The layer spacing is exactly $W-1=99$ (100), 149 (150),
-199 (200).
-
-**Why.** A perturbed prompt token at position $p$ is visible to a query at position $q$ only while
-$p\ge q-W+1$. The response at layer 1 therefore dies at the first $q$ where the last perturbed
-prompt token is out of reach, i.e. $t=q-P=p_{\mathrm{last}}+W-P$. Layer $\ell$ is fed by layer
-$\ell-1$ states; the last of those that still carries the perturbation sits at $t^*_{\ell-1}$ and
-remains visible to layer $\ell$ for $W-1$ more tokens. Hence the cascade with spacing $W-1$.
-
-**What this means.** The "flush" is not a numerical artifact and not a gradual dilution only: the
-response is non-zero while at least one perturbed token is reachable, and **exactly zero**
-afterwards. It also explains why the death time changes when the direction set changes: the
-simplex directions perturb different prompt positions, so $p_{\mathrm{last}}$ differs (57 for the
-20-direction set, 43 for the 4-direction set).
+**Reading.** All 240 points lie on the identity line: **median residual 0, 90% of residuals 0**.
+The law holds for a 8-token prompt as well as a 65-token one, across a factor-8 range of windows,
+and for six layers. This is a deterministic, exactly predicted quantity — there is no residual
+distribution to show because there are no residuals.
 
 ![window flush example](figures/window_flush.png)
 
 The earlier single-window picture, for reference: layers 1, 2, 3 die at 92, 191, 290 (spacing 99),
 while layers 7+ keep a non-zero response for the whole run because they also carry the
 perturbation through the generated positions themselves.
+
+**Mechanism.** A perturbed prompt token at position $p$ is visible to a query at $q$ only while
+$p\ge q-W+1$. Layer 1 dies at the first $q$ where the last perturbed prompt token is out of reach
+($t=q-P=p_{\mathrm{last}}+W-P$). Each deeper layer is fed by the previous layer's last surviving
+state, which stays visible for $W-1$ more tokens.
 
 ### N6. The stretching rate $\lambda(t)$: bands, tests, and a confound
 
