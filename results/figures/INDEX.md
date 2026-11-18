@@ -123,3 +123,28 @@ Subagent report: `results/subagent_threshold/REPORT.md`.
 - `results/subagent_state/REPORT.md`
 - `results/subagent_nonnorm/REPORT.md`
 - `results/subagent_d2/REPORT.md`
+
+## Round 3 (new, after user feedback)
+
+- **a1_window_fixed_inputs.png** — same prompt AND same tokens, five windows; each curve is bit-identical to the no-clipping control until `window - prompt_len`, then departs; panel (c) shows the law on two prompts (65- and 62-token prompts): 35/85/135/235 and 38/138.
+- **a1_window_natural_experiment.png** — windows 100/200/500 with their own generated text: the response ratio is exactly 1.000 until the clip step; generated text splits 4-6 tokens later; departure-step panel.
+- **a1_window_regimes.png** — four windows, separate y axis per panel, clip steps marked, nothing clipped.
+- **tf_is_exact_until_flip.png** — one teacher-forced pass vs the free run: 29/29 flips exact, 0 false positives, 0 misses in 140 cases; token timeline shows the shared first flip.
+- **state_current_field.png** — single-token kick: (s,t) field, decay vs lag, immediate size x13 across positions, linear in r (slope 0.99-1.00).
+- **state_current_depth.png** — kick amplification with depth; relative response; which directions change a token; latency 107 tokens (kick at s=16 acts at t=123).
+- **state_kick_latent_validated.png** — autoregressive validation: 5/5 exact, same directions, same steps; cumulative agreement stays 1.0 until t=123.
+- **flip_is_a_close_call.png** — two kinds of flips: 17 immediate at the response peak, 10 delayed at t=116/123/143 when the response has faded.
+- **directions_are_not_equivalent.png** — signed margin change at the same close call: 7 directions shrink the gap, 13 widen it; flips are stratified (3/20 at r=0.5, from the hot trio).
+- **depth_angle_test.png** — the perturbation is 86-87 degrees from the state (nearly perpendicular), so "radial drift" was wrong; the perpendicular part dominates.
+- **depth_plain_language.png** — plain-language schematic: state length vs direction change, and why the output stage is length-blind.
+- **threshold_explainer.png** — what is predicted, built from real data (gap trace, shrink, overtake line, worked example).
+- **threshold_rule_scorecard_clean.png** — signed rule vs sign-blind rule on the same 320 direction-runs (99.4% vs 89.1%).
+- **threshold_scorecard_full.png** — predicted vs observed word for all 75 flips + outcome strips for 380 runs.
+- **threshold_value_survival.png** — value: 0/75 flips ever re-sync, 2.7% agreement afterwards; surviving fraction = first-flip step / 300.
+- **threshold_danger_ladder.png** — replaces the control map: one row per direction, threshold bar, controlling word, sign-blind correction.
+- **threshold_when_it_breaks.png** — noise floor / linear window / superlinear regimes, and what that does to extrapolation.
+- **threshold_three_cases.png** — three individual directions (fragile, near-tie, resistant).
+- **d2_artifact_gallery.png** — mechanisms that produce "good-looking" correlation sums on non-chaotic data (loops, duplicates, cdist self-pairs, linear eps grid).
+- **d2_delay_embedding.png** — m=2 delay embeddings look textbook but match white noise.
+- **d2_shape_vs_N.png** — shape vs N and eps normalization.
+- **directions_gain_consistency.png** — gain is a stable property of a direction across different continuations.

@@ -1,97 +1,105 @@
 # Findings, procedure, and transfer to other LLMs
 
-This is the practical knowledge from the first DeepSeek-1.5B pass. Keep it with `DECISIONS.md` and `RESULTS_SUMMARY.md`.
+Practical knowledge from the DeepSeek-1.5B pass. Keep with `DECISIONS.md` and `RESULTS_SUMMARY.md`.
+Every claim below has a figure in `results/figures/` (see `INDEX.md`).
 
 ## 1. What worked
 
-1. **FP32 + in-batch `r=0`.** Every reliable result came from this. The old batch-1 baseline vs batch-N perturbed data was contaminated; the zero-perturbation control catches it.
-2. **Teacher forcing for the smooth response.** One baseline forward + one forward per direction gives `δh_t`, `δm_t`, and thresholds without generation. This is the workhorse.
-3. **Margins + signed local threshold.** `m_t`, `δm_t(u)`, `r_c⁻=m_t·r/max(−δm_t,0)`, `T=min{t:r≥r_c⁻}` predicted free-run flips across windows 100/200/500 and two prompts. The symmetric `|δm|` version is adversarial and over-predicts; use the signed version.
-4. **Scaling collapse by `r`.** For `r≤0.3`, `δh=r·G(t,ℓ)` with `α=1.00±0.02` and collapse CV 2.0–3.3%; `√r` does not collapse. No time-dependent exponent is needed. Deviations at `r=1e-3` are FP32 floor; at `r≥0.5` the response is mildly superlinear.
-5. **The regimes are window-driven.** Shallow layers go bitwise zero at t*=92/191/290 (window−1); deep layers rise to t≈17, surge pre-flush, then decay. w100 jumps ×1.73 at t=35 and w200 ×1.51 at t=135, with wider windows as byte-identical controls. Depth gain `A(ℓ)~ℓ^0.64` (×12 from L1 to L27), front-loaded.
-6. **Directions: same shape, scalar gain.** Gains span ×1.13–18.97 at L27 (dir10 strongest), depth-stable; one mode explains 72% of log-variance, but the response is not rank-1 (direction-specific token oscillations).
-7. **Margin spectrum vs window.** Window 50 has no fragile steps; 100 has one at t=123; 200/500 have several (t=44/55/…) and many margins <0.05. This is a real attention effect.
-8. **Scale-normalized depth contraction.** Absolute depth growth is residual-stream scale drift (×30 block 0, ×1.05–1.18/layer). Normalized by the state scale, every block contracts; max relative exponent −0.034. FSLE ×206 absolute becomes ×0.46 relative; h_depth is gauge drift. Report absolute and relative.
-9. **Non-normality / rotation.** `σ_max>1` while the product contracts; median rotation 83.6°; misalignment budget `(σ−1)cos²θ` predicts chained gains within ≲2×. This is the quantitative composition answer.
-10. **Shuffled control for D2.** The low last-layer D2 (~5–7) is static geometry: time-shuffled data gives the same D2. Strong negative.
-11. **State direction equivalence.** PC1 explains 94–97% of log-curve variance; median direction correlation 0.94–0.98; no clusters/special directions. `R(t,s)` is not a function of lag (collapse fails ×1.6). Layer-14 injection is 9–36× weaker and plateaus at ≈2.9e-4.
-12. **Signed threshold limit.** Predictions 19–20/20 at `r≤0.1`, 17–18/20 at `r=0.3`, 15/20 at `r=0.5`, 9–12/20 at `r=1–2`; gain grows ~1.5× by `r=2`, so do not extrapolate beyond `r≈0.3`.
+1. **FP32 + in-batch `r=0`.** Every reliable result came from this. Two identical `r=0` rows in the same batch must be bit-identical; if not, the run is invalid.
+2. **Teacher forcing is an exact simulator up to the first flip.** One pass on the perturbed prompt, fed the unperturbed token sequence, reproduces (i) whether the free run flips, (ii) the exact step, (iii) the exact new token. Measured: 29/29 flips exact with 0 false positives and 0 misses in 140 cases. After the flip the prefixes differ, so teacher forcing says nothing about later tokens. This makes generation unnecessary for response/threshold work.
+3. **Signed local threshold.** `m_t` (top1−top2 gap), `δm_t(u)`; a flip needs `δm_t ≤ −m_t`; hence `r_c⁻(t,u)=m_t·r/max(−δm_t,0)` and `T=min{t:r≥r_c⁻}`. **Measured at the radius being predicted** it is 318/320 (99.4%) correct over 19 experiments and 3 prompts (57/59 exact words, 0 false alarms, 0 misses). The sign-blind `|δm|` variant gives 21 false alarms on the same runs (89.1%) — that variant caused the earlier "many outliers" impression.
+4. **The prediction is a survival forecast.** A flip is a point of no return: 0/75 flipped runs ever re-synchronise; mean token agreement afterwards is 2.7%; surviving fraction of the answer = first-flip step / 300. The 305 no-flip runs are 100% identical. So one cheap pass tells you whether the answer survives and how much of it.
+5. **Linearity in `r`.** For `r ≤ 0.3`, `δh = r·G(t,ℓ)` (α=1.00±0.02, collapse CV 2–3%), and the same holds for single-token kicks (slope 0.99–1.00). Below `r≈3e-4` the FP32 floor dominates; above `r≈0.5` the response is superlinear and tie-dependent, so *extrapolating* a small-`r` threshold fails (16/20 at r=0.5, 6/20 at 1, 3/20 at 2).
+6. **The window sets the shape, provably.** With one fixed token sequence and five windows (100/150/200/300/1000), each curve is bit-identical to the no-clipping control until exactly `t = window − prompt_len`, then departs: 35/85/135/235 for a 65-token prompt, 38/138 for a 62-token prompt. The generated text splits 4–6 tokens later. This is the cleanest causal control in the project.
+7. **Two kinds of flips.** 17/27 observed flips happen at the response peak; 10/27 happen at a later close call (t=116/123/143) when the response has already fallen below 30% of its peak. A perturbation can sit latent for ~100 tokens.
+8. **Single-token (current-state) kicks.** Linear in `r`; immediate size varies ×13 with position; half-life 1–7 tokens; a kick at the near-tie position s=16 changes a token 107 tokens later (validated autoregressively 4/4, plus 1/1 at s=50); only 4/24 directions at s=16 and 1/24 at s=50 change any token at r=0.1; a layer-14 kick is 9–36× weaker at the output than the same kick at the input.
+9. **Directions are NOT equivalent.** Gains span ×7–12 at r=1e-3 and are stable across different continuations (rank corr 0.80–0.98). Shape differs beyond gain (6% of log-variance; split-half r=0.999). At the same close call, the signed margin change has opposite signs for different directions (7 shrink, 13 widen; only one crosses the flip line), so flips are stratified: 3/20 at r=0.5, all from the "hot" directions 10–12. No discrete clusters (k=1 wins, P(k>1)=0.10–0.18).
+10. **Non-normality / rotation.** `σ_max>1` within a block while the same-position product contracts; median rotation 83.6°; the misalignment budget `(σ−1)cos²θ` predicts chained gains within ≲2×. This is a component-level statement; see the correction below.
+11. **D2 shape artifacts are now explained.** The user's memory of "different, nicer" correlation-sum shapes is reproduced by five mechanisms: repetition loops, first-layer exact duplicates, m=2 delay embedding (fill dimension), first-PC saturation, and `cdist` self-pairs / linear ε grids. The estimator recovers Hénon (1.157) and Lorenz (1.984) cleanly, so the absence of scaling in LLM states is a property of the data.
+12. **16 fresh 1000-token non-loop trajectories** were collected (2 batches, greedy, FP32, window 4096). The repetition screen flags none as loops (worst relative distance 0.135).
 
 ## 2. What did not work / was misleading
 
-1. **Averaging first-flip time `T`.** It is a staircase pinned by near-ties. Use survival/hazard/threshold distributions.
-2. **Prompt perturbations below ~1e-4.** FP32/RMSNorm ill-conditioning creates a response floor; the result stops scaling. The usable range is roughly `1e-3…0.1`; `r=1–2` is large but still coherent at short horizons.
-3. **Depth-axis FSLE.** It is `lnρ/1` and flat in `r`: everything happens in layer 1. The depth spectrum is more informative than the FSLE.
-4. **Depth expansion as “chaos.”** The absolute top exponents are positive, but this is residual-stream scale drift: normalize by the state norm and every block contracts (max relative exponent −0.034); the final RMSNorm projects it out. The depth FSLE ×206 absolute is ×0.46 relative. Do not sell absolute depth growth as sustained chaos.
-5. **D2/RQA as evidence of chaos.** At N=2–5k there is no D2 plateau; small-ε slopes exceed finite-N ceilings; Theiler windows do not help. Three of five long trajectories are near-exact repetition loops (P=53/74/69), so their low D2 is a degeneration artifact. Raw vs time-shuffled D2 equality is a **tautology** (shuffling preserves the point cloud). RQA DET is dominated by temporal correlation/loop copies. Strong negative.
-6. **One D2 lead, not a result.** The non-loop `launch` trajectory shows a kNN predictability gap +0.33 over phase/MIAAFT surrogates and +0.15 over its linear ceiling, but no continuation sharpness and only one trajectory. Treat as a lead; replicate on more non-loop prompts.
-7. **Naive `⟨T⟩(r)` scaling law.** The plan’s log-vs-power-law test is not the right observable; measure margins and thresholds instead.
-8. **600-token A1 in one batch.** Full-vocab FP32 logits + all layers OOM on T4. 500 tokens works with `batch-dirs=1` and cache clearing; otherwise reduce tokens or directions.
-9. **Old `launch_sep`/`launch_aug` data for sensitivity.** Dense Gaussian per-coordinate perturbation, no seed, `repetition_penalty=1.1`; not comparable to simplex `r`. Use only for qualitative RP/dimension.
-10. **Phi bf16 token-level runs.** `r=0` diverges due to bf16 batch shape; the data is invalid.
-11. **Partial `r=0` control.** If there is no `r=0` row in the same batch, do not trust the run.
+1. **"The depth expansion is radial scale drift; every block contracts."** Wrong as stated. The state's length grows ×452, but the perturbation is **86–87° from the state** (nearly perpendicular, not radial) and its relative size grows ×10 through the depth, shrinking only in the final band (×0.84). The same-position tangent product does contract, but it cannot see attention carrying the perturbation across positions. The "cosine ≈ 1" in `a1.npz` is a float32 floor artifact.
+2. **Averaging first-flip time `T`.** It is a staircase pinned by near-ties. Use thresholds, survival curves and per-direction outcomes.
+3. **Prompt perturbations below ~1e-4.** FP32/RMSNorm ill-conditioning creates a floor; the response stops scaling and `r_c` inflates as noise/`r`.
+4. **The sign-blind `|δm|` threshold** (the version shipped in the first pass). It over-predicts and produced most of the apparent prediction errors.
+5. **Extrapolating a small-`r` threshold to large `r`.** The gain grows ~1.55× by r=2 and becomes tie-dependent. Re-measure at the radius of interest.
+6. **Depth-axis FSLE.** `lnρ/1`, flat in `r`: all growth is in layer 1. Use the depth spectrum instead.
+7. **D2/RQA as evidence of chaos.** No valid scaling region exists (valid interval 0.00–0.04 decades wide); every quoted D2 is a window/tube/fill-dimension/duplicate artifact. Also, "raw ≈ time-shuffled D2" is a **tautology** for point-cloud statistics.
+8. **"Directions are mostly equivalent."** True only for the shared backbone (token profile of ||δh||, corr 0.89–0.92) and for random current-state directions (≤2.1× gain spread). Prompt directions differ in gain, shape, and sign.
+9. **Naive `⟨T⟩(r)` scaling law.** Wrong observable; use margins/thresholds.
+10. **600-token A1 in one batch.** OOM on a 15 GB T4; 500 tokens works with `batch-dirs=1` and cache clearing. Batch >2 at 400 tokens also OOMs.
+11. **Old `launch_sep`/`launch_aug` data.** Dense per-coordinate Gaussian, no seed, `repetition_penalty=1.1`: not comparable to simplex `r`.
+12. **Phi bf16 token-level runs.** `r=0` diverges; invalid.
+13. **Partial `r=0` control.** If no `r=0` row exists in the same batch, do not trust the run.
 
 ## 3. Procedure for a new LLM
 
 ### Calibration (cheap, 10–20 min)
-1. Load the model in **FP32** if it fits; otherwise choose one precision and never mix. For a T4, ~1.5B FP32 fits; ~3.8B does not.
-2. Pick 2–3 prompts and a window; generate a baseline with **two identical `r=0` rows in one batch**; verify bit-identical.
-3. Compute the baseline `m_t` for 300–600 tokens; record the smallest margins and their steps. This tells you the useful `r` scale.
-4. Choose `r` grid from the numerical floor to ~10× the smallest margin. For DeepSeek-1.5B, useful `r≈1e-3…0.3`; start there.
-5. Test one `r` above the expected threshold and inspect generated text (coherence, repetition). Do not assume large `r` is garbage; DeepSeek stays coherent at r=2/300 tokens.
+1. Load in **FP32** if it fits; otherwise pick one precision and never mix.
+2. Generate a baseline with **two identical `r=0` rows in one batch**; require bit-identical output.
+3. Compute `m_t` for 300–600 tokens; record the smallest gaps and their steps: this sets the useful `r` scale.
+4. Choose `r` from the FP32 floor to ~10× the smallest gap. For DeepSeek-1.5B: `1e-3…0.3` is the clean window.
+5. Test one `r` above threshold and read the text. Large `r` is not automatically garbage.
 
-### A1 (response/scaling)
-1. Use 20 directions (simplex or random unit), 8–12 `r` values, layers `1,2,3,7,14,21,27` (and 0 for embedding).
-2. Save norms/cosines, `m_t`, `dm`, `r_c`, `pred_T`. Full vectors only for 3 directions.
-3. Fit `log δh` vs `log r` in the linear range; report `α(t,ℓ)`. Try `δh/r` and `δh/r^α` collapse.
-4. Plot 3 individual directions + median/IQR; raw and normalized side by side; label the separating parameter (`r`, layer, time).
+### A1 (prompt response)
+1. 20 directions, 8–12 `r` values, layers `0,1,2,3,7,14,21,27`.
+2. Save `margins`, `dm`, `r_c`, `pred_T`, `dh_norm`, `cos`, and full vectors for 3 directions.
+3. Check `δh/r` collapse; fit α only in the clean range.
+4. **Window experiment:** generate one token sequence with a large window, then re-run the same sequence with 4–5 smaller windows. Departure must occur at `t = window − prompt_len`. This is the strongest control and costs one forward per window.
 
-### Threshold/flux tube
-1. Compute `r_c(t,u)`; `r_*(u)=min_t r_c`; `T(r,u)=min{t:r≥r_c}`.
-2. Validate with free-run at 2–3 `r` (batch includes `r=0`); compare predicted vs observed flips.
-3. Report `r_*` distribution, controlling near-tie, and a confusion matrix; avoid direction-index-only plots.
-4. Repeat for 2–3 windows; the margin spectrum changes, so the threshold changes.
+### Threshold
+1. Compute `r_c⁻`; `r_* = min_t r_c⁻`; `T = min{t: r ≥ r_c⁻}`.
+2. Validate with free runs at 2–3 radii that include flips and non-flips.
+3. Report per-direction outcomes, a danger ladder (sorted thresholds, controlling word, sign blind vs signed), and the survival fraction.
+4. Say explicitly whether a number is "measured at that radius" or "extrapolated".
 
-### State / R(t,s)
-1. Inject at input embedding at s=16/50/100/150, 32 directions, `r=1e-3`; optionally inject at a middle residual layer.
-2. Compute pairwise direction correlations; cluster. Expect high correlation; report it.
-3. Plot `R(t,s)` vs lag; do not force a collapse if near-ties occur at different lags.
-4. Compare input vs middle-layer injection; residual injection is weaker.
+### Teacher forcing vs autoregressive
+1. One teacher-forced pass; compare predicted first changed token with a free run.
+2. Expect exact agreement up to the first flip and nothing after it.
+3. Use teacher forcing for response/threshold work; use free runs only for post-flip behaviour.
+
+### State / single-token kicks
+1. Inject at the embedding of positions spanning the sequence (8–200), 24 directions, 3–4 radii, measure 4 layers.
+2. Report immediate size, half-life, depth ratio, and whether any token changes (teacher-forced check), then validate the few that do with a free run.
+3. Expect: position matters more than size; flips only at close calls; latency can be ~100 tokens.
 
 ### Depth/non-normality
-1. Depth spectrum: k=8–16 tangent vectors, QR per layer, per token; save absolute and **state-scale-normalized** `λ_i`, `h_depth`, local gains.
-2. Full-block `σ_max` by power iteration, `ρ` by ARPACK; MLP dense `J` with power/ARPACK (do not use dense eig on GPU; 1536² eig ≈23 s).
-3. Principal angles between top singular subspaces; expect large rotation.
-4. Report relative exponents and the gain budget; do not overclaim if the absolute growth is radial drift.
+1. Depth spectrum k=8–16, QR per layer, per token; save absolute and state-normalised exponents.
+2. `σ_max` by power iteration, `ρ` by ARPACK, principal angles by SVD.
+3. **Also measure the response's angle to the state** using saved full vectors (not the stored cosine): if the angle is near 90°, the response is a direction change, and "radial drift" language is wrong.
+4. Report the component-level and full-response statements separately.
 
 ### D2/RQA
-1. Center, chunked distances, percentile epsilon grid, local-slope plateau, N convergence.
-2. **Always run a time-shuffled control and a phase-randomized surrogate.** If raw ≈ shuffled, D2 is static geometry.
-3. Never save N×N matrices. Save only eps/C/slope/summary.
-4. Treat D2/RQA as descriptive unless they beat controls.
+1. Chunked distances, log ε grid, N convergence, Theiler.
+2. Mark the valid window `[10/N, 2 log10 N]` on every plot; if it is empty, say "no scaling region".
+3. Always run IAAFT/phase surrogates; never use time-shuffle as a dynamic control.
+4. Screen trajectories for repetition loops before analysis.
 
 ## 4. Compute/resource notes
 
-- One GPU job at a time; use background with notifications; no polling.
-- FP32 DeepSeek-1.5B: ~6 GB weights; A1 batch 1 at 500 tokens fits with cache clearing; 600 tokens OOM on T4 with full-vocab logits.
-- Teacher forcing is cheap; generation is the expensive part.
-- Depth/non-normality: power/ARPACK, not dense eig; k=8–16.
-- CPU analyses (D2, depth FSLE, plots) can run in parallel; local laptop with numpy/matplotlib is enough for copied tensors.
-- For a new model, scale `r` with the embedding/activation scale and re-calibrate margins; do not copy DeepSeek’s `r`.
+- One GPU job at a time; run queues with `nohup setsid bash queue.sh` so a dropped ssh does not kill the work. Wait on `pgrep` rather than sleeping manually.
+- FP32 DeepSeek-1.5B: ~7.1 GB weights. Safe A1: batch 1–2, ≤500 tokens, cache clearing between batches. Batch ≥3 at 400 tokens OOMs on a 15 GB T4.
+- Teacher forcing is ~20× cheaper than generation for the same number of directions.
+- Depth/non-normality: power/ARPACK, never dense eig on GPU.
+- CPU analyses (D2, depth, plots) run in parallel on a laptop with numpy/scipy/matplotlib.
+- For a new model, rescale `r` with the embedding/activation scale and re-calibrate gaps; do not copy DeepSeek's `r`.
 
 ## 5. User feedback to keep in mind
 
 - Prefer longer, deeper runs over many tiny results; keep the GPU busy but avoid OOM.
-- Figures: always think about which parameter separates curves; try to make curves overlap by normalizing; show 3 individual + aggregate; annotate what gray lines/parameters mean.
-- Direction dependence and aggregation are hard; quantify, don’t hand-wave.
-- Use subagents (GLM 5.3 preferred) for parallel non-GPU analysis; give them context and let them explore.
-- Write down positive and negative results; keep a procedure for reproducing on other LLMs.
+- Every claim needs a figure that shows the parameter dependence.
+- Figures: separate y-axis per panel; define every axis; 3 individual examples + aggregate; say what separates the curves.
+- Avoid jargon ("collapse", "radial scale drift") without a plain definition.
+- Use subagents (GLM 5.3 preferred) for parallel non-GPU analysis and let them explore.
+- Write down positive and negative results; keep a procedure for other LLMs.
 - Share plots progressively; the user is the final judge.
 
 ## 6. Exploratory negatives
 
-- **Attention entropy as a near-tie explanation:** computed for w50/100/200, layers 7/14/21/27; correlation with margin +0.32–0.38 at w100, ~0 at w200; near-tie values mixed. No clean relation.
-- **Lag collapse of R(t,s):** fails at ×1.5–1.6 RMS under amplitude/lag normalization; curves differ in kind.
-- **Direction clustering at r=1e-3:** no clusters, no special directions, no cross-s persistence.
-- **D2 on repetition loops:** low values are degeneration; exclude/regenerate.
-- **600-token A1 in one batch:** OOM; 500 works with cache clearing.
+- **Attention entropy** has no clean relation to near-ties (+0.32–0.38 with margin at w100, ~0 at w200).
+- **Lag collapse of `R(t,s)`** fails (×1.5–1.6 RMS) even with much more data.
+- **Direction clustering** at r=1e-3: no clusters (k=1 wins).
+- **D2 on repetition loops:** low values are degeneration.
+- **600-token A1 in one batch:** OOM; 500 works.
