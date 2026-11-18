@@ -8,7 +8,7 @@ collapse test of the earlier claim "R(t,s) is not a function of lag".
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from common import load_emb, style, OUT
+from common import load_emb, style, OUT, SCOL
 
 D = load_emb()
 steps, layers = D['steps'], D['layers']
@@ -101,8 +101,8 @@ ax.set_yticks(range(len(steps)))
 ax.set_yticklabels([f's={s}' for s in steps])
 ax.set_xlabel('lag τ = t − s (tokens)')
 ax.set_ylabel('injection position s')
-ax.set_title(f'(c) residual after removing the separable part: echo stripes at fixed t '
-             f'(diagonal here), RMS={np.sqrt(np.mean(R**2)):.2f} decades',
+ax.set_title(f'(c) non-separable residual: head-relaxation mismatch (τ<5, vertical)\n'
+             f'+ echo stripes at fixed t (diagonal), RMS={np.sqrt(np.mean(R**2)):.2f} decades',
              fontweight='bold')
 plt.colorbar(im, ax=ax, label='residual (decades)', shrink=0.9)
 
