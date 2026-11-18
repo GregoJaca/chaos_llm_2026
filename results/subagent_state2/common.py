@@ -25,9 +25,12 @@ def load_emb():
         dh[:, i_s, :, :, :s] = np.nan
         cosv[:, i_s, :, :, :s] = np.nan
         dm[:, i_s, :, :s] = np.nan
-    M = np.nanmean(dh, axis=2)                # [r, s, layer, t] mean over 24 dirs
-    MC = np.nanmean(cosv, axis=2)
-    MD = np.nanmean(np.abs(dm), axis=2)       # mean |dm| over dirs
+    import warnings
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', RuntimeWarning)   # empty slices in causal region
+        M = np.nanmean(dh, axis=2)            # [r, s, layer, t] mean over 24 dirs
+        MC = np.nanmean(cosv, axis=2)
+        MD = np.nanmean(np.abs(dm), axis=2)  # mean |dm| over dirs
     return dict(dh=dh, cos=cosv, dm=dm, M=M, MC=MC, MD=MD,
                 steps=steps, radii=radii, layers=layers, margins=margins, T=T)
 
@@ -69,7 +72,8 @@ def style():
         'figure.dpi': 150, 'savefig.dpi': 150,
         'font.size': 8.5, 'axes.titlesize': 9.2, 'axes.labelsize': 8.5,
         'legend.fontsize': 7.2, 'xtick.labelsize': 7.5, 'ytick.labelsize': 7.5,
-        'axes.constrained_layout.cp_kw': {'w_pad': 0.08, 'h_pad': 0.08},
+        'figure.constrained_layout.use': True,
+        'figure.constrained_layout.w_pad': 0.06, 'figure.constrained_layout.h_pad': 0.06,
         'lines.linewidth': 1.1,
     })
 

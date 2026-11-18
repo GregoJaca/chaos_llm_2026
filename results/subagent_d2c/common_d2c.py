@@ -47,7 +47,7 @@ def c_eps_curve(D, eps_grid, w=0):
     return cnt / d.size
 
 
-def eps_grid_from_med(med, lo=1e-3, hi=3.0, n=48):
+def eps_grid_from_med(med, lo=1e-3, hi=3.0, n=96):
     return np.logspace(np.log10(lo * med), np.log10(hi * med), n)
 
 
@@ -270,7 +270,7 @@ def rqa_from_D(D, rrs=(0.05, 0.10, 0.20), w=10):
     band = np.abs(np.subtract.outer(np.arange(N), np.arange(N))) <= w
     out = []
     for rr in rrs:
-        thr = float(np.quantile(dvals, 1.0 - rr))
+        thr = float(np.quantile(dvals, rr))  # smallest-rr fraction of pairs are recurrent
         R = (D < thr) & (~band)
         cnt, tot = _run_length_hist(R)
         assert (cnt[1:] * np.arange(1, len(cnt))).sum() == tot, "run decomposition failed"
