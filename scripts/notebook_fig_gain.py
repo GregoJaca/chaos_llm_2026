@@ -1,4 +1,4 @@
-"""Clean version of the 'when the linear rule breaks' figure."""
+"""Gain vs radius: concave (U-shaped) dependence with percentile bands."""
 import os
 import numpy as np
 import matplotlib
@@ -10,44 +10,44 @@ OUT = r"C:\Users\hjaca\research\chaos_llm_2026\notebook\figures"
 
 d = np.load(os.path.join(B, "w100_layers", "a1.npz"), allow_pickle=True)
 radii = d["radii"]; dm = d["dm"]; m = d["margins"]
+G = np.abs(dm) / radii[:, None, None]          # [n_r, 20 dirs, 300 t]
 
-g = np.array([np.median(np.abs(dm[i]) / radii[i]) for i in range(len(radii))])
-ref = g[int(np.argmin(np.abs(radii - 0.1)))]
-sel = radii >= 0.3
-beta, acoef = np.polyfit(np.log(radii[sel]), np.log(g[sel]), 1)
+q = {p: np.percentile(G.reshape(len(radii), -1), p, axis=1) for p in [10, 25, 50, 75, 90]}
 
-fig, axs = plt.subplots(1, 2, figsize=(12.5, 4.4), gridspec_kw={"width_ratios": [1.1, 1]})
+fig, axs = plt.subplots(1, 2, figsize=(12.5, 4.6))
 
-# (a) pooled gain vs r
 ax = axs[0]
-ax.loglog(radii, g, "o-", color="tab:blue", label="median over 20 directions and 300 steps")
-ax.axvspan(0.01, 0.3, color="tab:green", alpha=0.08)
-rr = np.logspace(np.log10(0.3), np.log10(2.0), 20)
-ax.loglog(rr, np.exp(acoef) * rr ** beta, "k--",
-          label=rf"fit for $r\geq0.3$: $g\propto r^{{{beta:.2f}}}$")
-ax.set_ylim(0.006, 0.020)
-ax.text(0.03, 0.93, "flat: linear response", transform=ax.transAxes, fontsize=8, color="tab:green")
-ax.text(0.58, 0.72, "power-law growth", transform=ax.transAxes, fontsize=8)
-ax.text(0.05, 0.18, "float32 floor\n(noise$/r$)", transform=ax.transAxes, fontsize=8, color="0.35")
+ax.fill_between(radii, q[10], q[90], color="tab:blue", alpha=0.10, label="10–90%")
+ax.fill_between(radii, q[25], q[75], color="tab:blue", alpha=0.20, label="25–75%")
+ax.loglog(radii, q[50], "o-", color="tab:blue", lw=1.4, label="median")
+lr = np.log(radii)
+coef = np.polyfit(lr, np.log(q[50]), 2)
+rr = np.logspace(np.log10(radii.min()), np.log10(radii.max()), 100)
+ax.loglog(rr, np.exp(np.polyval(coef, np.log(rr))), "k--",
+          label="parabola in $\\log r$")
+pred = np.exp(np.polyval(coef, lr))
+r2 = 1 - np.sum((np.log(q[50]) - np.log(pred)) ** 2) / np.sum((np.log(q[50]) - np.log(q[50]).mean()) ** 2)
+ax.text(0.03, 0.06, f"$R^2={r2:.3f}$", transform=ax.transAxes, fontsize=9)
 ax.set_xlabel(r"perturbation radius $r$")
-ax.set_ylabel(r"$g(r)=\mathrm{median}\,|\delta m_t|/r$")
-ax.set_title("(a) Gain is flat for $r\\in[0.01,0.3]$, then grows as $r^{0.19}$")
-ax.legend(fontsize=8, loc="lower right")
+ax.set_ylabel(r"$g=|\delta m_t|/r$  (logit-gap change per unit $r$)")
+ax.set_title("(a) Concave dependence: a floor near $r\\approx0.03$,\nrising at both ends")
+ax.legend(fontsize=7.5, loc="upper center")
 ax.grid(alpha=0.25, which="both")
 
-# (b) individual near-ties
 ax = axs[1]
-for t, c in [(2, "tab:red"), (123, "tab:blue"), (16, "tab:green")]:
-    v = np.abs(dm[:, :, t]) / radii[:, None]
-    ax.loglog(radii, np.median(v, axis=1), "o-", color=c,
-              label=f"$t={t}$, gap $m_t={m[t]:.3f}$")
-ax.set_ylim(0.008, 0.06)
-ax.set_xlabel(r"$r$")
-ax.set_ylabel(r"$|\delta m_t|/r$ at one close call")
-ax.set_title("(b) The extra growth comes from a few close calls\n(most are flat)")
-ax.legend(fontsize=8, loc="upper left")
-ax.grid(alpha=0.25, which="both")
+ri_lo = int(np.argmin(np.abs(radii - 0.1)))
+ri_hi = int(np.argmin(np.abs(radii - 2.0)))
+ratio = G[ri_hi] / np.maximum(G[ri_lo], 1e-12)
+r = ratio[np.isfinite(ratio) & (ratio > 0) & (ratio < 1e6)]
+ax.hist(np.log10(r), bins=60, color="tab:red", alpha=0.8)
+ax.axvline(0, color="k", lw=0.8)
+med = np.median(r); p10, p90 = np.percentile(r, [10, 90])
+ax.axvline(np.log10(med), color="k", ls="--", lw=1.2)
+ax.set_xlabel(r"$\log_{10}[g(r=2)/g(r=0.1)]$  at one step and direction")
+ax.set_ylabel("count")
+ax.set_title(f"(b) Heterogeneous: median $\\times${med:.2f},\n10–90% range {p10:.2f}–{p90:.1f}")
+ax.grid(alpha=0.25)
 
 fig.tight_layout()
 fig.savefig(os.path.join(OUT, "threshold_gain_scaling.png"), dpi=190)
-print("saved; beta", round(float(beta), 3))
+print("saved; parabola coefficients", coef, "R2", round(float(r2), 3))

@@ -301,21 +301,41 @@ position (no gain), **the last layers** at a sensitive position. For a prompt-wi
 the response grows with depth because deeper layers see more of the prompt, not because any
 single block amplifies.
 
-### N3. The nonlinearity at large $r$ is a power law
+### N3. The nonlinearity at large $r$ is a U-shaped (concave) law
 
 ![gain scaling](figures/threshold_gain_scaling.png)
 
-**Data.** All 12 radii, 20 directions, 300 steps; teacher-forced margin changes.
+**Data.** All 12 radii, 20 directions, 300 steps; teacher-forced margin changes. $g(r)=|\delta m_t|/r$.
 
-**Panel (a).** $x$: $r$ (log); $y$: $g(r)=\mathrm{median}\,|\delta m_t|/r$, the logit-gap change
-per unit radius. **Panel (b).** Same quantity for three individual close calls.
+**Panel (a).** Median over all (direction, step) pairs, with 25–75% and 10–90% bands, and a
+quadratic fit in $\log r$ (not a power law).
 
-**Reading.** $g$ is **flat at 0.0083–0.0093 for $r\in[0.01,0.3]$** (linear response), rises at
-the float32 floor below $r\approx3\times10^{-4}$ (noise$/r$), and above $r=0.3$ follows a
-**power law $g\propto r^{0.19}$** (×1.55 by $r=2$). The extra growth is not universal: one close
-call ($t=2$) doubles while $t=123$ and $t=16$ stay flat until $r\approx0.7$. This is why a
-threshold measured at small $r$ over-predicts flips at large $r$ (B5), and it is a genuine
-sublinear power law, not an exponential.
+**Reading.** The dependence is **concave**: $g$ falls from $1.5\times10^{-2}$ at $r=10^{-3}$ to a
+floor of $8.3\times10^{-3}$ around $r\approx0.03$, then rises to $1.3\times10^{-2}$ at $r=2$. A
+quadratic in $\log r$ fits with $R^2=0.977$; a single power law cannot describe both ends. The
+left rise is the float32 floor (noise$/r$), the right rise is genuine superlinearity.
+
+**Panel (b).** Distribution of $g(2)/g(0.1)$ over all (step, direction) pairs.
+
+**Reading.** The superlinearity is **heterogeneous**: median ×1.52, but the 10–90% range is
+0.27–9.5. It is a global tendency, not a property of a few close calls. Consequence: a threshold
+measured at small $r$ is unbiased only up to $r\approx0.3$; beyond that the correction is
+step-dependent and cannot be captured by one exponent.
+
+### N2b. Amplification depends on position, not on injection depth
+
+![layer probe positions](figures/layer_probe_positions.png)
+
+**Data.** Layer probe at six positions ($s=16,32,50,75,100,150$), 4–6 directions, $r=0.05$.
+
+**Panel (a).** For each position, the total gain $a(27)/r$ as a function of the injection layer.
+**Panel (b).** Mean over injection layers, with the min–max range.
+
+**Reading.** Only $s=16$ amplifies: mean gain **2.69** (range 1.29–3.37). Every other position has
+a mean gain between 0.84 and 1.08 — no amplification. $s=16$ is the sixth-smallest margin of the
+300 steps ($m=0.12$), so a near-tie position is also the one where a hidden-state perturbation
+grows. Caveat: six positions is a small sample; the rank correlation between margin and gain is
+suggestive, not conclusive.
 
 ### N4. The finite-time rate: positive, then negative
 
