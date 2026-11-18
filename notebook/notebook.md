@@ -225,6 +225,28 @@ This is the closest legitimate analogue of a Lyapunov exponent in this system: a
 stretching rate with a stated horizon. Read as a number: $\lambda(t=20)\approx+0.02$,
 $\lambda(t=100)\approx+0.005$, $\lambda(t=299)\approx-0.002$ for $W=100$.
 
+### N5. What a "window flush" is
+
+![window flush](figures/window_flush.png)
+
+**Data.** Prompt perturbation, $r=0.1$, 20 directions, $W=100$, $P=65$; response read at layers
+1, 2, 3 and 27.
+
+**Axes.** $x$: $t$. $y$: $a(t,\ell)=\|\delta h_{t,\ell}\|_2$ (log). Panel (b) zooms on $t\in[80,120]$.
+
+**Reading.** The perturbation is stored in the key/value cache of the **prompt** tokens. As the
+generation advances, those prompt tokens leave the sliding window. When the last perturbed prompt
+token leaves the receptive field of a layer, that layer's response becomes **exactly zero**:
+layer 1 at $t=92$, layer 2 at $t=191$, layer 3 at $t=290$. The spacing is $W-1=99$: once layer 1
+has lost the perturbation, layer 2 can only see layer-1 states from earlier positions, so it
+survives one more window before it too goes to zero. Deeper layers (7, 14, 21, 27) keep a
+non-zero response for the whole 300-token run because they also carry the perturbation through
+the generated positions themselves.
+
+So a "flush" is not a numerical artifact: it is the moment when a layer stops being able to see
+any perturbed token. It also explains why the shallow-layer curves in A4 collapse while deep
+layers decay more slowly.
+
 ---
 
 Each block states: data, axes (with formulas), curves, reading. All perturbations are FP32,

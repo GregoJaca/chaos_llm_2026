@@ -212,8 +212,8 @@ a.axhline(302, color="gray", lw=0.8, ls=":"); a.axvline(302, color="gray", lw=0.
 a.set_xlim(-5, 320); a.set_ylim(-5, 320)
 a.set_xlabel("threshold-model $T_{pred}$ (no flip = 312)")
 a.set_ylabel("observed T (no flip = 312)")
-a.set_title(f"(d) per-direction T, r$\\in${{0.3,0.5,1,2}} (main): all {len(xo)} events on/below diagonal\n"
-            f"exact {ex_match}/{len(xo)}; obs flips without prediction: 0; free-run later: {tot_later} vs earlier: {tot_earlier}", fontsize=9)
+a.set_title(f"(d) per-direction T, r$\\in${{0.3,0.5,1,2}} (main): observed NEVER precedes prediction\n"
+            f"exact {ex_match}/{len(xo)}; obs flips without prediction: 0; obs later than pred: {tot_later} vs earlier: {tot_earlier}", fontsize=9)
 fig.savefig(OUT + r"\fig2_scaling.png")
 plt.close(fig)
 
@@ -231,8 +231,9 @@ for i, r in enumerate(radii_mid):
     a.fill_between(tb, Slo, Shi, color=CB[0], alpha=0.18, step="post")
     a.step(tg, Sobs, where="post", color=CB[0], lw=1.6, label="observed $S_r(t)$ (95% CI)")
     a.step(tp, Sp, where="post", color=CB[3], lw=1.6, ls="--", label="threshold-field prediction")
-    a.plot(tg, Sexp, color=CB[2], lw=1.2, alpha=0.9,
-           label=f"exp fit ($\\lambda$={st['fits']['exp']['lam']:.1e})")
+    if st["n_flip"] > 0:
+        a.plot(tg, Sexp, color=CB[2], lw=1.2, alpha=0.9,
+               label=f"exp fit ($\\lambda$={st['fits']['exp']['lam']:.1e})")
     a.set_xlim(0, 348); a.set_ylim(0, 1.04)
     a.set_xlabel("generation step t"); a.set_ylabel("survival  $S_r(t)=P(\\mathrm{no\\ flip\\ by}\\ t)$")
     concl = {0.05: "no dip reachable: S=1 exactly, predicted and observed",
@@ -420,10 +421,10 @@ for pi, r in enumerate([0.1, 0.3]):
         fr.append((Tp >= 0).mean())
     wvals[r] = fr
     a.bar(xs + (pi - 0.5) * 0.32, fr, 0.30, color=CB[pi], label=f"r={r:g} (predicted)")
-# observed at w=100
-a.scatter(xs, [obs_main[0.1].mean() * 0 + (obs_main[0.1] >= 0).mean(),
-               0, (obs_main[0.3] >= 0).mean()], marker="_", s=300, color="k",
+# observed free-run points at w=100 only
+a.scatter([xs[0] - 0.16], [(obs_main[0.1] >= 0).mean()], marker="_", s=220, color=CB[0],
           label="observed free run (w=100)")
+a.scatter([xs[0] + 0.16], [(obs_main[0.3] >= 0).mean()], marker="_", s=220, color=CB[1])
 a.set_xticks(xs); a.set_xticklabels(["w=100", "w=200", "w=500"])
 a.set_ylabel("predicted flip fraction within 300 steps")
 a.set_title("(d) threshold-model flip fraction grows with window at fixed radius\n"
