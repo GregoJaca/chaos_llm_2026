@@ -71,10 +71,10 @@ ax.text(0.031, 2.8,
         "nudge\nin this range - 99.2% exact (fig2).",
         fontsize=9.6, ha="center", va="top",
         bbox=dict(fc="white", ec="0.5"))
-ax.text(1.02, 30,
+ax.text(1.9, 30,
         "superlinear:\nmedian 1.55x by r=2,\nties drift apart\n(word 2 doubles,\n"
         "word 123 stays flat)\n-> the first flip\nmoves to a different\nword",
-        fontsize=9.6, ha="left", va="top", color="#8c4a04",
+        fontsize=9.6, ha="right", va="top", color="#8c4a04",
         bbox=dict(fc="#fff3e0", ec="#fdbb84"))
 
 ax.set_xscale("log"); ax.set_yscale("log")
@@ -124,7 +124,7 @@ ax2.set_title("(b) propulsion prompt: how many directions flip, observed vs "
               "three prediction variants", fontsize=12.3)
 ax2.legend(loc="upper left", fontsize=9.8, framealpha=0.95)
 ax2.grid(alpha=0.3, which="both", lw=0.5)
-ax2.text(0.032, -0.55,
+ax2.text(0.032, 13.8,
          "same-radius rule: exact at every nudge (red squares sit on black "
          "circles).\nLinear extrapolation gets the COUNT roughly right but the "
          "STEP wrong: at r=2 only 2\nof 16 flipping steps are exact - worst "

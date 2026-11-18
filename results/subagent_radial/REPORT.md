@@ -62,7 +62,8 @@ the length away (RMSNorm) right before converting the vector into next-token sco
   unit: +0.95 nats/layer ≈ growth ×2.6 per layer); after removing the per-layer
   state-length growth every exponent is negative — sum **−0.42…−1.15 (median −0.836) nats/layer**, maximum single
   relative exponent **−0.039** (docs cite −0.034; same conclusion). From the old ensemble spread curves (FSLE): absolute
-  separation growth **×206–215 net** (reached by layer ~2: ×240–262, then flat-to-declining), which becomes **×0.45–0.48
+  separation growth **×206–215 net** (×240 already by layer 2, peak ×244–262 near layer 8, then
+  flat-to-declining), which becomes **×0.45–0.48
   relative** — *net*: the relative separation first **grows ×6.7 by layer 2**, then falls ×15 as the state lengthens
   while the spread does not. **Best figure: `fig5_exponents.png`** (also the honest note that the new teacher-forced
   data does *not* show the mid-depth contraction the FSLE/JVP numbers suggest).

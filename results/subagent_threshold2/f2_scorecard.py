@@ -228,10 +228,11 @@ handles = [
 ]
 axb.legend(handles=handles, loc="lower left", fontsize=9.6, framealpha=0.97,
            bbox_to_anchor=(0.0, 0.0))
-axb.text(42.2, NY - 0.7,
-         "signed rule total: 258/260\nfully correct (99.2%)",
-         fontsize=10.2, ha="right", va="bottom", weight="bold",
+axb.text(21, -2.75,
+         "signed rule total: 258/260 fully correct (99.2%)",
+         fontsize=11, ha="center", va="center", weight="bold",
          bbox=dict(fc="#deebf7", ec="0.5"))
+axb.set_ylim(NY - 0.6, -3.1)
 
 fig.suptitle("Does the threshold rule actually predict the first changed word? "
              "All 16 local free-run experiments (5 prompt/window settings, 20 "

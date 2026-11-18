@@ -52,14 +52,8 @@ def draw(ax, nm, radii_obs, xlo, xhi, cb_ticks):
         # colored dot at the signed threshold
         ax.plot([rstar[d]], [yi], "o", color=cmap((tstar[d] - vmin) / (vmax - vmin)),
                 mec="k", ms=9.5, mew=0.7, zorder=5)
-        extra = ""
-        if nm == "w100" and d == 14:
-            extra = ("  <- bar says flips at 0.33, but nothing flipped at\n"
-                     "      r=0.5 or 1; at r=2 it flips at word 2, not 123:\n"
-                     "      its shrink at word 123 becomes a widening")
-        ax.text(xhi * 1.06, yi, f"word {tstar[d]:3d}, gap {c.m[tstar[d]]:.3f}"
-                + extra, fontsize=8.8, va="center", ha="left",
-                color="#a01717" if extra else "0.15")
+        ax.text(xhi * 1.06, yi, f"word {tstar[d]:3d}, gap {c.m[tstar[d]]:.3f}",
+                fontsize=8.8, va="center", ha="left", color="0.15")
         ax.text(xlo * 0.94, yi, f"d{d:2d}", fontsize=8.8, va="center", ha="right",
                 color="0.35")
     # observed free-run radii
@@ -127,6 +121,13 @@ handles = [
 ]
 fig.legend(handles=handles, loc="lower center", ncol=3, fontsize=10.2,
            frameon=False, bbox_to_anchor=(0.5, 0.005))
+fig.text(0.5, -0.055,
+         "red flag: d14's bar says any nudge > 0.33 flips it at word 123, but "
+         "nothing flipped at r=0.5 or 1 - at r=2 it finally flips at word 2, "
+         "not 123:\nits gap-shrink at word 123 turns into a gap-widening at "
+         "large nudges (same superlinear drift as figs 5-6); the ladder is "
+         "built at the small clean nudge, so treat it as the r < 0.3 danger map",
+         fontsize=10, ha="center", color="#a01717")
 fig.subplots_adjust(left=0.025, right=0.975, top=0.86, bottom=0.145, wspace=0.45)
 fig.savefig("fig4_danger_ladder.png", dpi=165, bbox_inches="tight")
 print("saved fig4_danger_ladder.png; w100 obs radii:", obs100,
