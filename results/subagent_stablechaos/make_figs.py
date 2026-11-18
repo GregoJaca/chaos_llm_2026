@@ -20,15 +20,17 @@ margins = a1["margins"]
 
 mid = load_free("fr_w100_mid.npz")
 large = load_free("fr_w100_large.npz")
+extra = load_free("fr_w100_extra.npz")
 cy = load_free("fr_cyber.npz")
 ch = load_free("fr_childhood.npz")
 obs_main = {}   # r -> T array
 pred_main = {}
-for d in (mid, large):
+for d in (mid, large, extra):
     for k in range(d["obs"].shape[0]):
         obs_main[float(d["radii"][k])] = d["obs"][k]
         pred_main[float(d["radii"][k])] = d["pred"][k]
 rs = sorted(obs_main)
+print("main radii:", rs)
 
 # ---------- extra stats: lambda bootstrap CIs, MC + sign tests ----------
 rng = np.random.default_rng(7)
@@ -54,15 +56,17 @@ for _ in range(200000):
         cnt += 1
 p_disc = cnt / 200000
 
-# one-sidedness sign test: total pred_only vs obs_only across all 13 cells
+# one-sidedness sign test: total pred_only vs obs_only across all cells
 tot_pred_only = sum(stats[p][key]["pred_only"] for p in ["main", "cyber", "childhood"]
                     for key in stats[p])
 tot_obs_only = sum(stats[p][key]["obs_only"] for p in ["main", "cyber", "childhood"]
                    for key in stats[p])
+tot_obs_only_print = tot_obs_only  # for panel titles
 tot_later = sum(stats[p][key]["later"] for p in ["main", "cyber", "childhood"] for key in stats[p])
 tot_earlier = sum(stats[p][key]["earlier"] for p in ["main", "cyber", "childhood"] for key in stats[p])
 n_err = tot_pred_only + tot_obs_only
-p_sign = 2.0 ** -(n_err - 1) if n_err > 0 else 1.0  # one-sided binomial
+from scipy.stats import binomtest
+p_sign = binomtest(tot_pred_only, n_err, 0.5).pvalue if n_err > 0 else 1.0
 
 print(f"lambda CIs: {lam_ci}")
 print(f"discreteness MC: {k} distinct steps among {n} flips, p = {p_disc}")
@@ -90,7 +94,8 @@ for r in rs:
 a.axhline(300, color="gray", lw=0.8, ls=":")
 a.text(0.6, 252, "no flip within 300 tokens (censored, plotted at 312)", fontsize=7.5, color="gray")
 a.set_ylim(0, 325)
-a.set_xscale("log"); a.set_xticks(rs); a.set_xticklabels([f"{r:g}" for r in rs])
+a.set_xscale("log"); a.set_xticks(rs)
+a.set_xticklabels([f"{r:g}" for r in rs], rotation=45, ha="right")
 a.set_xlabel("perturbation radius r"); a.set_ylabel("first flip step T")
 a.set_title("(a) per-direction flip times vs radius, main prompt\n(open symbols above line = no flip; red x = threshold model)", fontsize=9)
 a.legend(loc="center left", framealpha=0.9)
@@ -115,7 +120,8 @@ for r in rs:
                label="observed" if r == rs[0] else None)
     a.scatter([r], [(pred_main[r] >= 0).mean()], s=42, marker="D", facecolors="none",
               edgecolors=CB[3], lw=1.3, label="threshold model" if r == rs[0] else None)
-a.set_xscale("log"); a.set_xticks(rs); a.set_xticklabels([f"{r:g}" for r in rs])
+a.set_xscale("log"); a.set_xticks(rs)
+a.set_xticklabels([f"{r:g}" for r in rs], rotation=45, ha="right")
 a.set_xlabel("perturbation radius r"); a.set_ylabel("fraction of directions that flip")
 a.set_title("(c) flip fraction vs r, main prompt (95% binomial CI)\n"
             "hard floor: no flips for r < min $r_c \\approx$ 0.11-0.13 in 300 steps", fontsize=9)
@@ -173,7 +179,7 @@ a.set_title("(b) fitted hazard is strongly radius-dependent (95% CI);\n"
             "r-INDEPENDENT positive Lyapunov rate", fontsize=9)
 
 a = ax[1, 1]
-infr = [0.3, 0.5, 1.0, 2.0]
+infr = [0.3, 0.4, 0.5, 1.0, 2.0]
 models = ["R2_threshold", "R2_exp"]
 width = 0.27
 xs = np.arange(len(infr))
@@ -212,8 +218,8 @@ a.axhline(302, color="gray", lw=0.8, ls=":"); a.axvline(302, color="gray", lw=0.
 a.set_xlim(-5, 320); a.set_ylim(-5, 320)
 a.set_xlabel("threshold-model $T_{pred}$ (no flip = 312)")
 a.set_ylabel("observed T (no flip = 312)")
-a.set_title(f"(d) per-direction T, r$\\in${{0.3,0.5,1,2}} (main): observed NEVER precedes prediction\n"
-            f"exact {ex_match}/{len(xo)}; obs flips without prediction: 0; obs later than pred: {tot_later} vs earlier: {tot_earlier}", fontsize=9)
+a.set_title(f"(d) per-direction T, r$\\in${{0.3,0.4,0.5,1,2}} (main): observed NEVER precedes prediction\n"
+            f"exact {ex_match}/{len(xo)}; obs flips without prediction: {tot_obs_only_print}; obs later than pred: {tot_later} vs earlier: {tot_earlier}", fontsize=9)
 fig.savefig(OUT + r"\fig2_scaling.png")
 plt.close(fig)
 

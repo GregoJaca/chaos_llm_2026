@@ -14,7 +14,8 @@ margins, r_c, radii_a1, pred_T = a1["margins"], a1["r_c"], a1["radii"], a1["pred
 FIELD = {0.05: 4, 0.1: 4, 0.2: 5, 0.3: 6, 0.5: 7, 1.0: 9, 2.0: 11}
 
 datasets = {
-    "main": [("fr_w100_mid.npz", "main_mid"), ("fr_w100_large.npz", "main_large")],
+    "main": [("fr_w100_mid.npz", "main_mid"), ("fr_w100_large.npz", "main_large"),
+             ("fr_w100_extra.npz", "main_extra")],
     "cyber": [("fr_cyber.npz", "cyber")],
     "childhood": [("fr_childhood.npz", "childhood")],
 }
@@ -78,11 +79,12 @@ for prompt in ["main", "cyber", "childhood"]:
 
 print()
 print("=" * 78)
-print("B. T(r) scaling, main prompt (7 radii, 20 dirs each)")
+print("B. T(r) scaling, main prompt (10 radii, 20 dirs each)")
 print("=" * 78)
 Ts_by_r, pred_by_r = {}, {}
 for tag, k, r in main_radii:
-    fn = "fr_w100_mid.npz" if tag == "main_mid" else "fr_w100_large.npz"
+    fn = {"main_mid": "fr_w100_mid.npz", "main_large": "fr_w100_large.npz",
+          "main_extra": "fr_w100_extra.npz"}[tag]
     d = load_free(fn)
     Ts_by_r[r] = d["obs"][k]; pred_by_r[r] = d["pred"][k]
 rs = np.array([r for _, _, r in main_radii])
@@ -156,7 +158,9 @@ vals, cnts = np.unique(pooled, return_counts=True)
 ranks = {int(v): int(np.sum(margins < margins[v])) for v in vals}
 min_rc = {}
 for r in rs:
-    fi = FIELD[round(r, 3)]
+    fi = FIELD.get(round(r, 3))
+    if fi is None:          # extra radii (0.15/0.25/0.4): no matching saved field
+        continue
     v = np.where(np.isfinite(r_c[fi]), r_c[fi], np.inf).min()
     min_rc[f"{r:g}"] = float(v)
 print(f"pooled n_flips={len(pooled)}, distinct steps={len(vals)}: {dict(zip(vals.tolist(), cnts.tolist()))}")

@@ -214,16 +214,29 @@ sublinear power law, not an exponential.
 
 ### N4. The finite-time rate: positive, then negative
 
-The quantity plotted in N1(b) is
-$$\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}.$$
-For $W>P$ it is **positive for the first ~10–40 tokens** (peak $\lambda\approx0.026$ nats/token for
-$W=100$; the peak is higher if measured from $t=1$ to $t=3$), then crosses zero and becomes
-negative. For $W<P$ it is negative from the start. No window, radius or layer tested gives a
-sustained positive rate over 300 tokens.
+![rate aggregation](figures/rate_aggregation.png)
 
-This is the closest legitimate analogue of a Lyapunov exponent in this system: a finite-time
-stretching rate with a stated horizon. Read as a number: $\lambda(t=20)\approx+0.02$,
-$\lambda(t=100)\approx+0.005$, $\lambda(t=299)\approx-0.002$ for $W=100$.
+**Data.** Prompt perturbation, $r=0.1$, layer 27, 20 directions, $W=100$, 300 tokens.
+
+**Panel (a).** $x$: $t$; $y$: the **local** stretching rate over a 20-token window,
+$$\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)},$$
+which does not depend on a reference point. Thick blue: computed on the mean curve; thick red:
+median over directions; band: inter-quartile range; thin grey: individual directions.
+
+**Panel (b).** Difference between the two aggregations.
+
+**Reading.** $\lambda_{10}(t)\approx0$ for $t<20$, rises to **+0.03 nats/token around $t=50$**,
+then drops sharply negative at $t\approx100$ (the first window flush) and stays at −0.007. Only
+21% of tokens have a positive rate. The two aggregations differ by up to 0.01 nats/token, so both
+must be reported: "mean of the rates" and "rate of the mean" are different objects (Jensen).
+
+The cumulative version used in N1(b) is $\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$; it is positive
+for the first ~10–40 tokens for $W>P$ and negative from the start for $W<P$. No window, radius or
+layer tested gives a sustained positive rate over 300 tokens.
+
+This is the closest legitimate analogue of a Lyapunov exponent here: a **finite-time** stretching
+rate with a stated horizon and reference point. It is not an asymptotic exponent, because the map
+changes every step (Part 3).
 
 ### N5. What a "window flush" is
 

@@ -43,6 +43,16 @@ def curve_rates(y, T):
     out["tau_exp"] = (-1 / out["lam_decay"]) if np.isfinite(out.get("lam_decay", np.nan)) else np.nan
     return out
 
+_rate_cache = {}
+def get_rates(dh, Rs, Ls, ri, r, L, key_tuple=None):
+    """cached curve_rates over directions for dataset (dh, radii, layers)."""
+    ck = (id(dh), float(r), int(L))
+    if ck in _rate_cache: return _rate_cache[ck]
+    li = Ls.index(L) if Ls is not None else None
+    rates = [curve_rates(dh[ri, di, li, :], dh.shape[-1]) for di in range(dh.shape[1])]
+    _rate_cache[ck] = rates
+    return rates
+
 # ---------------- A) window_fixed ----------------
 WIN = [100, 150, 200, 300, 1000]
 wf = {}
@@ -59,7 +69,7 @@ for W in WIN:
     for ri, r in enumerate(wfR):
         for L in wfL:
             li = wfL.index(L)
-            rates = [curve_rates(dh[ri, di, li, :], Tw) for di in range(dh.shape[1])]
+            rates = get_rates(dh, wfR, wfL, ri, r, L)
             for key in ["lam_early", "lam_rise", "lam_decay", "tau_exp", "t_peak"]:
                 med, lo, hi, n = boot_med_ci([q[key] for q in rates])
                 win_stats[(W, float(r), int(L), key)] = dict(med=med, lo=lo, hi=hi, n=n)
@@ -85,8 +95,7 @@ for W in cd:
         ri = Rs.index(r)
         for L in [7, 14, 21, 27]:
             if L not in Ls: continue
-            li = Ls.index(L)
-            rates = [curve_rates(dh[ri, di, li, :], dh.shape[-1]) for di in range(dh.shape[1])]
+            rates = get_rates(dh, Rs, Ls, ri, r, L)
             for key in ["lam_early", "lam_rise", "lam_decay"]:
                 cd_stats[(W, r, L, key)] = boot_med_ci([q[key] for q in rates])
 print("\ncross-dataset (different token streams), lam_rise L=27:")
@@ -100,7 +109,7 @@ rad_stats = {}
 for ri, r in enumerate(radii):
     for L in [7, 27]:
         li = int(np.where(layers == L)[0][0])
-        rates = [curve_rates(dh0[ri, di, li, :], dh0.shape[-1]) for di in range(dh0.shape[1])]
+        rates = get_rates(dh0, radii, layers, ri, r, L)
         for key in ["lam_rise", "lam_decay", "tau_exp", "t_peak"]:
             rad_stats[(float(r), L, key)] = boot_med_ci([q[key] for q in rates])
 
@@ -116,17 +125,14 @@ tau_med = np.array([rad_stats[(float(r), 27, "tau_exp")][0] for r in rs])
 tau_lo = np.array([rad_stats[(float(r), 27, "tau_exp")][1] for r in rs])
 tau_hi = np.array([rad_stats[(float(r), 27, "tau_exp")][2] for r in rs])
 b_tau, se_tau, r2_tau, n_tau = loglog_slope(rs, tau_med)
-# bootstrap beta over dirs
+# bootstrap beta over dirs (reuses cached per-direction tau values)
 rng = np.random.default_rng(3)
 n_dir = dh0.shape[1]
+rates27 = {float(r): get_rates(dh0, radii, layers, int(np.where(radii == r)[0][0]), float(r), 27) for r in rs}
 bs = []
 for b in range(500):
     idx = rng.integers(0, n_dir, n_dir)
-    tvals = []
-    for r in rs:
-        ri = int(np.where(radii == r)[0][0])
-        vals = [curve_rates(dh0[ri, i, -1, :], 300)["tau_exp"] for i in idx]
-        tvals.append(np.median(vals))
+    tvals = [np.median([rates27[float(r)][i]["tau_exp"] for i in idx]) for r in rs]
     bs.append(loglog_slope(rs, np.array(tvals))[0])
 b_lo, b_hi = np.quantile(bs, [.025, .975])
 print(f"\n=== B) tau ~ r^beta (L=27, r<=0.3): beta={b_tau:+.3f} (OLS se {se_tau:.3f}), boot 95% [{b_lo:+.3f},{b_hi:+.3f}], R2={r2_tau:.3f}")
@@ -172,7 +178,7 @@ lam_by_L = {}
 for L in [7, 14, 21, 27]:
     li = int(np.where(layers == L)[0][0])
     ri = int(np.argmin(np.abs(radii - 0.1)))
-    vals = [curve_rates(dh0[ri, di, li, :], 300)["lam_rise"] for di in range(n_dir)]
+    vals = [q["lam_rise"] for q in get_rates(dh0, radii, layers, ri, 0.1, L)]
     lam_by_L[L] = boot_med_ci(vals)
 print("C) lam_rise by layer (r=0.1):", {L: np.round(lam_by_L[L][0], 4) for L in lam_by_L})
 
