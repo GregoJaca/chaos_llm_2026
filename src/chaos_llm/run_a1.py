@@ -81,18 +81,19 @@ def main():
 
     Efull = full_embeddings(model, pids, gen_ids)
     am = hard_window_mask(Efull.shape[1], args.window) if args.hard_window else torch.ones((1, Efull.shape[1]), dtype=torch.long, device="cuda")
-    out0 = model(inputs_embeds=Efull, attention_mask=am,
-                 output_hidden_states=True, use_cache=False)
-    logits0 = out0.logits[0]  # [L,V]
-    pos = torch.arange(P - 1, P + T - 1, device="cuda")
-    z0 = logits0[pos]  # [T,V]
-    top2 = torch.topk(z0, k=2, dim=-1)
-    margins = (top2.values[:, 0] - top2.values[:, 1]).detach().cpu().numpy().astype(np.float32)
-    top1 = top2.indices[:, 0]
-    top2i = top2.indices[:, 1]
-    h0 = {l: out0.hidden_states[l][0, P:P + T].detach() for l in layers}  # [T,D]
-    norm_h0 = np.stack([h0[l].norm(dim=-1).cpu().numpy() for l in layers])  # [n_layers,T]
-    del out0, logits0, z0, top2
+    with torch.inference_mode():
+        out0 = model(inputs_embeds=Efull, attention_mask=am,
+                     output_hidden_states=True, use_cache=False)
+        logits0 = out0.logits[0]  # [L,V]
+        pos = torch.arange(P - 1, P + T - 1, device="cuda")
+        z0 = logits0[pos]  # [T,V]
+        top2 = torch.topk(z0, k=2, dim=-1)
+        margins = (top2.values[:, 0] - top2.values[:, 1]).detach().cpu().numpy().astype(np.float32)
+        top1 = top2.indices[:, 0]
+        top2i = top2.indices[:, 1]
+        h0 = {l: out0.hidden_states[l][0, P:P + T].detach() for l in layers}  # [T,D]
+        norm_h0 = np.stack([h0[l].norm(dim=-1).cpu().numpy() for l in layers])  # [n_layers,T]
+        del out0, logits0, z0, top2
 
     simplex, sub = make_directions(args.num_directions, P, D, args.seed)
     sub_t = torch.as_tensor(sub, device="cuda", dtype=torch.long)
@@ -116,9 +117,10 @@ def main():
                 delta = torch.zeros(P * D, device="cuda", dtype=torch.float32)
                 delta.index_copy_(0, sub_t, torch.as_tensor(simplex[di], device="cuda") * r)
                 E[j, :P] += delta.view(P, D)
-            out = model(inputs_embeds=E,
-                        attention_mask=torch.ones((B, E.shape[1]), dtype=torch.long, device="cuda"),
-                        output_hidden_states=True, use_cache=False)
+            with torch.inference_mode():
+                out = model(inputs_embeds=E,
+                            attention_mask=torch.ones((B, E.shape[1]), dtype=torch.long, device="cuda"),
+                            output_hidden_states=True, use_cache=False)
             zb = out.logits[:, pos, :]  # [B,T,V]
             z1 = torch.gather(zb, 2, top1v.expand(B, -1, -1)).squeeze(-1)
             z2 = torch.gather(zb, 2, top2v.expand(B, -1, -1)).squeeze(-1)

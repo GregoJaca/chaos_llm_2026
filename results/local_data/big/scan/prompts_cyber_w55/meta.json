@@ -1,0 +1,25 @@
+{
+  "model": "/u0/grego/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B",
+  "model_path": "/u0/grego/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B/snapshots/ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562",
+  "dtype": "float32",
+  "window": 55,
+  "prompt": "Write an exhaustive review of current cybersecurity threats and defense strategies. Cover state-sponsored hacking, ransomware, IoT vulnerabilities, and AI-powered attacks. Explain cryptographic foundations, network security architectures, zero-trust models, and emerging quantum-resistant algorithms. Discuss the human factors in security and the challenges of creating secure systems.",
+  "prompt_len": 62,
+  "max_new_tokens": 300,
+  "num_directions": 6,
+  "radii": [
+    0.1
+  ],
+  "layers": [
+    7,
+    14,
+    21,
+    27
+  ],
+  "seed": 69,
+  "fixed_tokens_from": null,
+  "baseline_duplicate_identical": true,
+  "torch": "2.5.1+cu121",
+  "transformers": "4.50.0",
+  "elapsed_sec": 16.0
+}

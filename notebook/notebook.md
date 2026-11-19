@@ -317,6 +317,19 @@ $A/W$.
 This replaces the earlier, confounded comparison (N6): the "regime" at $W<P$ is a post-clip
 forgetting rate, not a different pre-clip dynamics.
 
+![window boundary](figures/window_boundary.png)
+
+**The boundary is a step at $W=P$.** Fine scan $W=55\ldots130$ for three prompts ($P=65,62,63$),
+$r=0.1$, 6 directions, layer 27.
+
+**Axes.** $x$: $W-P$ (negative means the prompt is already clipped). $y$: the immediate response
+$a(0,27)$ normalised by its saturated value at $W\gg P$.
+
+**Reading.** The curves for the three prompts **collapse onto one**: for $W-P\ge5$ the response is
+flat (ratio 1), and below it the response rises steeply, to 2.1–4.6× at $W-P=-10$. The transition
+is within a few tokens of $W=P$. So the window is a **step function of $W-P$** for prompt
+perturbations; there is no gradual regime.
+
 ![window regimes](figures/window_regimes.png)
 
 **Data.** Ocean-currents prompt ($P=63$) and cybersecurity prompt ($P=62$); one fixed 300-token
