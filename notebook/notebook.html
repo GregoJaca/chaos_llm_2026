@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notebook.md</title>
+<link rel="stylesheet" href=".preview/katex/katex.min.css">
+<style>
+:root { --fg:#1a1a1a; --muted:#666; --line:#d8d8d8; --accent:#0b5cad; }
+* { box-sizing: border-box; }
+body {
+  font-family: "Charter", "Georgia", "Cambria", serif;
+  font-size: 15px; line-height: 1.55; color: var(--fg);
+  margin: 0 auto; max-width: 210mm; padding: 18mm 16mm 24mm;
+  background: #fff;
+}
+h1, h2, h3, h4 { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; line-height:1.25; }
+h1 { font-size: 1.65em; margin: 1.4em 0 .5em; border-bottom: 2px solid var(--line); padding-bottom:.25em; }
+h2 { font-size: 1.3em; margin: 1.3em 0 .4em; color:#111; }
+h3 { font-size: 1.08em; margin: 1.1em 0 .3em; color:#222; }
+p, li { margin: .45em 0; }
+ul, ol { margin: .45em 0 .45em 1.3em; padding: 0; }
+code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: .86em; }
+code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; }
+pre { background:#f7f7f7; border:1px solid #e5e5e5; border-radius:4px; padding:8px 10px; overflow-x:auto; }
+img { max-width: 100%; height: auto; display:block; margin: 10px auto; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .93em; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: #f5f7f9; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.8em 0; }
+blockquote { margin: .6em 0; padding: .3em 1em; border-left: 3px solid var(--line); color:#333; }
+a { color: var(--accent); }
+.katex-display { margin: .7em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.03em; }
+header.banner {
+  font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; color: var(--muted);
+  border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 18px;
+}
+header.banner a { text-decoration: none; }
+h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid; }
+@page { size: A4; margin: 15mm 14mm 16mm; }
+</style>
+</head><body>
+<header class="banner">
+  built 2026-11-19 07:38:08 &nbsp;·&nbsp; source: notebook.md &nbsp;·&nbsp;
+  <a href="notebook.pdf">PDF</a> &nbsp;·&nbsp; <a href="notebook.md">Markdown</a>
+</header>
+<h1 id="deepseek-15b-definitions-data-and-every-figure-explained">DeepSeek-1.5B: definitions, data, and every figure explained</h1>
+<p>This is the single reference document. Part 1 defines every symbol and formula. Part 2 shows
+each figure with (i) the data it comes from, (ii) the exact definition of both axes,
+(iii) what every curve is, (iv) what the figure shows and does not show. Part 3 relates this
+to Lyapunov exponents, Part 4 separates trivial from non-trivial results, Part 5 lists null
+results, Part 6 is the data inventory.</p>
+<p><strong>One warning first.</strong> The system is <strong>non-autonomous</strong>: at every step the model reads a new
+token, so the update map changes with time. Lyapunov exponents, attractors and invariant
+measures are defined for autonomous maps; Part 3 explains what our numbers are and are not.</p>
+<hr />
+<h1 id="part-1-definitions">Part 1. Definitions</h1>
+<h2 id="11-model-and-protocol">1.1 Model and protocol</h2>
+<p><code>DeepSeek-R1-Distill-Qwen-1.5B</code>, <strong>float32</strong>, one GPU, <strong>greedy</strong> decoding (temperature 0, no
+sampling, no repetition penalty). Decoder-only Transformer, 28 blocks, hidden width $d=1536$.
+A <em>sliding attention window</em> $W$ limits how far back a token can attend. It is part of the
+attention mask, not of the weights.</p>
+<table>
+<thead>
+<tr>
+<th>symbol</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$P$</td>
+<td>number of prompt tokens (65 in most runs)</td>
+</tr>
+<tr>
+<td>$T$</td>
+<td>number of generated tokens (300 unless stated)</td>
+</tr>
+<tr>
+<td>$p_1,\dots,p_P$</td>
+<td>prompt token ids</td>
+</tr>
+<tr>
+<td>$g_0,\dots,g_{T-1}$</td>
+<td>generated token ids of the unperturbed run</td>
+</tr>
+<tr>
+<td>$e_p\in\mathbb{R}^d$</td>
+<td>input embedding of token $p$</td>
+</tr>
+<tr>
+<td>$h_{t,\ell}\in\mathbb{R}^d$</td>
+<td>residual-stream state at generated position $t$, output of block $\ell$ ($\ell=0$: embedding; $\ell=27$: last block, before the final norm)</td>
+</tr>
+<tr>
+<td>$z_t\in\mathbb{R}^V$</td>
+<td>logits that predict token $t$ ($V\approx152$k)</td>
+</tr>
+<tr>
+<td>$m_t$</td>
+<td><strong>decision gap</strong> $=z_t^{(1)}-z_t^{(2)}$ (top-1 minus top-2)</td>
+</tr>
+<tr>
+<td>$W$</td>
+<td>sliding-window size, in tokens</td>
+</tr>
+<tr>
+<td>$r$</td>
+<td>perturbation radius (a length in embedding space)</td>
+</tr>
+<tr>
+<td>$u$</td>
+<td>unit perturbation direction</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Decision gap.</strong> At step $t$ the model scores every vocabulary item; sort
+$z_t^{(1)}\ge z_t^{(2)}\ge\cdots$. The gap $m_t=z_t^{(1)}-z_t^{(2)}$ says how comfortably the
+top word wins. A word can change only if a perturbation makes $z^{(2)}$ overtake $z^{(1)}$.</p>
+<p><strong>Context length.</strong> When predicting $g_t$ the model has seen $P+t$ tokens. With window $W$,
+once $P+t>W$ the oldest tokens are invisible. That is the only way $W$ can change anything.</p>
+<h2 id="12-the-three-things-we-vary">1.2 The three things we vary</h2>
+<p><strong>(A) Prompt perturbation</strong> ("A1"). Add the same vector to every prompt embedding:
+$$e'_{p_i}=e_{p_i}+r\,u_i,\qquad i=1,\dots,P,$$
+where $u=(u_1,\dots,u_P)\in\mathbb{R}^{Pd}$ is a unit vector and $r$ its length. The 20
+directions used in most runs form a <em>simplex</em>: each $u$ is supported on one coordinate per
+prompt position, and any two are nearly orthogonal. Nothing is added to generated positions.
+The model then runs teacher-forced (1.3) on the unperturbed token sequence.</p>
+<p><strong>(B) Single-position ("current-state") perturbation.</strong> Add a vector to one generated position:
+$$e'_{P+s}=e_{P+s}+r\,v,\qquad \|v\|_2=1,$$
+with $v$ a fixed Gaussian direction (24 directions in the latest runs). This is what earlier
+texts called "kick" or "nudge". <strong>They are the same thing; from now on the word is
+perturbation.</strong></p>
+<p><strong>(C) Window change.</strong> Keep the prompt and the exact token sequence; only change $W$. This
+isolates the effect of the attention mask, with no perturbation at all ($r=0$).</p>
+<h2 id="13-teacher-forcing-vs-free-run">1.3 Teacher forcing vs free run</h2>
+<p><em>Free run</em>: the model is fed its own output, $g'_t=\arg\max z_t(h'_0,\dots,h'_{t-1})$.
+<em>Teacher-forced pass</em>: the model is fed the baseline tokens $g_0,\dots,g_{T-1}$ at every
+position, so each position is evaluated on the same prefix; the token it <em>would</em> emit at step
+$t$ is $\hat g_t=\arg\max z'_t$.</p>
+<h2 id="14-observables">1.4 Observables</h2>
+<p><strong>Hidden-state response</strong>
+$$\delta h_{t,\ell}=h'_{t,\ell}-h_{t,\ell},\qquad
+a(t,\ell)=\|\delta h_{t,\ell}\|_2,\qquad
+q(t,\ell)=\frac{a(t,\ell)}{\|h_{t,\ell}\|_2}.$$
+$a$ is an absolute length; $q$ is the same change as a fraction of the state's own length.
+Both appear in the figures; they answer different questions.</p>
+<p><strong>Logit response.</strong> With $i_1(t),i_2(t)$ the baseline top-1/top-2 indices,
+$$\delta m_t(u)=\big(z'^{(i_1)}_t-z'^{(i_2)}_t\big)-\big(z^{(i_1)}_t-z^{(i_2)}_t\big)=m'_t-m_t.$$
+$\delta m_t<0$: the gap shrank. $\delta m_t>0$: it widened.</p>
+<p><strong>Flips</strong>
+$$T_{\text{free}}=\min\{t:g'_t\ne g_t\},\qquad
+T_{\text{tf}}=\min\{t:\hat g_t\ne g_t\}.$$
+If no such $t$ exists we report $-1$ ("no flip in 300 tokens").</p>
+<p><strong>Local threshold.</strong> A flip at $t$ needs $z'^{(2)}_t\ge z'^{(1)}_t$, i.e.
+$$\delta m_t\le -m_t .$$
+Because the response is proportional to $r$ in the linear regime, the smallest radius that
+flips the word at $t$ in direction $u$ is
+$$r_c(t,u)=\frac{m_t}{\max\!\big(-\delta m_t(u)/r,0\big)}=\frac{m_t\,r}{\max(-\delta m_t(u),0)},$$
+and the predicted first flip is
+$$\hat T(r,u)=\min\{t:r\ge r_c(t,u)\},\qquad r_*(u)=\min_t r_c(t,u).$$
+Only a <strong>negative</strong> shift counts. Replacing $\delta m$ by $|\delta m|$ ("sign-blind") predicts
+flips where the gap is widening; Part 2 quantifies the damage.</p>
+<p><strong>Two prediction modes.</strong> <em>Measured-at-$r$</em>: compute $\delta m$ with a teacher-forced pass at the
+same $r$ you want to predict. <em>Extrapolated</em>: compute $\delta m$ at a small $r$ and scale
+linearly. The first is a measurement, the second is a model; they behave very differently
+for $r>0.3$.</p>
+<p><strong>Survival</strong>
+$$S=\frac{T_{\text{free}}}{T}.$$
+It is the fraction of the unperturbed answer that is reproduced, because after the first
+difference the texts never re-converge (measured 0/75).</p>
+<p><strong>Window departure.</strong> For two runs with the same tokens and windows $W_1<W_2$,
+$$D(W_1,W_2)=\min\{t:a_{W_1}(t)\ne a_{W_2}(t)\}$$
+compared bitwise in float32. Empirically
+$$D(W_1,W_2)=W_1-P .$$
+That is: the curves separate at the first generated step whose context no longer fits in the
+smaller window. The <em>response ratio</em> used in one figure is $\rho(t)=a_{W_1}(t)/a_{W_2}(t)$:
+$\rho=1$ exactly before $D$, $\rho\ne1$ after.</p>
+<p><strong>Depth and non-normality.</strong> For fixed $t$, $a(t,\ell+1)/a(t,\ell)$ is the local gain. For a fixed
+position the tangent map is $J_\ell=\partial h_{\ell+1}/\partial h_\ell$; $\sigma_{\max}(J_\ell)$
+is its largest singular value, $\rho(J_\ell)$ its spectral radius, $\kappa=\sigma_{\max}/\rho$.</p>
+<p><strong>Correlation dimension</strong> (Part 2.G). For $N$ states $x_i$,
+$$C(\varepsilon)=\frac{2}{N(N-1)}\sum_{i<j}\mathbf 1\{\|x_i-x_j\|_2<\varepsilon\},\qquad
+D_2=\frac{d\log C}{d\log\varepsilon}.$$
+A reliable value needs a <em>plateau</em> inside $[10/N,\,2\log_{10}N]$.</p>
+<p><strong>Finite-time growth rate</strong>
+$$\lambda(t)=\frac1t\log\frac{\|\delta h_t\|}{\|\delta h_0\|}.$$
+It is a finite-time stretching rate along one trajectory, not a Lyapunov exponent (Part 3).</p>
+<hr />
+<h1 id="part-2-every-figure">Part 2. Every figure</h1>
+<h2 id="part-20-the-central-result-this-is-stable-chaos-not-exponential-chaos">Part 2.0 — The central result: this is stable chaos, not exponential chaos</h2>
+<p><img alt="flip data" src="figures/stablechaos_flips.png" /></p>
+<p><strong>The question.</strong> Does a perturbed generation diverge because infinitesimal differences grow
+exponentially (ordinary chaos), or because a finite perturbation crosses a local decision
+boundary after shadowing the original for a long time (stable chaos / flux tubes)?</p>
+<p><strong>Definitions.</strong> For one prompt, one window and one radius $r$, run $n=20$ directions.
+$T$ is the first generated token that differs from the unperturbed reference ($T=\infty$ if none
+within 300 tokens). The <strong>survival curve</strong> is $S_r(t)=P(T>t)$, estimated as the fraction of
+directions with $T>t$. The <strong>threshold field</strong> $r_c(u,t)$ is computed from one teacher-forced pass
+(margin over margin shrink, B1) and predicts a flip at the first $t$ with $r_c(u,t)<r$.</p>
+<p><strong>Panel (a).</strong> All 34 flips of the main prompt, as (radius, flip step). <strong>Panel (b).</strong> The flip
+steps against the baseline margin at those steps. <strong>Panel (c).</strong> Calibration.</p>
+<p><strong>Reading.</strong> The 34 flips land on <strong>8 steps only</strong> — $\{0,2,14,16,24,116,123,143\}$ — and those are
+the lowest-margin steps of the reference (ranks 0,1,2,3,5,6 among 300). A continuous-separation
+null would give ≈32 distinct steps; the probability of ≤8 distinct steps under that null is
+$p<5\times10^{-6}$ (Monte Carlo, $2\times10^5$ draws). Direction 10 flips at the <strong>same step 16</strong>
+for $r=0.15,0.2,0.25$, whereas exponential separation would move the flip time by
+$\approx b\ln(0.25/0.15)\approx25$ tokens over that range.</p>
+<p><img alt="survival" src="figures/stablechaos_survival.png" /></p>
+<p><strong>Axes.</strong> $x$: generation step $t$. $y$: $S_r(t)=P(T>t)$ over 20 directions (free y-axis per
+panel so the steps are visible). Blue: observed. Red dashed: prediction from the threshold field,
+with <strong>zero fitted parameters</strong>.</p>
+<p><strong>Reading.</strong> For $r=0.05$ and $0.1$ no dip is reachable and <strong>both curves are exactly 1</strong>: nothing
+flips. At $r=0.2$ the single flip is predicted at the same step. At $r=0.3$ the model predicts one
+extra flip (19/20). At $r=0.5$ and $1$ the model predicts <em>more</em> flips than observed — it
+over-fires, one-sidedly, because the real perturbation contracts slightly instead of growing. So
+the threshold field describes the discrete steps correctly, but at large $r$ it is an
+over-estimate, never an under-estimate.</p>
+<p><img alt="scaling" src="figures/stablechaos_scaling.png" /></p>
+<p><strong>Axes and content.</strong> (a) mean flip time $\langle T\rangle$ vs $r$; (b) the same on log axes with
+the $\log(1/r)$ law; (c) per-direction observed vs predicted flip step; (d) the fitted exponential
+hazard $\lambda(r)$ with bootstrap confidence intervals.</p>
+<p><strong>Reading — the exponential-separation hypothesis is rejected by four independent tests.</strong>
+1. <strong>Flip times are discrete</strong> (previous figure), not smoothly distributed.
+2. <strong>The fitted hazard is radius-dependent by ~90×</strong> — $\lambda(r)=5\times10^{-5}$ at $r=0.2$–$0.3$
+   up to $4.3\times10^{-3}$/token at $r=2$, with confidence intervals that include <strong>zero for
+   $r\le0.5$</strong>. Ordinary chaos requires one $r$-independent positive rate.
+3. <strong>The perturbation never amplifies:</strong> $\|\delta h_{27}(50)\|/\|\delta h_{27}(1)\|=0.70$–$1.02$
+   for $r=0.01$–$2$; it is flat-to-contracting, then decays as the perturbed position leaves the
+   window.
+4. <strong>A hard floor:</strong> the smallest critical radius in 300 steps is $r_c^{\min}\approx0.13$, and
+   <strong>0 of 40 runs flip at $r\le0.1$</strong>. A positive Lyapunov exponent would make any infinitesimal
+   perturbation separate eventually.</p>
+<p>The $\log(1/r)$ law is also quantitatively unstable: its slope $b$ is 49.5 (95% CI 36–64) over all
+radii but 80.6 when the fully censored radii are dropped, and the implied rate $1/b=0.02$/token
+exceeds every directly fitted hazard by 5–400×. The parameter-free threshold prediction tracks the
+same means better (MAD 21.8 vs 25.3 tokens).</p>
+<p><img alt="flux tube" src="figures/stablechaos_fluxtube.png" /></p>
+<p><strong>Axes.</strong> (a) token agreement with the reference after the first flip, as a function of tokens
+since the flip. (b) mismatch raster. (c) perturbation norm vs step.</p>
+<p><strong>Reading.</strong> Inside the tube the two runs are <strong>identical</strong> (same tokens, non-growing state
+distance). The exit is abrupt and permanent: after the first flipped token the main-prompt runs
+<strong>never</strong> rejoin the reference ($P(\text{rejoin at }T+1)=0/27$), with only a brief ~15-token
+structural echo on the childhood prompt. This is the "flux tube": exact shadowing, then a sudden
+exit at a decision boundary.</p>
+<p><strong>Error asymmetry.</strong> Across all tests the threshold model over-fires 26 times and misses once
+(sign test $p=4.2\times10^{-7}$); where both fire, the free run flips <em>later</em> than predicted in
+14/16 cases. The real system is slightly <strong>more</strong> contractive than the teacher-forced
+linearisation — the opposite of amplification.</p>
+<p><img alt="windows" src="figures/stablechaos_windows.png" /></p>
+<p><strong>Reading.</strong> Longer windows lower and multiply the margin dips: $\min m_t$ goes 0.0202 ( $W=100$ )
+→ 0.0031 ( $W=200,500$ ), and the predicted flip fraction at $r=0.3$ rises 0.10 → 0.65 → 0.70. The
+mechanism is unchanged; only the boundary field moves. This is the architectural dependence the
+project set out to measure.</p>
+<p><strong>Verdict.</strong> The system is in the <strong>stable-chaos / flux-tube regime</strong>. There is no positive
+Lyapunov exponent at these scales: trajectories shadow each other exactly until a finite
+perturbation crosses a local margin threshold, at a step and for a direction that one
+teacher-forced pass predicts without fitting.</p>
+<p><strong>Caveats.</strong> 300-token horizon, greedy decoding, three prompts. "Permanent plateau" means "no
+reachable dip remains within the horizon". The teacher-forced linearisation over-fires at
+mid/large radii because the real perturbation contracts slightly.</p>
+<h3 id="part-20b-the-asymptotic-stretching-rate-is-negative-in-every-configuration">Part 2.0b. The asymptotic stretching rate is negative in every configuration</h3>
+<p><img alt="forest" src="figures/lambda_fig09_forest.png" /></p>
+<p><strong>Data.</strong> 31 configurations: 7 layers, 12 radii, 6 windows × 2 prompts, 12 independent prompt
+runs. For each, the <strong>sustained rate</strong> is the mean of
+$\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)}$ over $t>150$.</p>
+<p><strong>Axes.</strong> $x$: sustained rate in nats/token. Thin line: 95% bootstrap CI over directions. Thick
+line: conservative two-way bootstrap (directions + token blocks of 10). The black line is zero.</p>
+<p><strong>Reading.</strong> <strong>0 of 31 point estimates are positive</strong> (range −0.039 to −0.002). <strong>0 of 31
+direction-bootstrap CIs touch zero</strong> (largest upper bound −0.0014). With the conservative
+bootstrap, 2 of 31 CIs reach +0.0008, but none is entirely positive. A sustained rate
+$\ge+0.001$/token is excluded everywhere. The best-estimate "Lyapunov-like" number is
+<strong>−0.0043 nats/token, CI [−0.0055, −0.0030]</strong>.</p>
+<p><img alt="tail" src="figures/lambda_tail.png" /></p>
+<p><strong>Reading.</strong> Fit of the tail: an exponential relaxation to a <strong>negative</strong> asymptote wins on the
+windows, and a constant negative rate beats a power law on 9 of 10 layer/window grids. The
+asymptote is −0.004 to −0.011 per token, with CIs excluding zero from above.</p>
+<p><img alt="lambda windows" src="figures/lambda_windows.png" /></p>
+<p><strong>Reading — the window is a forgetting rate.</strong> The sustained contraction scales with the eviction
+churn: $W=50$ gives −0.0175 [−0.0182, −0.0165], $W=100$ −0.0065, $W\ge200$ ≈ −0.005. The only
+early-rate CI that includes positive values is $W=100$'s +0.0109 [−0.0001, +0.0221], and it is
+gone by the tail. There is <strong>no growth phase</strong>: the response rises for exactly one token, then
+decays.</p>
+<p><img alt="synthetic" src="figures/lambda_fig10_synthetic.png" /></p>
+<p><strong>Control.</strong> A synthetic expanding map with a genuine rate of +0.035/token and noise matched to
+the real data gives a CI of [+0.016, +0.038] — unmistakable in the same pipeline. The real data's
+CI [−0.0094, −0.0006] sits in the contracting-with-reset family. This is the strongest statement
+we can make about Lyapunov exponents: <strong>there is no positive one detectable here, and the method
+would have found it.</strong></p>
+<p><strong>Jensen check.</strong> The gap between the mean of per-direction rates and the rate of the mean curve is
+−0.0005/token, about 6× smaller than the bootstrap noise; 0 of 20 individual directions have a
+positive sustained rate.</p>
+<h3 id="part-20d-long-horizon-the-rate-stays-negative-to-4000-tokens">Part 2.0d. Long horizon: the rate stays negative to 4000 tokens</h3>
+<p><img alt="long horizon" src="figures/long_horizon.png" /></p>
+<p><strong>Data.</strong> One 4000-token greedy trajectory (history of computing), prompt perturbation $r=0.1$,
+4 directions, teacher-forced along the full sequence with <code>run_a1_long</code> (base model + <code>lm_head</code>
+only at generated positions, so the <code>[L,V]</code> logits are never materialised).</p>
+<p><strong>Panel (a).</strong> $x$: $t$ (log); $y$: $a(t,\ell)$ for four layers.</p>
+<p><strong>Panel (b).</strong> $\Lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$.</p>
+<p><strong>Reading.</strong> The rate is positive in the first ~20 tokens (up to +0.14 at layer 27), then settles
+<strong>negative</strong> and stays negative: −0.0075 at $t=1000$, −0.0069 at $t=4000$. There is no
+turn-around within the longest horizon we can run. This is the strongest available statement
+about a Lyapunov exponent: none is detectable up to 4000 tokens.</p>
+<p><strong>Technical note.</strong> Long sequences are now routine: 4000 teacher-forced tokens take ~13 s for 2
+directions and ~10 GB of VRAM.</p>
+<h3 id="part-20c-threshold-curves-across-prompts">Part 2.0c. Threshold curves across prompts</h3>
+<p><img alt="chaos fraction" src="figures/chaos_flip_fraction.png" /></p>
+<p><strong>Data.</strong> 4 prompts, 20 shared directions, 12 radii from 0.05 to 2, 300 generated tokens,
+free-running greedy. A direction "flips" if any generated token differs from the unperturbed run.</p>
+<p><strong>Axes.</strong> $x$: perturbation radius $r$ (log). $y$: fraction of the 20 directions that flip.
+Bars: 95% Wilson interval for a binomial proportion.</p>
+<p><strong>Reading.</strong> The flip fraction is a <strong>sigmoid in $r$</strong>, with a prompt-dependent threshold: the
+first radius above 50% flips is 0.4 (p3), 0.7 (p1), and 1.5 (p4); p2 does not reach 50% within the
+tested range. At $r\le0.1$ every prompt is below 15%. This is the population-level version of the
+single-configuration result: a finite radius is needed, and the threshold is not universal.</p>
+<p><strong>Why it matters.</strong> Exponential instability has no radius threshold: any $r>0$ eventually flips.
+The existence of a prompt-dependent finite threshold, plus the sigmoid shape, is the macroscopic
+signature of the stable-chaos regime.</p>
+<hr />
+<h2 id="new-round-4-window-regimes-where-amplification-happens-and-the-finite-time-rate">NEW (round 4): window regimes, where amplification happens, and the finite-time rate</h2>
+<h3 id="n1-does-the-attention-window-change-the-dynamical-regime">N1. Does the attention window change the dynamical regime?</h3>
+<p><img alt="regime scaling" src="figures/regime_scaling.png" /></p>
+<p><strong>Data.</strong> 6 prompts × 10 windows × 3 radii × 12 directions, 400 tokens, 600 direction-runs.
+For each run the local rate $\lambda_{10}(t)$ is averaged <strong>before</strong> clipping ($t<W-P-5$) and
+<strong>after</strong> clipping ($t>W-P+5$), separately.</p>
+<p><strong>Panel (a).</strong> Pre-clip mean rate vs $W$ (only windows where all prompts have a pre-clip interval),
+95% bootstrap CI over directions.</p>
+<p><strong>Panel (b).</strong> Post-clip contraction rate $-\lambda_{10}$ vs $W$ (log–log), with the fitted
+$A/W$.</p>
+<p><strong>Panel (c).</strong> The product $-\lambda_{\text{post}}\cdot W$.</p>
+<p><strong>Reading — two clean statements.</strong>
+1. <strong>Before clipping the system is neutral:</strong> the rate is between −0.0023 and +0.0009 nats/token
+   for every window from 90 to 4096, with CIs that include zero. All the apparent window dependence
+   in a naive comparison comes from <em>where the clip falls</em>, not from the pre-clip dynamics.
+2. <strong>After clipping the contraction rate is eviction-driven:</strong>
+   $$-\lambda_{\text{post}} \;\approx\; \frac{A}{W},\qquad A=0.67\pm0.11 .$$
+   The product $-\lambda_{\text{post}}W$ is constant (panel c). A larger window forgets the
+   perturbation more slowly, exactly as if each generated token had probability $\propto1/W$ of
+   evicting the perturbed context.</p>
+<p>This replaces the earlier, confounded comparison (N6): the "regime" at $W<P$ is a post-clip
+forgetting rate, not a different pre-clip dynamics.</p>
+<p><img alt="window boundary" src="figures/window_boundary.png" /></p>
+<p><strong>The boundary is a step at $W=P$.</strong> Fine scan $W=55\ldots130$ for three prompts ($P=65,62,63$),
+$r=0.1$, 6 directions, layer 27.</p>
+<p><strong>Axes.</strong> $x$: $W-P$ (negative means the prompt is already clipped). $y$: the immediate response
+$a(0,27)$ normalised by its saturated value at $W\gg P$.</p>
+<p><strong>Reading.</strong> The curves for the three prompts <strong>collapse onto one</strong>: for $W-P\ge5$ the response is
+flat (ratio 1), and below it the response rises steeply, to 2.1–4.6× at $W-P=-10$. The transition
+is within a few tokens of $W=P$. So the window is a <strong>step function of $W-P$</strong> for prompt
+perturbations; there is no gradual regime.</p>
+<p><img alt="window regimes" src="figures/window_regimes.png" /></p>
+<p><strong>Data.</strong> Ocean-currents prompt ($P=63$) and cybersecurity prompt ($P=62$); one fixed 300-token
+sequence each; prompt perturbation $r=0.1$, 10 directions, teacher-forced, layer 27; windows
+$W=50,100,200$.</p>
+<p><strong>Panel (a)/(c).</strong> $x=t$; $y=a(t,27)=\|\delta h_{t,27}\|_2$ (log). <strong>Panel (b)/(d).</strong> $x$: horizon
+$t$ (log); $y$: $\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$.</p>
+<p><img alt="growth summary" src="figures/window_growth_summary.png" /></p>
+<p><strong>Data.</strong> Five prompts at $W=100$ and three of them at $W=50$ (same protocol, 8 directions); local
+rate over 20-token windows, $\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)}$.</p>
+<p><strong>Reading — the window changes the growth regime, quantitatively.</strong>
+- At $W=50<P$ the prompt is <em>already</em> clipped at $t=0$: the initial response is 3–6× larger, and
+  the growth is much weaker. Across the three prompts tested at both windows, the peak rate drops
+  from <strong>0.030–0.076</strong> ($W=100$) to <strong>0.015–0.023</strong> ($W=50$), and the fraction of tokens with a
+  positive rate drops from <strong>0.25–0.49</strong> to <strong>0.16–0.18</strong>.
+- At $W>P$ the shape is universal and simply shifted in time by $W-P$: $W=200$ and $W=100$ coincide
+  until $t=W-P$.
+- Growth is <strong>positive in both regimes</strong> at some tokens: this is a quantitative regime change, not
+  a change of sign. What changes is how fast and for how long the perturbation grows.</p>
+<p><img alt="growth errors" src="figures/window_growth_errors.png" /></p>
+<p><strong>The same comparison with the full distribution.</strong> Data: 5 prompts measured at both windows, every
+direction, mean of $\lambda_{10}$ over $t\in[10,100]$.</p>
+<p><strong>Panel (a).</strong> Points: prompt means; box: distribution over all directions; thin lines join the same
+prompt across windows. <strong>Panel (b).</strong> The two distributions.</p>
+<p><strong>Reading.</strong> The distribution shifts by <strong>≈0.003 nats/token</strong> (means −0.0034 vs −0.0005;
+Mann–Whitney $p=1.7\times10^{-4}$ over 36 vs 40 direction-means). The distributions overlap: this is
+a consistent shift, not a clean separation. Given the confounding of the interval with the clip time
+(N6), the correct claim is "the window changes the early-time stretching rate by a measurable but
+small amount", not "there are two distinct dynamical regimes".</p>
+<p><strong>Pre-clipping control: there is no window effect before the context reaches $W$.</strong></p>
+<p><img alt="preclip" src="figures/window_preclip_null.png" /></p>
+<p><strong>Data.</strong> Same prompt, same 200 tokens, <strong>no perturbation</strong> ($r=0$); hidden states compared across
+$W=50,100,200,4096$ at layers 1/7/14/27.</p>
+<p><strong>Axes.</strong> $x$: token index (negative = prompt). $y$: relative difference
+$\|\delta h\|/\|h\|$ between the run at $W$ and the run at $W=4096$ (log).</p>
+<p><strong>Reading.</strong> The difference is <strong>exactly zero</strong> (1e−12, float32 round-off) until $t=W-P$, then
+jumps to order 1. For $W=50$, the first difference appears at position 50 — inside the prompt —
+because the prompt itself is longer than the window. So with this protocol the window has no
+effect at all before the context reaches it. (If an earlier experiment showed otherwise, the
+likely causes are a different <code>use_sliding_window</code> setting, a model whose window is baked into
+the mask at all lengths, or mixed precision; the control above excludes all of them for this
+implementation.)</p>
+<h3 id="n2-where-does-a-perturbation-actually-get-amplified">N2. Where does a perturbation actually get amplified?</h3>
+<p><img alt="layer probe" src="figures/layer_probe.png" /></p>
+<p><strong>Data.</strong> Inject a perturbation of size $r=0.05$ into the residual stream <strong>at one layer $L$</strong>
+and one position, then read the response at every layer $\ell>L$. 6 directions; HF convention:
+<code>hidden_states[l]</code> is the input of block $l$, so the perturbation first appears at $\ell=L+1$.
+Left: position $s=50$ (an ordinary position). Middle: $s=16$ (a position with a small gap).
+Right: total gain at the last layer vs injection layer.</p>
+<p><strong>Axes.</strong> $x$: layers after the injection $\ell-L$ (log). $y$: $a(\ell)/r$, the response
+relative to the injected size. A value of 1 means "no amplification, no decay".</p>
+<p><strong>Reading — and the reconciliation of three earlier, apparently contradictory statements.</strong>
+- At an <strong>ordinary position</strong> ($s=50$) a local perturbation <strong>never amplifies</strong>: the gain is
+  0.5–1.25, i.e. it decays slightly with distance. Injecting later leaves less distance to decay,
+  hence the mild upward trend with $L$.
+- At a <strong>sensitive position</strong> ($s=16$) the same perturbation is amplified <strong>≈3×</strong>, and the growth
+  happens mostly in the last layers (the curves bend upward at $\ell-L\gtrsim10$).
+- The earlier "depth gain $A(\ell)\propto\ell^{0.64}$" (A4) is a different object: it is the
+  response at generated positions to a perturbation applied to <strong>all prompt tokens</strong>, so it
+  measures how much <em>prompt content</em> each depth integrates, not the amplification of a local
+  kick. The earlier "all growth in layer 1" came from the depth-FSLE / same-position product and
+  from the state-norm jump at the embedding→residual transition; it is not the gain of a
+  perturbation.</p>
+<p><strong>Answer to "first or last layers?"</strong> For a local perturbation: <strong>neither</strong> at an ordinary
+position (no gain), <strong>the last layers</strong> at a sensitive position. For a prompt-wide perturbation:
+the response grows with depth because deeper layers see more of the prompt, not because any
+single block amplifies.</p>
+<h3 id="n3-the-nonlinearity-at-large-math242-is-a-u-shaped-concave-law">N3. The nonlinearity at large $r$ is a U-shaped (concave) law</h3>
+<p><img alt="gain scaling" src="figures/threshold_gain_scaling.png" /></p>
+<p><strong>Data.</strong> All 12 radii, 20 directions, 300 steps; teacher-forced margin changes. $g(r)=|\delta m_t|/r$.</p>
+<p><strong>Panel (a).</strong> Median over all (direction, step) pairs, with 25–75% and 10–90% bands, and a
+quadratic fit in $\log r$ (not a power law).</p>
+<p><strong>Reading.</strong> The dependence is <strong>concave</strong>: $g$ falls from $1.5\times10^{-2}$ at $r=10^{-3}$ to a
+floor of $8.3\times10^{-3}$ around $r\approx0.03$, then rises to $1.3\times10^{-2}$ at $r=2$. A
+quadratic in $\log r$ fits with $R^2=0.977$; a single power law cannot describe both ends. The
+left rise is the float32 floor (noise$/r$), the right rise is genuine superlinearity.</p>
+<p><strong>Panel (b).</strong> Distribution of $g(2)/g(0.1)$ over all (step, direction) pairs.</p>
+<p><strong>Reading.</strong> The superlinearity is <strong>heterogeneous</strong>: median ×1.52, but the 10–90% range is
+0.27–9.5. It is a global tendency, not a property of a few close calls. Consequence: a threshold
+measured at small $r$ is unbiased only up to $r\approx0.3$; beyond that the correction is
+step-dependent and cannot be captured by one exponent.</p>
+<h3 id="n2b-amplification-depends-on-position-not-on-injection-depth">N2b. Amplification depends on position, not on injection depth</h3>
+<p><img alt="layer probe positions" src="figures/layer_probe_positions_all.png" /></p>
+<p><strong>Data.</strong> Layer probe at seven positions ($s=16,32,50,75,100,150,200$), 6 directions, $r=0.05$,
+9 injection layers (0–27).</p>
+<p><strong>Axes.</strong> $x$: perturbation position $s$. $y$: $a(27)/r$, averaged over injection layers; bars:
+standard deviation across injection layers.</p>
+<p><strong>Reading.</strong> Only $s=16$ amplifies (<strong>2.68</strong>, sd 0.7). Every other position is between 0.87 and
+1.09 — no net amplification. $s=16$ is the sixth-smallest margin of the 300 steps ($m=0.12$).
+Caveat: seven positions is a small sample; the margin–gain relation is suggestive, not proven.</p>
+<h3 id="n4-the-finite-time-rate-positive-then-negative">N4. The finite-time rate: positive, then negative</h3>
+<p><img alt="rate aggregation" src="figures/rate_aggregation.png" /></p>
+<p><strong>Data.</strong> Prompt perturbation, $r=0.1$, layer 27, 20 directions, $W=100$, 300 tokens.</p>
+<p><strong>Panel (a).</strong> $x$: $t$; $y$: the <strong>local</strong> stretching rate over a 20-token window,
+$$\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)},$$
+which does not depend on a reference point. Thick blue: computed on the mean curve; thick red:
+median over directions; band: inter-quartile range; thin grey: individual directions.</p>
+<p><strong>Panel (b).</strong> Difference between the two aggregations.</p>
+<p><strong>Reading.</strong> $\lambda_{10}(t)\approx0$ for $t<20$, rises to <strong>+0.03 nats/token around $t=50$</strong>,
+then drops sharply negative at $t\approx100$ (the first window flush) and stays at −0.007. Only
+21% of tokens have a positive rate. The two aggregations differ by up to 0.01 nats/token, so both
+must be reported: "mean of the rates" and "rate of the mean" are different objects (Jensen).</p>
+<p>The cumulative version used in N1(b) is $\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$; it is positive
+for the first ~10–40 tokens for $W>P$ and negative from the start for $W<P$. No window, radius or
+layer tested gives a sustained positive rate over 300 tokens.</p>
+<p>This is the closest legitimate analogue of a Lyapunov exponent here: a <strong>finite-time</strong> stretching
+rate with a stated horizon and reference point. It is not an asymptotic exponent, because the map
+changes every step (Part 3).</p>
+<h3 id="n5-window-flush-an-exact-predictive-law">N5. Window flush: an exact, predictive law</h3>
+<p><img alt="flush all" src="figures/flush_law_all.png" /></p>
+<p><strong>Data.</strong> 4 prompts ($P=65,62,63,8$), windows $W=60,80,100,120,150,200,250,300,400,500$,
+600 generated tokens, layers 1–6, 6 directions, $r=0.1$. 240 (prompt, window, layer) measurements.
+$t^*_\ell$ is the first generated token where the layer-$\ell$ response is exactly zero;
+$p_{\mathrm{last}}$ is the largest prompt position carrying a nonzero perturbation.</p>
+<p><strong>Panel (a).</strong> Measured $t^*_\ell$ vs the prediction
+$$t^*_\ell=p_{\mathrm{last}}+(W-P)+(\ell-1)(W-1).$$
+<strong>Panel (b).</strong> Residuals (measured − predicted). <strong>Panel (c).</strong> Collapse of the layer cascade.</p>
+<p><strong>Reading.</strong> All 240 points lie on the identity line: <strong>median residual 0, 90% of residuals 0</strong>.
+The law holds for a 8-token prompt as well as a 65-token one, across a factor-8 range of windows,
+and for six layers. This is a deterministic, exactly predicted quantity — there is no residual
+distribution to show because there are no residuals.</p>
+<p><img alt="window flush example" src="figures/window_flush.png" /></p>
+<p>The earlier single-window picture, for reference: layers 1, 2, 3 die at 92, 191, 290 (spacing 99),
+while layers 7+ keep a non-zero response for the whole run because they also carry the
+perturbation through the generated positions themselves.</p>
+<p><strong>Mechanism.</strong> A perturbed prompt token at position $p$ is visible to a query at $q$ only while
+$p\ge q-W+1$. Layer 1 dies at the first $q$ where the last perturbed prompt token is out of reach
+($t=q-P=p_{\mathrm{last}}+W-P$). Each deeper layer is fed by the previous layer's last surviving
+state, which stays visible for $W-1$ more tokens.</p>
+<h3 id="n6-the-stretching-rate-math292-bands-tests-and-a-confound">N6. The stretching rate $\lambda(t)$: bands, tests, and a confound</h3>
+<p><img alt="lambda bands" src="figures/lambda_bands_windows.png" /></p>
+<p><strong>Data.</strong> Fixed-token runs on the ocean-currents prompt, $r=0.1$, layer 27, 10 directions,
+windows $W=50,100,200$. The local rate is
+$$\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)}.$$</p>
+<p><strong>Axes.</strong> $x$: $t$. $y$: $\lambda_{10}$ in nats/token. Thick line: median over directions.
+Band: 10–90% over directions.</p>
+<p><strong>Reading.</strong> The rate fluctuates strongly from token to token; the direction spread is comparable
+to the mean. Averaged over a long interval the differences are significant (next figure), but any
+single-token statement is noise-dominated.</p>
+<p><img alt="lambda test" src="figures/lambda_window_test.png" /></p>
+<p><strong>Data.</strong> For each direction, the mean of $\lambda_{10}$ over $t\in[10,100]$; 10 directions per
+window. Points: directions; red line: median; bar: inter-quartile range.</p>
+<p><strong>Reading.</strong> $W=100$ gives a <strong>positive</strong> mean rate (+0.008 nats/token), while $W=50$ and $W=200$
+give <strong>negative</strong> means (−0.007 and −0.008). Mann–Whitney $p=1.8\times10^{-4}$ for both
+comparisons. The effect is real and directional, but see the confound below before interpreting it
+as a "regime".</p>
+<p><img alt="tau rate" src="figures/window_tau_rate.png" /></p>
+<p><strong>The confound.</strong> Panel (b) compares the same fixed interval $t\in[10,100]$ for four windows. But
+the window starts clipping at $t=W-P$: 0 for $W=50$, 37 for $W=100$, 137 for $W=200$, 337 for
+$W=400$. So the interval contains a different mix of pre-clip and post-clip behaviour for each $W$;
+the comparison is not like-for-like.</p>
+<p><strong>Panel (a)</strong> aligns the curves by $\tau=t-(W-P)$, the time since the context exceeded the window.
+The curves do <strong>not</strong> collapse: after its clip, $W=100$ rises (the response gains from the newly
+truncated context), while $W=200$ keeps decaying. That is a genuine dynamical difference, not just
+a time shift.</p>
+<p><strong>Consequence for the analysis.</strong> Any statement about "the window changes the rate" must specify
+(a) the interval, (b) whether that interval is pre- or post-clip, and (c) the aligned time $\tau$.
+The clean comparisons are: pre-clip (all $W>P$ identical), and post-clip at fixed $\tau$.</p>
+<p><img alt="lambda layers" src="figures/lambda_layers.png" /></p>
+<p><strong>Layer dependence.</strong> $\lambda_5(t)$ for shallow (1,2,3,7) and deep (14,21,27) layers, median and
+25–75% band. The shallow layers die to exact zero at $t=93/192/291$ (the flush cascade). Deep
+layers stay near $-0.01$ per token with only transient excursions. There is no depth at which the
+sustained rate is positive.</p>
+<p><img alt="lambda radius" src="figures/lambda_radius.png" /></p>
+<p><strong>Radius dependence.</strong> In the linear regime the curves collapse: the tail rate is
+$-0.010\pm0.002$ for every radius from $10^{-3}$ to $0.3$. A rate that depends on the perturbation
+size is not a Lyapunov exponent; here the only radius dependence is the nonlinear onset above
+$r\approx0.3$.</p>
+<h3 id="n7-the-window-also-changes-single-position-perturbations">N7. The window also changes single-position perturbations</h3>
+<p><img alt="state window scan" src="figures/state_window_scan.png" /></p>
+<p><strong>Data.</strong> Single-position perturbation at $s=16$, $r=0.1$, 16 directions, teacher-forced, same
+prompt; the window is overridden to $W=50,70,90,100,150,300,4096$.</p>
+<p><strong>Panel (a).</strong> $x$: lag $\tau=t-s$; $y$: $a(s+\tau,27)$ (log), median over directions.</p>
+<p><strong>Panel (b).</strong> Immediate response (blue, left axis) and half-life (red, right axis) vs $W$.</p>
+<p><strong>Reading.</strong> A clean <strong>dose–response</strong>: the immediate response falls from 20.0 ($W=50$) to 16.7
+($W=70$) to 11.8 ($W\ge90$), and the half-life from 9 to 4 to 2 tokens. The effect <strong>saturates at
+$W\approx90$</strong>, i.e. about $1.4P$; for larger windows nothing changes. At $W<P$ the same local
+perturbation is both larger and longer-lived.</p>
+<p><img alt="state window" src="figures/state_window.png" /></p>
+<p>The earlier two-window comparison, for reference: $W=50$ vs $W\ge200$ at $s=16$ and $s=50$, with
+the depth profile.</p>
+<hr />
+<p>Each block states: data, axes (with formulas), curves, reading. All perturbations are FP32,
+greedy, teacher-forced unless stated.</p>
+<h2 id="a-the-attention-window">A. The attention window</h2>
+<h3 id="a1-same-prompt-same-tokens-two-windows">A1. Same prompt, same tokens, two windows</h3>
+<p><img alt="window response" src="figures/window_response_two_curves.png" /></p>
+<p><strong>Data.</strong> Prompt of $P=65$ tokens. The <em>same</em> 400-token sequence $g_0,\dots,g_{399}$ is used in
+both runs, so the tokens cannot differ. Prompt perturbation (1.2A) with $r=0.1$, 8 simplex
+directions. Teacher-forced pass; state read at layer $\ell=27$.</p>
+<p><strong>Axes.</strong> $x$: generated token index $t$ (negative values = prompt, grey band; $t=0$ = first
+generated token). $y$: $a(t,27)=\|\delta h_{t,27}\|_2$, median over the 8 directions.</p>
+<p><strong>Curves.</strong> Blue $W=100$; black $W=1000$ (never clips in 400 tokens, so it is the control).
+Panel (b) zooms on $t\in[20,55]$.</p>
+<p><strong>Reading.</strong> The curves are numerically identical up to $t=34$ and separate at $t=35$.
+$35=W-P=100-65$: at that step the context stops fitting in the window. The weights and the input
+tokens are identical; only the mask differs. This is a controlled intervention, and it is the
+cleanest evidence that the rise/decay shape of the response is produced by the window.</p>
+<p><strong>Caveat.</strong> Qwen2 applies the sliding window only to its last <code>max_window_layers</code> blocks, so
+early layers keep full attention. The departure therefore shows up in the last-layer state and
+then grows.</p>
+<h3 id="a2-the-generated-text-under-two-windows">A2. The generated text under two windows</h3>
+<p><img alt="window token agreement" src="figures/window_token_agreement.png" /></p>
+<p><strong>Data.</strong> Two <em>free-running</em> greedy generations from the same 65-token prompt, $W=100$ and
+$W=200$. <strong>No perturbation</strong>: $r=0$. This figure is about text, not about the response.</p>
+<p><strong>Axes.</strong> $x$: token index (negative = prompt). $y$: fraction of tokens identical to the
+$W=200$ run, over all positions up to $t$.</p>
+<p><strong>Curve.</strong> One curve: 1 over the whole prompt (trivially identical), 1 for the first 40 generated
+tokens, then falling.</p>
+<p><strong>Reading.</strong> The text is bit-identical for 40 tokens; the first different token is $t=40$. The
+<em>response</em> departed at $t=35$; five more tokens were needed before the small difference crossed
+a decision gap. Afterwards the texts never re-converge, so the curve decays to 0.</p>
+<p><strong>What it is not.</strong> Not a perturbation experiment: $r=0$, only the mask differs.</p>
+<h3 id="a3-response-is-proportional-to-the-radius">A3. Response is proportional to the radius</h3>
+<p><img alt="universal curve" src="figures/a1_universal_curve.png" /></p>
+<p><strong>Data.</strong> Prompt perturbation, 20 simplex directions, 7 radii $r\in[10^{-3},0.3]$,
+teacher-forced, layer 27.</p>
+<p><strong>Axes.</strong> $x$: $t$. $y$: $a(t,27)/r$ (response per unit radius). Thin lines: three individual
+directions. Thick line: median.</p>
+<p><strong>Reading.</strong> If the response were proportional to $r$, all curves collapse onto one. They do:
+the coefficient of variation of $a/r$ across radii is 2–3% (median; p90 ≤ 11%) at every layer
+and time. Hence
+$$a(t,\ell;r)=r\,G(t,\ell).$$
+Deviations appear only at $r=10^{-3}$ late in the sequence (float32 round-off, $a<10^{-4}$) and
+at $r\ge0.5$ (D5). This linearity licenses all threshold arithmetic in Part B.</p>
+<h3 id="a4-depth-sets-the-gain">A4. Depth sets the gain</h3>
+<p><img alt="depth layers" src="figures/a1_depth_layers.png" /></p>
+<p><strong>Data.</strong> Same run; fixed $r$, all saved layers.</p>
+<p><strong>Axes.</strong> Left: $x=t$, $y=a(t,\ell)$ for several $\ell$. Right: $x=\ell$, $y$=depth gain
+$A(\ell)=a(t,\ell)/a(t,1)$ at fixed $t$.</p>
+<p><strong>Reading.</strong> Early layers respond and decay; deep layers rise, surge before the window flush,
+then decay. The gain follows $A(\ell)\propto\ell^{0.64}$ ($R^2=0.95$): $0.155$ at L1 to $1.875$
+at L27, a factor 12, and it is front-loaded (×1.9 from L1→L2, ×1.04 mid-network, ×1.12 at the
+end). Depth also sets the rise time and the memory of the perturbation.</p>
+<h3 id="a5-large-radii">A5. Large radii</h3>
+<p><img alt="large r" src="figures/a1_large_r_subagent.png" /></p>
+<p><strong>Data.</strong> $r=0.1\ldots2$, same directions.</p>
+<p><strong>Axes.</strong> $x=t$; $y$: response, normalized by its own peak; insets give the fitted exponent.</p>
+<p><strong>Reading.</strong> No saturation and no new regime: the shape survives (CV 13% for $r\in[0.1,2]$), but
+the response becomes mildly superlinear. The deep-layer exponent grows from 0.96 (L1) to 1.45
+(L27); per direction it spans 0.47–2.0 and is uncorrelated with the linear gain. At $r=2$ the
+largest response is ≈0.7 of the baseline state norm. This is why <em>extrapolating</em> a threshold
+from small $r$ fails above $r\approx0.3$ (D5), while re-measuring at the radius of interest does
+not.</p>
+<h2 id="b-the-decision-boundary-and-thresholds">B. The decision boundary and thresholds</h2>
+<h3 id="b1-what-is-predicted">B1. What is predicted</h3>
+<p><img alt="threshold explainer" src="figures/threshold_explainer.png" /></p>
+<p><strong>Data.</strong> One prompt, one direction, $r=0.5$, teacher-forced. Baseline gap $m_t$ and perturbed gap
+$m'_t$ are read at every step; $\delta m_t=m'_t-m_t$.</p>
+<p><strong>Axes.</strong> $x$: $t$. $y$ (log): logit gap. The dashed "overtake" line is $m'_t=0$: where the
+perturbed gap touches it, the runner-up becomes the winner.</p>
+<p><strong>Reading.</strong> Most steps have a gap of several logit units; at $t=123$ the baseline gap is
+$0.020$. A perturbation that shrinks the gap by $0.041$ per unit $r$ gives
+$r_c=m_t r/|\delta m_t|=0.020/0.041\approx0.25$: any $r\ge0.25$ flips that word. The figure
+shows the observed flip at exactly that word for $r=0.5$.</p>
+<p><strong>What is predicted.</strong> Two things from one teacher-forced pass: whether the free run changes any
+token, and the index of the first changed token. If no $r_c$ falls below $r$, the prediction is
+"the entire answer is unchanged".</p>
+<h3 id="b2-accuracy-of-the-prediction">B2. Accuracy of the prediction</h3>
+<p><img alt="scorecard" src="figures/threshold_rule_scorecard_clean.png" /></p>
+<p><strong>Data.</strong> 19 free-run experiments × 20 directions = 380 runs; 320 are evaluable with the signed
+rule (the childhood prompt has no stored geometry). Three prompts, radii $10^{-4}$–$2$,
+windows 100/200/500.</p>
+<p><strong>Axes.</strong> $x$: outcome category. $y$: number of direction-runs out of 320.</p>
+<p><strong>Bars.</strong> Green: signed rule (1.4) with $\delta m$ measured at the predicted radius. Grey: the
+earlier sign-blind rule $r_c=m_t/|\delta m_t/r|$.</p>
+<p><strong>Reading.</strong> Signed: 57 exact flip steps, 261 correct "no flip", 2 wrong steps, <strong>0 false
+alarms, 0 missed flips</strong> = 318/320 = <strong>99.4%</strong>. Sign-blind: 45 exact, 240 no-flip, 13 wrong
+steps, <strong>21 false alarms</strong>, 1 miss = 89.1%. The "many outliers" of the earlier scorecard were
+produced by the sign-blind rule.</p>
+<p><strong>Two misses.</strong> Both are flips at $t=0$ at $r=1$ and $r=2$: a large perturbation deforms the
+prompt itself, so the free run's first step is already uncertain while the teacher-forced pass
+still follows the unperturbed prefix.</p>
+<h3 id="b3-what-the-prediction-is-worth">B3. What the prediction is worth</h3>
+<p><img alt="survival" src="figures/threshold_value_survival.png" /></p>
+<p><strong>Data.</strong> All 75 flipped runs (3 prompts), with the full generated sequences of both the
+perturbed and the unperturbed run.</p>
+<p><strong>Panel (a).</strong> $x$: tokens after the first flip. $y$: fraction of tokens identical to the
+unperturbed run in a rolling 10-token window. Three examples plus the average over 75 flips.</p>
+<p><strong>Panel (b).</strong> $x$: first-flip position $T_f$. $y$: fraction of the 300-token answer identical,
+$S=T_f/T$. Points: runs. Dashed line: $y=x/300$.</p>
+<p><strong>Reading.</strong> After the first flip, agreement stays at 2–3%: <strong>0 of 75 runs ever re-synchronise</strong>.
+The surviving fraction is exactly first-flip position / 300. All 305 runs without a flip are
+100% identical. Predicting $T_f$ is predicting how much of the answer survives.</p>
+<h3 id="b4-which-direction-is-fragile-and-at-which-word">B4. Which direction is fragile, and at which word</h3>
+<p><img alt="danger ladder" src="figures/threshold_danger_ladder.png" /></p>
+<p><strong>Data.</strong> Prompt perturbation, 20 directions, teacher-forced geometry, two prompts. One row per
+direction.</p>
+<p><strong>Axes.</strong> $x$ (log): smallest radius $r_*(u)=\min_t r_c(t,u)$ that flips any word. Colour: the
+token $t$ where that minimum occurs (the controlling close call). Open circles: the same
+quantity under the sign-blind rule.</p>
+<p><strong>Reading.</strong> Propulsion prompt: the tie at word 123 (gap 0.020) controls 8/20 directions, word 14
+(gap 0.087) 6/20, word 143 (gap 0.020) 3/20; $r_*$ spans 0.128–3.62. Cybersecurity prompt:
+fragility is spread over words 17/39/22; $r_*$ spans 0.13–10.9. The sign-blind rule halves the
+apparent threshold for many directions.</p>
+<h3 id="b5-where-the-linear-prediction-breaks">B5. Where the linear prediction breaks</h3>
+<p><img alt="when it breaks" src="figures/threshold_when_it_breaks.png" /></p>
+<p><strong>Data.</strong> All radii; teacher-forced gains $|\delta m_t|/r$ per direction and step.</p>
+<p><strong>Axes.</strong> Left: $x=r$ (log), $y=|\delta m_t|/r$ (log). Right: $x=r$, $y$ = number of directions
+that flip.</p>
+<p><strong>Reading.</strong> Three regimes. (i) $r\lesssim3\times10^{-4}$: the measured shift is at the float32
+round-off ($|\delta m|\sim10^{-5}$), so the apparent gain grows like noise$/r$. (ii)
+$3\times10^{-3}\lesssim r\lesssim0.3$: gain flat at ≈0.0085, linear. (iii) $r\gtrsim0.5$: gain
+grows (median ×1.55 by $r=2$) and becomes tie-dependent, so a threshold measured at small $r$
+over-predicts: 16/20 at $r=0.5$, 6/20 at $r=1$, 3/20 at $r=2$. This breaks <em>extrapolation</em>, not
+the rule: re-measuring $\delta m$ at the radius of interest restores 99.4%.</p>
+<h2 id="c-single-position-perturbations">C. Single-position perturbations</h2>
+<h3 id="c1-the-response-field">C1. The response field</h3>
+<p><img alt="state field" src="figures/state_current_field.png" /></p>
+<p><strong>Data.</strong> Perturbation (1.2B) at one position $s$, 24 Gaussian directions, radii
+$3\times10^{-3},10^{-2},3\times10^{-2},10^{-1}$, teacher-forced on the same 300-token sequence,
+state read at layers 7/14/21/27. Panels (a)–(b): $r=0.03$.</p>
+<p><strong>Panel (a).</strong> $x=t$; $y=s$; colour $=\log_{10}$ of the median over directions of $a(t,27)$. Cyan
+line $t=s$: no effect can precede the perturbation.</p>
+<p><strong>Panel (b).</strong> $x$: lag $\tau=t-s$; $y$: $a(s+\tau,27)$ (log), one curve per $s$.</p>
+<p><strong>Panel (c).</strong> Bars: $a(s,27)$ at lag 0 for each $s$. Red line (right axis): tokens until the
+response halves.</p>
+<p><strong>Panel (d).</strong> $x=r$ (log); $y=a(s,27)$ (log) for each $s$. Slope-1 lines mean linearity; fitted
+slopes 0.99–1.00.</p>
+<p><strong>Reading.</strong> (i) Exactly zero for $t<s$. (ii) At the perturbation position the size varies <strong>×13</strong>
+with $s$ (0.26 at $s=75$ to 3.49 at $s=16$): <em>where</em> you perturb matters more than how hard.
+(iii) Decay is fast — half-life 1–7 tokens — then a long small tail. (iv) Linearity at every
+position.</p>
+<h3 id="c2-depth-absolute-grows-relative-shrinks">C2. Depth: absolute grows, relative shrinks</h3>
+<p><img alt="state depth" src="figures/state_depth_two_views.png" /></p>
+<p><strong>Data.</strong> Same run, $r=0.03$.</p>
+<p><strong>Panel (a).</strong> $x$: layer $\ell$; $y$: $a(s,\ell)=\|\delta h_{s,\ell}\|_2$ (absolute).</p>
+<p><strong>Panel (b).</strong> $x$: layer; $y$: $q(s,\ell)=a(s,\ell)/\|h_{s,\ell}\|_2$ (relative to the state
+length).</p>
+<p><strong>Reading.</strong> Both panels are correct and they answer different questions. The absolute effect
+grows with depth (the residual stream amplifies it). Relative to the state's own length it
+<em>shrinks</em> with depth for ordinary positions $\times0.05$–0.09 from L7 to L27, because the state
+length grows faster. The exception is the sensitive position $s=16$, whose relative effect stays
+flat (×0.6). A perturbation at a close call is not washed out by depth.</p>
+<h3 id="c3-when-a-perturbation-acts">C3. When a perturbation acts</h3>
+<p><img alt="state latency" src="figures/state_latency_timeline.png" /></p>
+<p><strong>Data.</strong> Same run, $r=0.1$. Every (position, direction) pair whose margin condition
+$\delta m_t\le -m_t$ is met at some $t>s$.</p>
+<p><strong>Axes.</strong> $x$: generated token $t$. Each horizontal segment starts at the perturbation position
+$s$ and ends at the token $t$ that first changes. Grey curve (right axis, log): baseline gap
+$m_t$.</p>
+<p><strong>Reading.</strong> Five events. All four $s=16$ directions change the token at $t=123$ — <strong>107 tokens
+after the perturbation</strong> — and the one at $s=50$ at $t=143$ (93 later). Nothing happens at $s$.
+The perturbation sits latent until the model reaches the next close call.</p>
+<h3 id="c4-autoregressive-confirmation">C4. Autoregressive confirmation</h3>
+<p><img alt="latent kick" src="figures/state_kick_latent_validated.png" /></p>
+<p><strong>Data.</strong> Free-running generations with perturbation at $s=16$ and $s=50$, $r=0.1$, 24 directions,
+compared with the teacher-forced prediction of C3.</p>
+<p><strong>Panel (a).</strong> $x$: predicted first changed token (teacher-forced), $y$: observed first changed
+token (free run). Five events.</p>
+<p><strong>Panel (b).</strong> $x$: $t$; $y$: fraction of tokens so far identical to the unperturbed run, for one
+direction. Green line: perturbation position. Red line: first changed token.</p>
+<p><strong>Panel (c).</strong> Same for all 24 directions at $s=16$: 4 change the text, 20 never do.</p>
+<p><strong>Reading.</strong> <strong>5/5 exact</strong>, including the step: 4 directions at $s=16\to t=123$, 1 at
+$s=50\to t=143$. After the change, agreement falls to ≈40% and the texts never re-converge. The
+latency is real, not an artifact of teacher forcing.</p>
+<h3 id="c5-which-positions-matter-and-when-it-acts">C5. Which positions matter, and when it acts</h3>
+<p><img alt="position map" src="figures/state_position_map.png" /></p>
+<p><strong>Data.</strong> Free runs with a single-position perturbation, 24 directions, at positions
+$s=8,16,32,50,75,100,150,200$, two radii ($r=0.1$ and $r=0.3$). A "flip" is the first token that
+differs from the unperturbed run.</p>
+<p><strong>Panel (a).</strong> $x$: perturbation position $s$; $y$: fraction of the 24 directions that change any
+later token. Blue: $r=0.1$ (two runs, positions 8–50 and 8–200). Red: $r=0.3$.</p>
+<p><strong>Panel (b).</strong> A point per (position, direction) that flips: $x=s$, $y$ = token where the first
+change happens. Dotted lines: near-tie tokens, labelled with their baseline gap $m_t$.</p>
+<p><strong>Reading.</strong> Position dominates. At $r=0.3$: 17/24 directions flip when the perturbation is at
+$s=16$, 6/24 at $s=32$, 11/24 at $s=50$, and <strong>zero</strong> at $s\ge75$. At $r=0.1$ only $s=16$ (4/24)
+and $s=50$ (1/24) act. When a perturbation acts, it acts at one of four tokens: $t=40$ (early, gap
+0.188 but the response is still large) or $t=116/123/143$ (the smallest gaps, 0.069/0.020/0.020).
+Nothing acts between them. This is the decision-boundary picture at the level of a single token:
+the perturbation must survive to a place where the <em>product</em> of response and closeness is large
+enough.</p>
+<h2 id="d-prompt-perturbation-two-kinds-of-flips">D. Prompt perturbation: two kinds of flips</h2>
+<p><img alt="two kinds" src="figures/flip_is_a_close_call.png" /></p>
+<p><strong>Data.</strong> Prompt perturbation; 27 observed free-run flips at $r=0.5,1,2$ (20 directions each);
+baseline gaps and teacher-forced responses.</p>
+<p><strong>Panel (a).</strong> $x$: baseline gap $m_t$ (log); $y$: counts. Grey: all 300 steps. Red: steps where a
+flip happens. Flips sit at the small-gap end (spikes at 0.020 and 0.069).</p>
+<p><strong>Panel (b).</strong> $x$: response at the flip step divided by its maximum up to that step; $y$: counts.
+1 = flip at the response peak; near 0 = response already decayed.</p>
+<p><strong>Panel (c).</strong> $x$: flip step; $y$: the same ratio. Delayed flips cluster at $t=116$–$143$.</p>
+<p><strong>Panel (d).</strong> Example: gap (black, log) and response (blue, normalized) vs $t$; red line = flip at
+$t=143$, gap 0.020, response 9% of its peak.</p>
+<p><strong>Reading.</strong> 17/27 flips are immediate (at the response peak); 10/27 are delayed — the response has
+faded but the model reaches a later close call and breaks there. A flip depends on the product of
+response size and closeness, not on the response alone.</p>
+<h2 id="e-directions-are-not-equivalent">E. Directions are not equivalent</h2>
+<p><img alt="directions all ties" src="figures/directions_all_ties.png" /></p>
+<p><strong>Data.</strong> Prompt perturbation at $r=0.3$ (linear regime), 20 simplex directions, teacher-forced.
+The 8 near-ties are the 8 smallest baseline gaps $m_t$.</p>
+<p><strong>Panel (a).</strong> Rows: the 8 near-tie tokens, sorted by $m_t$ (labels give $t$ and $m_t$). Columns:
+direction $u$. Colour: $\delta m_t(u)/r$ — gap change per unit radius. Red $>0$ (widens, no
+flip), blue $<0$ (shrinks, can flip).</p>
+<p><strong>Panel (b).</strong> For each direction, the number of the 8 ties where the gap shrinks.</p>
+<p><strong>Reading.</strong> The sign is <strong>not</strong> a property of the direction: at $t=123$ seven directions shrink
+the gap and thirteen widen it; at $t=16$ only four shrink it. Across the eight ties the sign
+patterns are essentially uncorrelated (mean Spearman $-0.05$), and no direction is negative at
+more than 6/8 ties. Magnitudes, in contrast, are a stable property of a direction (next figure).</p>
+<p><strong>Consequence.</strong> "Which direction is dangerous" only makes sense together with the word at which
+it acts. Magnitude ranks directions; sign ranks (direction, word) pairs.</p>
+<p><img alt="directions gain" src="figures/directions_gain_consistency.png" /></p>
+<p><strong>Data.</strong> The same 20 directions evaluated on three different continuations of the same prompt
+(different windows produce different texts), teacher-forced.</p>
+<p><strong>Axes.</strong> Pairwise rank correlation of per-direction response magnitudes between continuations.</p>
+<p><strong>Reading.</strong> Rank correlations 0.80–0.98: a strong direction stays strong on a different text. The
+"hot trio" (directions 10, 11, 12) is hot in all three. So magnitude is a property of the
+direction; the sign at a particular word is not.</p>
+<p><img alt="directions not equivalent" src="figures/directions_are_not_equivalent.png" /></p>
+<p><strong>Data.</strong> Same geometry; (a) uses $t=123$ and $r=0.3$; (b) uses observed flips at
+$r=0.5,1,2$.</p>
+<p><strong>Panel (a).</strong> $x$: directions sorted by their effect at word 123. $y$: $\delta m_{123}(u)$; the
+dashed line is $-m_{123}$ (the flip line).</p>
+<p><strong>Panel (b).</strong> $x$: direction index; $y$: radius; markers: directions that flip at that radius.</p>
+<p><strong>Reading.</strong> At the same close call, different directions push the decision in opposite
+directions, and only one crosses the flip line. Flips are stratified: at $r=0.5$ exactly the hot
+directions 10–12 break, at $r=2$ sixteen directions do.</p>
+<h2 id="f-depth-and-non-normality">F. Depth and non-normality</h2>
+<p><img alt="angle test" src="figures/depth_angle_test.png" /></p>
+<p><strong>Data.</strong> Prompt perturbation, radii $10^{-3}$–$2$; full perturbed and baseline last-layer states
+are saved for three directions, so the angle is exact.</p>
+<p><strong>Panel (a).</strong> $x$: $r$ (log); $y$: angle between $\delta h$ and $h$ in degrees. $0^\circ$ =
+radial (length change), $90^\circ$ = perpendicular (direction change). Grey band: float32 floor,
+below ≈0.03° the stored cosine rounds to 1 and the angle is not measurable.</p>
+<p><strong>Panel (b).</strong> $x$: layer; $y$: $1-\cos$ between $\delta h$ and $h$ (log), four radii.</p>
+<p><strong>Panel (c).</strong> The perturbation split into its component along $h$ and its perpendicular
+component, vs layer.</p>
+<p><strong>Reading.</strong> The angle is 86–87° at every radius and layer. In 1536 dimensions two random vectors
+are also nearly perpendicular (expected angle $\arccos(1/\sqrt d)\approx88.5^\circ$), so the angle
+alone is <strong>trivial</strong>; the informative part is panel (c): ≈95% of the perturbation is
+perpendicular and only 5–8% is along the state. Because the network normalizes length before the
+logits, only that perpendicular part can change the output. Measured: the logit-gap change tracks
+the perpendicular length linearly, $|\delta m|\approx4\,b/\|h\|$ with $b$ the perpendicular
+component.</p>
+<p><img alt="gain budget" src="figures/nonnorm_gain_budget.png" /></p>
+<p><strong>Data.</strong> Block Jacobians $J_\ell=\partial h_{\ell+1}/\partial h_\ell$ at a fixed position, 5
+layers × 6 tokens; $\sigma_{\max}$ by power iteration, $\rho$ by ARPACK.</p>
+<p><strong>Axes.</strong> Per layer: $\sigma_{\max}$ (worst one-step amplification), $\rho$ (asymptotic growth if
+the same map were repeated), $\kappa=\sigma_{\max}/\rho$, the principal angle between consecutive
+top singular subspaces, and the measured aligned gain of the product.</p>
+<p><strong>Reading.</strong> $\sigma_{\max}$ reaches 95–195 at layer 0 and 6–9 at layer 27, yet the measured
+product is far below both the naive chain $\prod\sigma_{\max}$ (by ~13 orders) and
+$\prod\rho$ (by ~5). The reason is rotation: consecutive amplification directions differ by
+83.6° on average, so gains cannot compound. The budget $(\sigma-1)\cos^2\theta$ reproduces the
+measured chained gain within a factor ≲2.</p>
+<p><strong>Important.</strong> This is a statement about a <em>fixed position</em>. The full prompt perturbation also
+travels across positions through attention and grows. The two statements are not contradictory,
+but must not be conflated. It also means the earlier sentence "the depth expansion is only radial
+scale drift" was wrong and has been retracted.</p>
+<h2 id="g-correlation-dimension-why-the-curves-looked-different">G. Correlation dimension: why the curves looked different</h2>
+<p><img alt="d2 artifacts" src="figures/d2_artifact_gallery.png" /></p>
+<p><strong>Data.</strong> Last-layer states of long generations (4000 tokens), first-layer states, synthetic
+controls.</p>
+<p><strong>Axes.</strong> $x$: $\varepsilon$ divided by the median pairwise distance (log). $y$:
+$C(\varepsilon)$ from 1.4 (log). Dashed lines $1/N$ and $10/N$: below them the estimate is
+dominated by finite sampling.</p>
+<p><strong>Panels.</strong> (a) A near-exact repetition loop: knee plus "ring", fittable with $r^2=0.999$. (b)
+First-layer states contain 352,035 exact duplicate pairs, giving a flat floor $C=0.042$ at every
+$\varepsilon$. (c) A naive computation including $i=j$ pairs and/or a linear $\varepsilon$ grid
+produces a staircase. (d) Same data on linear vs log grid.</p>
+<p><strong>Reading.</strong> All four shapes are artifacts of the data or the estimator, not evidence of a
+low-dimensional attractor. On non-loop trajectories the whole rise of $C$ spans 0.16–0.19 decades,
+and the interval that is both below $2\log_{10}N$ and above $10/N$ is 0.00–0.04 decades wide: no
+plateau exists. The estimator is not at fault — at the same $N$ it recovers Hénon ($D_2=1.157$)
+and Lorenz ($D_2=1.984$).</p>
+<p><strong>Update (16 fresh 1000-token trajectories).</strong> 0 of 64 (trajectory × $N$ × Theiler) configurations
+contain a slope-stable interval inside the legal band. Eight of the sixteen trajectories are
+quasi-loops with periods 12–81 and narrow relative distance (0.018–0.035 of the cloud scale); they
+have wide "plateaus" that are loop knees. The eight non-repetitive ones have an ER-legal width of
+<strong>0.000 decades</strong>. Predictability with $k$-nearest neighbours replicates only on the eight
+quasi-loops (NSE gaps +0.27…+0.67 over surrogates); on the eight non-repetitive ones the gap is
++0.018 (median) versus MIAAFT and +0.002 versus a linear ridge, i.e. nothing. The earlier
+<code>launch</code> lead does not replicate. Two surrogate-implementation bugs were found and fixed in that
+pass, so older MIAFT-based numbers should be re-checked; the clean statement is the one above.</p>
+<p><img alt="d2 delay" src="figures/d2_delay_embedding.png" /></p>
+<p><strong>Data.</strong> Delay embedding of the same trajectories, $m=2\ldots10$, with white-noise and
+phase-randomised controls.</p>
+<p><strong>Axes.</strong> $x$: embedding dimension $m$; $y$: estimated $D_2$.</p>
+<p><strong>Reading.</strong> At $m=2$ the curve looks textbook (slope 1.95 over 0.96 decades, $r^2=0.999$), but
+<strong>white noise at $m=2$ gives the identical curve</strong>: it is the fill dimension of any 2-D cloud.
+The estimate rises with $m$ and never saturates below the surrogate band.</p>
+<h2 id="h-a-sanity-check-that-is-trivial-by-definition">H. A sanity check that is trivial by definition</h2>
+<p><img alt="tf exact" src="figures/tf_is_exact_until_flip.png" /></p>
+<p><strong>Data.</strong> 140 teacher-forced predicted sequences compared with free runs (20 directions × 7
+radii).</p>
+<p><strong>Panels.</strong> (a) timeline of one example around the flip; (b) predicted vs observed first flip
+step; (c) flip counts per radius.</p>
+<p><strong>Reading.</strong> 29/29 flips agree in step and token, 0 false positives among 111 no-flip cases. The
+first two panels are <strong>trivial by construction</strong>: a token cannot differ before the first
+difference. The only non-trivial content is panel (b)'s exactness of the <em>predicted token</em>: one
+teacher-forced pass also gets the new word right. After the flip the comparison is meaningless
+because the prefixes differ.</p>
+<hr />
+<h1 id="part-3-relation-to-lyapunov-exponents">Part 3. Relation to Lyapunov exponents</h1>
+<p>For an autonomous map $x_{n+1}=F(x_n)$, the maximal Lyapunov exponent is
+$$\lambda=\lim_{n\to\infty}\frac1n\log\|DF^n(x_0)\,\delta_0\| .$$
+It is a property of the invariant measure, independent of $x_0$ and $\delta_0$ almost surely.</p>
+<p>Three things separate our measurement from this.</p>
+<ol>
+<li><strong>The map changes every step.</strong> The input at step $t$ is the token $g_t$, itself the output of
+   the previous step; the update is $h_{t+1}=F_t(h_t)$ with a different $F_t$ each step (different
+   token, position, mask). A time-dependent product of Jacobians has <strong>finite-time</strong> stretching
+   exponents, not one Lyapunov exponent. The correct object is the finite-time rate of
+   $\prod_{i<t}DF_i$, which depends on $t$ and on the window.</li>
+<li><strong>The trajectory is finite and transient.</strong> Our curves decay and the network is reset at every
+   prompt. There is no long-time limit: 300–1000 tokens is the whole experiment.</li>
+<li><strong>The relevant norm is not the raw state norm.</strong> The output depends on the <em>direction</em> of the
+   state (length is normalized away), so the dynamically relevant growth is the tangential one.
+   The raw norm grows ×452 with depth mostly because the residual stream's scale grows, which the
+   logits do not see.</li>
+</ol>
+<p>What the data support:
+- the finite-time response is linear in $r$ up to $r\approx0.3$ and transient;
+- $\lambda(t)=\frac1t\log(a(t)/a(0))$ is positive early and turns negative: a transient, not
+  sustained stretching;
+- the depth product at a fixed position contracts relative to the state scale, while the full
+  response grows through cross-position mixing;
+- the actual mechanism of unpredictability is a <strong>decision-boundary crossing</strong> at a close call,
+  not exponential separation of nearby trajectories.</p>
+<p><strong>The stable-chaos test in Part 2.0 settles the question empirically.</strong> Four independent
+signatures reject exponential separation: flip times sit on a handful of discrete margin dips
+($p<5\times10^{-6}$ under a continuous-separation null); the fitted hazard varies by ~90× with $r$
+and its confidence interval includes zero for $r\le0.5$; the perturbation norm never grows
+($\le1.02$); and there is a hard floor ($r\le0.1$ never flips in 300 tokens).</p>
+<p><strong>The rate itself is negative.</strong> In 31 configurations (layers, radii, windows, prompts), the
+sustained stretching rate over $t>150$ has 0/31 positive point estimates and 0/31 direction-bootstrap
+CIs touching zero; the best estimate is −0.0043 nats/token [−0.0055, −0.0030]. A synthetic
+expanding map with a true rate of +0.035 is recovered cleanly by the same pipeline, so the method
+has the power to see one. The correct statement is: <strong>no positive Lyapunov exponent is detectable
+in this system at these scales; the unpredictability is a finite-amplitude threshold crossing.</strong></p>
+<p>If a Lyapunov-like number is wanted, the honest report is a finite-time exponent with horizon and
+window stated, e.g. "$\lambda(t=50)=0.032$ nats/token at $W=100$, reference $t_0=5$", never a bare
+"Lyapunov exponent".</p>
+<hr />
+<h1 id="part-4-what-is-trivial-and-what-is-not">Part 4. What is trivial and what is not</h1>
+<p><strong>Trivial (implied by the definitions).</strong>
+- Tokens are identical until the first flip; that is the definition. The teacher-forcing figure is
+  a sanity check.
+- Small perturbations produce a response proportional to their size: any differentiable map does.
+- In 1536 dimensions two random vectors are nearly perpendicular; the angle test alone says
+  nothing. What matters is the split into along-state and perpendicular components and the linear
+  relation between the perpendicular part and the logit change.
+- The state norm grows with depth in a residual network.
+- The output is invariant to the state's length (normalization).</p>
+<p><strong>Not trivial (measured, not implied).</strong>
+- The <strong>stable-chaos regime</strong>: flips at 8 discrete margin dips ($p<5\times10^{-6}$), a hazard with
+  a confidence interval containing zero, a non-growing perturbation norm, and a hard floor at
+  $r\approx0.13$.
+- The <strong>quantitative</strong> threshold law: one teacher-forced pass predicts the first changed word in
+  318/320 cases including all 70 borderline calls, with zero false alarms; part 2.0 shows the
+  survival curves are reproduced with zero fitted parameters at $r\le0.25$.
+- The <strong>window law</strong> $D=W-P$, exact to the token on two prompts and five window sizes with
+  identical inputs; and the text needs 4–6 extra tokens to split.
+- The <strong>survival law</strong>: after a flip the text never re-converges, so the surviving fraction is
+  exactly $T_f/T$.
+- The <strong>latency</strong>: perturbations can act 100+ tokens later at the next close call, confirmed
+  autoregressively.
+- <strong>Direction structure</strong>: magnitudes stable across texts (rank correlation 0.8–0.98) while signs
+  at a given word are not (mean correlation $-0.05$); flips are stratified by direction.
+- The <strong>layer-resolved amplification</strong>: none at an ordinary position, ≈3× at a sensitive one,
+  concentrated in the last layers.
+- The <strong>rotation mechanism</strong>: components amplify ($\sigma_{\max}$ up to 195) yet the product does
+  not, because the amplifying direction rotates by 84° per layer; the budget
+  $(\sigma-1)\cos^2\theta$ closes the gap within a factor 2.
+- The <strong>negative</strong> D2 result with a working positive control (Hénon/Lorenz).</p>
+<hr />
+<h1 id="part-5-null-results-things-that-did-not-work">Part 5. Null results (things that did not work)</h1>
+<ol>
+<li><strong>No correlation-dimension plateau</strong> on any non-loop trajectory, in any metric, centering, $N$
+   or embedding dimension. Valid interval 0.00–0.04 decades wide. Every quoted $D_2$ was a
+   window/tube/fill-dimension/duplicate artifact.</li>
+<li><strong>Raw vs time-shuffled $D_2$</strong> is a tautology (shuffling preserves the point cloud); it cannot
+   be used as a dynamic control.</li>
+<li><strong>No lag-collapse of the two-time response.</strong> Normalizing by $a(s)$, by the first peak, or by
+   $a(s+5)$ leaves ×1.5–1.6 RMS disagreement. The response is only approximately separable
+   (68% rank-1).</li>
+<li><strong>No direction clustering.</strong> $k=1$ wins a parametric-bootstrap comparison ($P(k>1)=0.10$–0.18).
+   There are reproducible outliers, not groups.</li>
+<li><strong>Attention entropy does not explain near-ties.</strong> Correlation with margin +0.32–0.38 at
+   $W=100$, ≈0 at $W=200$.</li>
+<li><strong>Linear extrapolation of thresholds fails above $r\approx0.3$</strong> (16/20 at 0.5, 6/20 at 1, 3/20
+   at 2), because the gain becomes superlinear and tie-dependent.</li>
+<li><strong>Layer-14 injection is too weak to flip anything.</strong> At matched $r$ it is 11–38× weaker at the
+   output, and its margin change is ~10× too small to cross any gap.</li>
+<li><strong>Single-position perturbations rarely change the text.</strong> At $r=0.1$: 4/24 directions at
+   $s=16$, 1/24 at $s=50$, zero elsewhere. At $r=0.3$: 17/24 at $s=16$, 6/24 at $s=32$, 11/24 at
+   $s=50$, and <strong>zero for every tested position $s\ge75$</strong>.</li>
+<li><strong>Below $r\approx3\times10^{-4}$</strong> the response is at the float32 round-off and stops scaling.</li>
+<li><strong>The first-layer D2 is high and meaningless</strong> (352k exact duplicate pairs).</li>
+<li><strong>600-token A1 in one batch</strong> OOMs on a 15 GB T4; 500 works with <code>batch-dirs=1</code>.</li>
+<li><strong>No evidence of chaos</strong>: no positive sustained exponent, no attractor, no plateau.</li>
+</ol>
+<hr />
+<h1 id="part-6-data-inventory">Part 6. Data inventory</h1>
+<table>
+<thead>
+<tr>
+<th>run</th>
+<th>contents</th>
+<th>used in</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>a1_ds_w100_layers</code></td>
+<td>12 radii × 20 dirs × 8 layers, 300 tokens</td>
+<td>A3, A4, A5, B, E, F</td>
+</tr>
+<tr>
+<td><code>window_fixed/w{100,150,200,300,1000}</code></td>
+<td>same tokens, five windows, 400 tokens</td>
+<td>A1</td>
+</tr>
+<tr>
+<td><code>window_cyber/w{100,200,1000}</code></td>
+<td>second prompt, same protocol</td>
+<td>A1 (law)</td>
+</tr>
+<tr>
+<td><code>a1_ds_w100_layers/free_run_*</code></td>
+<td>free runs, 20 dirs, $r=0.05\ldots2$</td>
+<td>B2, B3, D</td>
+</tr>
+<tr>
+<td><code>state_deep_emb</code></td>
+<td>8 positions × 24 dirs × 4 radii × 4 layers</td>
+<td>C1, C2, C3</td>
+</tr>
+<tr>
+<td><code>state_deep_L14</code></td>
+<td>layer-14 injection</td>
+<td>C2, Part 5</td>
+</tr>
+<tr>
+<td><code>state_freerun_r0.1</code>, <code>r0.3</code></td>
+<td>free runs with a single-position perturbation</td>
+<td>C4</td>
+</tr>
+<tr>
+<td><code>long_traj*</code>, <code>long_traj_2k</code>, <code>long_traj_4k</code></td>
+<td>1000–4000-token trajectories, window 4096</td>
+<td>G</td>
+</tr>
+<tr>
+<td><code>nonnorm_w100_big</code></td>
+<td>$\sigma_{\max},\rho,\kappa$, principal angles</td>
+<td>F</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Protocol invariants.</strong> FP32; greedy; no repetition penalty; the unperturbed reference is a
+duplicate row in the same batch and is verified bit-identical; teacher-forced passes use the
+unperturbed token sequence; free runs are used only where stated.</p>
+<p><strong>Reproducing.</strong> Every figure comes from a script in <code>scripts/</code>; the per-topic reports with exact
+numbers are under <code>results/</code>. The figures in this document are in <code>notebook/figures/</code>, produced by
+<code>scripts/notebook_figs_window.py</code>, <code>scripts/notebook_figs_state.py</code>,
+<code>scripts/notebook_fig_directions.py</code>, and copied from <code>results/figures/</code>.</p>
+<script src=".preview/katex/katex.min.js"></script>
+<script src=".preview/katex/contrib/auto-render.min.js"></script>
+<script>
+renderMathInElement(document.body, {
+  delimiters: [{left:"$$", right:"$$", display:true}, {left:"$", right:"$", display:false}],
+  throwOnError: false,
+  strict: false
+});
+</script>
+</body></html>
