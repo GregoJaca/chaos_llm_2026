@@ -2149,6 +2149,36 @@ The state norm itself (below) is one of the few curves that really is exponentia
 $\|h_{t,\ell}\|$ vs layer, Qwen3-4B, fitted $c+a e^{bx}$ (log domain): the residual stream grows
 geometrically with depth, by a factor that is model-specific.
 
+## 9.4 The layer-resolved gain, every model
+
+![layer gain models](figures/fits/layer_gain_models.png)
+
+**Data.** Prompt perturbation at $r=0.1$ (Phi 0.3), all saved layers, $t=50$, 20 directions (10–12
+for the newer models). **Panel (a).** Layer-to-layer gain
+$\|\delta h_{t,\ell}\|/\|\delta h_{t,\ell-1}\|$. **Panel (b).** Its cumulative sum
+$\sum_{\ell'<\ell}\log g_{\ell'}$, i.e. the log of the total depth gain. **Panel (c).** The relative
+response $\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$.
+
+| model | median layer gain | total depth gain | relative response: start → end |
+|---|---|---|---|
+| DeepSeek-1.5B | 1.09 | ×33 | $1.8\times10^{-3}$ → $4.1\times10^{-3}$ |
+| Qwen3-4B | 1.12 | ×115 | $5.8\times10^{-3}$ → $8.8\times10^{-3}$ |
+| Qwen2.5-3B | 1.13 | ×110 | $5.0\times10^{-3}$ → $2.9\times10^{-2}$ |
+| Phi-4-mini | 1.20 | ×1370 | $1.2\times10^{-3}$ → $3.7\times10^{-2}$ |
+| Qwen3.5-2B | 1.53 | ×13 (7 layers) | $1.4\times10^{-2}$ → $2.1\times10^{-2}$ |
+
+**Reading.**
+- The median per-layer gain is between 1.09 and 1.20 for four of the five models: **the perturbation
+  grows by 9–20% per block**, roughly uniformly. Compounded over 28–36 blocks that is the entire
+  depth gain. Qwen3.5's 1.53 is not comparable (only 7 sampled layers, and its layers alternate
+  linear/full attention).
+- The **relative** response separates the models cleanly: Phi's grows ×30 through the depth, Qwen2.5
+  ×6, the others stay within ×2. Phi is the only model where the perturbation becomes a *larger
+  fraction* of the state as depth increases.
+- The cumulative curves are close to straight lines after layer 5: constant gain per block. The
+  curvature at the start is the layer-1 entry (the perturbation is on the prompt, so layer 0 of the
+  generated position is empty).
+
 ## 9.5 The full table
 
 `results/fits/SUMMARY.md` contains every curve fitted (≈60). Selected rows:
