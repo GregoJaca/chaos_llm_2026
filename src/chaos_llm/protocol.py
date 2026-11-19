@@ -43,12 +43,18 @@ def model_info(model, dtype=None):
     """Config-only description; does not load weights."""
     path = resolve_model_path(model)
     cfg = AutoConfig.from_pretrained(path, local_files_only=True)
-    params = estimate_params(cfg)
+    tc = getattr(cfg, "text_config", cfg)
+    H = getattr(tc, "hidden_size", getattr(cfg, "hidden_size", 1536))
+    L = getattr(tc, "num_hidden_layers", getattr(cfg, "num_hidden_layers", 28))
+    F = getattr(tc, "intermediate_size", 4 * H)
+    V = getattr(tc, "vocab_size", getattr(cfg, "vocab_size", 150000))
+    params = V * H + L * (4 * H * H + 2 * H * F) + 2 * H
     if dtype is None or dtype == "auto":
+        dtype = os.environ.get("CHAOS_DTYPE", "")
+    if dtype in (None, "", "auto"):
         dtype = "float32" if params * 4 <= 9.5e9 else "float16"
-    return dict(path=path, params=params, dtype=dtype, hidden_size=cfg.hidden_size,
-                num_layers=cfg.num_hidden_layers, vocab_size=getattr(cfg, "vocab_size", None),
-                sliding_window=getattr(cfg, "sliding_window", None),
+    return dict(path=path, params=params, dtype=dtype, hidden_size=H, num_layers=L,
+                vocab_size=V, sliding_window=getattr(tc, "sliding_window", None),
                 use_sliding_window=getattr(cfg, "use_sliding_window", None))
 
 

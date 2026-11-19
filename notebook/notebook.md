@@ -602,6 +602,8 @@ gain per direction.
   $+0.0004$ — statistically near zero, but *not negative*.
 - **Phi-4-mini**: a **strong transient burst** (a rises 10× from $t=10$ to $t\approx40$), with
   $\lambda_{10}$ up to $+0.19$ nats/token, then a sharp negative phase and a near-zero tail.
+- **Qwen3.5-2B**: response decays slowly (relative response 3.7e-3 → 2.1e-3 from $t=10$ to 50);
+  early rate −0.004, late $+0.0006$ — also near-neutral.
 
 So the "contracting, stable-chaos" regime we established for DeepSeek is **not universal**: the
 same protocol on Phi-4-mini produces a genuine transient amplification, and Qwen3-4B is close to

@@ -10,6 +10,7 @@ RUNS = [
     ("DeepSeek-1.5B", r"C:\Users\hjaca\research\chaos_llm_2026\results\local_data\w100_layers\a1.npz", 27),
     ("Qwen3-4B", r"C:\Users\hjaca\research\chaos_llm_2026\results\local_data\models\qwen3_4b\a1.npz", 32),
     ("Phi-4-mini", r"C:\Users\hjaca\research\chaos_llm_2026\results\local_data\models\phi\a1.npz", 28),
+    ("Qwen3.5-2B", r"C:\Users\hjaca\research\chaos_llm_2026\results\local_data\models\qwen35\a1.npz", 23),
 ]
 
 fig, axs = plt.subplots(1, 2, figsize=(12.8, 4.5))
