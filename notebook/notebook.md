@@ -1333,3 +1333,15 @@ The auto-generated families (411 figures) live in `results/figs_models/`. A sele
 ![q4 ratio](figures/gallery/q4_ratio_overlay.png)
 
 **Qwen3-4B, all 36 layers.** Same layout. The response is flat in time (ratio ~1) and does not show the DeepSeek cascade: the flush is absent because Qwen3 has no sliding window.
+
+![phi flux](figures/gallery/phi_flux_overlay.png)
+
+**Phi-4-mini, all 32 layers, r=0.03.** Every layer shows the same **coherent burst** at t~40 (the response jumps by up to x25 in a few tokens), then decays to ~2x its initial value, with a second bump near t~240. This is the transient amplification of the rate plot, now resolved in depth: it is not a single-layer effect.
+
+![phi ratio](figures/gallery/phi_ratio_overlay.png)
+
+**Phi-4-mini step ratio a(t)/a(t-1).** The burst is a single-step jump of x2-4, followed by a long decay; several late spikes are visible.
+
+![q35 flux](figures/gallery/q35_flux_overlay.png)
+
+**Qwen3.5-2B, 7 saved layers, r=0.1.** The hybrid linear/full-attention model: no burst, no flush cascade, slow decay.
