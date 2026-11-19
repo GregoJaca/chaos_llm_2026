@@ -582,6 +582,36 @@ $-0.010\pm0.002$ for every radius from $10^{-3}$ to $0.3$. A rate that depends o
 size is not a Lyapunov exponent; here the only radius dependence is the nonlinear onset above
 $r\approx0.3$.
 
+### N8. Cross-model comparison
+
+**Data.** Same protocol on three models: prompt perturbation $r=0.3$ (the calibrated value for the
+fp16 models; DeepSeek at $r=0.3$ too), 20 simplex directions, teacher-forced, last saved layer.
+
+![model comparison](figures/model_comparison_rel.png)
+
+**Panel (a).** $a(t,\ell)/\|h_{t,\ell}\|$ (relative response). **Panel (b).** Distribution of the
+gain per direction.
+
+![model lambda](figures/model_lambda_compare.png)
+
+**Panel (a).** Absolute response. **Panel (b).** Local rate $\lambda_{10}(t)$.
+
+**Reading.**
+- **DeepSeek-1.5B**: response decays from $t\approx20$; late rate $-0.011$ nats/token.
+- **Qwen3-4B**: response is flat (0.36 → 0.46 over 300 tokens); early rate $+0.0008$, late
+  $+0.0004$ — statistically near zero, but *not negative*.
+- **Phi-4-mini**: a **strong transient burst** (a rises 10× from $t=10$ to $t\approx40$), with
+  $\lambda_{10}$ up to $+0.19$ nats/token, then a sharp negative phase and a near-zero tail.
+
+So the "contracting, stable-chaos" regime we established for DeepSeek is **not universal**: the
+same protocol on Phi-4-mini produces a genuine transient amplification, and Qwen3-4B is close to
+neutral. This is one of the most interesting cross-model differences we have, and it is currently
+based on one prompt per model — the suites running now add two more prompts and the free-run
+flip statistics.
+
+**Caveat.** The fp16 models have a higher numerical floor ($r\gtrsim0.03$); all comparisons here use
+$r=0.3$ to stay well above it.
+
 ### N7. The window also changes single-position perturbations
 
 ![state window scan](figures/state_window_scan.png)

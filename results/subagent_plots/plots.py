@@ -147,6 +147,19 @@ def safe_ratio(a, b) -> np.ndarray:
     return out
 
 
+def _cos_rows(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
+    """row-wise cosine between raw vector rows; whole-zero rows -> NaN.
+
+    Individual zero coordinates are legitimate (fp32 underflow) and must NOT
+    invalidate a row, so no pos()-style masking is applied here.
+    """
+    X = np.asarray(X, dtype=float)
+    Y = np.asarray(Y, dtype=float)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        return np.einsum("td,td->t", X, Y) / (
+            np.linalg.norm(X, axis=1) * np.linalg.norm(Y, axis=1))
+
+
 def med_band(stack: np.ndarray, axis: int = 0):
     """nan-aware median + PLO-PHI percentile band along `axis`."""
     with warnings.catch_warnings():
@@ -622,16 +635,19 @@ def flux_tube_family(a1: dict, out_dir: str, tag: str, light: bool = False,
     if "dh_last" in a1:
         dl = np.asarray(a1["dh_last"], dtype=float)  # [R, 3, T, D]
         if dl.shape[1] >= 2:
-            fig, ax = _fig_panels(2, suptitle=f"{tag} | perturbation alignment, r={fr}")
+            # pick a radius whose dh_last rows are populated (zeros within a
+            # vector are legitimate coordinates; only whole-row zeros matter)
+            rl = next((rr for rr in ([rmid] + list(rsel))
+                       if np.any(dl[rr] > 0)), 0)
+            frl = fmt_r(radii[rl])
+            fig, ax = _fig_panels(2, suptitle=f"{tag} | perturbation alignment, r={frl}")
             vi = [j for j in range(dl.shape[1])
-                  if np.any(dl[rmid, j] > 0)][:3]
+                  if np.any(dl[rl, j] > 0)][:3]
             # panel 0: pairwise cos between directions
             a = ax[0]
             pairs = [(vi[i], vi[j]) for i in range(len(vi)) for j in range(i + 1, len(vi))]
             for c, (i, j) in zip(seq_colors(max(len(pairs), 1), "cool"), pairs):
-                A, B = pos(dl[rmid, i]), pos(dl[rmid, j])
-                cs = np.einsum("td,td->t", A, B) / (
-                    np.linalg.norm(A, axis=1) * np.linalg.norm(B, axis=1))
+                cs = _cos_rows(dl[rl, i], dl[rl, j])
                 a.plot(t1, cs, color=c, lw=1.2, label=f"cos(d{i},d{j})")
             a.set_xlabel("generated step t")
             a.set_title("cos(delta_i(t), delta_j(t)) | last-layer vectors")
@@ -641,15 +657,14 @@ def flux_tube_family(a1: dict, out_dir: str, tag: str, light: bool = False,
             # panel 1: temporal alignment
             a = ax[1]
             for c, i in zip(seq_colors(max(len(vi), 1)), vi):
-                A = pos(dl[rmid, i])
-                cs = np.einsum("td,td->t", A[1:], A[:-1]) / (
-                    np.linalg.norm(A[1:], axis=1) * np.linalg.norm(A[:-1], axis=1))
+                X = dl[rl, i]
+                cs = _cos_rows(X[1:], X[:-1])
                 a.plot(t1[1:], cs, color=c, lw=1.2, label=f"dir {i}")
             a.set_xlabel("generated step t")
             a.set_title("cos(delta(t), delta(t-1)) | last-layer vectors")
             a.set_ylim(-1.05, 1.05)
             leg(a)
-            p = os.path.join(out_dir, f"ft_paircos__r{fr}__{tag}.png")
+            p = os.path.join(out_dir, f"ft_paircos__r{frl}__{tag}.png")
             _save(fig, p)
             written.append(p)
 
@@ -657,13 +672,15 @@ def flux_tube_family(a1: dict, out_dir: str, tag: str, light: bool = False,
     if "cos" in a1:
         cosk = np.asarray(a1["cos"], dtype=float)
         if cosk.ndim == 4:
-            fig, ax = _fig_panels(2, suptitle=f"{tag} | cos key, r={fr}")
+            rbig = rsel[-1] if rsel else rmid
+            frb = fmt_r(radii[rbig])
+            fig, ax = _fig_panels(2, suptitle=f"{tag} | cos key, r={frb}")
             cols = seq_colors(L)
             for a, (xlab, ttl) in zip(ax, (("t (all)", "cos(t), all layers"),
                                            ("t (first 60)", "cos(t), zoom t<=60"))):
                 sl = slice(None) if "all" in ttl else slice(0, min(60, T))
                 for li in range(L):
-                    med, _, _ = med_band(cosk[rmid, :, li, sl])
+                    med, _, _ = med_band(cosk[rbig, :, li, sl])
                     a.plot(t1[sl], med, color=cols[li], lw=1.1,
                            label=f"L={layers[li]}")
                 a.set_xlabel(xlab)
@@ -672,7 +689,7 @@ def flux_tube_family(a1: dict, out_dir: str, tag: str, light: bool = False,
                 if L <= 10:
                     leg(a, ncol=2)
             ax[0].set_ylabel("cos (schema key)")
-            p = os.path.join(out_dir, f"ft_cos__r{fr}__{tag}.png")
+            p = os.path.join(out_dir, f"ft_cos__r{frb}__{tag}.png")
             _save(fig, p)
             written.append(p)
 
