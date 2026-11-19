@@ -582,7 +582,7 @@ $-0.010\pm0.002$ for every radius from $10^{-3}$ to $0.3$. A rate that depends o
 size is not a Lyapunov exponent; here the only radius dependence is the nonlinear onset above
 $r\approx0.3$.
 
-### N8. Cross-model comparison
+### N6b. Cross-model comparison
 
 **Data.** Same protocol on three models: prompt perturbation $r=0.3$ (the calibrated value for the
 fp16 models; DeepSeek at $r=0.3$ too), 20 simplex directions, teacher-forced, last saved layer.
