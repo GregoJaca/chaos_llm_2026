@@ -17,7 +17,10 @@ os.makedirs(OUT, exist_ok=True)
 plt.rcParams.update({"font.size": 10, "axes.titlesize": 10.5, "axes.labelsize": 10,
                      "legend.fontsize": 8.5})
 
-d = np.load(os.path.join(ROOT, "results", "depth_w100", "depth.npz"))
+f = os.path.join(ROOT, "results", "depth2", "deepseek", "depth.npz")
+if not os.path.exists(f):
+    f = os.path.join(ROOT, "results", "depth_w100", "depth.npz")
+d = np.load(f)
 lam, tokens, layers = d["lam"], d["tokens"], d["layers"]
 med = np.median(lam[:, :, 0], axis=0)
 res = fit_curve(layers, med)
@@ -87,7 +90,7 @@ NUM["logsigma_mean"] = float(np.mean(logsig[1:]))
 # ---------------- per-token exponent of a/(l+1)^b
 bs = []
 for ti in range(lam.shape[0]):
-    rr = fit_curve(layers[1:], lam[ti, 1:, 0], families=["power+offset"], log_mode="native")
+    rr = fit_curve(layers[1:], lam[ti, 1:, 0], families=["power+offset+shift"], log_mode="native")
     v = dict(zip(rr.best.pnames, rr.best.params))
     bs.append(v.get("b", np.nan))
 NUM["b_per_token"] = [float(x) for x in bs]
@@ -96,7 +99,7 @@ fig, ax = plt.subplots(figsize=(7.4, 4.4))
 ax.plot(tokens, bs, "o-", color="tab:purple")
 ax.axhline(-1, color="r", ls="--", label=r"$-1$ (pure $1/\ell$)")
 ax.set_xlabel("generated token $t$"); ax.set_ylabel("exponent $b$")
-ax.set_title(r"$\lambda_1\propto \ell^{b}$: the exponent is $-1$ at every token")
+ax.set_title(r"Exponent of $\lambda_1\propto(\ell-x_0)^{b}$ at each token")
 ax.legend(); ax.grid(alpha=0.25)
 fig.tight_layout()
 fig.savefig(os.path.join(OUT, "depth_exponent_per_token.png"), dpi=185)

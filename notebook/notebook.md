@@ -2040,34 +2040,63 @@ The plotted curve is $\lambda_1(\ell)$ median over the 8 tokens; the band is the
 obtained in any of them, and the curvature changes sign between (b) and (c). Only (a) and (d) with
 the fitted curve are informative.
 
-**Fit (BIC winner).**
-$$\lambda_1(\ell)=0.022+3.03\,(\ell+1.07)^{-1.05},\qquad R^2=0.99985.$$
-The runner-up (Hill/log-logistic) is $\Delta$BIC $=2.0$, i.e. a tie; all exponential, stretched and
-Gaussian forms are $>100$ BIC worse. **So "it looks like an exponential decay" is wrong**: the curve
-is a power law with exponent $-1$ and a shift of one layer.
+**Fit.** With the full 16-token data (27 points, layers 1–27) the BIC winner is a **stretched
+exponential**
+$$\lambda_1(\ell)=4.21-4.12\,e^{-(\ell/0.73)^{0.45}},\qquad R^2=0.99991,$$
+and the best power law is a shifted one,
+$\lambda_1=0.025+3.07(\ell+1.11)^{-1.07}$ ($R^2=0.99973$, $\Delta$BIC $=29$). Including layer 0 (the
+first block, which is a single exceptional jump) the shifted power law wins and the stretched
+exponential is second. All *single* exponential, pure power, log and polynomial forms are 100+ BIC
+worse.
 
-**Why $-1$, and what is actually decaying.** $\lambda_1$ is defined with a $1/(\ell+1)$
-normalisation. If you undo it,
-$$\log\sigma_1(\ell)=\lambda_1(\ell)\,(\ell+1)=3.00+0.019\,\ell,$$
-i.e. the cumulative top singular value is *flat to within 2% per layer*: $\sigma_1\approx20$ at every
-depth, growing by $1.9\%$ per block. The "decay with depth" is therefore **not** a decay of the
-tangent gain — the gain per block is constant and slightly above 1 — it is the $1/(\ell+1)$ of the
-definition. This is the cleanest example in the project of a curve whose shape is kinematics, not
-dynamics.
+So: **not a simple exponential.** A stretched exponential with $\beta=0.45$ and a shifted $1/\ell$
+law are two descriptions of the same curve, and BIC cannot separate them at this precision. Neither
+is "the law"; both say the decay is slower than exponential and faster than $1/\ell^2$.
+
+**Why the shape is what it is.** $\lambda_1$ is defined with a $1/(\ell+1)$ normalisation. Undo it:
+$$\log\sigma_1(\ell)=\lambda_1(\ell)\,(\ell+1).$$
+That quantity is almost flat (next figure): it starts at $2.93$ nats ($\sigma_1=18.7$), dips by
+$0.17$ around mid-depth, and rises to $3.58$ ($\sigma_1=36$) at the last layer. So the top singular
+value of the depth product is between 16 and 36 at **every** depth — the tangent gain per block is
+about $1.03$ on average and never large. The "decay with depth" is therefore mostly the $1/(\ell+1)$
+of the definition, not a decay of the tangent gain. This is the cleanest example in the project of a
+curve whose shape is kinematics, not dynamics.
 
 ![depth logsigma](figures/fits/depth_logsigma.png)
 
-**Panel (a).** $\log\sigma_1(\ell)$ with a linear fit: slope $+0.0190\pm0.0026$ nats/layer.
-**Panel (b).** The same slope fitted per token: it clusters at 0 (mean $+0.02$), so the near-constancy
-is not an averaging artefact.
+**Panel (a).** $\log\sigma_1(\ell)$: nearly flat (2.93 → 3.58 nats, i.e. $\sigma_1$ between 19 and
+36), a shallow dip in the middle and a late rise. **Panel (b).** A linear fit per token: the slopes
+cluster near zero, so the near-constancy is not an averaging artefact.
 
 ![depth exponent per token](figures/fits/depth_exponent_per_token.png)
 
-**The shift diagnosis.** Fitting $c+a\ell^b$ *without* the $+1$ gives $b=-0.60$ for all eight tokens;
-with the shift it is $b=-1.05$. Both fit well over a limited range, which is exactly why the tool
-tests shifts explicitly. The physically meaningful exponent is $-1$.
+**The shift diagnosis.** Fitting $c+a\ell^b$ *without* a shift gives $b=-0.60$; with the shift it is
+$-1.07$. Both fit well over a limited range, which is exactly why the tool tests shifts explicitly.
+The shift of about $-1$ is the signature of the $(1/\ell)$ normalisation. Per token the shifted
+exponent is between $-1.2$ and $-1.7$ (next figure) — the law is the same at every token, with a
+30% spread in the exponent.
 
-## 9.3 The same treatment for the layer-resolved response
+## 9.3 The whole spectrum is flat, not just $\lambda_1$
+
+![depth spectrum shape](figures/fits/depth_spectrum_shape.png)
+
+**Data.** The same 16-token depth map, all 8 computed exponents, median over tokens.
+
+**Panel (a).** $\lambda_i$ against $i$ on log–log at four depths: **flat**. **Panel (b).** The fitted
+slope $\alpha$ in $\lambda_i\propto i^{-\alpha}$: $\alpha=0.000\pm0.005$ at every layer (the error bar
+is the fit SE). **Panel (c).** $\lambda_i/\lambda_1$: within $\pm3\%$ of 1 for $i\le8$ at every depth.
+
+**Reading.** The depth tangent product is **isotropic to a few percent**: it expands the top eight
+directions by the same factor. There is no dominant tangent direction, and $\lambda_1$ is not special
+— it is simply the first of eight nearly equal exponents. This is the opposite of the
+non-normal/non-degenerate picture one might expect from "chaotic" dynamics, and it is a much stronger
+statement than the $\lambda_1(\ell)$ curve: *the only structure in the depth map is the overall
+scale*, which the previous subsection showed is set by the $1/(\ell+1)$ normalisation.
+
+**Caveat.** $k=8$ of $D=1536$. The statement is about the top eight; the rest of the spectrum was not
+computed (it would need $D$ tangent vectors, i.e. 1536 JVPs per block).
+
+## 9.4 The same treatment for the layer-resolved response
 
 ![depth gain fit](figures/fits/fit_depthgain_DeepSeek-1.5B_t50__DeepSeek-1.5B.png)
 
@@ -2083,14 +2112,15 @@ The state norm itself (below) is one of the few curves that really is exponentia
 $\|h_{t,\ell}\|$ vs layer, Qwen3-4B, fitted $c+a e^{bx}$ (log domain): the residual stream grows
 geometrically with depth, by a factor that is model-specific.
 
-## 9.4 The full table
+## 9.5 The full table
 
 `results/fits/SUMMARY.md` contains every curve fitted (≈60). Selected rows:
 
 | curve | model | best form | key parameter | $R^2$ |
 |---|---|---|---|---|
-| $\lambda_1(\ell)$ | DeepSeek | $c+a(\ell-x_0)^b$ | $b=-1.05$, $x_0=-1.07$ | 0.9998 |
-| $\log\sigma_1(\ell)$ | DeepSeek | linear | $+0.019$/layer | 0.996 |
+| $\lambda_1(\ell)$ (layers 1–27) | DeepSeek | stretched exponential | $\beta=0.45$, $\tau=0.73$ | 0.99991 |
+| $\lambda_1(\ell)$ (incl. block 0) | DeepSeek | $c+a(\ell-x_0)^b$ | $b=-1.07$, $x_0=-1.11$ | 0.99973 |
+| $\log\sigma_1(\ell)$ | DeepSeek | quadratic | 2.93 → 3.58 nats | 0.94 |
 | $\|h_\ell\|$ at $t=50$ | Qwen3-4B | $a e^{b\ell}$ | $b=+0.10$/layer | 0.996 |
 | $\|h_\ell\|$ at $t=50$ | Phi-4-mini | $a e^{b\ell}$ | $b=+0.05$/layer | 0.992 |
 | $P(r_*>x)$ | DeepSeek | log-logistic | $k=0.93$, $b=1.67$ | 0.9998 |
