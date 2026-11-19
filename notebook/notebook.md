@@ -612,6 +612,17 @@ flip statistics.
 **Caveat.** The fp16 models have a higher numerical floor ($r\gtrsim0.03$); all comparisons here use
 $r=0.3$ to stay well above it.
 
+**A second, more serious fp16 caveat: margins.** The decision gap is computed from fp16 logits with
+magnitude $\sim10$, so its resolution is $\sim0.01$. DeepSeek (fp32) has a minimum gap of 0.0202 and
+none below 0.01; Qwen3-4B and Phi-4-mini both contain steps with margin **exactly 0.0** (1 and 3
+steps), which is quantization, not a genuine tie. Consequences:
+
+- the response/λ comparisons (large signals) are unaffected;
+- **threshold and flip-fraction results on fp16 models are only meaningful for gaps $\gtrsim0.02$**,
+  and the observed flip fractions at $r\le0.05$ are inflated by these artificial ties;
+- the stable-chaos threshold analysis should be reported for DeepSeek (fp32), with the fp16 models
+  as qualitative support only.
+
 ### N7. The window also changes single-position perturbations
 
 ![state window scan](figures/state_window_scan.png)

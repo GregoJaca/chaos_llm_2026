@@ -61,6 +61,17 @@ logits) **≤600 tokens**.
 | `numpy` bfloat16 error (`Got unsupported ScalarType BFloat16`) | `.cpu().numpy()` on a bf16 tensor | call `.float()` first (all scripts now do) |
 | `IndexError: tuple index out of range` in `run_state2` | layer index from another model (36) applied to DeepSeek (28) | pass `--model` everywhere |
 
+### fp16/bf16 numerical limits (measured)
+
+| quantity | fp32 (DeepSeek) | fp16 (4B/3.8B) |
+|---|---|---|
+| smallest usable perturbation | 1e-4 | ~3e-2 |
+| decision gap resolution | ~1e-6 | ~1e-2 |
+| genuine ties (margin 0) | none | 1–3 steps per 300 |
+| response linearity range | 1e-3…0.3 | 0.03…0.3 |
+
+Never report threshold predictions for fp16 models below gap 0.02; the ties are quantization.
+
 ## 5. Recipes
 
 **Long teacher-forced response (up to 4000 tokens):**
