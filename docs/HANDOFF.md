@@ -129,3 +129,32 @@ On the host, `results/big/` holds the large 12–24 h batch: `flush/`, `regime/`
 - Keep the single notebook current; do not scatter new md files for the user.
 - Null results are first-class.
 - Keep the GPU busy; prefer long runs; use subagents for CPU analysis.
+
+## 9. Multi-model environments (added 2026-11-19)
+
+| env | python | transformers | use for |
+|---|---|---|---|
+| system (`python3`) | 3.9 | 4.50 | DeepSeek FP32 (existing results) |
+| `~/LLM/venv_tf` | 3.9 | 4.57.6 | Qwen3-4B-Instruct-2507, Phi-4-mini |
+| `~/LLM/venv311` | 3.11 | 5.x (git) | Qwen3.5-2B (hybrid Gated-DeltaNet) |
+
+Model-specific facts:
+- **Qwen3-4B-Instruct-2507**: 36 layers, hidden 2560, **no native sliding window**
+  (`sliding_window=None`), 151936 vocab. fp32 does not fit; use **fp16** (bf16 has a larger noise
+  floor). Usable radii: 0.03–0.3, default **r=0.1**.
+- **Phi-4-mini-instruct**: 32 layers, hidden 3072, sliding_window=262144 (effectively none).
+  fp32 does not fit (12 GB weights alone). fp16, default **r=0.3** (a/r stabilises at r≥0.2).
+- **Qwen3.5-2B**: `Qwen3_5ForConditionalGeneration`, 3:1 linear/full attention hybrid, needs
+  transformers 5.x and Python ≥3.11. No sliding-window mechanism: window experiments are
+  undefined. Text config hidden 2048.
+- bf16/fp16 crashes: numpy cannot convert bfloat16; all scripts now call `.float()` before
+  `.cpu().numpy()`. Never add a fp32 delta in-place to a fp16 tensor without casting.
+- The window experiments are only meaningful on DeepSeek (native sliding window). For the other
+  models run the W=100 vs W=4096 null test and report that nothing changes.
+
+## 10. Model suite entry point
+
+`scripts/model_suite2.sh <model_path> <tag> <r> <num_layers>` runs calibration, A1 (all layers,
+20 dirs, 3 radii, two prompts), single-position perturbations, 3 trajectories, stable-chaos free
+runs and the window null test. Resume-safe. `scripts/models_compare.py` builds the cross-model
+figures from `results/models/*`.

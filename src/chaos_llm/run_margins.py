@@ -29,10 +29,10 @@ def main():
         with torch.inference_mode():
             o=model(inputs_embeds=Efull,attention_mask=torch.ones((1,Efull.shape[1]),dtype=torch.long,device='cuda'),output_hidden_states=True,use_cache=False)
         pos=torch.arange(P-1,P+T-1,device='cuda'); z=o.logits[0][pos]
-        top=torch.topk(z,k=2,dim=-1); m=(top.values[:,0]-top.values[:,1]).cpu().numpy().astype(np.float32)
-        h={l:o.hidden_states[l][0,P:P+T].cpu().numpy().astype(np.float32) for l in layers}
-        np.savez(os.path.join(args.out,f'w{w}.npz'),gen_ids=gids[0].cpu().numpy(),margins=m,
-                 top1=top.indices[:,0].cpu().numpy(),top2=top.indices[:,1].cpu().numpy(),
+        top=torch.topk(z,k=2,dim=-1); m=(top.values[:,0]-top.values[:,1]).float().cpu().numpy().astype(np.float32)
+        h={l:o.hidden_states[l][0,P:P+T].float().cpu().numpy().astype(np.float32) for l in layers}
+        np.savez(os.path.join(args.out,f'w{w}.npz'),gen_ids=gids[0].float().cpu().numpy(),margins=m,
+                 top1=top.indices[:,0].float().cpu().numpy(),top2=top.indices[:,1].float().cpu().numpy(),
                  **{f'h{l}':h[l] for l in layers})
         im=int(np.argmin(m)); out[w]=dict(T=int(T),min_margin=float(m[im]),min_step=im,
                                           p01=float(np.quantile(m,.01)),p05=float(np.quantile(m,.05)),

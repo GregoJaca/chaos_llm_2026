@@ -49,7 +49,7 @@ def main():
                     delta = torch.zeros(P * D, device="cuda")
                     delta.index_copy_(0, sub_t, torch.as_tensor(simplex[row["di"]], device="cuda") * r)
                     E[j] += delta.view(P, D)
-            gen = generate(model, E, T).cpu().numpy()
+            gen = generate(model, E, T).float().cpu().numpy()
             ref = gen[0]
             all_ref[f"{ri}_{start}"] = ref
             all_gen[f"{ri}_{start}"] = gen

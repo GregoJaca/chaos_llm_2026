@@ -88,11 +88,11 @@ def main():
         pos = torch.arange(P - 1, P + T - 1, device="cuda")
         z0 = logits0[pos]  # [T,V]
         top2 = torch.topk(z0, k=2, dim=-1)
-        margins = (top2.values[:, 0] - top2.values[:, 1]).detach().cpu().numpy().astype(np.float32)
+        margins = (top2.values[:, 0] - top2.values[:, 1]).detach().float().cpu().numpy().astype(np.float32)
         top1 = top2.indices[:, 0]
         top2i = top2.indices[:, 1]
         h0 = {l: out0.hidden_states[l][0, P:P + T].detach() for l in layers}  # [T,D]
-        norm_h0 = np.stack([h0[l].norm(dim=-1).cpu().numpy() for l in layers])  # [n_layers,T]
+        norm_h0 = np.stack([h0[l].norm(dim=-1).float().cpu().numpy() for l in layers])  # [n_layers,T]
         del out0, logits0, z0, top2
 
     simplex, sub = make_directions(args.num_directions, P, D, args.seed)
@@ -124,17 +124,17 @@ def main():
             zb = out.logits[:, pos, :]  # [B,T,V]
             z1 = torch.gather(zb, 2, top1v.expand(B, -1, -1)).squeeze(-1)
             z2 = torch.gather(zb, 2, top2v.expand(B, -1, -1)).squeeze(-1)
-            dm[ri, idx] = ((z1 - z2) - m_t[None, :]).detach().cpu().numpy()  # [B,T]
+            dm[ri, idx] = ((z1 - z2) - m_t[None, :]).detach().float().cpu().numpy()  # [B,T]
             del zb, z1, z2, out.logits
             for li, l in enumerate(layers):
                 h = out.hidden_states[l][:, P:P + T, :]  # [B,T,D]
                 diff = h - h0[l][None]
-                dh_norm[ri, idx, li] = diff.norm(dim=-1).detach().cpu().numpy()
+                dh_norm[ri, idx, li] = diff.norm(dim=-1).detach().float().cpu().numpy()
                 cos[ri, idx, li] = torch.nn.functional.cosine_similarity(
-                    h, h0[l][None].expand_as(h), dim=-1).detach().cpu().numpy()
+                    h, h0[l][None].expand_as(h), dim=-1).detach().float().cpu().numpy()
             for j, di in enumerate(idx):
                 if di < 3:
-                    dh_last[ri, di] = (out.hidden_states[layers[-1]][j, P:P + T] - h0[layers[-1]]).detach().cpu().numpy()
+                    dh_last[ri, di] = (out.hidden_states[layers[-1]][j, P:P + T] - h0[layers[-1]]).detach().float().cpu().numpy()
             del out, E
             torch.cuda.empty_cache()
 

@@ -31,13 +31,13 @@ def main():
         for _ in range(args.extra):
             o = model(input_ids=nxt, past_key_values=past, use_cache=True, output_hidden_states=True)
             past = o.past_key_values
-            new_h.append(o.hidden_states[-1][0, -1].detach().cpu().numpy().astype(np.float32))
+            new_h.append(o.hidden_states[-1][0, -1].detach().float().cpu().numpy().astype(np.float32))
             nxt = torch.argmax(o.logits[0, -1]).view(1, 1)
             new_tokens.append(int(nxt.item()))
             if len(new_tokens) >= args.extra:
                 break
 
-    gen = np.concatenate([gids[0].cpu().numpy(), np.asarray(new_tokens[:-1], dtype=np.int32)])
+    gen = np.concatenate([gids[0].float().cpu().numpy(), np.asarray(new_tokens[:-1], dtype=np.int32)])
     h = np.concatenate([h_last, np.stack(new_h[:len(gen) - len(gids[0])])], axis=0)
     np.savez(args.out, prompt_ids=d['prompt_ids'], gen_ids=gen, h_last=h,
              extended_from=os.path.basename(args.src), window=args.window)

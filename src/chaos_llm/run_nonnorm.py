@@ -82,8 +82,8 @@ def main():
     def rho_full(l, t):
         jv, jtv = funcs(l, t)
         A = LinearOperator((D, D),
-                           matvec=lambda x: jv(torch.as_tensor(x, device="cuda", dtype=torch.float32)).cpu().numpy(),
-                           rmatvec=lambda x: jtv(torch.as_tensor(x, device="cuda", dtype=torch.float32)).cpu().numpy(),
+                           matvec=lambda x: jv(torch.as_tensor(x, device="cuda", dtype=torch.float32)).float().cpu().numpy(),
+                           rmatvec=lambda x: jtv(torch.as_tensor(x, device="cuda", dtype=torch.float32)).float().cpu().numpy(),
                            dtype=np.float32)
         ev = eigs(A, k=1, which="LM", maxiter=25, tol=1e-3, return_eigenvectors=False)
         return float(abs(ev[0]))
@@ -107,7 +107,7 @@ def main():
     for ti, t in enumerate(toks):
         vecs = []
         for l in range(nL):
-            _, v = power(l, t, iters=8); vecs.append(v.detach().cpu().numpy())
+            _, v = power(l, t, iters=8); vecs.append(v.detach().float().cpu().numpy())
         for l in range(nL - 1):
             c = abs(float(np.dot(vecs[l], vecs[l + 1]))); c = min(1.0, max(-1.0, c))
             angles[ti, l] = np.degrees(np.arccos(c))

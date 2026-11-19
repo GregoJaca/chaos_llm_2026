@@ -34,7 +34,7 @@ def run_prompt(
 ) -> None:
     input_ids = tokenizer(prompt["text"], return_tensors="pt").input_ids.to(device)
     attention_mask = build_attention_mask(input_ids)
-    prompt_ids_cpu = input_ids[0].detach().cpu().numpy()
+    prompt_ids_cpu = input_ids[0].detach().float().cpu().numpy()
 
     with torch.no_grad():
         base_embeds = model.get_input_embeddings()(input_ids).to(dtype=dtype)
@@ -97,7 +97,7 @@ def run_prompt(
                 top_k=logits_top_k,
                 max_steps=logits_max_steps,
             )
-            baseline_ids_cpu = baseline_generated.detach().cpu().numpy()
+            baseline_ids_cpu = baseline_generated.detach().float().cpu().numpy()
         else:
             baseline_ids = generate_baseline(
                 model,
@@ -106,7 +106,7 @@ def run_prompt(
                 attention_mask=attention_mask,
                 gen_kwargs=gen_kwargs,
             )
-            baseline_ids_cpu = baseline_ids[0].detach().cpu().numpy()
+            baseline_ids_cpu = baseline_ids[0].detach().float().cpu().numpy()
         if include_prompt_tokens:
             if baseline_ids_cpu.shape[0] < prompt_len or not np.array_equal(
                 baseline_ids_cpu[:prompt_len], prompt_ids_cpu
@@ -192,7 +192,7 @@ def run_prompt(
                             logit_metrics[name].append(batch_vals[b_idx])
                     
                     for b_idx in range(output_ids.shape[0]):
-                        seq = output_ids[b_idx].detach().cpu().numpy()
+                        seq = output_ids[b_idx].detach().float().cpu().numpy()
                         # handle prompt inclusion
                         if include_prompt_tokens:
                             if seq.shape[0] < prompt_len or not np.array_equal(seq[:prompt_len], prompt_ids_cpu):
@@ -220,7 +220,7 @@ def run_prompt(
                             prompt_len=prompt_len,
                             adaptive_stop=adaptive_stop,
                         )
-                        seq = output_ids[0].detach().cpu().numpy()
+                        seq = output_ids[0].detach().float().cpu().numpy()
                         if include_prompt_tokens:
                             if seq.shape[0] < prompt_len or not np.array_equal(seq[:prompt_len], prompt_ids_cpu):
                                 seq = np.concatenate([prompt_ids_cpu, seq])
@@ -249,7 +249,7 @@ def run_prompt(
                     )
                     
                     for b in range(len(batch_deltas)):
-                        seq = output_ids[b].detach().cpu().numpy()
+                        seq = output_ids[b].detach().float().cpu().numpy()
                         if include_prompt_tokens:
                             if seq.shape[0] < prompt_len or not np.array_equal(
                                 seq[:prompt_len], prompt_ids_cpu

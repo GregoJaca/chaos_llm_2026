@@ -69,12 +69,12 @@ def main():
             with torch.inference_mode():
                 o = model(inputs_embeds=E, attention_mask=torch.ones((1, E.shape[1]), dtype=torch.long, device='cuda'),
                           use_cache=False)
-            pred[ri, di] = o.logits[0, P - 1:P + T - 1].argmax(-1).cpu().numpy()
+            pred[ri, di] = o.logits[0, P - 1:P + T - 1].argmax(-1).float().cpu().numpy()
             del o, E, delta
             torch.cuda.empty_cache()
         print('r', r, 'done', flush=True)
 
-    ref = ref_tok.cpu().numpy()
+    ref = ref_tok.float().cpu().numpy()
     np.savez(os.path.join(args.out, 'tf_predict.npz'), pred=pred, ar=ar, ref=ref,
              radii=np.asarray(radii))
     save_json(os.path.join(args.out, 'meta.json'), dict(run=args.run, free_run=args.free_run,

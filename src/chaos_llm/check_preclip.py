@@ -28,7 +28,7 @@ for W in [50, 100, 200, 4096]:
 
 print(f"P={P}, T={T}")
 np.savez("results/preclip.npz",
-         **{f"W{W}_l{l}": states[W][l].cpu().numpy() for W in states for l in [1, 7, 14, 27]},
+         **{f"W{W}_l{l}": states[W][l].float().cpu().numpy() for W in states for l in [1, 7, 14, 27]},
          P=P, T=T)
 ref = states[4096]
 for W in [50, 100, 200]:

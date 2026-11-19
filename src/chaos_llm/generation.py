@@ -230,15 +230,15 @@ def generate_with_perturbation_topk(
                 q = _safe_softmax(pert_logits) # [B, K]
 
                 if "kl_divergence" in methods:
-                    metrics["kl_divergence"].append(_kl_divergence(p, q).detach().cpu().numpy())
+                    metrics["kl_divergence"].append(_kl_divergence(p, q).detach().float().cpu().numpy())
                 if "js_divergence" in methods:
-                    metrics["js_divergence"].append(_js_divergence(p, q).detach().cpu().numpy())
+                    metrics["js_divergence"].append(_js_divergence(p, q).detach().float().cpu().numpy())
                 if "cos_sim" in methods or "cos_dist" in methods:
                     cos_sim = _cosine_sim(base_logits, pert_logits) # [B]
                     if "cos_sim" in methods:
-                        metrics["cos_sim"].append(cos_sim.detach().cpu().numpy())
+                        metrics["cos_sim"].append(cos_sim.detach().float().cpu().numpy())
                     if "cos_dist" in methods:
-                        metrics["cos_dist"].append((1.0 - cos_sim).detach().cpu().numpy())
+                        metrics["cos_dist"].append((1.0 - cos_sim).detach().float().cpu().numpy())
 
             next_token = torch.argmax(logits, dim=-1) # [B]
             generated.append(next_token.unsqueeze(1))
@@ -247,7 +247,7 @@ def generate_with_perturbation_topk(
                 if step < len(baseline_ids):
                     # Check which sequences just diverged
                     diverged_now = (next_token != int(baseline_ids[step])) & (~finished)
-                    divergence_index[diverged_now.cpu().numpy()] = step
+                    divergence_index[diverged_now.float().cpu().numpy()] = step
                     finished |= diverged_now
 
             if eos_token_id is not None:

@@ -1,6 +1,6 @@
-"""Shared FP32 inference protocol for DeepSeek-1.5B.
+"""Shared inference protocol for decoder-only LLMs (FP32 <=2.5B, bf16 above).
 
-Rules: in-batch r=0 reference, fixed-length generation, no mixed precision.
+Rules: in-batch r=0 reference, fixed-length generation, one precision per model.
 """
 import glob
 import json
@@ -9,7 +9,7 @@ import time
 
 import numpy as np
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
 
 def resolve_model_path(model):
@@ -28,19 +28,69 @@ def resolve_model_path(model):
     return p
 
 
-def load_model(model="~/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B", attn="sdpa"):
+def estimate_params(cfg):
+    """Rough parameter count from config, good enough to pick a dtype."""
+    H = getattr(cfg, "hidden_size", 1536)
+    L = getattr(cfg, "num_hidden_layers", 28)
+    F = getattr(cfg, "intermediate_size", 4 * H)
+    V = getattr(cfg, "vocab_size", 150000)
+    kv = getattr(cfg, "num_key_value_heads", getattr(cfg, "num_attention_heads", 12))
+    attn = 4 * H * H if kv == getattr(cfg, "num_attention_heads", 12) else 2 * H * H + 2 * H * (H * kv // max(1, getattr(cfg, "num_attention_heads", 12)))
+    return V * H + L * (attn + 2 * H * F) + 2 * H
+
+
+def model_info(model, dtype=None):
+    """Config-only description; does not load weights."""
     path = resolve_model_path(model)
+    cfg = AutoConfig.from_pretrained(path, local_files_only=True)
+    params = estimate_params(cfg)
+    if dtype is None or dtype == "auto":
+        dtype = "float32" if params * 4 <= 9.5e9 else "float16"
+    return dict(path=path, params=params, dtype=dtype, hidden_size=cfg.hidden_size,
+                num_layers=cfg.num_hidden_layers, vocab_size=getattr(cfg, "vocab_size", None),
+                sliding_window=getattr(cfg, "sliding_window", None),
+                use_sliding_window=getattr(cfg, "use_sliding_window", None))
+
+
+def load_model(model="~/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B", attn="sdpa", dtype="auto"):
+    path = resolve_model_path(model)
+    info = model_info(model, dtype)
     tok = AutoTokenizer.from_pretrained(path, local_files_only=True)
-    model = AutoModelForCausalLM.from_pretrained(
-        path, torch_dtype=torch.float32, local_files_only=True,
+    td = {"float32": torch.float32, "bfloat16": torch.bfloat16, "float16": torch.float16}[info["dtype"]]
+    m = AutoModelForCausalLM.from_pretrained(
+        path, torch_dtype=td, local_files_only=True,
         attn_implementation=attn, low_cpu_mem_usage=True,
     ).cuda().eval()
-    return model, tok, path
+    m._chaos_info = info
+    return m, tok, path
 
 
 def set_window(model, window):
-    model.config.sliding_window = int(window)
-    model.config.use_sliding_window = True
+    """Set the sliding window if the architecture supports it; warn otherwise."""
+    cfg = model.config
+    if hasattr(cfg, "sliding_window"):
+        cfg.sliding_window = int(window)
+        if hasattr(cfg, "use_sliding_window"):
+            cfg.use_sliding_window = True
+        return True
+    print("WARNING: this config has no sliding_window attribute; window is ignored", flush=True)
+    return False
+
+
+def get_layers(model):
+    """Return the list of decoder blocks, robust to the wrapper name."""
+    for path in ("model.layers", "transformer.h", "model.decoder.layers"):
+        obj = model
+        ok = True
+        for part in path.split("."):
+            if hasattr(obj, part):
+                obj = getattr(obj, part)
+            else:
+                ok = False
+                break
+        if ok and isinstance(obj, torch.nn.ModuleList):
+            return obj
+    raise RuntimeError("cannot find decoder layers on this model")
 
 
 def prompt_ids(tokenizer, text):
@@ -48,6 +98,8 @@ def prompt_ids(tokenizer, text):
 
 
 def build_simplex(k):
+    if k < 2:
+        raise ValueError("num_directions must be >= 2 (k=1 gives a zero perturbation)")
     eye = np.eye(k, dtype=np.float32)
     v = eye - np.ones((k, k), dtype=np.float32) / k
     return v / np.linalg.norm(v, axis=1, keepdims=True)

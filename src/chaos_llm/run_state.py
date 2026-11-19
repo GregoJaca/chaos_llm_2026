@@ -19,7 +19,7 @@ def main():
         o=model(inputs_embeds=E,attention_mask=torch.ones((1,E.shape[1]),dtype=torch.long,device='cuda'),output_hidden_states=True,use_cache=False)
     h0=o.hidden_states[args.layer][0,P:P+T].detach()
     dh=np.zeros((len(steps),args.dirs,T),np.float32); dm=np.zeros((len(steps),args.dirs,T),np.float32)
-    top=torch.topk(o.logits[0,P-1:P+T-1],k=2,dim=-1); m=(top.values[:,0]-top.values[:,1]).detach().cpu().numpy()
+    top=torch.topk(o.logits[0,P-1:P+T-1],k=2,dim=-1); m=(top.values[:,0]-top.values[:,1]).detach().float().cpu().numpy()
     t1=top.indices[:,0]; t2=top.indices[:,1]
     for si,s in enumerate(steps):
         for di in range(args.dirs):
@@ -28,10 +28,10 @@ def main():
             E2=E.clone(); E2[0,P+s]+=args.r*v
             with torch.inference_mode():
                 oo=model(inputs_embeds=E2,attention_mask=torch.ones((1,E2.shape[1]),dtype=torch.long,device='cuda'),output_hidden_states=True,use_cache=False)
-            dh[si,di]= (oo.hidden_states[args.layer][0,P:P+T]-h0).norm(dim=-1).detach().cpu().numpy()
+            dh[si,di]= (oo.hidden_states[args.layer][0,P:P+T]-h0).norm(dim=-1).detach().float().cpu().numpy()
             z=oo.logits[0,P-1:P+T-1]
             z1=torch.gather(z,1,t1[:,None]).squeeze(1); z2=torch.gather(z,1,t2[:,None]).squeeze(1)
-            dm[si,di]=((z1-z2).detach().cpu().numpy()-m)
+            dm[si,di]=((z1-z2).detach().float().cpu().numpy()-m)
             del oo,E2
         print('step',s,'done',flush=True)
     np.savez(os.path.join(args.out,'state.npz'),dh=dh,dm=dm,steps=np.asarray(steps),r=args.r,layer=args.layer)

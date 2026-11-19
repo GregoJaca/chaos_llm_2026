@@ -1,0 +1,5 @@
+flux: L=0 r=0.3 all zeros -> skipped
+window_family win_prompts: free-run obs missing -> token agreement skipped
+window_family win_cyber: free-run obs missing -> token agreement skipped
+window_family win_long2: free-run obs missing -> token agreement skipped
+window_family win_scanB1: free-run obs missing -> token agreement skipped

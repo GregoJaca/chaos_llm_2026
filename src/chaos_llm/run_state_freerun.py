@@ -59,9 +59,9 @@ def main():
             torch.cuda.empty_cache()
         print('step', s, 'done', flush=True)
 
-    ref = gids[0].cpu().numpy()
+    ref = gids[0].float().cpu().numpy()
     np.savez(os.path.join(args.out, 'state_freerun.npz'), pred=out, ref=ref,
-             steps=np.asarray(steps), r=args.r, dirs=dirs.cpu().numpy())
+             steps=np.asarray(steps), r=args.r, dirs=dirs.float().cpu().numpy())
     save_json(os.path.join(args.out, 'meta.json'), dict(run=args.run, steps=steps, dirs=args.dirs,
                r=args.r, seed=args.seed, prompt_len=P, T=T))
     print('saved', args.out)

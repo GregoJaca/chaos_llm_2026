@@ -60,7 +60,7 @@ def main():
                   output_hidden_states=True, use_cache=False)
     h0 = {l: o.hidden_states[l][0, P:P + T].detach() for l in layers}
     top = torch.topk(o.logits[0, P - 1:P + T - 1], k=2, dim=-1)
-    m = (top.values[:, 0] - top.values[:, 1]).detach().cpu().numpy()
+    m = (top.values[:, 0] - top.values[:, 1]).detach().float().cpu().numpy()
     t1 = top.indices[:, 0]
     del o
     torch.cuda.empty_cache()
@@ -98,20 +98,20 @@ def main():
                 for li, l in enumerate(layers):
                     h = oo.hidden_states[l][:, P:P + T, :]
                     diff = h - h0[l][None]
-                    dh[ri, si, idx, li] = diff.norm(dim=-1).detach().cpu().numpy()
+                    dh[ri, si, idx, li] = diff.norm(dim=-1).detach().float().cpu().numpy()
                     cs[ri, si, idx, li] = torch.nn.functional.cosine_similarity(
-                        h, h0[l][None].expand_as(h), dim=-1).detach().cpu().numpy()
+                        h, h0[l][None].expand_as(h), dim=-1).detach().float().cpu().numpy()
                 z = oo.logits[:, P - 1:P + T - 1, :]
                 z1 = torch.gather(z, 2, t1.view(1, -1, 1).expand(B, -1, -1)).squeeze(-1)
                 z2 = torch.gather(z, 2, torch.as_tensor(d['top2'], device='cuda').view(1, -1, 1).expand(B, -1, -1)).squeeze(-1)
-                dm[ri, si, idx] = ((z1 - z2).detach().cpu().numpy() - m)
+                dm[ri, si, idx] = ((z1 - z2).detach().float().cpu().numpy() - m)
                 del oo, Eb, deltas, z, z1, z2
                 torch.cuda.empty_cache()
             print(f'r={r:g} s={s} dirs {start}-{start+len(idx)-1} done', flush=True)
 
     np.savez(os.path.join(args.out, 'state2.npz'), dh=dh, cos=cs, dm=dm,
              steps=np.asarray(steps), radii=np.asarray(radii), layers=np.asarray(layers),
-             inject_layer=args.inject_layer, dirs=dirs.cpu().numpy(), margins=m)
+             inject_layer=args.inject_layer, dirs=dirs.float().cpu().numpy(), margins=m)
     save_json(os.path.join(args.out, 'meta.json'), dict(run=args.run, steps=steps, radii=radii,
                dirs=args.dirs, layers=layers, inject_layer=args.inject_layer, seed=args.seed,
                prompt_len=P, T=T, window=meta['window']))

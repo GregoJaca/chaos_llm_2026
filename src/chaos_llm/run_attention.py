@@ -23,7 +23,7 @@ def main():
         for l in layers:
             A=o.attentions[l][0]  # [heads,L,L]
             p=A.clamp_min(1e-12); H=-(p*p.log()).sum(-1)  # [heads,L]
-            ent[l]=H.mean(0)[P:P+gids.shape[1]].cpu().numpy().astype(np.float32)
+            ent[l]=H.mean(0)[P:P+gids.shape[1]].float().cpu().numpy().astype(np.float32)
         out[w]={str(l):ent[l].tolist() for l in layers}
         print('window',w,'done',flush=True)
         del o

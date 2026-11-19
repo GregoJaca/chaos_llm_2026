@@ -31,7 +31,7 @@ def main():
             with torch.inference_mode():
                 oo=model(inputs_embeds=E,attention_mask=torch.ones((1,E.shape[1]),dtype=torch.long,device='cuda'),output_hidden_states=True,use_cache=False)
             h.remove()
-            dh[si,di]=(oo.hidden_states[args.measure_layer][0,P:P+T]-h0).norm(dim=-1).cpu().numpy()
+            dh[si,di]=(oo.hidden_states[args.measure_layer][0,P:P+T]-h0).norm(dim=-1).float().cpu().numpy()
             del oo
         print('s',s,'done',flush=True)
     np.savez(os.path.join(args.out,'state_mid.npz'),dh=dh,steps=np.asarray(steps),r=args.r,

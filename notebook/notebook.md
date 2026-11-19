@@ -943,6 +943,42 @@ it acts. Magnitude ranks directions; sign ranks (direction, word) pairs.
 "hot trio" (directions 10, 11, 12) is hot in all three. So magnitude is a property of the
 direction; the sign at a particular word is not.
 
+### E2. All directions at once: 1536 directions
+
+![all directions](figures/all_directions.png)
+
+**Data.** One prompt, one radius ($r=0.1$), teacher-forced, **1536 directions** — as many as the
+hidden dimension. Five layers, 300 tokens.
+
+**Panel (a).** Histogram of the gain at layer 27 (median over the first 50 tokens).
+
+**Panel (b).** Response curves: median and 10–90% band over the 1536 directions, per layer.
+
+**Panel (c).** Cumulative variance of the log-gain matrix (directions × layers).
+
+**Reading.** The response spans a factor **×22** between the 5th and 95th percentile (0.056 to
+1.21), and ×400 between the extremes. Yet **one mode explains 97.8% of the variance** of the
+log-gain: over the full 1536-dimensional direction space, directions differ essentially by a
+single scalar gain multiplying a shared temporal shape. This is the strongest form of the
+"direction = scalar gain" statement.
+
+**Consequence.** Averaging over directions is safe for the temporal shape, never for the
+magnitude: report the distribution of gains, not a single number.
+
+### E3. Directions across models: DeepSeek is anisotropic, Qwen3-4B is not
+
+![model direction spread](figures/model_direction_spread.png)
+
+**Data.** Same protocol (prompt perturbation, $r=0.1$, 20 simplex directions, teacher-forced, 50
+tokens), last saved layer: DeepSeek layer 27, Qwen3-4B layer 32 (of 36).
+
+**Axes.** $x$: $\log_{10}$ of the median gain per direction. $y$: number of directions.
+
+**Reading.** DeepSeek's 20 directions span **×5.85** (5–95%); with 1536 directions the spread is
+**×22**. Qwen3-4B's 20 directions span **×1.15** — essentially identical. Direction dependence is
+therefore **model-specific**, not a generic property of transformers: the distilled 1.5B model has
+strong direction structure, the newer 4B model is close to isotropic.
+
 ![directions not equivalent](figures/directions_are_not_equivalent.png)
 
 **Data.** Same geometry; (a) uses $t=123$ and $r=0.3$; (b) uses observed flips at

@@ -74,7 +74,7 @@ def main():
             h_base_same = tf_forward(base_emb, seq)
             diff = (h_pert - h_base_same).norm(dim=-1)          # state difference with SAME tokens
             vs_ref = (h_pert - h_base_ref).norm(dim=-1)          # state difference vs baseline tokens
-            out[f'{r}_{di}'] = dict(diff=diff.cpu().numpy(), vs_ref=vs_ref.cpu().numpy())
+            out[f'{r}_{di}'] = dict(diff=diff.float().cpu().numpy(), vs_ref=vs_ref.float().cpu().numpy())
             print(f'r={r} dir={di}: max same-token state diff={float(diff.max()):.4f}, '
                   f'final={float(diff[:, -1].max()):.5f}', flush=True)
 

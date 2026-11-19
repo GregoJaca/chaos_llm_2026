@@ -27,8 +27,8 @@ def main():
                 else:
                     o=model(input_ids=next_ids,past_key_values=past,use_cache=True,output_hidden_states=True,return_dict=True)
             past=o.past_key_values
-            for l in layers: hs[l].append(o.hidden_states[l][0,-1].detach().cpu().numpy().astype(np.float32))
-            full_hs.append(o.hidden_states[-1][0,-1].detach().cpu().numpy().astype(np.float32))
+            for l in layers: hs[l].append(o.hidden_states[l][0,-1].detach().float().cpu().numpy().astype(np.float32))
+            full_hs.append(o.hidden_states[-1][0,-1].detach().float().cpu().numpy().astype(np.float32))
             nxt=torch.argmax(o.logits[0,-1]).view(1,1)
             gen.append(int(nxt.item())); next_ids=nxt
             del o

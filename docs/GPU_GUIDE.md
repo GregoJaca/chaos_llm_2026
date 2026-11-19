@@ -56,6 +56,10 @@ logits) **≤600 tokens**.
 | scp "No such file" | log/npz created after the copy attempt | sleep, then copy |
 | OOM while another job runs | concurrent jobs | one at a time |
 | 800-token `run_a1` fails | full `[L,V]` logits + hidden states | use `run_a1_long` |
+| `$'\r': command not found`, `set: -: invalid option` | shell script saved with Windows CRLF | `dos2unix script.sh` before running |
+| script silently loses letters (`un_a1`, `expot`) | `tr -d "\r"` executed with `\r` stripped by the local shell, so it deleted every `r` | never use `tr`; use `dos2unix` |
+| `numpy` bfloat16 error (`Got unsupported ScalarType BFloat16`) | `.cpu().numpy()` on a bf16 tensor | call `.float()` first (all scripts now do) |
+| `IndexError: tuple index out of range` in `run_state2` | layer index from another model (36) applied to DeepSeek (28) | pass `--model` everywhere |
 
 ## 5. Recipes
 

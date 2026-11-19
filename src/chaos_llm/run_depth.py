@@ -53,7 +53,7 @@ def main():
             local[ti, l] = U.norm(dim=0).mean().item()
             Q, R = torch.linalg.qr(U)
             cum += torch.log(torch.abs(torch.diag(R)) + 1e-30)
-            lam[ti, l] = (cum / (l + 1)).detach().cpu().numpy()
+            lam[ti, l] = (cum / (l + 1)).detach().float().cpu().numpy()
         print(f'token {gen_t}: final lambda {lam[ti,-1].round(3).tolist()} h_depth {float(np.maximum(lam[ti,-1],0).sum()):.3f}', flush=True)
 
     h_depth = np.maximum(lam[:, -1, :], 0).sum(axis=1)

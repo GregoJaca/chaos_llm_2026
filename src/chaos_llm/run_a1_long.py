@@ -23,7 +23,10 @@ def main():
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
-    text = args.prompt[1:] if args.prompt.startswith('@') else args.prompt
+    text = args.prompt
+    if text.startswith('@'):
+        line = open(text[1:]).read().splitlines()[0]
+        text = line.split('\t', 1)[1] if '\t' in line else line
     fd = np.load(args.fixed_tokens_from, allow_pickle=True)
     pids = torch.as_tensor(fd['prompt_ids'], device='cuda', dtype=torch.long)[None]
     gen = torch.as_tensor(fd['gen_ids'][:args.max_new_tokens], device='cuda', dtype=torch.long)[None]
@@ -48,10 +51,10 @@ def main():
     with torch.inference_mode():
         hs0, z0 = forward(Efull)
         top2 = torch.topk(z0[0], k=2, dim=-1)
-        margins = (top2.values[:, 0] - top2.values[:, 1]).cpu().numpy().astype(np.float32)
+        margins = (top2.values[:, 0] - top2.values[:, 1]).float().cpu().numpy().astype(np.float32)
         top1 = top2.indices[:, 0]; top2i = top2.indices[:, 1]
         h0 = {l: hs0.hidden_states[l][0, P:P + T] for l in layers}
-        norm_h0 = np.stack([h0[l].norm(dim=-1).cpu().numpy() for l in layers])
+        norm_h0 = np.stack([h0[l].norm(dim=-1).float().cpu().numpy() for l in layers])
         del hs0, z0, top2
         torch.cuda.empty_cache()
 
@@ -72,9 +75,9 @@ def main():
                 hs, z = forward(E)
                 z1 = torch.gather(z[0], 1, top1v.T).squeeze(-1)
                 z2 = torch.gather(z[0], 1, top2v.T).squeeze(-1)
-                dm[ri, di] = ((z1 - z2).cpu().numpy() - margins)
+                dm[ri, di] = ((z1 - z2).float().cpu().numpy() - margins)
                 for li, l in enumerate(layers):
-                    dh_norm[ri, di, li] = (hs.hidden_states[l][0, P:P + T] - h0[l]).norm(dim=-1).cpu().numpy()
+                    dh_norm[ri, di, li] = (hs.hidden_states[l][0, P:P + T] - h0[l]).norm(dim=-1).float().cpu().numpy()
                 del hs, z, z1, z2
             del E, delta
             torch.cuda.empty_cache()

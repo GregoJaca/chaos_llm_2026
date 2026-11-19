@@ -63,13 +63,13 @@ def main():
                           output_hidden_states=True, use_cache=False)
             hnd.remove()
             for l in range(28):
-                dh[li, di, l] = (o.hidden_states[l][0, P:P + T].detach() - h0[l]).norm(dim=-1).cpu().numpy()
+                dh[li, di, l] = (o.hidden_states[l][0, P:P + T].detach() - h0[l]).norm(dim=-1).float().cpu().numpy()
             del o
             torch.cuda.empty_cache()
         print('injection layer', L, 'done', flush=True)
 
     np.savez(os.path.join(args.out, 'layer_probe.npz'), dh=dh, layers=np.asarray(inj_layers),
-             pos=args.pos, r=args.r, dirs=dirs.cpu().numpy())
+             pos=args.pos, r=args.r, dirs=dirs.float().cpu().numpy())
     save_json(os.path.join(args.out, 'meta.json'), dict(run=args.run, layers=inj_layers,
                pos=args.pos, r=args.r, dirs=args.dirs, seed=args.seed, prompt_len=P, T=T))
     print('saved', args.out)
