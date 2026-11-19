@@ -730,6 +730,20 @@ at $r\ge0.5$ (D5). This linearity licenses all threshold arithmetic in Part B.
 
 ### A4. Depth sets the gain
 
+![depth full](figures/depth_full_profile.png)
+
+**Data.** Prompt perturbation, $r=0.1$, 20 directions, **all 28 layers saved**, 300 tokens.
+
+**Panel (a).** Response vs layer at fixed times. **Panel (b).** Median gain over the first 50 tokens
+vs layer. **Panel (c).** Response divided by the baseline state norm.
+
+**Reading.** The response does not exist in the first layers — it **arrives** layer by layer, and
+the arrival depth depends on time (layer 1 at $t=5$, layer 3 at $t=200$): attention carries the
+prompt perturbation into the generated positions progressively. After arrival, the gain grows from
+0.08 at L1 to 3.2 at L27 (×40), roughly as $A(\ell)\propto\ell^{0.64}$. Relative to the state norm
+(panel c) the response peaks at layer 3–5 and then slowly declines, so most of the absolute growth
+is the state's own scale.
+
 ![depth layers](figures/a1_depth_layers.png)
 
 **Data.** Same run; fixed $r$, all saved layers.
