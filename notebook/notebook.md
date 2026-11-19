@@ -265,6 +265,26 @@ would have found it.**
 −0.0005/token, about 6× smaller than the bootstrap noise; 0 of 20 individual directions have a
 positive sustained rate.
 
+### Part 2.0d. Long horizon: the rate stays negative to 4000 tokens
+
+![long horizon](figures/long_horizon.png)
+
+**Data.** One 4000-token greedy trajectory (history of computing), prompt perturbation $r=0.1$,
+4 directions, teacher-forced along the full sequence with `run_a1_long` (base model + `lm_head`
+only at generated positions, so the `[L,V]` logits are never materialised).
+
+**Panel (a).** $x$: $t$ (log); $y$: $a(t,\ell)$ for four layers.
+
+**Panel (b).** $\Lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$.
+
+**Reading.** The rate is positive in the first ~20 tokens (up to +0.14 at layer 27), then settles
+**negative** and stays negative: −0.0075 at $t=1000$, −0.0069 at $t=4000$. There is no
+turn-around within the longest horizon we can run. This is the strongest available statement
+about a Lyapunov exponent: none is detectable up to 4000 tokens.
+
+**Technical note.** Long sequences are now routine: 4000 teacher-forced tokens take ~13 s for 2
+directions and ~10 GB of VRAM.
+
 ### Part 2.0c. Threshold curves across prompts
 
 ![chaos fraction](figures/chaos_flip_fraction.png)
