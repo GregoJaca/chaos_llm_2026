@@ -273,35 +273,52 @@ def knn_dists(D, kmax):
 
 
 # ------------------------------------------------------- intrinsic dim
-def lb_mle_orig(nn, k):
-    """Levina-Bickel MLE, original (harmonic) form:
+def _degen(nn, k):
+    """Points whose k nearest neighbors are all equidistant (duplicate
+    states, e.g. repeated tokens at the embedding layer): the LB log-ratio
+    is identically 0 there and would bias the estimate down."""
+    T = nn[:, :k]
+    return T[:, k - 1] <= T[:, 0] * (1 + 1e-12)
+
+
+def lb_mle_orig(nn, k, return_excl=False):
+    """Levina-Bickel MLE, original (harmonic) form, with degenerate points
+    (all k neighbors equidistant) excluded:
     d = [ mean_i (1/(k-1)) sum_{j<k} log(T_k / T_j) ]^{-1}.
     nn[i, j] = distance to (j+1)-th nearest neighbor."""
-    T = np.maximum(nn[:, :k].astype(np.float64), 1e-12)
-    with np.errstate(divide="ignore"):
+    ok = ~_degen(nn, k)
+    n_excl = int((~ok).sum())
+    if ok.sum() < 10:
+        d = float("nan")
+    else:
+        T = np.maximum(nn[ok][:, :k].astype(np.float64), 1e-12)
         logs = np.log(T[:, k - 1][:, None] / T[:, : k - 1])
-    return float(1.0 / logs.mean())
+        d = float(1.0 / logs.mean())
+    return (d, n_excl) if return_excl else d
 
 
 def lb_mle_perpoint(nn, k):
-    """Per-point LB dimension d_i (same estimator, before averaging)."""
-    T = np.maximum(nn[:, :k].astype(np.float64), 1e-12)
-    with np.errstate(divide="ignore"):
+    """Per-point LB dimension d_i; NaN at degenerate points."""
+    d_i = np.full(len(nn), np.nan)
+    ok = ~_degen(nn, k)
+    if ok.sum():
+        T = np.maximum(nn[ok][:, :k].astype(np.float64), 1e-12)
         logs = np.log(T[:, k - 1][:, None] / T[:, : k - 1])
-    d_i = 1.0 / logs.mean(axis=1)
+        d_i[ok] = 1.0 / logs.mean(axis=1)
     return d_i
 
 
 def two_nn(nn):
     """TWO-NN (Facco et al. 2017): d = -slope of log(1-F) vs log(mu),
-    mu = r2/r1. Returns (d, R^2, n_used)."""
+    mu = r2/r1. F_i = i/(n+1) avoids the log(0) at the last sample.
+    Returns (d, R^2, n_used)."""
     mu = nn[:, 1].astype(np.float64) / np.maximum(nn[:, 0], 1e-12)
     mu = mu[mu > 1.0 + 1e-12]
     mu.sort()
     n = len(mu)
     if n < 10:
         return float("nan"), float("nan"), n
-    F = np.arange(1, n + 1) / n
+    F = np.arange(1, n + 1) / (n + 1)
     lx, ly = np.log(mu), np.log(1.0 - F)
     A = np.vstack([lx, np.ones_like(lx)]).T
     (beta, c), *_ = np.linalg.lstsq(A, ly, rcond=None)
@@ -312,8 +329,10 @@ def two_nn(nn):
 
 def corr_dim_from_dists(dpairs, n_min_pairs=80):
     """Correlation dimension: slope of log C(r) vs log r over the scaling
-    region 2e-3 <= C(r) <= 0.2 (and >= n_min_pairs pairs below r)."""
+    region 2e-3 <= C(r) <= 0.2 (and >= n_min_pairs pairs below r).
+    Zero distances (duplicate states) are excluded."""
     dp = np.sort(np.asarray(dpairs, np.float64))
+    dp = dp[dp > 0]
     npair = len(dp)
     rlo, rhi = dp[0], dp[npair // 2]
     if not (rhi > rlo > 0):
