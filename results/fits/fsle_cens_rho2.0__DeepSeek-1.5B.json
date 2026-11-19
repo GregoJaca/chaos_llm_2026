@@ -1,0 +1,31 @@
+{
+ "key": "fsle_cens_rho2.0",
+ "model": "DeepSeek-1.5B",
+ "best": "linear",
+ "formula": "a + b*x",
+ "params": {
+  "a": 0.0,
+  "b": 0.0
+ },
+ "se": {
+  "a": 0.0,
+  "b": 0.0
+ },
+ "r2": NaN,
+ "r2_fit": NaN,
+ "bic": -11782.84896108642,
+ "aic": -11785.348601118589,
+ "domain": "native",
+ "table": [
+  {
+   "name": "linear",
+   "formula": "a + b*x",
+   "r2": NaN,
+   "bic": -11782.84896108642,
+   "params": {
+    "a": 0.0,
+    "b": 0.0
+   }
+  }
+ ]
+}
