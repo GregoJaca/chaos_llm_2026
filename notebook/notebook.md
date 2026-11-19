@@ -612,6 +612,22 @@ flip statistics.
 **Caveat.** The fp16 models have a higher numerical floor ($r\gtrsim0.03$); all comparisons here use
 $r=0.3$ to stay well above it.
 
+![model flux](figures/model_flux.png)
+
+**Flux-tube variants for the two new models** (the plot the user asked to see in many forms).
+
+**Panel (a).** $a(t)/a(1)$, log scale. **Panel (b).** consecutive ratio $a(t)/a(t-1)$.
+
+**Reading.** Phi-4-mini has a single-step jump of **×4.2** at $t\approx40$ and stays above its
+initial level for the whole run; Qwen3-4B's ratio fluctuates around 1 with no systematic growth.
+This is the transient amplification seen in panel (b) of the rate comparison, now in the
+step-to-step form.
+
+![model gain layers](figures/model_gain_layers.png)
+
+**Gain vs relative depth** for both models (median over directions, $r=0.1$). Qwen3-4B's gain is
+flat across depth; Phi-4-mini's rises toward the last layers before the transient burst.
+
 **A second, more serious fp16 caveat: margins.** The decision gap is computed from fp16 logits with
 magnitude $\sim10$, so its resolution is $\sim0.01$. DeepSeek (fp32) has a minimum gap of 0.0202 and
 none below 0.01; Qwen3-4B and Phi-4-mini both contain steps with margin **exactly 0.0** (1 and 3
