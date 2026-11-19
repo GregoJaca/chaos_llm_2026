@@ -1305,3 +1305,31 @@ unperturbed token sequence; free runs are used only where stated.
 numbers are under `results/`. The figures in this document are in `notebook/figures/`, produced by
 `scripts/notebook_figs_window.py`, `scripts/notebook_figs_state.py`,
 `scripts/notebook_fig_directions.py`, and copied from `results/figures/`.
+
+### N9. Gallery: flux-tube variants, all layers
+
+The auto-generated families (411 figures) live in `results/figs_models/`. A selection:
+
+![ds flux](figures/gallery/ds_flux_overlay.png)
+
+**DeepSeek, all 28 layers, $r=0.03$.** $a(t)/a(1)$, semilog and loglog. Colour = layer. Deeper layers survive longer (the flush cascade) and the decay is approximately a power law on the loglog panel.
+
+![ds ratio](figures/gallery/ds_ratio_overlay.png)
+
+**Step-to-step ratio $a(t)/a(t-1)$**, all layers. Values below 1 dominate - the response decays at almost every step after the first few.
+
+![ds L0-3](figures/gallery/ds_growth_L0-3.png)
+
+![ds L24-27](figures/gallery/ds_growth_L24-27.png)
+
+**Small multiples for the first four and last four layers.** The first layers die to zero inside the horizon (flush), the last layers do not.
+
+![ds heat](figures/gallery/ds_depth_heatmap.png)
+
+**Depth x time heat map** of $\log_{10} a(t,\ell)$: the perturbation arrives layer by layer, then decays.
+
+![q4 flux](figures/gallery/q4_flux_overlay.png)
+
+![q4 ratio](figures/gallery/q4_ratio_overlay.png)
+
+**Qwen3-4B, all 36 layers.** Same layout. The response is flat in time (ratio ~1) and does not show the DeepSeek cascade: the flush is absent because Qwen3 has no sliding window.
