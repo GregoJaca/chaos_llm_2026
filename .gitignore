@@ -27,3 +27,8 @@ analysis_outputs_0.0001/*
 *.safetensors
 models*/
 models--*/
+
+# generated notebook previews (rebuild with .preview/build.py)
+notebook/notebook.html
+notebook/notebook.pdf
+notebook/.preview/shot.png
