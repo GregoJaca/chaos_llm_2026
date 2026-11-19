@@ -265,11 +265,57 @@ would have found it.**
 −0.0005/token, about 6× smaller than the bootstrap noise; 0 of 20 individual directions have a
 positive sustained rate.
 
+### Part 2.0c. Threshold curves across prompts
+
+![chaos fraction](figures/chaos_flip_fraction.png)
+
+**Data.** 4 prompts, 20 shared directions, 12 radii from 0.05 to 2, 300 generated tokens,
+free-running greedy. A direction "flips" if any generated token differs from the unperturbed run.
+
+**Axes.** $x$: perturbation radius $r$ (log). $y$: fraction of the 20 directions that flip.
+Bars: 95% Wilson interval for a binomial proportion.
+
+**Reading.** The flip fraction is a **sigmoid in $r$**, with a prompt-dependent threshold: the
+first radius above 50% flips is 0.4 (p3), 0.7 (p1), and 1.5 (p4); p2 does not reach 50% within the
+tested range. At $r\le0.1$ every prompt is below 15%. This is the population-level version of the
+single-configuration result: a finite radius is needed, and the threshold is not universal.
+
+**Why it matters.** Exponential instability has no radius threshold: any $r>0$ eventually flips.
+The existence of a prompt-dependent finite threshold, plus the sigmoid shape, is the macroscopic
+signature of the stable-chaos regime.
+
 ---
 
 ## NEW (round 4): window regimes, where amplification happens, and the finite-time rate
 
 ### N1. Does the attention window change the dynamical regime?
+
+![regime scaling](figures/regime_scaling.png)
+
+**Data.** 6 prompts × 10 windows × 3 radii × 12 directions, 400 tokens, 600 direction-runs.
+For each run the local rate $\lambda_{10}(t)$ is averaged **before** clipping ($t<W-P-5$) and
+**after** clipping ($t>W-P+5$), separately.
+
+**Panel (a).** Pre-clip mean rate vs $W$ (only windows where all prompts have a pre-clip interval),
+95% bootstrap CI over directions.
+
+**Panel (b).** Post-clip contraction rate $-\lambda_{10}$ vs $W$ (log–log), with the fitted
+$A/W$.
+
+**Panel (c).** The product $-\lambda_{\text{post}}\cdot W$.
+
+**Reading — two clean statements.**
+1. **Before clipping the system is neutral:** the rate is between −0.0023 and +0.0009 nats/token
+   for every window from 90 to 4096, with CIs that include zero. All the apparent window dependence
+   in a naive comparison comes from *where the clip falls*, not from the pre-clip dynamics.
+2. **After clipping the contraction rate is eviction-driven:**
+   $$-\lambda_{\text{post}} \;\approx\; \frac{A}{W},\qquad A=0.67\pm0.11 .$$
+   The product $-\lambda_{\text{post}}W$ is constant (panel c). A larger window forgets the
+   perturbation more slowly, exactly as if each generated token had probability $\propto1/W$ of
+   evicting the perturbed context.
+
+This replaces the earlier, confounded comparison (N6): the "regime" at $W<P$ is a post-clip
+forgetting rate, not a different pre-clip dynamics.
 
 ![window regimes](figures/window_regimes.png)
 
