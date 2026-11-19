@@ -1,0 +1,14 @@
+{
+  "run": "results/big4/a1_all_layers/prompts",
+  "layers": [
+    0,
+    5,
+    10
+  ],
+  "pos": 12,
+  "r": 0.1,
+  "dirs": 6,
+  "seed": 3000,
+  "prompt_len": 65,
+  "T": 300
+}

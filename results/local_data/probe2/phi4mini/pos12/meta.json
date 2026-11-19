@@ -1,0 +1,14 @@
+{
+  "run": "results/models/phi4mini/a1",
+  "layers": [
+    0,
+    5,
+    10
+  ],
+  "pos": 12,
+  "r": 0.3,
+  "dirs": 6,
+  "seed": 3000,
+  "prompt_len": 64,
+  "T": 300
+}
