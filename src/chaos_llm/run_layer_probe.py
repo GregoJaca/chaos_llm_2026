@@ -19,6 +19,7 @@ def main():
     ap.add_argument('--r', type=float, default=0.05)
     ap.add_argument('--pos', type=int, default=50, help='generated position (0-based)')
     ap.add_argument('--seed', type=int, default=3000)
+    ap.add_argument('--dtype', default='auto')
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
@@ -27,9 +28,10 @@ def main():
     pids = torch.as_tensor(d['prompt_ids'], device='cuda')[None]
     gids = torch.as_tensor(d['gen_ids'], device='cuda')[None]
     P = int(meta['prompt_len']); T = int(gids.shape[1])
-    model, tok, _ = load_model(args.model)
+    model, tok, _ = load_model(args.model, dtype=args.dtype)
+    NL = int(model._chaos_info['num_layers'])
     set_window(model, meta['window'])
-    D = model.config.hidden_size
+    D = int(model._chaos_info['hidden_size'])
     inj_layers = [int(x) for x in args.layers.split(',')]
 
     gen = torch.Generator(device='cuda').manual_seed(args.seed)
@@ -40,12 +42,12 @@ def main():
     with torch.inference_mode():
         o0 = model(inputs_embeds=E, attention_mask=torch.ones((1, E.shape[1]), dtype=torch.long, device='cuda'),
                    output_hidden_states=True, use_cache=False)
-    h0 = {l: o0.hidden_states[l][0, P:P + T].detach() for l in range(28)}
+    h0 = {l: o0.hidden_states[l][0, P:P + T].detach() for l in range(NL)}
     del o0
     torch.cuda.empty_cache()
 
     pos = P + args.pos
-    dh = np.zeros((len(inj_layers), args.dirs, 28, T), np.float32)
+    dh = np.zeros((len(inj_layers), args.dirs, NL, T), np.float32)
     for li, L in enumerate(inj_layers):
         for di in range(args.dirs):
             delta = (args.r * dirs[di])
@@ -62,7 +64,7 @@ def main():
                 o = model(inputs_embeds=E, attention_mask=torch.ones((1, E.shape[1]), dtype=torch.long, device='cuda'),
                           output_hidden_states=True, use_cache=False)
             hnd.remove()
-            for l in range(28):
+            for l in range(NL):
                 dh[li, di, l] = (o.hidden_states[l][0, P:P + T].detach() - h0[l]).norm(dim=-1).float().cpu().numpy()
             del o
             torch.cuda.empty_cache()

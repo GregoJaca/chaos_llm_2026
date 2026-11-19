@@ -83,6 +83,14 @@ def set_window(model, window):
     return False
 
 
+def band_mask4d(L, W, device="cuda", dtype=torch.float32):
+    """Causal sliding-window mask [1,1,L,L] (0 inside the window, -inf outside)."""
+    idx = torch.arange(L, device=device)
+    band = (idx[None, :] <= idx[:, None]) & (idx[None, :] > idx[:, None] - int(W))
+    m = torch.zeros((L, L), device=device, dtype=dtype).masked_fill(~band, torch.finfo(dtype).min)
+    return m[None, None]
+
+
 def get_layers(model):
     """Return the list of decoder blocks, robust to the wrapper name."""
     for path in ("model.layers", "transformer.h", "model.decoder.layers"):

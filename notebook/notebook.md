@@ -71,8 +71,8 @@ $t$ is $\hat g_t=\arg\max z'_t$.
 
 **Hidden-state response**
 $$\delta h_{t,\ell}=h'_{t,\ell}-h_{t,\ell},\qquad
-a(t,\ell)=\|\delta h_{t,\ell}\|_2,\qquad
-q(t,\ell)=\frac{a(t,\ell)}{\|h_{t,\ell}\|_2}.$$
+\|\delta h_{t,\ell}\|=\|\delta h_{t,\ell}\|_2,\qquad
+\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|=\frac{\|\delta h_{t,\ell}\|}{\|h_{t,\ell}\|_2}.$$
 $a$ is an absolute length; $q$ is the same change as a fraction of the state's own length.
 Both appear in the figures; they answer different questions.
 
@@ -113,7 +113,7 @@ That is: the curves separate at the first generated step whose context no longer
 smaller window. The *response ratio* used in one figure is $\rho(t)=a_{W_1}(t)/a_{W_2}(t)$:
 $\rho=1$ exactly before $D$, $\rho\ne1$ after.
 
-**Depth and non-normality.** For fixed $t$, $a(t,\ell+1)/a(t,\ell)$ is the local gain. For a fixed
+**Depth and non-normality.** For fixed $t$, $\|\delta h_{t,\ell+1}\|/\|\delta h_{t,\ell}\|$ is the local gain. For a fixed
 position the tangent map is $J_\ell=\partial h_{\ell+1}/\partial h_\ell$; $\sigma_{\max}(J_\ell)$
 is its largest singular value, $\rho(J_\ell)$ its spectral radius, $\kappa=\sigma_{\max}/\rho$.
 
@@ -228,7 +228,7 @@ mid/large radii because the real perturbation contracts slightly.
 
 **Data.** 31 configurations: 7 layers, 12 radii, 6 windows × 2 prompts, 12 independent prompt
 runs. For each, the **sustained rate** is the mean of
-$\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)}$ over $t>150$.
+$\lambda_{10}(t)=\frac{1}{20}\log\frac{\|\delta h_{t+10,\ell}\|}{\|\delta h_{t-10,\ell}\|}$ over $t>150$.
 
 **Axes.** $x$: sustained rate in nats/token. Thin line: 95% bootstrap CI over directions. Thick
 line: conservative two-way bootstrap (directions + token blocks of 10). The black line is zero.
@@ -273,9 +273,9 @@ positive sustained rate.
 4 directions, teacher-forced along the full sequence with `run_a1_long` (base model + `lm_head`
 only at generated positions, so the `[L,V]` logits are never materialised).
 
-**Panel (a).** $x$: $t$ (log); $y$: $a(t,\ell)$ for four layers.
+**Panel (a).** $x$: $t$ (log); $y$: $\|\delta h_{t,\ell}\|$ for four layers.
 
-**Panel (b).** $\Lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$.
+**Panel (b).** $\Lambda(t)=\frac1t\log\frac{\|\delta h_{t}\|}{\|\delta h_{1}\|}$.
 
 **Reading.** The rate is positive in the first ~20 tokens (up to +0.14 at layer 27), then settles
 **negative** and stays negative: −0.0075 at $t=1000$, −0.0069 at $t=4000$. There is no
@@ -356,13 +356,13 @@ perturbations; there is no gradual regime.
 sequence each; prompt perturbation $r=0.1$, 10 directions, teacher-forced, layer 27; windows
 $W=50,100,200$.
 
-**Panel (a)/(c).** $x=t$; $y=a(t,27)=\|\delta h_{t,27}\|_2$ (log). **Panel (b)/(d).** $x$: horizon
-$t$ (log); $y$: $\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$.
+**Panel (a)/(c).** $x=t$; $y=\|\delta h_{t,27}\|$ (log). **Panel (b)/(d).** $x$: horizon
+$t$ (log); $y$: $\lambda(t)=\frac1t\log\frac{\|\delta h_{t}\|}{\|\delta h_{1}\|}$.
 
 ![growth summary](figures/window_growth_summary.png)
 
 **Data.** Five prompts at $W=100$ and three of them at $W=50$ (same protocol, 8 directions); local
-rate over 20-token windows, $\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)}$.
+rate over 20-token windows, $\lambda_{10}(t)=\frac{1}{20}\log\frac{\|\delta h_{t+10,\ell}\|}{\|\delta h_{t-10,\ell}\|}$.
 
 **Reading — the window changes the growth regime, quantitatively.**
 - At $W=50<P$ the prompt is *already* clipped at $t=0$: the initial response is 3–6× larger, and
@@ -479,7 +479,7 @@ Caveat: seven positions is a small sample; the margin–gain relation is suggest
 **Data.** Prompt perturbation, $r=0.1$, layer 27, 20 directions, $W=100$, 300 tokens.
 
 **Panel (a).** $x$: $t$; $y$: the **local** stretching rate over a 20-token window,
-$$\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)},$$
+$$\lambda_{10}(t)=\frac{1}{20}\log\frac{\|\delta h_{t+10,\ell}\|}{\|\delta h_{t-10,\ell}\|},$$
 which does not depend on a reference point. Thick blue: computed on the mean curve; thick red:
 median over directions; band: inter-quartile range; thin grey: individual directions.
 
@@ -490,7 +490,7 @@ then drops sharply negative at $t\approx100$ (the first window flush) and stays 
 21% of tokens have a positive rate. The two aggregations differ by up to 0.01 nats/token, so both
 must be reported: "mean of the rates" and "rate of the mean" are different objects (Jensen).
 
-The cumulative version used in N1(b) is $\lambda(t)=\frac1t\log\frac{a(t)}{a(1)}$; it is positive
+The cumulative version used in N1(b) is $\lambda(t)=\frac1t\log\frac{\|\delta h_{t}\|}{\|\delta h_{1}\|}$; it is positive
 for the first ~10–40 tokens for $W>P$ and negative from the start for $W<P$. No window, radius or
 layer tested gives a sustained positive rate over 300 tokens.
 
@@ -533,7 +533,7 @@ state, which stays visible for $W-1$ more tokens.
 
 **Data.** Fixed-token runs on the ocean-currents prompt, $r=0.1$, layer 27, 10 directions,
 windows $W=50,100,200$. The local rate is
-$$\lambda_{10}(t)=\frac{1}{20}\log\frac{a(t+10)}{a(t-10)}.$$
+$$\lambda_{10}(t)=\frac{1}{20}\log\frac{\|\delta h_{t+10,\ell}\|}{\|\delta h_{t-10,\ell}\|}.$$
 
 **Axes.** $x$: $t$. $y$: $\lambda_{10}$ in nats/token. Thick line: median over directions.
 Band: 10–90% over directions.
@@ -589,7 +589,7 @@ fp16 models; DeepSeek at $r=0.3$ too), 20 simplex directions, teacher-forced, la
 
 ![model comparison](figures/model_comparison_rel.png)
 
-**Panel (a).** $a(t,\ell)/\|h_{t,\ell}\|$ (relative response). **Panel (b).** Distribution of the
+**Panel (a).** $\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$ (relative response). **Panel (b).** Distribution of the
 gain per direction.
 
 ![model lambda](figures/model_lambda_compare.png)
@@ -618,7 +618,7 @@ $r=0.3$ to stay well above it.
 
 **Flux-tube variants for the two new models** (the plot the user asked to see in many forms).
 
-**Panel (a).** $a(t)/a(1)$, log scale. **Panel (b).** consecutive ratio $a(t)/a(t-1)$.
+**Panel (a).** $\|\delta h_{t}\|/\|\delta h_{1}\|$, log scale. **Panel (b).** consecutive ratio $\|\delta h_{t}\|/\|\delta h_{t-1}\|$.
 
 **Reading.** Phi-4-mini has a single-step jump of **×4.2** at $t\approx40$ and stays above its
 initial level for the whole run; Qwen3-4B's ratio fluctuates around 1 with no systematic growth.
@@ -678,7 +678,7 @@ both runs, so the tokens cannot differ. Prompt perturbation (1.2A) with $r=0.1$,
 directions. Teacher-forced pass; state read at layer $\ell=27$.
 
 **Axes.** $x$: generated token index $t$ (negative values = prompt, grey band; $t=0$ = first
-generated token). $y$: $a(t,27)=\|\delta h_{t,27}\|_2$, median over the 8 directions.
+generated token). $y$: $\|\delta h_{t,27}\|$, median over the 8 directions.
 
 **Curves.** Blue $W=100$; black $W=1000$ (never clips in 400 tokens, so it is the control).
 Panel (b) zooms on $t\in[20,55]$.
@@ -718,13 +718,13 @@ a decision gap. Afterwards the texts never re-converge, so the curve decays to 0
 **Data.** Prompt perturbation, 20 simplex directions, 7 radii $r\in[10^{-3},0.3]$,
 teacher-forced, layer 27.
 
-**Axes.** $x$: $t$. $y$: $a(t,27)/r$ (response per unit radius). Thin lines: three individual
+**Axes.** $x$: $t$. $y$: $\|\delta h_{t,27}\|/r$ (response per unit radius). Thin lines: three individual
 directions. Thick line: median.
 
 **Reading.** If the response were proportional to $r$, all curves collapse onto one. They do:
 the coefficient of variation of $a/r$ across radii is 2–3% (median; p90 ≤ 11%) at every layer
 and time. Hence
-$$a(t,\ell;r)=r\,G(t,\ell).$$
+$$\|\delta h_{t,\ell}\|(r)=r\,G(t,\ell).$$
 Deviations appear only at $r=10^{-3}$ late in the sequence (float32 round-off, $a<10^{-4}$) and
 at $r\ge0.5$ (D5). This linearity licenses all threshold arithmetic in Part B.
 
@@ -737,24 +737,29 @@ at $r\ge0.5$ (D5). This linearity licenses all threshold arithmetic in Part B.
 **Panel (a).** Response vs layer at fixed times. **Panel (b).** Median gain over the first 50 tokens
 vs layer. **Panel (c).** Response divided by the baseline state norm.
 
-**Reading.** The response does not exist in the first layers — it **arrives** layer by layer, and
-the arrival depth depends on time (layer 1 at $t=5$, layer 3 at $t=200$): attention carries the
-prompt perturbation into the generated positions progressively. After arrival, the gain grows from
-0.08 at L1 to 3.2 at L27 (×40), roughly as $A(\ell)\propto\ell^{0.64}$. Relative to the state norm
-(panel c) the response peaks at layer 3–5 and then slowly declines, so most of the absolute growth
-is the state's own scale.
+**Reading.** The response does not exist at the generated positions in layer 0 (the embedding is
+unperturbed there: the perturbation is on the prompt), so it **arrives** through layer 1 and deepens
+with time: layer 3 is still essentially empty at $t=5$ and populated by $t=200$. Attention carries
+the prompt perturbation into the generated positions, and the deeper the layer the later the
+transport completes.
+
+The absolute response grows from 0.09 (L1) to 2.41 (L27) in units of $r$ — a factor 26. It is
+*not* extra amplification: from layer 1 to 27 the state norm grows by the same factor (18 vs 19), so
+$\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$ is flat at $\approx5\times10^{-4}$ over 22 layers (panel c).
+The per-layer version of this statement is in [Q6](#q6-amplification-in-the-first-layers-versus-gain-increases-with-depth--resolved):
+the excess gain is 1 for every layer $\ell\ge5$.
 
 ![depth layers](figures/a1_depth_layers.png)
 
 **Data.** Same run; fixed $r$, all saved layers.
 
-**Axes.** Left: $x=t$, $y=a(t,\ell)$ for several $\ell$. Right: $x=\ell$, $y$=depth gain
-$A(\ell)=a(t,\ell)/a(t,1)$ at fixed $t$.
+**Axes.** Left: $x=t$, $y=\|\delta h_{t,\ell}\|$ for several $\ell$. Right: $x=\ell$,
+$y=\|\delta h_{t,\ell}\|/\|\delta h_{t,1}\|$ at fixed $t$.
 
 **Reading.** Early layers respond and decay; deep layers rise, surge before the window flush,
-then decay. The gain follows $A(\ell)\propto\ell^{0.64}$ ($R^2=0.95$): $0.155$ at L1 to $1.875$
-at L27, a factor 12, and it is front-loaded (×1.9 from L1→L2, ×1.04 mid-network, ×1.12 at the
-end). Depth also sets the rise time and the memory of the perturbation.
+then decay. The depth profile is close to $\ell^{0.64}$ ($R^2=0.95$) only because both
+$\|\delta h\|$ and $\|h\|$ grow together; the meaningful statement is the flat relative response.
+Depth also sets the rise time and the memory of the perturbation.
 
 ### A5. Large radii
 
@@ -873,7 +878,7 @@ the rule: re-measuring $\delta m$ at the radius of interest restores 99.4%.
 $3\times10^{-3},10^{-2},3\times10^{-2},10^{-1}$, teacher-forced on the same 300-token sequence,
 state read at layers 7/14/21/27. Panels (a)–(b): $r=0.03$.
 
-**Panel (a).** $x=t$; $y=s$; colour $=\log_{10}$ of the median over directions of $a(t,27)$. Cyan
+**Panel (a).** $x=t$; $y=s$; colour $=\log_{10}$ of the median over directions of $\|\delta h_{t,27}\|$. Cyan
 line $t=s$: no effect can precede the perturbation.
 
 **Panel (b).** $x$: lag $\tau=t-s$; $y$: $a(s+\tau,27)$ (log), one curve per $s$.
@@ -1193,7 +1198,7 @@ Three things separate our measurement from this.
 
 What the data support:
 - the finite-time response is linear in $r$ up to $r\approx0.3$ and transient;
-- $\lambda(t)=\frac1t\log(a(t)/a(0))$ is positive early and turns negative: a transient, not
+- $\lambda(t)=\frac1t\log(\|\delta h_{t}\|/\|\delta h_{0}\|)$ is positive early and turns negative: a transient, not
   sustained stretching;
 - the depth product at a fixed position contracts relative to the state scale, while the full
   response grows through cross-position mixing;
@@ -1216,6 +1221,238 @@ in this system at these scales; the unpredictability is a finite-amplitude thres
 If a Lyapunov-like number is wanted, the honest report is a finite-time exponent with horizon and
 window stated, e.g. "$\lambda(t=50)=0.032$ nats/token at $W=100$, reference $t_0=5$", never a bare
 "Lyapunov exponent".
+
+---
+
+# Part 3b. The questions, answered one by one
+
+These are the questions that came up while reading the figures. Each answer states the object, the
+measurement, and what it does and does not imply.
+
+## Q1. The response is linear in $r$. Is the Jacobian well defined, and is its exponent positive?
+
+**Yes, piecewise — and no, the exponent is not positive.**
+
+Write the state at a generated position as $h_t$ and one transformer step (including the token
+decision) as $h_{t+1}=F_t(h_t)$. Between two token changes $F_t$ is smooth, and the response to a
+perturbation is
+$$\delta h_t = \big(DF_{t-1}\cdots DF_0\big)\,\delta h_0 + O(\|\delta h_0\|^2).$$
+The measurement $\|\delta h_{t,\ell}\|\propto r$ over $r=10^{-3}\dots0.3$ (section A3) is exactly the
+statement that the $O(r^2)$ term is negligible: we are in the tangent regime, so the product of
+Jacobians $J(t)=DF_{t-1}\cdots DF_0$ is a measurable object.
+
+The subtlety is the readout. The token is $\arg\max W h$; that map is **discontinuous** at the
+decision boundary. So there is no single Jacobian for the whole generation: there is a Jacobian on
+each smooth segment and a finite jump at each flip. The trajectory-level object is the
+finite-time product above, and the only meaningful rate is the finite-time exponent
+$$\lambda(t)=\frac1t\log\frac{\|J(t)\,\delta h_0\|}{\|\delta h_0\|}.$$
+We measure it and it is **negative in every configuration** (0/31; best $-0.0043$ nats/token).
+
+**The misconception to correct.** Linearity in $r$ does not give you a positive exponent, and it
+does not make $\lambda$ independent of $r$ *in general*. It does something stronger and simpler:
+inside one smooth segment, $\delta h_t = r\,J(t)\hat u$, so **every ratio** — $\lambda$, the
+normalised response, the depth gain — is *exactly* $r$-independent, and any $r$-dependence you see
+comes from a **flip** (which changes the token sequence, hence every later $F_t$) or from the
+numerical floor. This is why $\lambda_k(t)$ at $r=0.03$ and $r=0.3$ agree before the first flip, and
+why the threshold analysis must be phrased in $r$: the threshold is about *when* the boundary is
+reached, not about growth.
+
+![margin coordinate](figures/margin_coordinate.png)
+
+**The margin coordinate makes this explicit.** With $a,b$ the top two tokens and
+$m_t=(w_a-w_b)\cdot h_t$ the margin, define
+$$u_t=\frac{\delta m_t}{m_t},\qquad \delta m_t=(w_a-w_b)\cdot\delta h_t .$$
+The token flips exactly when $u_t\le-1$ (signed rule: 318/320). Panel (a): at $r=0.3$ the most fragile
+direction reaches $u=-0.63$ and never crosses — no flip, consistent with the free runs. Panel (b):
+the closest approach $-\min_t u_t$ is linear in $r$; the envelope gives $r^*\approx0.54$, the smallest
+radius at which some direction flips for this prompt. Panel (c): divided by $r$, the three radii give
+the same distribution — the coordinate is linear in $r$ to within the spread between directions.
+
+## Q2. What exactly is chaotic about "stable chaos"?
+
+**Not a positive Lyapunov exponent.** What is chaotic is the *symbolic* dynamics, and the honest
+one-sentence definition is:
+
+> The continuous state contracts ($\lambda<0$, no growth), but the readout is discontinuous, so an
+> arbitrarily small perturbation eventually changes a token; the trajectory separation is a sawtooth
+> of long contraction and instantaneous jumps at margin crossings.
+
+Mechanically:
+
+1. Nearby states converge: $\|\delta h_{t,\ell}\|$ never grows, $\lambda<0$.
+2. The readout $g_t=\arg\max W h_t$ is discontinuous. When the margin $m_t$ passes through zero, an
+   arbitrarily small $\delta h$ changes the token.
+3. A token change injects a **finite** distance (a whole embedding vector) into the state. The two
+   trajectories then re-contract.
+
+So the distance between two nearby trajectories is not exponential — it is a sawtooth: contraction,
+jump, contraction. That is the "flux tube": the perturbation stays in a tube and exits only through
+a gate, and the gates are the margin dips.
+
+In dynamical-systems language this is a **hybrid system with a discontinuous readout**. It has
+sensitive dependence and positive topological entropy of the token map, but zero (here negative)
+measure-theoretic Lyapunov exponent. The empirical signatures are in Part 2.0: flips sit on 8
+discrete margin dips ($p<5\times10^{-6}$ against a continuous-separation null); the flip hazard does
+not scale with $r$ the way exponential separation would; the hard floor $r\le0.1$ never flips within
+300 tokens; the norm never grows.
+
+If a referee objects to the word "chaos", the defensible phrase is **threshold-induced sensitivity in
+a contracting system**. I keep "stable chaos" as the label because it names the two ingredients, but
+it must always be defined in one sentence as above.
+
+## Q3. Why do curves with different $W$ differ already for $t<W$?
+
+Because the window counts **absolute positions**, and the prompt already occupies $P$ of them.
+
+A query at absolute position $q=P+t$ can attend to positions $p$ with $q-p<W$. A prompt token at
+$p$ stops being visible when $P+t-p\ge W$, i.e. at
+$$t = W-P+p .$$
+The earliest prompt position ($p=0$) is lost first, at
+$$t_{\text{first}} = W-P .$$
+So the first difference between window $W$ and no window appears at $W-P$, **not** at $W$. If
+$W<P$, the prompt is already truncated at $t=0$ and the curves differ from the first token.
+
+![window first departure](figures/window_first_departure.png)
+
+**Measured** ($P=63$): $W=100$ departs at $t=37=100-63$; $W=200$ at $t=137=200-63$; $W=50$ at
+$t=0$. Panel (b) shows the separation itself: exactly zero until $W-P$, then a jump, then a slow
+drift. The law is exact for all four saved layers.
+
+This is a different event from the **flush law** $t^*_\ell=p_{\text{last}}+(W-P)+(\ell-1)(W-1)$,
+which is the time at which the *last* prompt position has been flushed out at layer $\ell$. First
+departure = the first prompt token is lost; flush = the last one is lost. The $(\ell-1)(W-1)$ term is
+the receptive-field growth: at layer $\ell$ a position sees back to $q-(\ell-1)(W-1)$.
+
+Why do some plots look like a step and others like a ramp? The *set* of attended positions changes
+abruptly, but the contribution of a token that is about to leave the window is already attenuated,
+so the norm changes smoothly in most observables and abruptly only when the lost token was
+dominant.
+
+## Q4. Finite-time rate, FSLE, and $\lambda$: same thing? And are they $r$-dependent?
+
+Three different objects, routinely conflated:
+
+| object | definition | what it answers |
+|---|---|---|
+| finite-time exponent $\lambda_k(t)$ | $\frac{1}{2k}\log\frac{\|\delta h_{t+k,\ell}\|}{\|\delta h_{t-k,\ell}\|}$ | local stretching at lag $k$ around $t$ |
+| FSLE $\lambda(\delta)$ | fix $\delta<\Delta$; measure $\tau(\delta)$ to grow from $\delta$ to $\Delta$; $\lambda(\delta)=\frac{1}{\tau}\log\frac{\Delta}{\delta}$ | how fast a *finite* perturbation becomes macroscopic |
+| threshold / survival | time until the margin crosses zero | when the discrete decision changes |
+
+Only the first is a (finite-time) Lyapunov exponent. In a smooth hyperbolic system with $\delta\to0$
+all three agree with the Lyapunov exponent. Here they do not, and the reason is the whole point: the
+boundary is at a **finite** distance and is reached without growth, by moving in the margin
+direction while the norm shrinks. Our survival curves are the FSLE experiment with the target
+replaced by the decision boundary.
+
+$r$-dependence:
+
+* $\lambda_k(t)$ is $r$-independent inside a smooth segment — exactly, by the linearity argument of
+  Q1.
+* $\lambda(\delta)$ is $r$-dependent by construction: it is a function of the initial size.
+* the flip time and flip probability are strongly $r$-dependent: that is the physics, and it is what
+  the threshold curves measure (flip fraction 0 at $r=0.05$, about 0.6 at $r=1.5$).
+
+So the correct sentence is: *the rate is $r$-independent; the time to the first decision change is
+not.*
+
+## Q5. Which normalisation is the right one?
+
+There are four coordinates. They answer different questions; the mistake is to use one for all of
+them. Recommended: **decision-projected for decisions, relative for state comparisons, absolute for
+the flux-tube decay.**
+
+| coordinate | definition | use | behaviour |
+|---|---|---|---|
+| absolute | $\|\delta h_{t,\ell}\|$ | flux-tube decay, logs | grows with depth because the state grows |
+| relative | $\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$ | cross-model, cross-depth | flat in depth (section below) |
+| perpendicular | $\|\delta h_{t,\ell}^{\perp}\|$, $\delta h^\perp=\delta h-(\delta h\cdot\hat h)\hat h$ | "can it matter?" | the radial part only rescales all logits |
+| decision-projected | $u_t=\delta m_t/m_t$ | flips, thresholds | flip at $u=-1$; dimensionless |
+
+The key point that is easy to miss: **the radial part of the perturbation cannot change the token.**
+If $\delta h$ is parallel to $h$, then every logit is multiplied by the same factor, the ranking is
+unchanged, and the token is unchanged — however large $\|\delta h\|$ is. So a large norm with no flip
+is not a paradox; the relevant part is the perpendicular one, and the decision only sees its
+projection on $w_a-w_b$. We currently record total norms only; $u_t$ is already the projected
+quantity, and the next runs should also store $\|\delta h^\perp\|$.
+
+## Q6. "Amplification in the first layers" versus "gain increases with depth" — resolved
+
+They measure different things, and the second is mostly the state's own growth.
+
+The perturbation is added to the **prompt** embeddings, so the hidden state of a **generated**
+position is unperturbed at the input: at layer 0, $\delta h=0$ exactly. The perturbation enters at
+layer 1 through attention. That is the "amplification in the first layer".
+
+![perlayer gain](figures/perlayer_gain.png)
+
+**Panel (a).** Layer-to-layer gain $\|\delta h_{t,\ell}\|/\|\delta h_{t,\ell-1}\|$: between 2 and 7
+for $\ell\le4$, then $1.0$–$1.2$ for every deeper layer and every time.
+
+**Panel (b).** The gain *beyond what the state itself does*,
+$\dfrac{\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|}{\|\delta h_{t,\ell-1}\|/\|h_{t,\ell-1}\|}$: equal to
+1 for all $\ell\ge5$, at every time. After layer 4 the perturbation is **passively transported**.
+
+**Panel (c).** The relative perturbation
+$\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$ rises through layer 1 and then is flat at
+$\approx5\times10^{-4}$ over 22 layers.
+
+Numbers: $\|\delta h\|$ grows $\times19$ from layer 1 to 27 while $\|h\|$ grows $\times18$. So the
+"depth gain" (absolute response rising with layer) is the residual stream's own scale, not extra
+amplification. Both statements are true; they are about $\|\delta h\|$ and about
+$\|\delta h\|/\|h\|$.
+
+## Q7. Is averaging over directions safe?
+
+For the temporal shape, yes; for the magnitude, never. The 1536-direction run (E2) shows that one
+mode explains 97.8% of the variance of the log-gain: all directions share one temporal curve, scaled
+by a direction-dependent gain spanning a factor 22. DeepSeek is strongly anisotropic (×5.85 with 20
+directions), the newer models are nearly isotropic (Qwen3-4B ×1.15, Phi ×1.23, Qwen3.5 ×1.93). So:
+report medians *with percentile bands*, and report the distribution of gains separately.
+
+---
+
+# Part 3c. Which other models to try
+
+**First, the sliding-window claim.** Checked directly in the configs of the models we already have:
+
+| model | `sliding_window` | `layer_types` | effective window at 400 tokens |
+|---|---|---|---|
+| DeepSeek-R1-Distill-1.5B (Qwen2) | 32768 | — | none (32k > our lengths) |
+| Qwen3-4B-Instruct-2507 | **None** | all `full_attention` | **none** |
+| Phi-4-mini-instruct | 262144 | — | **none** |
+| Qwen3.5-2B | none (3:1 linear/full hybrid) | 18 linear, 6 full | **none** |
+
+So the advice you were given does not hold for these checkpoints: Qwen3 has no window at all (the
+`sliding_window` field is `None` and every layer is `full_attention`), Phi's window is 262144, and
+Qwen3.5 replaced attention with a linear/full hybrid. This is not a transformers-version artifact —
+the values are in `config.json`.
+
+It also does not matter for the science, because we can **impose** a window exactly: the 4D band mask
+reproduces a native window (verified against DeepSeek's native path — same first-difference position,
+`results/big4/wcheck`). What a native window gives you is realism (RoPE + window in the kernel), not
+a different experiment.
+
+If you want a model where the window is *native and active at our scales*, the shortlist is:
+
+| model | params | layers × hidden | native window | fp16 weights | fits T4 (15 GB)? | why |
+|---|---|---|---|---|---|---|
+| **Qwen2.5-3B-Instruct** | 3.1B | 36 × 2048 | 32768, configurable, all layers | 6.2 GB | yes, comfortable | closest to DeepSeek's architecture (same family, same tokenizer); ideal control |
+| **gemma-3-4b-it** | 4.3B | 34 × 2560 | 1024 in 5 of 6 layers (local:global = 5:1) | 8.6 GB | yes, tight (batch 1, fp16) | genuinely different attention pattern; real 1k window |
+| Ministral-3B-Instruct | 3.1B | 32 × 3072? | 32768 (verify) | 6.5 GB | yes | Mistral lineage, different tokenizer |
+| Qwen3-1.7B | 1.7B | 28 × 2048 | none | 3.4 GB | yes | smaller sibling of Qwen3-4B; scaling check |
+| SmolLM3-3B | 3.1B | 36 × 2560? | none (NoPE every 4th layer) | 6.2 GB | yes | NoPE variant, tests position encoding |
+| Llama-3.2-3B-Instruct | 3.2B | 28 × 3072 | none | 6.4 GB | yes | reference dense model |
+| Gemma-2-2B-it | 2.6B | 26 × 2304 | 4096 alternating local/global | 5.2 GB | yes | native 4k window, cheap |
+
+I would add **Qwen2.5-3B** first (same family as DeepSeek, so the window law can be checked natively,
+and it is a clean 3B control) and **gemma-3-4b-it** second (a real 1k window and a different
+architecture). Both fit in fp16 with batch 1. Gemma-3 is the tight one: 8.6 GB of weights plus
+activations for 400 tokens at 2560 hidden — measure before committing, and expect it to need
+`expandable_segments`.
+
+What I would *not* do: add models that only differ in size within the same family (Qwen3-1.7B vs 4B
+is a size ablation, and you ruled out ablations). The interesting axis is the *attention mechanism*
+(dense, sliding-window, linear/hybrid), which is why Qwen3.5-2B was worth the environment work.
 
 ---
 
@@ -1312,11 +1549,11 @@ The auto-generated families (411 figures) live in `results/figs_models/`. A sele
 
 ![ds flux](figures/gallery/ds_flux_overlay.png)
 
-**DeepSeek, all 28 layers, $r=0.03$.** $a(t)/a(1)$, semilog and loglog. Colour = layer. Deeper layers survive longer (the flush cascade) and the decay is approximately a power law on the loglog panel.
+**DeepSeek, all 28 layers, $r=0.03$.** $\|\delta h_{t}\|/\|\delta h_{1}\|$, semilog and loglog. Colour = layer. Deeper layers survive longer (the flush cascade) and the decay is approximately a power law on the loglog panel.
 
 ![ds ratio](figures/gallery/ds_ratio_overlay.png)
 
-**Step-to-step ratio $a(t)/a(t-1)$**, all layers. Values below 1 dominate - the response decays at almost every step after the first few.
+**Step-to-step ratio $\|\delta h_{t}\|/\|\delta h_{t-1}\|$**, all layers. Values below 1 dominate - the response decays at almost every step after the first few.
 
 ![ds L0-3](figures/gallery/ds_growth_L0-3.png)
 
@@ -1326,7 +1563,7 @@ The auto-generated families (411 figures) live in `results/figs_models/`. A sele
 
 ![ds heat](figures/gallery/ds_depth_heatmap.png)
 
-**Depth x time heat map** of $\log_{10} a(t,\ell)$: the perturbation arrives layer by layer, then decays.
+**Depth x time heat map** of $\log_{10} \|\delta h_{t,\ell}\|$: the perturbation arrives layer by layer, then decays.
 
 ![q4 flux](figures/gallery/q4_flux_overlay.png)
 
@@ -1340,7 +1577,7 @@ The auto-generated families (411 figures) live in `results/figs_models/`. A sele
 
 ![phi ratio](figures/gallery/phi_ratio_overlay.png)
 
-**Phi-4-mini step ratio a(t)/a(t-1).** The burst is a single-step jump of x2-4, followed by a long decay; several late spikes are visible.
+**Phi-4-mini step ratio \|\delta h_{t}\|/\|\delta h_{t-1}\|.** The burst is a single-step jump of x2-4, followed by a long decay; several late spikes are visible.
 
 ![q35 flux](figures/gallery/q35_flux_overlay.png)
 
@@ -1349,3 +1586,16 @@ The auto-generated families (411 figures) live in `results/figs_models/`. A sele
 ![depth 6 prompts](figures/depth_gain_6prompts.png)
 
 **Depth gain for six prompts (DeepSeek, all 28 layers, r=0.1).** The curves collapse: the shape of the depth gain does not depend on the prompt; only the overall scale varies (x1.45 at layer 27). Median gains: 0.10 at L1, 0.41 at L7, 0.68 at L14, 1.04 at L21, 2.34 at L27.
+
+![flux variants](figures/flux_variants_all_layers.png)
+
+**The flux-tube plot in the two normalisations the user asked for, all 28 layers, one panel each.**
+DeepSeek, prompt perturbation, $r=0.1$, 20 directions, 300 tokens, colour = layer.
+
+**Panel (a).** $\|\delta h_{t,\ell}\|/\|\delta h_{1,\ell}\|$ on a log axis. Every layer decays; the
+deeper layers decay later and less, and the curves cross: at $t<30$ the deep layers are still
+filling up (the perturbation is arriving), after $t\approx60$ the shallow ones have died.
+
+**Panel (b).** The consecutive-step ratio $\|\delta h_{t,\ell}\|/\|\delta h_{t-1,\ell}\|$. Above 1 at
+the arrival front ($t<10$), essentially 1 in the body, and below 1 during the flush. The vertical
+structure is where the ratio is exactly 0 or undefined (layer flushed).

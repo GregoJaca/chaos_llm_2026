@@ -11,7 +11,7 @@ import numpy as np
 import torch
 
 from chaos_llm.protocol import (
-    build_simplex, full_embeddings, generate, load_model, make_directions,
+    band_mask4d, build_simplex, full_embeddings, generate, load_model, make_directions,
     prompt_ids, save_json, set_window, subspace_indices,
 )
 
@@ -34,6 +34,7 @@ def main():
     ap.add_argument("--seed", type=int, default=69)
     ap.add_argument("--batch-dirs", type=int, default=4)
     ap.add_argument("--hard-window", action="store_true")
+    ap.add_argument("--window4d", action="store_true")
     ap.add_argument("--fixed-tokens-from", default="",
                     help="npz file (or dir containing a1.npz) whose prompt_ids/gen_ids are reused")
     ap.add_argument("--layers", default="0,7,14,21,27")
@@ -80,7 +81,7 @@ def main():
         torch.cuda.empty_cache()
 
     Efull = full_embeddings(model, pids, gen_ids)
-    am = hard_window_mask(Efull.shape[1], args.window) if args.hard_window else torch.ones((1, Efull.shape[1]), dtype=torch.long, device="cuda")
+    am = band_mask4d(Efull.shape[1], args.window, dtype=Efull.dtype) if args.window4d else (hard_window_mask(Efull.shape[1], args.window) if args.hard_window else torch.ones((1, Efull.shape[1]), dtype=torch.long, device="cuda"))
     with torch.inference_mode():
         out0 = model(inputs_embeds=Efull, attention_mask=am,
                      output_hidden_states=True, use_cache=False)
@@ -119,7 +120,7 @@ def main():
                 E[j, :P] += delta.view(P, D)
             with torch.inference_mode():
                 out = model(inputs_embeds=E,
-                            attention_mask=torch.ones((B, E.shape[1]), dtype=torch.long, device="cuda"),
+                            attention_mask=(am.expand(B, -1, -1, -1) if args.window4d else torch.ones((B, E.shape[1]), dtype=torch.long, device="cuda")),
                             output_hidden_states=True, use_cache=False)
             zb = out.logits[:, pos, :]  # [B,T,V]
             z1 = torch.gather(zb, 2, top1v.expand(B, -1, -1)).squeeze(-1)

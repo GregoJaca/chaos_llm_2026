@@ -5,7 +5,7 @@ positions.  Memory ~= weights + hidden states + T*V floats.
 """
 import argparse, json, os, time
 import numpy as np, torch
-from chaos_llm.protocol import (build_simplex, full_embeddings, load_model,
+from chaos_llm.protocol import (band_mask4d, build_simplex, full_embeddings, load_model,
                                 make_directions, prompt_ids, save_json, set_window)
 
 
@@ -19,6 +19,7 @@ def main():
     ap.add_argument('--num-directions', type=int, default=2)
     ap.add_argument('--radii', default='0.1')
     ap.add_argument('--layers', default='7,14,21,27')
+    ap.add_argument('--window4d', action='store_true')
     ap.add_argument('--out', required=True)
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
@@ -43,7 +44,11 @@ def main():
     pos = torch.arange(P - 1, P + T - 1, device='cuda')
 
     def forward(emb, B=1):
-        hs = model.model(inputs_embeds=emb, attention_mask=torch.ones((B, emb.shape[1]), dtype=torch.long, device='cuda'),
+        if args.window4d:
+            am = band_mask4d(emb.shape[1], args.window, dtype=emb.dtype).expand(B, -1, -1, -1)
+        else:
+            am = torch.ones((B, emb.shape[1]), dtype=torch.long, device='cuda')
+        hs = model.model(inputs_embeds=emb, attention_mask=am,
                          output_hidden_states=True, use_cache=False)
         z = model.lm_head(hs.last_hidden_state[:, pos, :])          # [B,T,V]
         return hs, z
