@@ -427,18 +427,17 @@ step-dependent and cannot be captured by one exponent.
 
 ### N2b. Amplification depends on position, not on injection depth
 
-![layer probe positions](figures/layer_probe_positions.png)
+![layer probe positions](figures/layer_probe_positions_all.png)
 
-**Data.** Layer probe at six positions ($s=16,32,50,75,100,150$), 4–6 directions, $r=0.05$.
+**Data.** Layer probe at seven positions ($s=16,32,50,75,100,150,200$), 6 directions, $r=0.05$,
+9 injection layers (0–27).
 
-**Panel (a).** For each position, the total gain $a(27)/r$ as a function of the injection layer.
-**Panel (b).** Mean over injection layers, with the min–max range.
+**Axes.** $x$: perturbation position $s$. $y$: $a(27)/r$, averaged over injection layers; bars:
+standard deviation across injection layers.
 
-**Reading.** Only $s=16$ amplifies: mean gain **2.69** (range 1.29–3.37). Every other position has
-a mean gain between 0.84 and 1.08 — no amplification. $s=16$ is the sixth-smallest margin of the
-300 steps ($m=0.12$), so a near-tie position is also the one where a hidden-state perturbation
-grows. Caveat: six positions is a small sample; the rank correlation between margin and gain is
-suggestive, not conclusive.
+**Reading.** Only $s=16$ amplifies (**2.68**, sd 0.7). Every other position is between 0.87 and
+1.09 — no net amplification. $s=16$ is the sixth-smallest margin of the 300 steps ($m=0.12$).
+Caveat: seven positions is a small sample; the margin–gain relation is suggestive, not proven.
 
 ### N4. The finite-time rate: positive, then negative
 
@@ -552,24 +551,24 @@ $r\approx0.3$.
 
 ### N7. The window also changes single-position perturbations
 
+![state window scan](figures/state_window_scan.png)
+
+**Data.** Single-position perturbation at $s=16$, $r=0.1$, 16 directions, teacher-forced, same
+prompt; the window is overridden to $W=50,70,90,100,150,300,4096$.
+
+**Panel (a).** $x$: lag $\tau=t-s$; $y$: $a(s+\tau,27)$ (log), median over directions.
+
+**Panel (b).** Immediate response (blue, left axis) and half-life (red, right axis) vs $W$.
+
+**Reading.** A clean **dose–response**: the immediate response falls from 20.0 ($W=50$) to 16.7
+($W=70$) to 11.8 ($W\ge90$), and the half-life from 9 to 4 to 2 tokens. The effect **saturates at
+$W\approx90$**, i.e. about $1.4P$; for larger windows nothing changes. At $W<P$ the same local
+perturbation is both larger and longer-lived.
+
 ![state window](figures/state_window.png)
 
-**Data.** Single-position perturbation at $s=16,50,100$, $r=0.1$, 12 directions, teacher-forced,
-same prompt; the attention window is overridden to $W=50,200,4096$.
-
-**Panel (a).** $x$: lag $\tau=t-s$; $y$: $a(s+\tau,27)$ (log). Solid: $s=16$; dashed: $s=50$.
-**Panel (b).** Depth profile of the $s=16$ perturbation. **Panel (c).** Immediate response and
-half-life at $s=16$ for the three windows.
-
-**Reading.** With $W=50<P$ the immediate response is **1.7× larger** (20.0 vs 11.7) and its
-half-life is **4× longer** (8 vs 2 tokens). $W=200$ and $W=4096$ are identical, as they must be
-when the context never reaches the window. So the window is not only a prompt-perturbation
-effect: it changes how strongly a *local* perturbation is felt and how long it persists.
-
-**Interpretation.** A shorter window removes context; the same local change is a larger fraction
-of what each layer can see, so the response is larger and lasts longer. This is the same direction
-as the prompt result (N1) and suggests a single mechanism: the window sets how much averaging
-each representation receives.
+The earlier two-window comparison, for reference: $W=50$ vs $W\ge200$ at $s=16$ and $s=50$, with
+the depth profile.
 
 ---
 
