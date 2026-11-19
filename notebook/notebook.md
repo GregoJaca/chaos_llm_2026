@@ -437,6 +437,28 @@ position (no gain), **the last layers** at a sensitive position. For a prompt-wi
 the response grows with depth because deeper layers see more of the prompt, not because any
 single block amplifies.
 
+### N2c. Single-token kicks across models: amplification is a property of the position, not of depth
+
+![probe models](figures/probe_models.png)
+
+**Data.** Add a vector of norm $r=0.1$ to the residual stream at one generated position $s$, at one
+injection layer $\ell_0$, then run teacher-forced. Ten Gaussian directions per point; the plotted
+quantity is the median over directions of the largest downstream response at the **last layer**,
+$\max_{1\le\tau\le50}\|\delta h_{s+\tau,L}\|/r$ — a dimensionless amplification factor.
+
+**Panels.** (a) $s=16$; (b) $s=50$. $x$: injection layer. $y$: amplification (log).
+
+**Reading.**
+- For every model the curve is **flat over the first 60–75% of the depth**: injecting at layer 0 or
+  at layer 20 gives the same downstream amplification. The response is set by the *position's* local
+  Jacobian, not by the injection depth. (This reproduces, with ten directions and two positions, the
+  earlier DeepSeek result that only $s=16$ amplifies.)
+- The factor itself is strongly model-dependent: **Phi-4-mini ×23**, Qwen3-4B ×6, DeepSeek-1.5B
+  ×0.7, Qwen3.5-2B ×0.5. Two models amplify by more than 5×, two contract.
+- The drop at the right edge is trivial: fewer layers remain downstream.
+- Position dependence: DeepSeek falls from 0.7 ($s=16$) to 0.15 ($s=50$); Phi falls 23 → 16; Qwen3-4B
+  is flat (6 → 7); Qwen3.5 flat (0.45 → 0.5). So "where" matters most in the model that contracts.
+
 ### N3. The nonlinearity at large $r$ is a U-shaped (concave) law
 
 ![gain scaling](figures/threshold_gain_scaling.png)
@@ -737,17 +759,21 @@ at $r\ge0.5$ (D5). This linearity licenses all threshold arithmetic in Part B.
 **Panel (a).** Response vs layer at fixed times. **Panel (b).** Median gain over the first 50 tokens
 vs layer. **Panel (c).** Response divided by the baseline state norm.
 
-**Reading.** The response does not exist at the generated positions in layer 0 (the embedding is
-unperturbed there: the perturbation is on the prompt), so it **arrives** through layer 1 and deepens
-with time: layer 3 is still essentially empty at $t=5$ and populated by $t=200$. Attention carries
-the prompt perturbation into the generated positions, and the deeper the layer the later the
-transport completes.
+**Reading.** At the generated positions, layer 0 is *exactly* zero: the perturbation is on the
+prompt, and the embedding of a generated token does not contain it. The response appears at layer 1
+when attention first mixes the prompt into the generated position, then grows smoothly with depth
+(panel a). This shape is the same at every time — there is no "arrival depth".
 
-The absolute response grows from 0.09 (L1) to 2.41 (L27) in units of $r$ — a factor 26. It is
-*not* extra amplification: from layer 1 to 27 the state norm grows by the same factor (18 vs 19), so
-$\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$ is flat at $\approx5\times10^{-4}$ over 22 layers (panel c).
-The per-layer version of this statement is in [Q6](#q6-amplification-in-the-first-layers-versus-gain-increases-with-depth--resolved):
-the excess gain is 1 for every layer $\ell\ge5$.
+What does change with time is the **surviving** depth range: the shallow layers are flushed by the
+sliding window, so at $t=200$ layers 1–2 are exactly zero and the first live layer is 3. That is the
+flush cascade, not delayed arrival.
+
+The absolute response grows from 0.13 (L1) to 2.4 (L27) in units of $r$ — a factor 19. It is
+*not* extra amplification: from layer 1 to 27 the state norm grows by the same factor (18 vs 19).
+The relative response $\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$ is $2.65\times10^{-4}$ at L1, rises to
+$4.94\times10^{-4}$ at L4, and then stays constant within ±5% all the way to L27
+($4.75\times10^{-4}$). The per-layer version of this statement is in Q6: the excess gain is 1 for
+every layer $\ell\ge5$.
 
 ![depth layers](figures/a1_depth_layers.png)
 
@@ -1396,10 +1422,11 @@ $\dfrac{\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|}{\|\delta h_{t,\ell-1}\|/\|h_{t,\el
 $\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$ rises through layer 1 and then is flat at
 $\approx5\times10^{-4}$ over 22 layers.
 
-Numbers: $\|\delta h\|$ grows $\times19$ from layer 1 to 27 while $\|h\|$ grows $\times18$. So the
-"depth gain" (absolute response rising with layer) is the residual stream's own scale, not extra
-amplification. Both statements are true; they are about $\|\delta h\|$ and about
-$\|\delta h\|/\|h\|$.
+Numbers: $\|\delta h\|$ grows $\times19$ from layer 1 to 27 while $\|h\|$ grows $\times18$. The
+relative response is $2.65\times10^{-4}$ at L1, $4.94\times10^{-4}$ at L4 and $4.75\times10^{-4}$ at
+L27 — constant within ±5% from layer 4 onward. So the "depth gain" (absolute response rising with
+layer) is the residual stream's own scale, not extra amplification. Both statements are true; they
+are about $\|\delta h\|$ and about $\|\delta h\|/\|h\|$.
 
 ## Q7. Is averaging over directions safe?
 
@@ -1543,7 +1570,53 @@ numbers are under `results/`. The figures in this document are in `notebook/figu
 `scripts/notebook_figs_window.py`, `scripts/notebook_figs_state.py`,
 `scripts/notebook_fig_directions.py`, and copied from `results/figures/`.
 
-### N9. Gallery: flux-tube variants, all layers
+### N10. The window law is universal (and a hybrid model cannot be windowed)
+
+![window4d models](figures/window4d_models.png)
+
+**Data.** Explicit 4D sliding-window mask (`--window4d`), one radius $r=0.1$, 6 directions, prompt of
+$P=64$ tokens, 300 generated tokens, same prompt for all models. This is the only way to impose a
+window on models whose config has none (see Part 3c).
+
+**Panels (a),(b).** Layer 1. The response is flat, then **exactly zero** from a window-dependent
+time: $t=50$ for $W=60$, $t=90$ for $W=100$, $t=190$ for $W=200$. Identical in Qwen3-4B and
+Phi-4-mini.
+
+**Panel (c).** Every (model, window, layer) pair with a flush inside the horizon. $x$ is the
+prediction $t_1(W)+(\ell-1)(W-1)$, where $t_1(W)$ is the measured flush time of layer 1 for the same
+window; $y$ is the measured last non-zero time. **18 points, maximum residual 0.00.** The cascade
+slope is exactly $W-1$ per layer, in both models. Writing $t_1(W)=W-10$ for this prompt, the law is
+$$t^*_\ell = (W-10) + (\ell-1)(W-1).$$
+The $W-1$ term is the receptive field of one sliding-window layer; the constant is the last prompt
+position that still carries a numerically resolvable contribution (fp16 underflow), which is why the
+DeepSeek fp32 version had a different offset.
+
+![window4d qwen35](figures/window4d_qwen35.png)
+
+**Qwen3.5-2B.** Layer 1 is a **linear-attention** layer: it has no attention matrix, so the 4D mask
+leaves it *bit-identical* (ratio exactly 1.0 for all $t$). The mask does change the six full-attention
+layers (max relative change 1.9), but the response never reaches zero, because the linear layers carry
+the state forward without a window. So the hybrid cannot be given a sliding window at all — consistent
+with its config, which has no `sliding_window` and a 3:1 linear/full `layer_types`.
+
+**Consequence.** The window is a **hard reset**, not a soft decay: the perturbation is annihilated,
+not attenuated. That is why the flush law is exact and why the "window regimes" look like step
+functions in the deep layers.
+
+### N11. First departure versus flush
+
+Two different times, both exact:
+
+| event | formula | measured |
+|---|---|---|
+| first departure (any difference from no window) | $W-P$ | 36 for $W=100$, 136 for $W=200$, 0 for $W=60$ ($P=64$) |
+| flush of layer $\ell$ (response returns to zero) | $(W-10)+(\ell-1)(W-1)$ | 50/90/190 for $\ell=1$; +59/+99 per layer |
+
+The first is when the *first* prompt token leaves the window; the second is when the *last* reachable
+perturbed position leaves the $\ell$-hop receptive field. Between them the curve drifts but is never
+zero. This resolves the apparent contradiction "the window acts before $t=W$": it acts at $W-P$.
+
+### N12. Gallery: flux-tube variants, all layers
 
 The auto-generated families (411 figures) live in `results/figs_models/`. A selection:
 

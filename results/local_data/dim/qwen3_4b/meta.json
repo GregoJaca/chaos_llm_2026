@@ -1,0 +1,17 @@
+{
+ "model": "/u0/grego/LLM/models--Qwen--Qwen3-4B-Instruct-2507",
+ "tag": "qwen3_4b",
+ "path": "/u0/grego/LLM/models--Qwen--Qwen3-4B-Instruct-2507",
+ "layers": 36,
+ "hidden": 2560,
+ "vocab": 151936,
+ "tied": true,
+ "tokens": 400,
+ "window": 4096,
+ "prompts": [
+  "Explain how ocean tides are produced by the Moon and the Sun.",
+  "Write a short story about a lighthouse keeper who finds a message in a bottle.",
+  "Solve: a train travels 240 km in 3 hours, then 180 km in 2 hours. What is its average speed?"
+ ],
+ "dtype": "torch.float16"
+}

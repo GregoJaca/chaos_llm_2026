@@ -1,0 +1,17 @@
+{
+ "model": "/u0/grego/LLM/models--microsoft--Phi-4-mini-instruct",
+ "tag": "phi4mini",
+ "path": "/u0/grego/LLM/models--microsoft--Phi-4-mini-instruct/snapshots/cfbefacb99257ffa30c83adab238a50856ac3083",
+ "layers": 32,
+ "hidden": 3072,
+ "vocab": 200064,
+ "tied": true,
+ "tokens": 400,
+ "window": 4096,
+ "prompts": [
+  "Explain how ocean tides are produced by the Moon and the Sun.",
+  "Write a short story about a lighthouse keeper who finds a message in a bottle.",
+  "Solve: a train travels 240 km in 3 hours, then 180 km in 2 hours. What is its average speed?"
+ ],
+ "dtype": "torch.float16"
+}

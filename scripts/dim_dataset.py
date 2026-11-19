@@ -100,19 +100,19 @@ def main():
             o = model(inputs_embeds=Efull,
                       attention_mask=torch.ones((1, Efull.shape[1]), dtype=torch.long, device="cuda"),
                       output_hidden_states=True, use_cache=False)
-        hs = o.hidden_states
-        n = min(len(hs), L + 1)
-        A = torch.stack([hs[l][0, P:P + T].float() for l in range(n)])       # [n, T, D]
-        acts.append(A.to(torch.float16).detach().cpu().numpy())
-        norms.append(A.norm(dim=-1).detach().cpu().numpy().astype(np.float32))
-        ids_all.append(gen[0].detach().cpu().numpy().astype(np.int32))
-        if pi == 0:
-            K = min(128, T)
-            h = hs[-1][0, P:P + K]
-            z = model.lm_head(h).float()
-            logit_pack = dict(logits=z.detach().to(torch.float16).cpu().numpy(),
-                              ids=gen[0][:K].detach().cpu().numpy().astype(np.int32),
-                              prompt_ids=pids[0].detach().cpu().numpy().astype(np.int32))
+        with torch.inference_mode():
+            hs = o.hidden_states
+            n = min(len(hs), L + 1)
+            A = torch.stack([hs[l][0, P:P + T].float() for l in range(n)])   # [n, T, D]
+            acts.append(A.to(torch.float16).cpu().numpy())
+            norms.append(A.norm(dim=-1).cpu().numpy().astype(np.float32))
+            ids_all.append(gen[0].cpu().numpy().astype(np.int32))
+            if pi == 0:
+                K = min(128, T)
+                z = model.lm_head(hs[-1][0, P:P + K]).float()
+                logit_pack = dict(logits=z.to(torch.float16).cpu().numpy(),
+                                  ids=gen[0][:K].cpu().numpy().astype(np.int32),
+                                  prompt_ids=pids[0].cpu().numpy().astype(np.int32))
         del o, hs, Efull, A
         torch.cuda.empty_cache()
         print(f"[{args.tag}] prompt {pi}: P={P} T={T} t={time.time()-t0:.0f}s", flush=True)
