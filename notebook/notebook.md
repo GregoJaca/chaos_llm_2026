@@ -1345,3 +1345,7 @@ The auto-generated families (411 figures) live in `results/figs_models/`. A sele
 ![q35 flux](figures/gallery/q35_flux_overlay.png)
 
 **Qwen3.5-2B, 7 saved layers, r=0.1.** The hybrid linear/full-attention model: no burst, no flush cascade, slow decay.
+
+![depth 6 prompts](figures/depth_gain_6prompts.png)
+
+**Depth gain for six prompts (DeepSeek, all 28 layers, r=0.1).** The curves collapse: the shape of the depth gain does not depend on the prompt; only the overall scale varies (x1.45 at layer 27). Median gains: 0.10 at L1, 0.41 at L7, 0.68 at L14, 1.04 at L21, 2.34 at L27.
