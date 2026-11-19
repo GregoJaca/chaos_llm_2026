@@ -153,8 +153,10 @@ def main():
                               lam_m[:1200].astype(np.float32))
             print(f"  idx {ix:2d}/{L}: PR={meas['pr_c']:.1f} "
                   f"eff90={meas['eff90_c']} mle20={meas['mle20']:.1f} "
+                  f"(excl {meas['mle20_nexcl']}) "
+                  f"pp_mle20={np.round(pp['mle20'],1)} "
                   f"2nn={meas['twonn']:.1f} cd={meas['corrdim']:.1f} "
-                  f"cos={meas['mean_cos']:.3f}")        # writes
+                  f"cos={meas['mean_cos']:.3f}", flush=True)        # writes
         W = {k: [] for k in ["norm_ratio", "cos_h", "frac_radial_gt_0p5",
                              "cone", "pr_c", "eff90_c", "srank_c",
                              "topfrac_c"]}
@@ -192,6 +194,9 @@ def summarize(tag, idxs, M, PP, W, L, D):
     """Compact per-model summary for numbers.json + full curves for figs."""
     def g(k, i):
         return float(M[k][i])
+
+    def PPv(k, i):
+        return [float(x) for x in np.asarray(PP[k][i])]
     rec = {
         "D": int(D), "L": int(L),
         "embedding_idx0": {"pr_c": g("pr_c", 0), "eff90_c": g("eff90_c", 0),
@@ -206,6 +211,8 @@ def summarize(tag, idxs, M, PP, W, L, D):
                            "eff90_c": g("eff90_c", L - 1),
                            "eff99_c": g("eff99_c", L - 1),
                            "mle20": g("mle20", L - 1),
+                           "mle20_nexcl": g("mle20_nexcl", L - 1),
+                           "mle20_perprompt": PPv("mle20", L - 1),
                            "twonn": g("twonn", L - 1),
                            "corrdim": g("corrdim", L - 1),
                            "mean_cos": g("mean_cos", L - 1),

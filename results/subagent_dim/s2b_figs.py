@@ -197,8 +197,8 @@ def main():
         f, ag = plt.subplots(1, 2, figsize=(9.0, 3.2))
         ax = ag[0]
         pp = z["pp_mean_cos"]
-        ax.fill_between(rel, pp.min(0), pp.max(0), color=COLOR[tag],
-                        alpha=0.2, lw=0)
+        ax.fill_between(rel, np.min(pp, axis=1), np.max(pp, axis=1),
+                        color=COLOR[tag], alpha=0.2, lw=0)
         ax.plot(rel, z["m_mean_cos"], color=COLOR[tag], lw=1.5,
                 label="mean pairwise cos")
         ax.plot(rel, z["m_cone"], "--", color=COLOR[tag], lw=1.4,
@@ -272,8 +272,9 @@ def main():
                     label=DISPLAY[tag].replace("-R1-Distill-1.5B", "")
                     .replace("-Instruct", ""))
             if ppkey is not None:
-                pp = z[ppkey]
-                ax.fill_between(rel, pp.min(0) / scale, pp.max(0) / scale,
+                pp = z[ppkey]                    # [L+1, 3] (idx, prompt)
+                ax.fill_between(rel, np.min(pp, axis=1) / scale,
+                                np.max(pp, axis=1) / scale,
                                 color=COLOR[tag], alpha=0.12, lw=0)
         ax.set_xlabel("relative depth $\\ell/L$")
         ax.set_ylabel(ylabel)
@@ -285,8 +286,9 @@ def main():
              "ratio drops with depth in 3 of 4 models")
     overlay(ag[0, 1], "m_eff90_c", "eff-rank 90%", "Eff-rank 90% of state "
              "covariance")
-    overlay(ag[0, 2], "m_mle20", "LB-MLE $\\hat d$ ($k$=20)", "Intrinsic "
-             "dimension vs depth (bands: 3 prompts)", ppkey="pp_mle20")
+    overlay(ag[0, 2], "m_mle20", "LB-MLE $\\hat d$ ($k$=20)", "POOLED "
+             "intrinsic dim (3 prompts mixed): union of 3 thin trajectories",
+             ppkey="pp_mle20")
     overlay(ag[1, 0], "m_mean_cos", "mean pairwise cos", "State anisotropy "
              "vs depth", ppkey="pp_mean_cos")
     overlay(ag[1, 1], "m_cone", "cone ratio", "Cone ratio vs depth")
@@ -296,6 +298,30 @@ def main():
                "same axes", fontsize=10, y=1.01)
     f.tight_layout()
     savefig(f, "fig_B6_measures_all.png")
+
+    # per-prompt (single-trajectory) ID -- the interpretable version
+    f, ag = plt.subplots(1, 3, figsize=(11.6, 3.2))
+    for j, (pk, lab) in enumerate([("pp_mle20", "LB-MLE $k$=20"),
+                                   ("pp_twonn", "TWO-NN"),
+                                   ("pp_corrdim", "corr. dim.")]):
+        ax = ag[j]
+        for tag in tags:
+            z = curves[tag]
+            pp = z[pk]                        # [L+1, 3]
+            ax.plot(z["rel"], np.median(pp, axis=1), color=COLOR[tag],
+                    lw=1.4, label=DISPLAY[tag].replace(
+                        "-R1-Distill-1.5B", "").replace("-Instruct", ""))
+            ax.fill_between(z["rel"], np.min(pp, axis=1), np.max(pp, axis=1),
+                            color=COLOR[tag], alpha=0.12, lw=0)
+        ax.set_xlabel("relative depth $\\ell/L$")
+        ax.set_ylabel("$\\hat d$ (single prompt, n=400)")
+        ax.set_title(f"{lab}: per-trajectory ID", fontsize=9.0)
+        ax.legend(fontsize=6.4)
+    f.suptitle("Single-trajectory intrinsic dimension (bands over 3 "
+               "prompts): 5-15, far above the pooled estimate",
+               fontsize=9.5, y=1.03)
+    f.tight_layout()
+    savefig(f, "fig_B6e_perprompt_id_all.png")
 
     f, ag = plt.subplots(1, 3, figsize=(11.6, 3.2))
     overlay(ag[0], "m_slope_c", "bulk slope $\\beta$",

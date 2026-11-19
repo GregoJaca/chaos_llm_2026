@@ -1640,43 +1640,30 @@ zero. This resolves the apparent contradiction "the window acts before $t=W$": i
 
 ### N12. Gallery: flux-tube variants, all layers
 
-The auto-generated families (411 figures) live in `results/figs_models/`. A selection:
+![flux models](figures/flux_models_all_layers.png)
 
-![ds flux](figures/gallery/ds_flux_overlay.png)
+**The same plot for all four models, every saved layer, one colourbar each.**
+$\|\delta h_{t,\ell}\|/\|\delta h_{1,\ell}\|$ (median over directions), log scale, layer = colour.
+$r=0.1$ except Phi ($r=0.3$).
 
-**DeepSeek, all 28 layers, $r=0.03$.** $\|\delta h_{t}\|/\|\delta h_{1}\|$, semilog and loglog. Colour = layer. Deeper layers survive longer (the flush cascade) and the decay is approximately a power law on the loglog panel.
+**Reading.** Four qualitatively different behaviours, in the same coordinates:
+- **DeepSeek**: a fan. Shallow layers (dark) fall by 4–6 orders of magnitude and end in vertical
+  drops (the flush); deep layers (yellow) stay of order 1.
+- **Qwen3-4B**: flat. Every layer stays within a factor 2 of its initial value for 300 tokens; the
+  two isolated spikes are the flush of the shallow layers, barely visible.
+- **Phi-4-mini**: a coherent burst at $t\approx40$ in all layers (×20 in the deep ones), then a flat
+  plateau — the transient amplification.
+- **Qwen3.5-2B**: flat and slowly decaying, no flush, no burst.
 
-![ds ratio](figures/gallery/ds_ratio_overlay.png)
+This single figure is the fastest way to see that "contraction" is a property of DeepSeek, not of
+transformer generation in general.
 
-**Step-to-step ratio $\|\delta h_{t}\|/\|\delta h_{t-1}\|$**, all layers. Values below 1 dominate - the response decays at almost every step after the first few.
-
-![ds L0-3](figures/gallery/ds_growth_L0-3.png)
-
-![ds L24-27](figures/gallery/ds_growth_L24-27.png)
-
-**Small multiples for the first four and last four layers.** The first layers die to zero inside the horizon (flush), the last layers do not.
+The auto-generated families (411 figures) live in `results/figs_models/`. More:
 
 ![ds heat](figures/gallery/ds_depth_heatmap.png)
 
-**Depth x time heat map** of $\log_{10} \|\delta h_{t,\ell}\|$: the perturbation arrives layer by layer, then decays.
-
-![q4 flux](figures/gallery/q4_flux_overlay.png)
-
-![q4 ratio](figures/gallery/q4_ratio_overlay.png)
-
-**Qwen3-4B, all 36 layers.** Same layout. The response is flat in time (ratio ~1) and does not show the DeepSeek cascade: the flush is absent because Qwen3 has no sliding window.
-
-![phi flux](figures/gallery/phi_flux_overlay.png)
-
-**Phi-4-mini, all 32 layers, r=0.03.** Every layer shows the same **coherent burst** at t~40 (the response jumps by up to x25 in a few tokens), then decays to ~2x its initial value, with a second bump near t~240. This is the transient amplification of the rate plot, now resolved in depth: it is not a single-layer effect.
-
-![phi ratio](figures/gallery/phi_ratio_overlay.png)
-
-**Phi-4-mini step ratio \|\delta h_{t}\|/\|\delta h_{t-1}\|.** The burst is a single-step jump of x2-4, followed by a long decay; several late spikes are visible.
-
-![q35 flux](figures/gallery/q35_flux_overlay.png)
-
-**Qwen3.5-2B, 7 saved layers, r=0.1.** The hybrid linear/full-attention model: no burst, no flush cascade, slow decay.
+**Depth × time heat map** of $\log_{10}\|\delta h_{t,\ell}\|$ (DeepSeek): the diagonal structure is
+the perturbation entering at layer 1 and the shallow layers flushing first.
 
 ![depth 6 prompts](figures/depth_gain_6prompts.png)
 
