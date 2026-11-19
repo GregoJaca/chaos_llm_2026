@@ -459,6 +459,25 @@ $\max_{1\le\tau\le50}\|\delta h_{s+\tau,L}\|/r$ — a dimensionless amplificatio
 - Position dependence: DeepSeek falls from 0.7 ($s=16$) to 0.15 ($s=50$); Phi falls 23 → 16; Qwen3-4B
   is flat (6 → 7); Qwen3.5 flat (0.45 → 0.5). So "where" matters most in the model that contracts.
 
+![probe pulse](figures/probe_pulse.png)
+
+**The same kick resolved in lag** (injection at block 0, last layer, median and 10–90% over 10
+directions).
+
+**Reading.** The amplification is not an immediate jump:
+- **Phi-4-mini at $s=16$ delays and then explodes**: ×4 at lag 1, flat until lag ~18, then rises to
+  **×120 at lag 25–30**, and stays above ×15 for the rest of the window. Every direction does it
+  (the band is tight) — this is a robust, deterministic instability, not a direction artifact.
+- At $s=50$ the same model amplifies immediately (×15–25) and stays there: the delay is specific to
+  the early position.
+- Qwen3-4B: ×5–7 at all lags, no delay. DeepSeek: <1, decaying to 0.1 by lag 50. Qwen3.5: 0.4, flat.
+
+**Connection to the prompt-perturbation burst.** The kick at $s=16$ peaks at lag ≈ 25, i.e. at
+generated token $16+25=41$ — exactly where Phi's prompt-perturbation response bursts (N6b,
+$t\approx40$). The two experiments are seeing the same event: a delayed instability of the
+residual stream about 25 tokens into the continuation. This is the most promising lead we have for a
+mechanistic explanation of the model differences.
+
 ### N3. The nonlinearity at large $r$ is a U-shaped (concave) law
 
 ![boundary large r](figures/boundary_large_r.png)

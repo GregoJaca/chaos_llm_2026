@@ -269,8 +269,8 @@ def main():
                     color=col, lw=1.1, label=lab)
         ax.set_xlabel("pairwise cosine")
         ax.set_ylabel("pair density (1/unit cos)")
-        ax.set_title(f"{DISPLAY[tag]}: hidden states far more anisotropic "
-                     f"than vocab rows", fontsize=8.6)
+        ax.set_title(f"{DISPLAY[tag]}: $\\bar c$(h@last)/$\\bar c$(E) = "
+                     f"{cL/cE:.1f}", fontsize=8.6)
         ax.legend(fontsize=6.0)
 
         # ---------------- A5 tied/untied ---------------------------------
@@ -302,18 +302,20 @@ def main():
               f"eff90={rec['E_spec']['eff_rank_90']} "
               f"topvar={rec['E_spec']['top_var_frac_s1_2_over_sum_s2']:.3f} "
               f"alpha={aE:.2f}")
+        rec["s1_over_s2_E"] = float(
+            (np.asarray(v["sE"])[0] / np.asarray(v["sE"])[1]))
         del acts, X1, XL
 
     fg.suptitle("Vocabulary singular spectra: one dominant direction + smooth "
                 "power-law bulk (4 models)", fontsize=10.5, y=1.01)
     fg.tight_layout()
     savefig(fg, "fig_A1_spectra_grid.png")
-    fg_top.suptitle("Top-20 singular values (log-log): $s_1/s_2$ = 5-8, then "
-                    "slow decay", fontsize=10.5, y=1.01)
+    fg_top.suptitle("Top-20 singular values (log-log): a single dominant "
+                    "mode, then slow decay", fontsize=10.5, y=1.01)
     fg_top.tight_layout()
     savefig(fg_top, "fig_A1b_top20_grid.png")
-    fg_cos.suptitle("Pairwise-cosine distributions: vocabulary rows weakly "
-                    "anisotropic, hidden states in a tight cone",
+    fg_cos.suptitle("Pairwise-cosine distributions: hidden-state anisotropy "
+                    "grows with depth in 2 models, shrinks in 2",
                     fontsize=10.5, y=1.01)
     fg_cos.tight_layout()
     savefig(fg_cos, "fig_A2_cos_hist_grid.png")
@@ -339,8 +341,12 @@ def main():
     ax.set_xticks(x)
     ax.set_xticklabels([short[t] for t in tags], fontsize=8)
     ax.set_ylabel("mean pairwise cosine $\\bar c$")
-    ax.set_title("Anisotropy: blocks 1..L amplify the cone; hidden states "
-                 "2-5x more anisotropic than vocab")
+    r_lo = min(bars["hL"][i] / max(bars["E"][i], 1e-9)
+               for i in range(len(tags)))
+    r_hi = max(bars["hL"][i] / max(bars["E"][i], 1e-9)
+               for i in range(len(tags)))
+    ax.set_title(f"Anisotropy: h@last is {r_lo:.1f}-{r_hi:.1f}x the vocab "
+                 f"value (model-dependent, not universal)")
     ax.legend(fontsize=7.5)
     savefig(f, "fig_A2b_mean_cos_bars.png")
 
@@ -350,8 +356,10 @@ def main():
     ax.set_xticks(x)
     ax.set_xticklabels([short[t] for t in tags], fontsize=8)
     ax.set_ylabel("cone ratio $\\|\\mu\\|/\\overline{\\|x\\|}$")
-    ax.set_title("Cone: vocab-row means carry 20-50% of a row norm; hidden "
-                 "means 50-80% (E/W_U: n=1024 sample, floor $\\leq$0.06)")
+    ax.set_title(f"Cone: vocab rows {min(cone_bars['E']):.2f}-"
+                 f"{max(cone_bars['E']):.2f}, hidden states "
+                 f"{min(cone_bars['hL']):.2f}-{max(cone_bars['hL']):.2f} "
+                 f"(E/W_U from n=1024 sample, floor $\\leq$0.08)")
     ax.legend(fontsize=7.5)
     savefig(f, "fig_A3_cone_bars.png")
 
@@ -361,8 +369,10 @@ def main():
     ax.set_xticks(x)
     ax.set_xticklabels([short[t] for t in tags], fontsize=8)
     ax.set_ylabel("$\\lambda_1/\\sum\\lambda$ (top-dir var. frac.)")
-    ax.set_title("Top-direction variance: 10-30% everywhere -- one shared "
-                 "mean direction, mean-removed states are flatter")
+    ax.set_title(f"Top-direction variance: vocab "
+                 f"{min(topvar_bars['E']):.2f}-{max(topvar_bars['E']):.2f}, "
+                 f"hidden {min(topvar_bars['hL']):.2f}-"
+                 f"{max(topvar_bars['hL']):.2f} after mean removal")
     ax.legend(fontsize=7.5)
     savefig(f, "fig_A3b_topvar_bars.png")
 

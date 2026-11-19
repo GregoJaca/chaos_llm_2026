@@ -50,8 +50,9 @@ def main():
         ax.set_xlabel("relative depth $\\ell/L$ (0 = embedding, star = "
                       "post-norm)")
         ax.set_ylabel("state norm $\\|h\\|$")
-        ax.set_title(f"{disp}: residual-stream norm grows ~exponentially "
-                     f"with depth", fontsize=8.6)
+        ax.set_title(f"{disp}: $\\|h\\|$ grows "
+                     f"{z['m_mean_norm'][L-1]/z['m_mean_norm'][0]:.0f}x "
+                     f"from embedding to last raw block", fontsize=8.6)
         ax.legend(fontsize=7)
         savefig(f, f"fig_B0_norm_{tag}.png")
 
@@ -121,10 +122,11 @@ def main():
         ax.set_xscale("log")
         ax.set_xlabel("neighbors $k$")
         ax.set_ylabel("Levina-Bickel $\\hat d(k)$")
-        ax.set_title(f"{disp}: MLE dimension vs $k$ -- plateau at "
-                     f"$\\hat d\\approx$"
-                     f"{np.mean([z['m_mle20'][ix] for ix in keep[1:]]):.0f}",
-                     fontsize=8.6)
+        k10 = np.mean([z["m_mle10"][ix] for ix in keep[1:]])
+        k50 = np.mean([z["m_mle50"][ix] for ix in keep[1:]])
+        ax.set_title(f"{disp}: pooled MLE vs $k$: "
+                     f"$\\hat d$(50)/$\\hat d$(10)={k50/max(k10,1e-9):.2f} "
+                     f"(slow drift, no hard plateau)", fontsize=8.6)
         ax.legend(fontsize=6.0)
         savefig(f, f"fig_B2_mle_vs_k_{tag}.png")
 
@@ -141,9 +143,9 @@ def main():
         ax.plot(rel[-1], z["m_mle20"][-1], "*", mec="k", mfc="none", ms=11,
                 ls="none")
         ax.set_xlabel("relative depth $\\ell/L$")
-        ax.set_ylabel("intrinsic dimension estimate $\\hat d$")
-        ax.set_title(f"{disp}: ID estimators agree to a factor ~2 and "
-                     f"both drop with depth", fontsize=8.6)
+        ax.set_ylabel("POOLED intrinsic dim estimate $\\hat d$")
+        ax.set_title(f"{disp}: pooled estimators (3-cluster mix; see "
+                     f"per-prompt figs)", fontsize=8.6)
         ax.legend(fontsize=7)
         savefig(f, f"fig_B2b_id_vs_depth_{tag}.png")
 
@@ -258,9 +260,9 @@ def main():
         ax.set_xlabel("relative depth (write $\\ell\\to\\ell+1$)")
         ax.set_ylabel("$\\overline{\\cos(\\Delta, h)}$")
         ax.set_title("radial fraction of the write", fontsize=8.6)
-        f.suptitle(f"{disp}: per-layer writes are low-rank and mostly "
-                   f"tangential (x = post-norm step, not a pure write)",
-                   fontsize=9.5, y=1.04)
+        f.suptitle(f"{disp}: per-layer write $\\Delta_\\ell=h_{{\\ell+1}}-"
+                   f"h_\\ell$ profile (x = post-norm step, not a pure "
+                   f"write)", fontsize=9.5, y=1.04)
         savefig(f, f"fig_B5_write_{tag}.png")
 
     # ================= cross-model depth figures =================
@@ -283,7 +285,7 @@ def main():
 
     f, ag = plt.subplots(2, 3, figsize=(12.4, 6.8))
     overlay(ag[0, 0], "m_pr_c", "$PR$ (mean-removed)", "Participation "
-             "ratio drops with depth in 3 of 4 models")
+             "ratio vs depth")
     overlay(ag[0, 1], "m_eff90_c", "eff-rank 90%", "Eff-rank 90% of state "
              "covariance")
     overlay(ag[0, 2], "m_mle20", "LB-MLE $\\hat d$ ($k$=20)", "POOLED "
@@ -325,7 +327,7 @@ def main():
 
     f, ag = plt.subplots(1, 3, figsize=(11.6, 3.2))
     overlay(ag[0], "m_slope_c", "bulk slope $\\beta$",
-            "Spectrum slope: bulk flattens with depth in all models")
+            "Spectrum bulk slope vs depth")
     overlay(ag[1], "m_corrdim", "correlation dim $\\nu$",
             "Correlation dimension vs depth")
     overlay(ag[2], "m_topfrac_c", "$\\lambda_1/\\sum\\lambda$ (centered)",
@@ -341,11 +343,13 @@ def main():
         ax.plot(z["m_pr_m"], z["m_pr_c"], "o", ms=4, color=COLOR[tag],
                 label=DISPLAY[tag].replace("-R1-Distill-1.5B", "")
                 .replace("-Instruct", ""))
-    ax.plot([0, 160], [0, 160], "k:", lw=0.8, label="$y=x$")
+    lims = [0, max(np.max([curves[t]["m_pr_m"] for t in tags]),
+                   np.max([curves[t]["m_pr_c"] for t in tags])) * 1.05]
+    ax.plot(lims, lims, "k:", lw=0.8, label="$y=x$")
     ax.set_xlabel("$PR$ WITH mean (uncentered 2nd moment)")
     ax.set_ylabel("$PR$ mean-removed (centered)")
     ax.set_title("The common mean inflates apparent dimensionality "
-                 "2-10x (all layers, all models)")
+                 "(points far below $y=x$)")
     ax.legend(fontsize=7)
     savefig(f, "fig_B6c_pr_mean_effect.png")
 
