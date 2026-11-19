@@ -58,7 +58,7 @@ def main():
 
         # ---------------- B1 spectra ----------------
         f, ax = plt.subplots(figsize=(5.4, 3.6))
-        keep = [int(k[6:]) for k in z.files if k.startswith("lamc_")]
+        keep = [int(k[5:]) for k in z.files if k.startswith("lamc_")]
         keep = sorted(set(keep))
         cmap = plt.cm.viridis(np.linspace(0, 0.92, len(keep)))
         for c, ix in zip(cmap, keep):
@@ -186,6 +186,7 @@ def main():
         im = ax.imshow(np.nanmedian(ldt, axis=1), aspect="auto",
                        cmap="magma", origin="lower",
                        extent=[0, ldt.shape[2], 0, 1.0])
+        im.cmap.set_bad((0.75, 0.75, 0.75))
         ax.set_yticks(np.linspace(0, 1, 6))
         ax.set_yticklabels([f"{int(v*L)}" for v in np.linspace(0, 1, 6)])
         ax.set_xlabel("position $t$ (tokens)")
@@ -245,7 +246,7 @@ def main():
         ax = ag[1]
         ax.plot(wrel, z["w_eff90_c"], "o-", color=COLOR[tag], ms=3, lw=1.2,
                 label="write eff-rank 90%")
-        ax.plot(wrel[:-1], z["m_eff90_c"][:-1], "s--", color="#888888",
+        ax.plot(wrel, z["m_eff90_c"][:L], "s--", color="#888888",
                 ms=3, lw=1.1, label="state eff-rank 90%")
         ax.plot(wrel[-1], z["w_eff90_c"][-1], "x", color="k", ms=8,
                 ls="none")
@@ -343,13 +344,14 @@ def main():
         ax.plot(z["m_pr_m"], z["m_pr_c"], "o", ms=4, color=COLOR[tag],
                 label=DISPLAY[tag].replace("-R1-Distill-1.5B", "")
                 .replace("-Instruct", ""))
-    lims = [0, max(np.max([curves[t]["m_pr_m"] for t in tags]),
-                   np.max([curves[t]["m_pr_c"] for t in tags])) * 1.05]
+    lims = [0, max(max(float(np.max(curves[t]["m_pr_m"])),
+                       float(np.max(curves[t]["m_pr_c"])))
+                   for t in tags) * 1.05]
     ax.plot(lims, lims, "k:", lw=0.8, label="$y=x$")
     ax.set_xlabel("$PR$ WITH mean (uncentered 2nd moment)")
     ax.set_ylabel("$PR$ mean-removed (centered)")
-    ax.set_title("The common mean inflates apparent dimensionality "
-                 "(points far below $y=x$)")
+    ax.set_title("Forgetting to center makes states look rank-1-5: "
+                 "with-mean $PR$ is ~10x SMALLER than centered")
     ax.legend(fontsize=7)
     savefig(f, "fig_B6c_pr_mean_effect.png")
 
@@ -361,10 +363,13 @@ def main():
                 color=COLOR[tag], lw=1.2,
                 label=DISPLAY[tag].replace("-R1-Distill-1.5B", "")
                 .replace("-Instruct", ""))
+    ratios = [np.mean(curves[t]["w_eff90_c"][:-1])
+              / np.mean(curves[t]["m_eff90_c"][1:-1]) for t in tags]
     ax.set_xlabel("write index $\\ell$ (block writes only)")
     ax.set_ylabel("write eff-rank 90%")
-    ax.set_title("Per-layer writes are 2-6x lower-rank than the states they "
-                 "update")
+    ax.set_title(f"Write vs state eff-rank: mean ratio "
+                 f"{min(ratios):.2f}-{max(ratios):.2f} "
+                 f"(writes are NOT lower-rank than states)")
     ax.legend(fontsize=7)
     savefig(f, "fig_B5b_write_rank_all.png")
 

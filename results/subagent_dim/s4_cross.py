@@ -134,8 +134,10 @@ def d1(curves, out):
     table = {}
     for mname in measures:
         x = [scal[t][mname] for t in TAGS]
+        nfin = int(np.sum(np.isfinite(x)))
         table[mname] = {
             "values": {t: scal[t][mname] for t in TAGS},
+            "n_finite": nfin,
             "spearman_vs_kickgain": spearman(
                 x, [tgt["kick_gain_s16"][t] for t in TAGS]),
             "spearman_vs_lambda": spearman(
@@ -237,14 +239,14 @@ def gain_profile(d):
     n_r, n_d, n_l, T = dh.shape
     # depth gain: mean over (r, d) of mean_t
     G_l = G.mean(axis=(0, 1)).mean(-1)
-    G_band = np.percentile(G.mean(axis=(0, 2)), NQ, axis=0)  # over dirs
+    G_band = np.percentile(G.mean(axis=(0, 3)), NQ, axis=0)  # over dirs
     # time-rate per layer: slope of log dh vs t, mean over (r,d)
     tt = np.arange(T)
     tt_s = tt[T // 5:]
     rates = np.empty((n_r, n_d, n_l))
     for i in range(n_r):
         for j in range(n_d):
-            y = np.log(np.maximum(dh[i, j, :, tt_s], 1e-30))
+            y = np.log(np.maximum(dh[i, j][:, tt_s], 1e-30))
             A = np.vstack([tt_s, np.ones_like(tt_s)]).T
             sol, *_ = np.linalg.lstsq(A, y.T, rcond=None)
             rates[i, j] = sol[0]
@@ -261,8 +263,12 @@ def d2(curves, out, scal):
         L = int(z["L"])
         d = np.load(A1_BY_TAG[tag])
         layers, G_l, G_band, lam_l, lam_band = gain_profile(d)
-        # marginal per-block gain
-        marg = np.array([G_l[i + 1] / G_l[i] for i in range(len(G_l) - 1)])
+        # marginal per-block gain (undefined at layer 0 where G_0 = 0:
+        # the kick lives at the prompt's last position, not at generated
+        # positions' embeddings)
+        marg = np.full(len(G_l) - 1, np.nan)
+        ok = G_l[:-1] > 0
+        marg[ok] = G_l[1:][ok] / G_l[:-1][ok]
         # check dh at layer 0 == r
         r0 = d["dh_norm"][:, :, 0, :].mean() / d["radii"][:, None].mean()
         radial = np.abs(d["cos"]).mean(axis=(0, 1, 3)) if "cos" in d.files \
@@ -453,9 +459,10 @@ def d3(curves, out, scal, fields):
     ax.set_xlabel("perturbation radius $r$")
     ax.set_ylabel("mean $|\\cos(\\delta h, h)|$")
     grow = ylast[-1] > ylast[0]
-    ax.set_title(f"DeepSeek (12 radii): |cos| {'grows' if grow else 'does "
-                 f"not grow'} with $r$ (last layer: "
-                 f"{ylast[0]:.2f}$->$ {ylast[-1]:.2f})", fontsize=8.8)
+    word = "grows" if grow else "does not grow"
+    ax.set_title(f"DeepSeek (12 radii): |cos| {word} with $r$ "
+                 f"(last layer: {ylast[0]:.2f} -> {ylast[-1]:.2f})",
+                 fontsize=8.8)
     ax.legend(fontsize=7)
     savefig(f, "fig_D3c_radial_vs_radius_deepseek.png")
     res["deepseek_w100_radius_dep"] = {

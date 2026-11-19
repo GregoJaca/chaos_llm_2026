@@ -11,6 +11,14 @@ import numpy as np
 
 from dimlib import DIMROOT, OUT, section_numbers, discover_tags
 
+
+def normE2_sum(v):
+    return float((v["normE"].astype(np.float64) ** 2).sum())
+
+
+def normW2_sum(v):
+    return float((v["normW"].astype(np.float64) ** 2).sum())
+
 def main():
     tags = discover_tags()
     out = {"tags_found": tags, "per_tag": {}}
@@ -31,6 +39,12 @@ def main():
             "sE_descending": bool(np.all(np.diff(v["sE"]) <= 0)),
             "sW_descending": bool(np.all(np.diff(v["sW"]) <= 0)),
         }
+        # GE is the DxD FEATURE gram E^T E: trace must equal sum of squared
+        # row norms (decisive against a VxV row-gram interpretation).
+        rec["trGE_over_sum_normE2"] = float(np.trace(GE.astype(np.float64))
+                                            / (normE2_sum(v)))
+        rec["trGW_over_sum_normW2"] = float(np.trace(GW.astype(np.float64))
+                                            / (normW2_sum(v)))
         # singular values consistent with Gram eigenvalues (spot-check via eigvalsh)
         ev = np.linalg.eigvalsh(GE)[::-1]
         rec["max_rel_err_eigGE_vs_sE2"] = float(
@@ -57,6 +71,20 @@ def main():
         snW = np.linalg.norm(v["sample_W"].astype(np.float32), axis=1)
         rec["sampleW_norm_match_maxrel"] = float(
             np.abs(snW - v["normW"][idx]).max() / snW.mean())
+        # ---- forensics: the TOP acts index is the post-final-RMSNORM state.
+        # If so, logits[t] = W_U h_top[t] exactly, so the predicted row norm
+        # ||W_U h||^2 = h^T GW h must match the recorded ||logits||^2.
+        h = a["acts"][0, L, :128].astype(np.float64)
+        GWd = GW.astype(np.float64)
+        pred = np.einsum("ti,ij,tj->t", h, GWd, h)
+        rn2 = (np.linalg.norm(lg["logits"][:128].astype(np.float32),
+                              axis=1) ** 2)
+        rec["logits_eq_WU_htop_check"] = {
+            "corr_pred_vs_rownorm2": float(np.corrcoef(pred, rn2)[0, 1]),
+            "mean_ratio": float(rn2.mean() / pred.mean()),
+            "interpretation": ("corr~1 and ratio~1 => acts index L is the "
+                               "post-final-norm state (raw final block is "
+                               "NOT saved; logits feed directly from it)")}
         out["per_tag"][tag] = rec
         print(f"--- {tag}:")
         for k, val in rec.items():

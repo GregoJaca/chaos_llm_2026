@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 STEPS = ["s0_check.py", "s1_vocab.py", "s2_hidden.py", "s2b_figs.py",
-         "s3_logits.py", "s4_cross.py"]
+         "s3_logits.py", "s4_cross.py", "s4b_radial.py"]
 
 if __name__ == "__main__":
     for s in STEPS:

@@ -32,3 +32,5 @@ models--*/
 notebook/notebook.html
 notebook/notebook.pdf
 notebook/.preview/shot.png
+
+*.tgz
