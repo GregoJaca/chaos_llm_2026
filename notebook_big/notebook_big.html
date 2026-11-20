@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  built 2026-11-20 20:14:18 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
+  built 2026-11-20 20:19:50 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
   <a href="notebook_big.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook_big.md">Markdown</a>
 </header>
 <h1 id="large-models-on-the-dgx-spark-definitions-data-and-every-figure-explained">Large models on the DGX Spark: definitions, data, and every figure explained</h1>
@@ -242,7 +242,7 @@ is nothing to flush.</p>
 </tr>
 <tr>
 <td>file</td>
-<td><code>results_big/ds14/a1_inter_w100/a1.npz</code> (+ <code>meta.json</code>)</td>
+<td><code>results_big/ds14/a1_inter_full/a1.npz</code> (+ <code>meta.json</code>)</td>
 </tr>
 </tbody>
 </table>
@@ -945,7 +945,7 @@ The median local sensitivity is $3.80\times10^{-3}$ nats per unit radius, about 
 - Teacher forcing holds the continuation fixed. The measured $\delta m_t$ is the response at each baseline step, before any divergence. It does not include the feedback of an already-flipped token.
 - The 24 response vectors cover directions 0–23 only (20 from block 0, 4 from block 1). The pairwise-cosine result is a 24-dimensional sample of a 1000-dimensional ensemble.
 - This run used full attention (see the correction note), so no part of the decay is attributable to the prompt leaving an attention window. The true-window run will separate that effect.</p>
-<p>All numbers in this section are in <code>notebook_big/figures/ds14_a1_deep_numbers.json</code>; the figures are produced by <code>scripts_spark/figs_a1_deep.py</code> from <code>results_big/ds14/a1_inter_w100/a1.npz</code> and <code>meta.json</code>.</p>
+<p>All numbers in this section are in <code>notebook_big/figures/ds14_a1_deep_numbers.json</code>; the figures are produced by <code>scripts_spark/figs_a1_deep.py</code> from <code>results_big/ds14/a1_inter_full/a1.npz</code> and <code>meta.json</code>.</p>
 <hr />
 <h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
 <h2 id="summary_1">Summary</h2>
@@ -1038,7 +1038,7 @@ The median local sensitivity is $3.80\times10^{-3}$ nats per unit radius, about 
 <tr>
 <td>file</td>
 <td><code>chaos_llm_2026/results/local_data/w100_layers/a1.npz</code> (read-only)</td>
-<td><code>results_big/ds14/a1_inter_w100/a1.npz</code> + <code>meta.json</code></td>
+<td><code>results_big/ds14/a1_inter_full/a1.npz</code> + <code>meta.json</code></td>
 </tr>
 </tbody>
 </table>

@@ -36,3 +36,4 @@ notebook/.preview/shot.png
 *.tgz
 notebook/.preview/build.log*
 notebook/.preview/*.tmp*
+assets/
