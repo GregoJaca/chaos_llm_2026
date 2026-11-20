@@ -37,6 +37,7 @@ RETRY_SECONDS = 20.0
 # name, source file, short description shown on the index page
 DOCS = [
     ("master", "master.md", "Claims only &mdash; the results I would defend, with definitions"),
+    ("veto", "veto.md", "Extra results and whether to include them (verdicts)"),
     ("notebook", "notebook.md", "Lab notebook &mdash; everything, including dead ends"),
 ]
 

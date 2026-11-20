@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>veto.md</title>
+<link rel="stylesheet" href=".preview/katex/katex.min.css">
+<style>
+:root { --fg:#1a1a1a; --muted:#666; --line:#d8d8d8; --accent:#0b5cad; }
+* { box-sizing: border-box; }
+body {
+  font-family: "Charter", "Georgia", "Cambria", serif;
+  font-size: 15px; line-height: 1.55; color: var(--fg);
+  margin: 0 auto; max-width: 210mm; padding: 18mm 16mm 24mm;
+  background: #fff;
+}
+h1, h2, h3, h4 { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; line-height:1.25; }
+h1 { font-size: 1.65em; margin: 1.4em 0 .5em; border-bottom: 2px solid var(--line); padding-bottom:.25em; }
+h2 { font-size: 1.3em; margin: 1.3em 0 .4em; color:#111; }
+h3 { font-size: 1.08em; margin: 1.1em 0 .3em; color:#222; }
+p, li { margin: .45em 0; }
+ul, ol { margin: .45em 0 .45em 1.3em; padding: 0; }
+code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: .86em; }
+code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; }
+pre { background:#f7f7f7; border:1px solid #e5e5e5; border-radius:4px; padding:8px 10px; overflow-x:auto; }
+img { max-width: 100%; height: auto; display:block; margin: 10px auto; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .93em; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: #f5f7f9; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.8em 0; }
+blockquote { margin: .6em 0; padding: .3em 1em; border-left: 3px solid var(--line); color:#333; }
+a { color: var(--accent); }
+.katex-display { margin: .7em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.03em; }
+header.banner {
+  font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; color: var(--muted);
+  border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 18px;
+}
+header.banner a { text-decoration: none; }
+h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid; }
+@page { size: A4; margin: 15mm 14mm 16mm; }
+</style>
+</head><body>
+<header class="banner">
+  veto.md &nbsp;&middot;&nbsp; built 2026-11-20 19:11:16 &nbsp;&middot;&nbsp;
+  <a href="veto.pdf">PDF</a> &nbsp;&middot;&nbsp;
+  <a href="veto.md">Markdown</a> &nbsp;&middot;&nbsp;
+  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="master.html">master</a> &middot; <a href="notebook.html">notebook</a>
+</header>
+<h1 id="veto-list-extra-results-and-whether-they-belong-in-the-paper">Veto list — extra results, and whether they belong in the paper</h1>
+<p>This file vets the figures that are not in <code>master.md</code>. For each: what is plotted, how it is computed,
+and a verdict — <strong>include</strong>, <strong>include as a caveat</strong>, or <strong>veto</strong> — with the reason. The rule I apply:
+<em>a result is worth including if it is (i) measured, not defined, (ii) not an artefact of the
+measurement, and (iii) says something that is not already said better by another figure.</em></p>
+<hr />
+<h2 id="1-stablechaos_windowspng-margin-survival-for-different-windows">1. <code>stablechaos_windows.png</code> — margin survival for different windows</h2>
+<p><img alt="windows" src="figures/stablechaos_windows.png" /></p>
+<p><strong>What is plotted.</strong> (a) The fraction of steps whose top-two logit gap exceeds $m$, as a function of
+$m$, for three window sizes ($W=100,200,500$). (b),(c) Survival of the threshold model (teacher-forced
+margin rule) compared with the free run at two radii. (d) Predicted flip fraction vs window.</p>
+<p><strong>How it is computed.</strong> For each window, run the model greedily, collect the margin at every step, and
+plot the complementary CDF. The threshold model uses the teacher-forced margin change per direction.</p>
+<p><strong>Verdict: veto (a); keep (b) as a control only.</strong>
+- (a) compares margin statistics across windows, but <strong>a different window produces a different text</strong>.
+  The comparison is therefore stream-confounded: it is a statement about two different continuations,
+  not about the effect of the window. The differences in (a) are real but not attributable.
+- (b) is a consistency check — at $W=100$ the predicted survival matches the observed free run
+  (blue dotted vs solid). That is worth one sentence in the methods, not a figure.
+- (d)'s "flips grow with window" is a <em>prediction</em> for $W=200,500$; only the $W=100$ point is observed.</p>
+<p><strong>Can (a) be fitted?</strong> It is a distribution function, so any smooth CDF would fit; the fit would carry
+no dynamical information. Not worth it.</p>
+<hr />
+<h2 id="2-regime_scalingpng-the-free-forgetting-law-after-the-window-clips">2. <code>regime_scaling.png</code> — the free-forgetting law after the window clips</h2>
+<p><img alt="regime" src="figures/regime_scaling.png" /></p>
+<p><strong>What is plotted.</strong> (a) The mean rate $\lambda_{10}$ <strong>before</strong> the window first clips (all $W$): it is
+zero within the error bars. (b) The contraction rate <strong>after</strong> the clip, against $W$, log–log, with the
+fit $A/W$ and $A=0.674$. (c) The product $\lambda_{\rm post}\cdot W$, which is constant within errors.</p>
+<p><strong>How it is computed.</strong> $\lambda_{10}(t)$ as in the master document, averaged over the interval after
+the first prompt token is evicted ($t>W-P$) and before the end. Error bars are bootstrap over
+directions.</p>
+<p><strong>Verdict: include as a methods result (panel b), not as a headline.</strong>
+This is one of the few clean <em>quantitative laws</em> we have: the post-clip contraction rate falls as
+$1/W$, and the total log-cost of the post-clip phase, $\lambda_{\rm post}\cdot W$, is constant
+(0.5–0.8, consistent with a constant within the error bars). It says: <strong>each eviction event costs a
+fixed amount of log-probability, independent of the window</strong>. It is a property of the mask, not of the
+model's dynamics, so it belongs in the methods section with the flush law — and it also explains why
+the "$W=100$" runs show a decay that disappears at large $W$.</p>
+<p><strong>Why not a headline:</strong> it does not involve the perturbation at all; it is the unperturbed trajectory
+losing context.</p>
+<hr />
+<h2 id="3-layer_probepng-where-along-the-depth-the-amplification-happens">3. <code>layer_probe.png</code> — where along the depth the amplification happens</h2>
+<p><img alt="layer probe" src="figures/layer_probe.png" /></p>
+<p><strong>What is plotted.</strong> A one-position perturbation injected at block $\ell_0$ (rows), measured at every
+later block and every later token. The quantity is the response of the <em>same</em> position at a later
+block, or of a later token.</p>
+<p><strong>How it is computed.</strong> Forward hook at the output of block $\ell_0$ adding $r v$ at one position; then
+the teacher-forced run records $\|\delta h\|$ at every other position and block.</p>
+<p><strong>Verdict: superseded — do not include this figure; the finding is in <code>master.md</code> §8 in a better form.</strong>
+The finding is that the downstream amplification does not depend on the injection block over the first
+60–75% of the depth (flat curves in <code>perturbation_vs_depth.png</code>). The old figure shows the same thing
+with fewer statistics and a confusing layout. One clean figure with medians and 10–90% bands is
+better than two.</p>
+<hr />
+<h2 id="4-probe_pulsepng-the-same-perturbation-resolved-in-time-after-the-injection">4. <code>probe_pulse.png</code> — the same perturbation resolved in <em>time</em> after the injection</h2>
+<p><img alt="probe pulse" src="figures/probe_pulse.png" /></p>
+<p><strong>What is plotted.</strong> For a perturbation at position $s$, the response at the last layer as a function
+of the lag $\tau$ after $s$ (1–50 tokens), median over directions with a 10–90% band.</p>
+<p><strong>How it differs from master §8.</strong> §8 fixes the lag window (max over 50 tokens) and varies the
+<em>position</em>; this figure fixes the position and varies the <em>lag</em>. Same experiment, two projections.</p>
+<p><strong>Verdict: include as supporting evidence for Phi's hot spot.</strong>
+It is the only place where the delayed amplification is visible directly: Phi at $s=16$ is flat for
+~18 tokens and then rises to <strong>×120 at lag 25–30</strong>, while DeepSeek decays monotonically. That is a
+mechanism-shaped fact (the perturbation is carried, then amplified), and it costs one panel.</p>
+<hr />
+<h2 id="5-window_token_agreementpng-token-agreement-between-windows">5. <code>window_token_agreement.png</code> — token agreement between windows</h2>
+<p><img alt="token agreement" src="figures/window_token_agreement.png" /></p>
+<p><strong>What is plotted.</strong> Fraction of generated tokens identical between two window sizes, against the
+generated token index.</p>
+<p><strong>Verdict: veto.</strong> The two runs produce different texts by construction, so the curve is a property of
+two different continuations, not of the window. It is descriptive and confounded in the same way as
+§1(a).</p>
+<hr />
+<h2 id="6-the-latent-perturbation-and-the-token-agreement-decay">6. The "latent" perturbation and the token-agreement decay</h2>
+<p><img alt="latent" src="figures/state_kick_latent_validated.png" /></p>
+<p><strong>What is plotted.</strong> (a) Predicted vs observed first changed token for five perturbations; (b) token
+agreement along the continuation for one direction; (c) the same for 24 directions at $s=16$.</p>
+<p><strong>What it shows.</strong> A perturbation at $s=16$ changes the text at <strong>$t=123$ — 107 tokens later</strong>; at
+$s=50$ at $t=143$ (93 later). After the change, agreement falls to ~40% and never recovers.</p>
+<p><strong>Verdict: the latency belongs in <code>master.md</code> (it is the mechanism); the "decay type" does not.</strong>
+- The latency is a strong, non-trivial result: the perturbation does not grow (Part 4) and does not act
+  immediately; it waits until the model reaches a close call. That is what "stable chaos" means
+  operationally.
+- The apparent decay in (b) is <strong>token agreement</strong>, which saturates at a floor (~0.4) because
+  continuations re-align on repetitive text. It is not a physical decay of anything. Fitting an
+  exponential to it would be fitting text statistics. Veto the fit.</p>
+<hr />
+<h2 id="7-depth_gain_6promptspng-six-prompts-absolute-response-vs-layer">7. <code>depth_gain_6prompts.png</code> — six prompts, absolute response vs layer</h2>
+<p><img alt="depth 6" src="figures/depth_gain_6prompts.png" /></p>
+<p><strong>What is plotted.</strong> $\|\delta h_{t,\ell}\|/r$ against layer, six prompts, DeepSeek, median over
+directions at $t\le50$; the band is 25–75% over prompts.</p>
+<p><strong>What it shows.</strong> The depth profile has the same shape for every prompt, with a scale that varies by
+×1.45 at the last layer.</p>
+<p><strong>Verdict: veto.</strong> The absolute profile is dominated by the growth of the state norm (×18–30), which
+we now know is not amplification. The informative version is the <em>relative</em> response
+(<code>sigma_vs_relative.png</code>, panel b), which separates the models. This figure would suggest an
+amplification that is not there.</p>
+<hr />
+<h2 id="8-rstar_1536png-and-the-per-model-version-the-flip-radius">8. <code>rstar_1536.png</code> and the per-model version — the flip radius</h2>
+<p><img alt="rstar per model" src="figures/fsle/rstar_per_model.png" /></p>
+<p><strong>What is plotted.</strong> The complementary CDF of the flux-tube radius $r_*$ for each model: the fraction
+of directions whose smallest flipping radius exceeds $x$. 512 directions × 5 prompts per model, log–log.</p>
+<p><strong>How it is computed.</strong> For each direction and each token $t$, $r_c(t)=m_t/(|\delta m_t|/r)$ — the
+radius at which that token's margin would reach zero. $r_*(u)=\min_t r_c(t,u)$. Steps whose margin is
+below the resolvable gap (0.02) are excluded: they are quantisation ties, not decision gates.</p>
+<p><strong>What it shows.</strong> The scale is model-specific and ordered: Phi <strong>0.07</strong>, Qwen3-4B and Qwen3.5
+<strong>0.20</strong>, DeepSeek <strong>0.31</strong> (medians). The curves are staircases, because the minimum over $t$ lands on
+a handful of discrete ratios, and their shapes differ across prompts.</p>
+<p><strong>Verdict: include the <em>scale</em>, not the law.</strong>
+The ordering "Phi is the most fragile, DeepSeek the least" is stable across five prompts per model and
+matches the amplification ordering in the master document. The distribution itself has no universal
+shape (fitted tail exponents range 2.3–17.6 and the median varies 15× across prompts), so any statement
+of the form "the distribution is a log-logistic" should be removed. One panel with the four models and
+the medians is enough.</p>
+<hr />
+<h2 id="9-two-figures-from-the-earlier-list-that-i-would-drop-from-the-paper">9. Two figures from the earlier list that I would drop from the paper</h2>
+<p><strong><code>threshold_largr.png</code></strong> (predicted vs observed flip time at $r=0.5$–2): the axes span 300 tokens
+while the data occupy 0–50, one prompt is 20/20 exact and the other is 1–6/20, and the comparison is
+only meaningful where the margin response is still linear. <strong>Veto.</strong> The one-sentence version —
+"the rule is exact up to $r\approx0.3$ and becomes an extrapolation beyond" — belongs in the text.</p>
+<p><strong><code>flip_fraction_512.png</code></strong> as a headline: it is dominated by zero-margin ties (3.5% → 0.4% after
+removing one token). <strong>Include only as a caveat</strong> in the methods, with the tie-corrected numbers.</p>
+<hr />
+<h2 id="10-summary-table">10. Summary table</h2>
+<table>
+<thead>
+<tr>
+<th>figure</th>
+<th>verdict</th>
+<th>why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stablechaos_windows</code></td>
+<td>veto</td>
+<td>stream-confounded; distribution, not dynamics</td>
+</tr>
+<tr>
+<td><code>regime_scaling</code> (b)</td>
+<td><strong>include (methods)</strong></td>
+<td>clean $1/W$ law of the mask</td>
+</tr>
+<tr>
+<td><code>layer_probe</code></td>
+<td>superseded</td>
+<td>replaced by <code>perturbation_vs_depth</code></td>
+</tr>
+<tr>
+<td><code>probe_pulse</code></td>
+<td><strong>include (support)</strong></td>
+<td>delayed ×120 amplification in Phi</td>
+</tr>
+<tr>
+<td><code>window_token_agreement</code></td>
+<td>veto</td>
+<td>two different texts</td>
+</tr>
+<tr>
+<td>latent perturbation, <em>latency</em></td>
+<td><strong>include (master)</strong></td>
+<td>the perturbation waits 107 tokens</td>
+</tr>
+<tr>
+<td>latent perturbation, <em>decay fit</em></td>
+<td>veto</td>
+<td>token agreement, not a physical decay</td>
+</tr>
+<tr>
+<td><code>depth_gain_6prompts</code></td>
+<td>veto</td>
+<td>it is the state norm, not amplification</td>
+</tr>
+<tr>
+<td><code>rstar</code> per model</td>
+<td><strong>include (scale only)</strong></td>
+<td>ordering stable, shape not universal</td>
+</tr>
+<tr>
+<td><code>threshold_largr</code></td>
+<td>veto</td>
+<td>axes and range make it unreadable; text suffices</td>
+</tr>
+<tr>
+<td><code>flip_fraction_512</code></td>
+<td>caveat only</td>
+<td>tie-dominated</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Net effect on the paper:</strong> two additions (the $1/W$ forgetting law and the latency), one supporting
+panel (Phi's delayed amplification), one qualitative panel ($r_*$ scale), and seven vetoes.</p>
+<script src=".preview/katex/katex.min.js"></script>
+<script src=".preview/katex/contrib/auto-render.min.js"></script>
+<script>
+renderMathInElement(document.body, {
+  delimiters: [{left:"$$", right:"$$", display:true}, {left:"$", right:"$", display:false}],
+  throwOnError: false,
+  strict: false
+});
+</script>
+</body></html>

@@ -1,0 +1,20 @@
+{
+  "model": "/u0/grego/LLM/models--Qwen--Qwen3-4B-Instruct-2507",
+  "run": "results/sens/qwen3_4b_p1/geom",
+  "trials": 3,
+  "r": 0.1,
+  "layers": [
+    1,
+    7,
+    14,
+    35
+  ],
+  "prompt_len": 64,
+  "T": 300,
+  "err_median": {
+    "1": 2.1630859375,
+    "7": 5.169921875,
+    "14": 10.3125,
+    "35": 14.4140625
+  }
+}
