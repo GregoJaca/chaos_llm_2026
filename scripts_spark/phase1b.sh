@@ -70,10 +70,11 @@ if [ ! -f $OUT/a1_inter_w100/a1.npz ]; then
   fi
 fi
 
-# 5. free-run validation at the true window
+# 5. free-run validation at the true window (two radii: the r=0.05 population
+#    point already exists in the full-attention validation)
 if [ ! -f $OUT/free_inter_w100/summary.json ]; then
   $PY -m chaos_llm.run_free_big --model $M --run $OUT/a1_inter_w100 \
-      --radii 0.05,0.1,0.3 --chunk 24 --out $OUT/free_inter_w100 2>&1 | tee $OUT/free_inter_w100.log
+      --radii 0.1,0.3 --chunk 24 --out $OUT/free_inter_w100 2>&1 | tee $OUT/free_inter_w100.log
 fi
 
 echo PHASE1B_DONE
