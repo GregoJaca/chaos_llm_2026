@@ -559,15 +559,15 @@ mechanistic explanation of the model differences.
 
 **Data.** A vector of norm $r$ (0.1 for DeepSeek, Qwen3-4B, Qwen2.5-3B, Qwen3.5; 0.3 for Phi) is
 added to the residual stream at **block 0** at one generated position $s$, then the model is run
-teacher-forced. 6 directions per point; 12 positions from 4 to 100. The plotted quantity is
+teacher-forced. 6 directions per point; 22 positions from 4 to 100. The plotted quantity is
 $$A(s)=\frac{1}{r}\max_{1\le\tau\le50}\|\delta h_{s+\tau,L}\|$$
 — the largest downstream response at the last layer within 50 tokens of the kick, divided by the kick
 size. It has no units.
 
 | model | median $A$ | min–max | max/min | shape |
 |---|---|---|---|---|
-| Qwen3-4B | 6.1 | 5.3–7.1 | 1.3 | flat |
-| Qwen2.5-3B | 4.6 | 4.5–4.8 | 1.07 | flat |
+| Qwen3-4B | 6.1 | 5.3–7.4 | 1.4 | flat |
+| Qwen2.5-3B | 4.6 | 4.3–4.8 | 1.1 | flat |
 | Qwen3.5-2B | 0.50 | 0.45–1.07 | 2.4 | flat after $s=8$ |
 | Phi-4-mini | 8.3 | 1.7–17.1 | 10 | rise to a maximum at $s\approx40$, dip, rise |
 | DeepSeek-1.5B | 0.11 | 0.05–0.76 | 15 | contraction + one spike at $s=16$ |
@@ -1712,6 +1712,13 @@ is a size ablation, and you ruled out ablations). The interesting axis is the *a
 | `state_freerun_r0.1`, `r0.3` | free runs with a single-position perturbation | C4 |
 | `long_traj*`, `long_traj_2k`, `long_traj_4k` | 1000–4000-token trajectories, window 4096 | G |
 | `nonnorm_w100_big` | $\sigma_{\max},\rho,\kappa$, principal angles | F |
+| `depth2/{deepseek,deepseek128,deepseek_k64,qwen3_4b,phi4mini,qwen3_5,qwen25_3b}` | per-block tangent Jacobians, 8 or 64 directions, 8–128 tokens | 9.2, 9.3 |
+| `block_sigma/*` | full-dimension $\sigma_{\max}$ per block, power iteration | 9.3 |
+| `probe2/<model>/pos*` | one-token kick at 22 positions, 3 injection blocks, 6–8 dirs | N2c, N2d, 9.2b |
+| `rstar/<model>/p*` | 512 directions × 5 prompts, $r_c$ for every token | 9.2b, 11 |
+| `hazard/<model>_r*` | 512-direction free runs at four radii | 11.4 |
+| `long4k/p*` | 8 more 4000-token trajectories | 2.0d |
+| `fits/*.png`, `results/fits/SUMMARY.md` | every curve fitted, with the ranked model table | 9.6 |
 
 **Protocol invariants.** FP32; greedy; no repetition penalty; the unperturbed reference is a
 duplicate row in the same batch and is verified bit-identical; teacher-forced passes use the

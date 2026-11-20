@@ -1,0 +1,14 @@
+{
+  "run": "results/models/qwen3_4b/a1",
+  "layers": [
+    0,
+    5,
+    10
+  ],
+  "pos": 18,
+  "r": 0.1,
+  "dirs": 8,
+  "seed": 3000,
+  "prompt_len": 64,
+  "T": 300
+}
