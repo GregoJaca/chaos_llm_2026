@@ -2,3 +2,8 @@
 2026-11-20 15:48:46  serving C:\Users\hjaca\research\chaos_spark_wt\notebook_big on port 8898
 2026-11-20 15:48:46    http://100.101.197.82:8898/   (pdf: /notebook_big.pdf)
 2026-11-20 15:48:46    http://192.168.0.62:8898/   (pdf: /notebook_big.pdf)
+2026-11-20 18:17:37  serving C:\Users\hjaca\research\chaos_spark_wt\notebook_big on port 8898
+2026-11-20 18:17:37    http://100.101.197.82:8898/   (pdf: /notebook_big.pdf)
+2026-11-20 18:17:37    http://192.168.0.62:8898/   (pdf: /notebook_big.pdf)
+2026-11-20 18:17:46  built 2026-11-20 18:17:38  html 3 kB  pdf 0.1 MB  in 8.4s
+2026-11-20 18:17:46  watching C:\Users\hjaca\research\chaos_spark_wt\notebook_big\notebook_big.md (pid 22508)

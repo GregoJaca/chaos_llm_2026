@@ -29,10 +29,21 @@ from chaos_llm.big_engine import (
 
 
 def read_prompt(spec):
+    """Prompt spec: plain text, @file (first line), or @file::name (line with
+    that tab-separated name)."""
     text = spec
     if text.startswith("@"):
-        line = open(text[1:]).read().splitlines()[0]
-        text = line.split("\t", 1)[1] if "\t" in line else line
+        fname = text[1:]
+        want = None
+        if "::" in fname:
+            fname, want = fname.split("::", 1)
+        for line in open(fname).read().splitlines():
+            if not line.strip():
+                continue
+            name, body = (line.split("\t", 1) + [""])[:2] if "\t" in line else ("", line)
+            if want is None or name == want:
+                return body
+        raise ValueError(f"prompt {want!r} not found in {fname}")
     return text
 
 
@@ -75,6 +86,8 @@ def main():
     ap.add_argument("--dirs-per-block", type=int, default=20)
     ap.add_argument("--radii", default="0.1")
     ap.add_argument("--seed", type=int, default=69)
+    ap.add_argument("--positions", default="",
+                    help="lo:hi restrict perturbed prompt positions (flush support scan)")
     ap.add_argument("--batch-dirs", type=int, default=16)
     ap.add_argument("--vector-rows", type=int, default=24)
     ap.add_argument("--layers", default="")
@@ -142,7 +155,12 @@ def main():
     wdiff = wdiff_tensor(model, top1, top2)
     print(f"baseline done: P={P} T={T} min margins {sorted(margins)[:4].round(4).tolist()}", flush=True)
 
-    simplex, subspace = build_direction_blocks(K, P, D, block=args.dirs_per_block, seed=args.seed)
+    positions = None
+    if args.positions:
+        lo, hi = args.positions.split(":")
+        positions = (int(lo), int(hi))
+    simplex, subspace = build_direction_blocks(K, P, D, block=args.dirs_per_block,
+                                               seed=args.seed, positions=positions)
     nl = len(layers)
 
     for ri, r in enumerate(radii):
@@ -202,6 +220,7 @@ def main():
                 window=args.window, prompt=text, prompt_len=int(P),
                 max_new_tokens=int(T), num_directions=K, dirs_per_block=args.dirs_per_block,
                 radii=radii, layers=layers, seed=args.seed,
+                positions=positions,
                 fixed_tokens_from=args.fixed_tokens_from or None,
                 baseline_duplicate_identical=True, batch_dirs=args.batch_dirs,
                 engine="run_a1_big", arch=info["arch"],

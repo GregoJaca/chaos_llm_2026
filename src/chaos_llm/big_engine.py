@@ -185,7 +185,7 @@ class Capture:
 
 # --------------------------------------------------------------------- directions
 
-def build_direction_blocks(num_directions, prompt_len, dim, block=20, seed=69):
+def build_direction_blocks(num_directions, prompt_len, dim, block=20, seed=69, positions=None):
     """num_directions unit directions as independent simplex blocks.
 
     Each block of `block` directions lives on its own random set of `block`
@@ -194,11 +194,21 @@ def build_direction_blocks(num_directions, prompt_len, dim, block=20, seed=69):
     different blocks are orthogonal. Returns (simplex [K, S], subspace [S])
     such that delta = simplex[di] * r scattered into subspace reproduces the
     perturbation exactly (same convention as a1.npz).
+
+    positions: optional (lo, hi) tuple restricting the perturbed prompt
+    positions to lo <= p < hi (for the window-flush support scan).
     """
     nblocks = int(np.ceil(num_directions / block))
     S = nblocks * block
     rng = np.random.default_rng(seed)
-    coords = rng.choice(prompt_len * dim, size=S, replace=False).astype(np.int64)
+    if positions is None:
+        coords = rng.choice(prompt_len * dim, size=S, replace=False).astype(np.int64)
+    else:
+        lo, hi = positions
+        lo, hi = max(0, int(lo)), min(int(hi), prompt_len)
+        pos = np.arange(lo, hi)
+        coord_ids = rng.choice(len(pos) * dim, size=S, replace=False)
+        coords = (pos[coord_ids // dim] * dim + coord_ids % dim).astype(np.int64)
     eye = np.eye(block, dtype=np.float32)
     vert = eye - np.ones((block, block), dtype=np.float32) / block
     vert = vert / np.linalg.norm(vert, axis=1, keepdims=True)
