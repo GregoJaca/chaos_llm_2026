@@ -115,10 +115,17 @@ def load_big(model, dtype="float32", attn="sdpa", load_guard_gb=8.0):
     # materialisation followed by .cuda() would transiently need 2x the weights
     # (118 GB for a 14B fp32) and OOM the shared machine. device_map streams
     # shards tensor-by-tensor straight onto the GPU instead.
-    m = AutoModelForCausalLM.from_pretrained(
-        path, torch_dtype=td, local_files_only=True, attn_implementation=attn,
-        low_cpu_mem_usage=True, device_map={"": 0},
-    )
+    try:
+        m = AutoModelForCausalLM.from_pretrained(
+            path, dtype=td, local_files_only=True, attn_implementation=attn,
+            low_cpu_mem_usage=True, device_map={"": 0},
+        )
+    except TypeError:
+        # transformers <4.5x only knows torch_dtype
+        m = AutoModelForCausalLM.from_pretrained(
+            path, torch_dtype=td, local_files_only=True, attn_implementation=attn,
+            low_cpu_mem_usage=True, device_map={"": 0},
+        )
     m.eval()
     m._chaos_info = info
     return m, tok, path, info
