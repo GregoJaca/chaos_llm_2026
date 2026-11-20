@@ -2159,15 +2159,31 @@ the last ten.
 
 **What we should report instead.** The per-block singular values, which localise the gain:
 
-<!-- block spectrum: generated from the 128-token run -->
+![block spectrum](figures/fits/block_spectrum.png)
 
 **Panel (a).** $\sigma_1,\sigma_2,\sigma_4$ of **one block's** Jacobian at each depth (median over
-tokens). **Panel (b).** $\sigma_1/\sigma_8$ within one block: above 1 means the block itself is
+128 tokens). **Panel (b).** $\sigma_1/\sigma_8$ within one block: above 1 means the block itself is
 anisotropic.
 
-This is the measurement that explains the depth map: the gain is concentrated in specific blocks
-rather than spread evenly, and the question "which blocks" is answerable and model-specific. The
-cross-model version is the next section.
+**This is the measurement that explains the depth map, and it is the clearest non-trivial result of
+this section.** The first block stretches the perturbation by ×28; **every other block is within a few
+percent of the identity** (1.00–1.05, some 0.99). So:
+
+- the perturbation is amplified **once**, at the block where attention first mixes the prompt into the
+  generated position;
+- the remaining 27 blocks carry it almost unchanged, and the ×1.75 "late rise" of $\sigma_1(\ell)$ is
+  the slow compounding of those 1–5% gains, not a second amplification event;
+- the first block is also the most anisotropic *within itself* (×1.45 between its largest and smallest
+  tracked direction); the rest are ×1.05–1.10.
+
+**Measurement caveat, stated plainly.** Every number here is the stretch **within the 8-dimensional
+tangent subspace we propagate**, not the full 1536-dimensional top singular value. For a random 8-plane
+the restriction is a lower bound on the full $\sigma_1$, and the block-0 anisotropy (×1.45) means the
+full value is at least that much larger. All comparisons — across depth, across tokens, across models —
+are like-for-like, but the absolute "×28" should be read as "×28 in the tracked subspace".
+
+This is the result that should replace the old $\lambda_1(\ell)$ plot: **one entry block does the
+amplification; the depth is a near-identity transport.**
 
 ## 9.3b Where each model does its stretching (the right y-axis)
 
