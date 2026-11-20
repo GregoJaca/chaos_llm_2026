@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>master.md</title>
+<link rel="stylesheet" href=".preview/katex/katex.min.css">
+<style>
+:root { --fg:#1a1a1a; --muted:#666; --line:#d8d8d8; --accent:#0b5cad; }
+* { box-sizing: border-box; }
+body {
+  font-family: "Charter", "Georgia", "Cambria", serif;
+  font-size: 15px; line-height: 1.55; color: var(--fg);
+  margin: 0 auto; max-width: 210mm; padding: 18mm 16mm 24mm;
+  background: #fff;
+}
+h1, h2, h3, h4 { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; line-height:1.25; }
+h1 { font-size: 1.65em; margin: 1.4em 0 .5em; border-bottom: 2px solid var(--line); padding-bottom:.25em; }
+h2 { font-size: 1.3em; margin: 1.3em 0 .4em; color:#111; }
+h3 { font-size: 1.08em; margin: 1.1em 0 .3em; color:#222; }
+p, li { margin: .45em 0; }
+ul, ol { margin: .45em 0 .45em 1.3em; padding: 0; }
+code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: .86em; }
+code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; }
+pre { background:#f7f7f7; border:1px solid #e5e5e5; border-radius:4px; padding:8px 10px; overflow-x:auto; }
+img { max-width: 100%; height: auto; display:block; margin: 10px auto; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .93em; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: #f5f7f9; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.8em 0; }
+blockquote { margin: .6em 0; padding: .3em 1em; border-left: 3px solid var(--line); color:#333; }
+a { color: var(--accent); }
+.katex-display { margin: .7em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.03em; }
+header.banner {
+  font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; color: var(--muted);
+  border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 18px;
+}
+header.banner a { text-decoration: none; }
+h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid; }
+@page { size: A4; margin: 15mm 14mm 16mm; }
+</style>
+</head><body>
+<header class="banner">
+  master.md &nbsp;&middot;&nbsp; built 2026-11-20 15:44:52 &nbsp;&middot;&nbsp;
+  <a href="master.pdf">PDF</a> &nbsp;&middot;&nbsp;
+  <a href="master.md">Markdown</a> &nbsp;&middot;&nbsp;
+  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="notebook.html">notebook</a>
+</header>
+<h1 id="master-summary-perturbation-dynamics-of-greedy-llm-generation">Master summary — perturbation dynamics of greedy LLM generation</h1>
+<p>This file contains only the findings I would defend in a paper, with the numbers and the plots that
+back them. It is deliberately shorter than <code>notebook.md</code>: that file is the lab notebook (everything
+tried, including dead ends); this one is the claim set.</p>
+<p>Everything below is measured on greedy decoding (temperature 0, no sampling) with open-weight models
+of 1.5–4.3 B parameters, on one T4.</p>
+<hr />
+<h2 id="1-the-short-version">1. The short version</h2>
+<ol>
+<li><strong>A perturbation of the prompt does not grow.</strong> The size of the hidden-state difference decays on
+   average: the finite-time stretching rate is −0.011 nats/token for DeepSeek-1.5B and between
+   −0.0014 and +0.0003 for the four other models, over the last 150 tokens of a 300-token
+   continuation. In 31 configurations (layers, radii, windows, prompts) the sustained rate is
+   positive in <strong>none</strong>.</li>
+<li><strong>Yet the generated text changes.</strong> Small perturbations flip the greedy token at isolated steps,
+   where the gap between the top two logits is small. A flip is a <em>decision</em> event, not a growth
+   event: the perturbation reaches the boundary while shrinking.</li>
+<li><strong>The reason the network does not explode is rotation, not decay.</strong> Each block amplifies some
+   direction by 3–6× (and the first block by 9–119×), but the amplified direction changes from block
+   to block. If the amplifications composed, a perturbation would grow by 10¹⁷–10²⁴; measured, the
+   product grows by about one order of magnitude.</li>
+<li><strong>The response at a generated token comes mostly from cross-position mixing, not from the
+   same-position chain.</strong> Along the depth the same-position tangent grows ×1.5, while the actual
+   prompt response grows ×53. The other ~89% is attention carrying the perturbation in from the
+   prompt. A new measurement (the transport kernel, §7) resolves this into two components.</li>
+<li><strong>Models differ qualitatively, not just in magnitude.</strong> DeepSeek contracts (late rate −0.011),
+   Qwen3-4B/Qwen2.5/Qwen3.5 are neutral (±0.0003), Phi-4-mini has a large transient burst
+   (+0.035 early, ×23 single-token amplification). This is the strongest comparative result we have.</li>
+<li><strong>Several quantities we published earlier are definitions or artefacts</strong> (§10): the "exponential
+   decay of λ₁ with depth", the flatness of the FSLE, the "log-logistic law" of r*, and the
+   positive-growth phase (which exists only when the sliding window truncates the prompt). They are
+   listed there so they are not cited by mistake.</li>
+</ol>
+<hr />
+<h2 id="2-what-is-perturbed-exactly">2. What is perturbed, exactly</h2>
+<p>This is the part that is easy to get wrong, so here it is with the tensor shapes.</p>
+<h3 id="21-prompt-perturbation-a1">2.1 Prompt perturbation ("A1")</h3>
+<p>The prompt is a matrix of embeddings $E\in\mathbb{R}^{P\times d}$ ($P$ positions, $d$ hidden
+dimensions; $P=15$–$65$, $d=1536$–$3072$). The perturbation is a <strong>matrix of the same shape</strong>,
+$r\,u$ with $u\in\mathbb{R}^{P\times d}$, $\|u\|_2=1$ over the whole $P\times d$ tensor:</p>
+<p>$$E' = E + r\,u,\qquad \|u\|_2=1 .$$</p>
+<p>In practice $u$ is <strong>sparse</strong>: we choose $K$ random entries of the flattened $P\cdot d$ tensor
+($K=20$ in most runs, $K=1536$ in the "all directions" run) and fill them with an orthogonal set of
+signed patterns (a simplex). So a direction touches $K$ scattered (position, coordinate) pairs.
+<strong>The radius $r$ is the norm of the perturbation over the whole prompt, not per position.</strong> This is
+why $r=0.1$ is a small number even though the prompt has ten thousand coordinates: each nonzero entry
+is of order $r/\sqrt{K}$.</p>
+<p>The generated positions are <strong>not</strong> perturbed. They start identical, and the difference appears only
+because attention reads the perturbed prompt.</p>
+<h3 id="22-single-position-perturbation">2.2 Single-position perturbation</h3>
+<p>A vector of length $d$ added to <strong>one</strong> hidden state, at one position and one layer:</p>
+<p>$$h_{t,\ell}' = h_{t,\ell} + r\,v,\qquad v\in\mathbb{R}^{d},\ \|v\|_2=1 .$$</p>
+<p>So: one $1\times d$ vector, added once. The "kick" experiments in §8 use this.</p>
+<h3 id="23-norms">2.3 Norms</h3>
+<p><strong>Everything is the Euclidean (L2) norm</strong>: $\|\delta h\|_2=\sqrt{\sum_i \delta h_i^2}$, and the radius
+$r=\|r u\|_2$ is Euclidean over the whole tensor. There is no cosine <em>distance</em> anywhere. Cosine
+appears only as a derived <strong>angle</strong> in two places (the fraction of the perturbation along the state,
+§4.3, and the alignment tests). The margin is a difference of two logits, a scalar.</p>
+<h3 id="24-teacher-forcing-vs-free-run">2.4 Teacher forcing vs free run</h3>
+<ul>
+<li><strong>Teacher-forced</strong>: the model is run on the <em>unperturbed</em> token sequence, so the perturbation cannot
+  change which token comes next. This isolates the continuous dynamics and lets us measure
+  $\delta h$ at every step of the same text.</li>
+<li><strong>Free run</strong>: the model generates; if a token flips, the continuation diverges. This is real
+  generation and is used for flip statistics.</li>
+</ul>
+<hr />
+<h2 id="3-quantities-and-why-each-one-is-used">3. Quantities, and why each one is used</h2>
+<table>
+<thead>
+<tr>
+<th>symbol</th>
+<th>expression</th>
+<th>what it is</th>
+<th>why this and not something else</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\delta h_{t,\ell}$</td>
+<td>$h'_{t,\ell}-h_{t,\ell}$</td>
+<td>difference between perturbed and baseline state</td>
+<td>the object everything is about</td>
+</tr>
+<tr>
+<td>$\|\delta h_{t,\ell}\|$</td>
+<td>$\sqrt{\sum_i (\delta h_{t,\ell})_i^2}$</td>
+<td>absolute size</td>
+<td>Euclidean because the model's own operations (residual sum, RMSNorm) are Euclidean</td>
+</tr>
+<tr>
+<td>$\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$</td>
+<td>ratio of the two norms</td>
+<td><strong>relative</strong> size</td>
+<td>the residual stream grows ×18–30 with depth by itself; the ratio removes that and is the only fair way to compare models</td>
+</tr>
+<tr>
+<td>$g_\ell$</td>
+<td>$\|\delta h_{t,\ell}\|/\|\delta h_{t,\ell-1}\|$</td>
+<td>gain per block</td>
+<td>the local growth factor</td>
+</tr>
+<tr>
+<td>$\lambda_k(t)$</td>
+<td>$\frac{1}{2k}\log\frac{\|\delta h_{t+k}\|}{\|\delta h_{t-k}\|}$</td>
+<td>stretching rate, nats/token</td>
+<td>finite-time Lyapunov exponent; local in time</td>
+</tr>
+<tr>
+<td>$m_t$</td>
+<td>$z_{(1)}-z_{(2)}$</td>
+<td>gap between top two logits</td>
+<td>the decision margin; a flip needs $m_t$ to reach 0</td>
+</tr>
+<tr>
+<td>$u_t$</td>
+<td>$\delta m_t/m_t$</td>
+<td>margin change in units of the margin</td>
+<td>dimensionless; <strong>a flip is exactly $u_t<-1$</strong></td>
+</tr>
+<tr>
+<td>$r_c(t,u)$</td>
+<td>$m_t/(|\delta m_t|/r)$</td>
+<td>radius at which the margin hits 0 at step $t$</td>
+<td>turns the margin into a distance in perturbation space</td>
+</tr>
+<tr>
+<td>$r_*(u)$</td>
+<td>$\min_t r_c(t,u)$</td>
+<td>smallest radius that flips any token</td>
+<td>one number per direction</td>
+</tr>
+<tr>
+<td>$\sigma_i$</td>
+<td>singular values of a matrix</td>
+<td>stretch factors of its principal directions</td>
+<td>see below</td>
+</tr>
+<tr>
+<td>$K(p,t)$</td>
+<td>$\|\delta h_{t,L}\|/r$ for a perturbation at prompt position $p$ only</td>
+<td>transport kernel</td>
+<td>the Green's function of the response (§7)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why singular values at all.</strong> A linear map $M$ stretches a vector $v$ by $\|Mv\|/\|v\|$, which
+depends on the direction of $v$. The singular values are the maximum and minimum of that ratio over
+all directions, and the $\sigma_i$ are the stretches of the principal directions. They are the natural
+summary of "how much can this map amplify anything". Two warnings that we learned the hard way:
+(a) $\sigma_1$ is a <strong>maximum over directions</strong>, so it is an upper bound for a specific perturbation,
+not its growth; (b) $\sigma_1$ of a <em>product</em> of matrices is not the product of the $\sigma_1$'s unless
+the principal directions line up — and here they do not (§4).</p>
+<p><strong>Why the depth exponent $\lambda_1(\ell)=\log\sigma_1(\ell)/(\ell+1)$ was a bad choice.</strong> It divides
+the log stretch by the number of blocks. That is the standard definition of a Lyapunov exponent, and
+it is right for a long chain, but for a 28-block profile it manufactures a $1/\ell$ decay: $\sigma_1$
+is nearly constant, so $\log\sigma_1/(\ell+1)$ falls like $1/\ell$. That curve was reported as a
+finding in an earlier draft; it is not one (§10).</p>
+<hr />
+<h2 id="4-result-1-the-perturbation-does-not-grow">4. Result 1 — the perturbation does not grow</h2>
+<h3 id="41-the-response-decays-in-four-models">4.1 The response decays, in four models</h3>
+<p><img alt="flux models" src="figures/flux_models_all_layers.png" /></p>
+<p><strong>What is plotted.</strong> $\|\delta h_{t,\ell}\|/\|\delta h_{1,\ell}\|$ (median over directions) against the
+generated token $t$, log scale, one curve per layer, colour = layer depth. Prompt perturbation,
+$r=0.1$ ($r=0.3$ for Phi), 300 generated tokens.</p>
+<p><strong>What it shows.</strong>
+- <strong>DeepSeek</strong>: shallow layers (dark) fall by 4–6 orders of magnitude and reach <strong>exactly zero</strong> at
+  the step where the sliding window removes the last perturbed token; deep layers (yellow) stay
+  within a factor 2 of their initial value.
+- <strong>Qwen3-4B, Qwen3.5</strong>: flat, within a factor 2 for 300 tokens.
+- <strong>Phi-4-mini</strong>: a burst at $t\approx40$ (up to ×20 in the deep layers), then a plateau.</p>
+<p>There is no exponential growth anywhere in this figure.</p>
+<h3 id="42-the-rate-is-zero-or-negative">4.2 The rate is zero or negative</h3>
+<p><img alt="lambda" src="figures/model_lambda_compare.png" /></p>
+<p><strong>What is plotted.</strong> $\lambda_{10}(t)=\frac{1}{20}\log\frac{\|\delta h_{t+10,L}\|}{\|\delta h_{t-10,L}\|}$
+at the last layer, $r=0.3$, for four models.</p>
+<p><strong>What it shows.</strong> DeepSeek is negative after $t\approx100$; the others fluctuate around zero. A
+positive value early in the continuation is a transient, not a rate.</p>
+<p><strong>Numbers</strong> (last layer, $r=0.3$, mean over $t>150$, same prompt for all models):</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>layers</th>
+<th>early $\lambda$ ($t<60$)</th>
+<th>late $\lambda$ ($t>150$)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-1.5B</td>
+<td>28</td>
+<td>+0.0087</td>
+<td><strong>−0.0105</strong></td>
+</tr>
+<tr>
+<td>Qwen2.5-3B</td>
+<td>36</td>
+<td>−0.0007</td>
+<td><strong>+0.0002</strong></td>
+</tr>
+<tr>
+<td>Qwen3-4B</td>
+<td>36</td>
+<td>+0.0030</td>
+<td><strong>+0.0003</strong></td>
+</tr>
+<tr>
+<td>Phi-4-mini</td>
+<td>32</td>
+<td><strong>+0.0347</strong></td>
+<td><strong>+0.0003</strong></td>
+</tr>
+<tr>
+<td>Qwen3.5-2B</td>
+<td>24</td>
+<td>−0.0126</td>
+<td><strong>−0.0014</strong></td>
+</tr>
+</tbody>
+</table>
+<p>A positive <em>late</em> rate means sustained exponential growth of the perturbation. None of the five
+models has one; the largest is +0.0003 nats/token, i.e. a factor 1.09 over 300 tokens.</p>
+<p><strong>A test that the measurement can see growth:</strong> the same pipeline applied to a synthetic expanding map
+with a true rate of +0.035 recovers +0.035 (notebook, <code>lambda_fig10_synthetic.png</code>).</p>
+<h3 id="43-the-perturbation-is-almost-entirely-perpendicular-to-the-state">4.3 The perturbation is almost entirely perpendicular to the state</h3>
+<p>The network normalises the state's length before the logits (RMSNorm), so a perturbation <em>along</em> the
+state cannot change the output at all — it rescales all logits equally. The relevant part is the
+perpendicular one. Measured (DeepSeek, all depths and all radii):</p>
+<p>$$\cos^2(\delta h,h)=0.006\quad\Rightarrow\quad 0.6\%\text{ of the energy is radial, }8\%\text{ of the amplitude.}$$</p>
+<p>So the Euclidean norm $\|\delta h\|$ is a good proxy for the part that matters, but this is a measured
+fact, not a general one.</p>
+<h3 id="44-over-4000-tokens-the-rate-stays-negative">4.4 Over 4000 tokens the rate stays negative</h3>
+<p><img alt="long horizon" src="figures/long_horizon.png" /></p>
+<p><strong>What is plotted.</strong> The same finite-time rate, extended to 4000 generated tokens (DeepSeek, several
+prompts; window 4096 so nothing is truncated). <strong>What it shows.</strong> The rate settles around −0.007 and
+does not cross zero; the perturbation decays to the numerical floor. The 300-token horizon used
+elsewhere is not hiding a late growth phase.</p>
+<p><strong>Caveat that matters.</strong> At $W=100$ (the default run) the prompt is truncated from token
+$t=W-P\approx35$, and the truncation <em>itself</em> produces a rise in the response. In a controlled
+same-token comparison the rise disappears for $W\ge150$. So the positive phase seen in some early
+figures is a window effect, not a property of the model. This is one of the corrections in §10.</p>
+<hr />
+<h2 id="5-result-2-why-it-does-not-explode-rotation-not-decay">5. Result 2 — why it does not explode: rotation, not decay</h2>
+<p><img alt="block sigma" src="figures/fits/block_sigma_full.png" /></p>
+<p><strong>What is plotted.</strong> Left: $\sigma_{\max}$ of <strong>one block's</strong> Jacobian at each depth, computed in the
+full dimension (power iteration, 20 iterations). Middle: $\sigma_1$ of the <strong>product</strong> of all blocks
+from the depth map. Right: what the product would be if each block's amplification composed,
+$\prod_\ell \sigma_{\max}(J_\ell)$.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>$\sigma_{\max}$ block 0</th>
+<th>middle blocks</th>
+<th>last block</th>
+<th>product $\sigma_1$</th>
+<th>if composed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-1.5B</td>
+<td>119</td>
+<td>3.6</td>
+<td>7.9</td>
+<td>~20</td>
+<td>$10^{17.5}$</td>
+</tr>
+<tr>
+<td>Qwen3-4B</td>
+<td>59</td>
+<td>4.1</td>
+<td>15.4</td>
+<td>~5</td>
+<td>$10^{24.2}$</td>
+</tr>
+<tr>
+<td>Phi-4-mini</td>
+<td>9.3</td>
+<td>4.9</td>
+<td>6.4</td>
+<td>~9</td>
+<td>$10^{23.3}$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What it means.</strong> Every block has a direction it amplifies by 3–6×; the first block by 9–119×. But
+the amplified direction <strong>rotates</strong> from block to block: the average angle between consecutive top
+singular directions is 83.6°, and the product of 28 blocks grows by about 20, not by $10^{17}$. This
+is the reason a transformer does not blow up, and it is a measured property of the weights, not a
+definition.</p>
+<p><strong>The practical consequence.</strong> A random perturbation sees the <em>small common</em> gain, not the large
+one-off amplifications. This also explains why a random 8- or 64-dimensional probe of the tangent
+space reports a nearly flat spectrum: it almost never contains the one direction a block amplifies.</p>
+<h3 id="51-same-position-chain-vs-the-real-response">5.1 Same-position chain vs the real response</h3>
+<p><img alt="sigma vs real" src="figures/fits/sigma_vs_real.png" /></p>
+<p><strong>What is plotted.</strong> Panel (a): the same-position tangent chain (depth map, blue) and the real
+prompt-perturbation response (red, a1 run), both normalised at layer 1. Panel (b): a one-token kick at
+$s=16$, response at the <strong>same</strong> position vs at the next token. Panel (c): the same kick, 20 tokens
+later.</p>
+<p><strong>Numbers.</strong> From layer 1 to layer 27, the same-position chain grows <strong>×1.54</strong>; the real response
+grows <strong>×53</strong>. So ~89% of the depth growth is cross-position transport, which the same-position
+tangent cannot see.</p>
+<p>Panel (c) is the model difference in one panel: 20 tokens after the kick, DeepSeek has decayed to
+×0.67 while Phi has grown to ×9.2 and Qwen3-4B to ×5.9.</p>
+<hr />
+<h2 id="6-result-3-flips-are-decisions-not-growth">6. Result 3 — flips are decisions, not growth</h2>
+<h3 id="61-the-margin-coordinate">6.1 The margin coordinate</h3>
+<p><img alt="margin coordinate" src="figures/margin_coordinate.png" /></p>
+<p><strong>What is plotted.</strong> $u_t=\delta m_t/m_t$, the change of the top-two logit gap in units of that gap.
+At $r=0.3$, ten directions (left); the closest approach to $u=-1$ versus radius (middle); the
+distribution of $u$ at one step, divided by $r$ (right).</p>
+<p><strong>What it shows.</strong> A flip requires $u_t\le-1$ (the margin crosses zero). The rule predicts the first
+flip correctly in <strong>318 of 320</strong> direction-radius pairs at $r\le0.1$. The closest approach is linear
+in $r$; the smallest radius at which <em>some</em> direction flips is $r_*\approx0.5$ for that prompt.</p>
+<h3 id="62-the-prediction-stops-working-when-the-response-saturates">6.2 The prediction stops working when the response saturates</h3>
+<p><img alt="threshold large r" src="figures/fits/threshold_largr.png" /></p>
+<p><strong>What is plotted.</strong> Predicted first flip (signed margin rule) against the observed first flip in a
+free run, for radii 0.5–2.0.</p>
+<p><strong>What it shows.</strong> On one prompt the prediction is exact 20/20 even at $r=2$; on a fragile prompt it
+degrades to 1–6/20. The reason is visible in the response curve: at these radii the margin change no
+longer scales with $r$ (concave saturation), so the tangent prediction is extrapolating.</p>
+<h3 id="63-how-often-does-a-perturbation-flip-a-token">6.3 How often does a perturbation flip a token?</h3>
+<p><img alt="flip fraction" src="figures/fits/flip_fraction_512.png" /></p>
+<p><strong>What is plotted.</strong> Fraction of 512 directions that change at least one token within 300 generated
+tokens, as a function of radius (left); survival curves, i.e. fraction not yet flipped (middle);
+distribution of the first flip time (right). DeepSeek, one prompt.</p>
+<table>
+<thead>
+<tr>
+<th>radius</th>
+<th>flips / 512</th>
+<th>fraction [95% CI]</th>
+<th>flips after token 20</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.1</td>
+<td>18</td>
+<td>3.5% [2.2, 5.5]</td>
+<td><strong>0.4%</strong></td>
+</tr>
+<tr>
+<td>0.3</td>
+<td>127</td>
+<td>24.8% [21.3, 28.7]</td>
+<td>3.5%</td>
+</tr>
+<tr>
+<td>0.6</td>
+<td>199</td>
+<td>38.9% [34.7, 43.2]</td>
+<td>8.6%</td>
+</tr>
+<tr>
+<td>1.0</td>
+<td>311</td>
+<td>60.7% [56.4, 64.9]</td>
+<td>9.0%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The important correction.</strong> 85–90% of all flips happen at <strong>one step</strong> where the margin is exactly
+zero (the top two logits are equal to within the precision of the forward pass). Any perturbation
+flips such a token; it is a quantisation tie, not a sensitivity. Removing it, the flip fraction at
+$r=0.1$ is <strong>0.4%</strong>, not 3.5%. The last column is the number to quote.</p>
+<hr />
+<h2 id="7-result-4-where-the-response-comes-from-the-transport-kernel">7. Result 4 — where the response comes from: the transport kernel</h2>
+<p><strong>Definition.</strong> Perturb <strong>one prompt position</strong> $p$ and measure the response at every generated token
+$t$:</p>
+<p>$$K(p,t)=\frac{\|\delta h_{t,L}\|}{r}\quad\text{(perturbation at }p\text{ alone).}$$</p>
+<p>It is a $P\times T$ matrix (65 positions × 300 tokens). The usual experiment, which perturbs all
+positions at once, is a <strong>sum</strong> of these:
+$$R(t)=\sum_p K(p,t)\,u_p .$$
+So $K$ is the elementary response — the Green's function — and it says where each part of the response
+comes from.</p>
+<p><img alt="kernel" src="figures/transport/kernel_deepseek.png" /></p>
+<p><strong>What is plotted.</strong> Left: $\log_{10}K(p,t)$ at the last layer, one prompt, DeepSeek. The cyan line is
+the peak over $t$ for each $p$. Right: five rows of the same matrix.</p>
+<p><strong>Two components, both clearly visible.</strong>
+1. <strong>A persistent background</strong> from the first ~5 prompt positions: they influence <em>every</em> generated
+   token, decaying from ×27 to ×6 over 300 tokens. This is the component that survives at long
+   distance.
+2. <strong>A travelling front</strong>: for later positions the response peaks at a generated token that moves with
+   $p$ (peak $t=21$ at $p=0$, $t=97$ at $p=64$, slope ≈1). A prompt token matters most to the
+   continuation "opposite" it, and much less two hundred tokens later.</p>
+<p><strong>Why this is the most useful new object.</strong> It turns "the response" into two measurable profiles
+(background decay, front amplitude), it explains the 89% of depth growth that the same-position
+tangent misses, and it gives the model differences a place to live: Phi's far-field growth should
+appear as a slower-decaying background or a wider front. The 8-prompt × 5-model version is running.</p>
+<p><strong>A free check.</strong> Summing $K$ over all $p$ should reproduce the ordinary all-position response. If it
+does, the linear decomposition is validated. (Running.)</p>
+<hr />
+<h2 id="8-result-5-models-differ-qualitatively">8. Result 5 — models differ qualitatively</h2>
+<p><img alt="probe models" src="figures/fits/probe_models.png" /></p>
+<p><strong>What is plotted.</strong> A one-token kick of norm $r$ at one generated position, injection at one block;
+the quantity is the largest downstream response at the last layer within 50 tokens, divided by $r$,
+against the injection block. Ten directions.</p>
+<p><strong>What it shows.</strong> The curve is flat over the first 60–75% of the depth: injecting at block 0 or block
+20 gives the same downstream amplification. The response is a property of the <em>position</em>, not of the
+injection depth. The factor is model-specific: Phi ×23, Qwen3-4B ×6, DeepSeek ×0.7, Qwen3.5 ×0.5 in
+the original run (the consistent same-prompt table is below).</p>
+<p><img alt="position scan" src="figures/fits/probe_position_law.png" /></p>
+<p><strong>What is plotted.</strong> The same amplification against the <strong>kick position</strong> $s$ (22 positions, 5 models).</p>
+<p><strong>What it shows.</strong> Three models are flat — Qwen3-4B within ×1.4, Qwen2.5-3B within ×1.1, Qwen3.5
+within ×2.4 — and two have hot spots: DeepSeek spikes at $s=16$ (×6 above its own median) and Phi
+rises to $s\approx40$ (×10 spread). The hot spots coincide with the burst times seen in the
+prompt-perturbation runs.</p>
+<p><strong>The consistent table</strong> (same prompt, same protocol; last layer, $r=0.3$, 20 directions; kick at
+$s=16$):</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>layers</th>
+<th>late $\lambda$</th>
+<th>direction spread (5–95%)</th>
+<th>kick gain at $s=16$</th>
+<th>relative response at $t=50$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-1.5B</td>
+<td>28</td>
+<td>−0.0105</td>
+<td>×5.85</td>
+<td>0.76</td>
+<td>$4.1\times10^{-4}$</td>
+</tr>
+<tr>
+<td>Qwen2.5-3B</td>
+<td>36</td>
+<td>+0.0002</td>
+<td>×1.36</td>
+<td>4.63</td>
+<td>$1.9\times10^{-3}$</td>
+</tr>
+<tr>
+<td>Qwen3-4B</td>
+<td>36</td>
+<td>+0.0003</td>
+<td>×1.19</td>
+<td>5.84</td>
+<td>$8.8\times10^{-4}$</td>
+</tr>
+<tr>
+<td>Phi-4-mini</td>
+<td>32</td>
+<td>+0.0003</td>
+<td>×1.19</td>
+<td>7.25</td>
+<td>$1.1\times10^{-2}$</td>
+</tr>
+<tr>
+<td>Qwen3.5-2B</td>
+<td>24</td>
+<td>−0.0014</td>
+<td>×1.93</td>
+<td>0.48</td>
+<td>$2.1\times10^{-3}$</td>
+</tr>
+</tbody>
+</table>
+<p>Two things to take from this table. (i) Direction dependence is a <strong>DeepSeek</strong> property (×5.85); the
+newer models are close to isotropic (×1.2–1.9), so any statement about "the perturbation direction"
+must be checked per model. (ii) The ordering contract→amplify (DeepSeek 0.76, Qwen3.5 0.48 vs
+Qwen2.5 4.6, Qwen3 5.8, Phi 7.2) is the same ordering as the late rate (−0.0105, −0.0014 vs +0.0002,
++0.0003, +0.0003). The two independent measurements agree on the ordering of five models.</p>
+<p><img alt="depth sigma models" src="figures/fits/depth_sigma_models.png" /></p>
+<p><strong>What is plotted.</strong> The cumulative stretch $\sigma_1(\ell)$ of the depth product, per model
+(normalised in the middle panel).</p>
+<p><strong>What it shows.</strong> Two groups. The Qwen2-family models (DeepSeek, Qwen2.5) start at ×11–16 in the
+first block and then grow slowly; the newer models start at ×1.2–2.3 and grow gradually to ×2.6–7.5.
+This is an architectural difference, measured without any normalisation choice. It does <strong>not</strong> by
+itself explain the dynamics (Qwen2.5 front-loads but amplifies kicks like Qwen3), so I would not claim
+causation.</p>
+<hr />
+<h2 id="9-the-attention-window-one-exact-result">9. The attention window: one exact result</h2>
+<p><img alt="window law" src="figures/window4d_models.png" /></p>
+<p><strong>What is plotted.</strong> Left/middle: response at layer 1 for four window sizes, Qwen3-4B and Phi-4-mini.
+Right: measured time at which the response becomes exactly zero, against the prediction
+$t_1(W)+(\ell-1)(W-1)$.</p>
+<p><strong>What it shows.</strong> Imposing a window $W$ makes the response <strong>exactly zero</strong> from a predictable step:</p>
+<p>$$t^*_\ell=(W-10)+(\ell-1)(W-1)\quad\text{(this prompt),}$$</p>
+<p>and the first difference from an unwindowed run appears at $t=W-P$. Both are exact: 18 points, maximum
+residual 0.00, on two architectures. The mask we impose (a 4-D mask in the attention call) is
+<strong>bit-identical</strong> to DeepSeek's native sliding window at $W=100$ (all recorded arrays equal).</p>
+<p>This is a methods result: it says what a sliding window <em>does</em> (a hard reset, not a soft decay), and
+it is the reason the early growth phase at $W=100$ is a truncation effect.</p>
+<hr />
+<h2 id="10-what-is-not-a-result-do-not-cite-these">10. What is <strong>not</strong> a result (do not cite these)</h2>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th>why not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"$\lambda_1(\ell)$ decays exponentially with depth"</td>
+<td>$\lambda_1=\log\sigma_1/(\ell+1)$ and $\sigma_1$ is nearly flat; the decay is the division by $\ell+1$. Plot $\sigma_1(\ell)$ instead.</td>
+</tr>
+<tr>
+<td>"the depth tangent map is isotropic"</td>
+<td>true only inside an 8/64-dimensional random subspace; the full Jacobian has $\sigma_{\max}$ 3–119 and rotates.</td>
+</tr>
+<tr>
+<td>FSLE flat in $r$</td>
+<td>it is the statement that the response is linear in $r$; the value depends on the threshold and on where the clock starts.</td>
+</tr>
+<tr>
+<td>"$r_*$ follows a log-logistic law"</td>
+<td>tested on 4 models × 5 prompts × 512 directions: the median varies 15× and the exponent 2.3–17.6. A one-prompt description, not a law.</td>
+</tr>
+<tr>
+<td>window spectroscopy (per-token contribution map)</td>
+<td>it works, but it measures the mask, and the same information is in the transport kernel with a cleaner interpretation.</td>
+</tr>
+<tr>
+<td>"the state is a 10-dimensional manifold"</td>
+<td>the estimator is not stable under pooling and the last saved layer is the final RMSNorm; the only robust geometry number is the 99.4% tangential fraction.</td>
+</tr>
+<tr>
+<td>positive growth phase at $t\approx60$</td>
+<td>exists only when $W=100$ truncates the prompt; absent for $W\ge150$ in a controlled comparison.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-where-i-would-push-back">11. Where I would push back</h2>
+<p><strong>On "stable chaos".</strong> The name is defensible only if it is defined in one sentence: <em>the continuous
+state contracts, but the readout is discontinuous, so a shrinking perturbation can still change the
+token</em>. If it is read as "chaos", a referee will ask for a positive Lyapunov exponent, and there is
+none. I would either define it explicitly every time or call it "sensitivity without stretching".</p>
+<p><strong>On the 300-token horizon.</strong> It is enough for the <em>flip</em> statistics (all gaps below 0.05 occur in the
+first 300 tokens), but the late rate keeps drifting slowly to 4000 tokens (−0.0075 at 1000, −0.0069 at
+4000). For a claim about the asymptotic rate, the horizon must be stated.</p>
+<p><strong>On model breadth.</strong> Five models is not enough for "models differ". The table in §8 is consistent
+across two independent measurements, which is reassuring, but a claim about <em>why</em> needs at least two
+more architectures. I would spend the next compute there before adding more prompts to the five.</p>
+<p><strong>On the transport kernel.</strong> It is the most promising object in the project and the least explored:
+one prompt, one model so far. Everything about "where the response comes from" rests on it.</p>
+<hr />
+<h2 id="12-files-and-reproduction">12. Files and reproduction</h2>
+<table>
+<thead>
+<tr>
+<th>what</th>
+<th>where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>raw protocol, all runs</td>
+<td><code>notebook/notebook.md</code> (lab notebook)</td>
+</tr>
+<tr>
+<td>curve fitting tool</td>
+<td><code>src/chaos_llm/curvefit.py</code>, <code>results/fits/SUMMARY.md</code></td>
+</tr>
+<tr>
+<td>this table's numbers</td>
+<td><code>results/master_table.json</code></td>
+</tr>
+<tr>
+<td>transport kernel</td>
+<td><code>results/transport/</code>, <code>scripts/analysis_transport.py</code></td>
+</tr>
+<tr>
+<td>block Jacobians</td>
+<td><code>results/block_sigma/</code>, <code>src/chaos_llm/run_block_sigma.py</code></td>
+</tr>
+<tr>
+<td>flip statistics</td>
+<td><code>results/hazard/</code>, <code>scripts/analysis_flip_fraction.py</code></td>
+</tr>
+<tr>
+<td>figure gallery</td>
+<td><code>results/figures/models/</code> (844 figures, INDEX.md)</td>
+</tr>
+</tbody>
+</table>
+<script src=".preview/katex/katex.min.js"></script>
+<script src=".preview/katex/contrib/auto-render.min.js"></script>
+<script>
+renderMathInElement(document.body, {
+  delimiters: [{left:"$$", right:"$$", display:true}, {left:"$", right:"$", display:false}],
+  throwOnError: false,
+  strict: false
+});
+</script>
+</body></html>
