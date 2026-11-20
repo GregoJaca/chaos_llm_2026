@@ -42,26 +42,24 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  built 2026-11-20 18:29:00 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
+  built 2026-11-20 20:14:18 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
   <a href="notebook_big.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook_big.md">Markdown</a>
 </header>
 <h1 id="large-models-on-the-dgx-spark-definitions-data-and-every-figure-explained">Large models on the DGX Spark: definitions, data, and every figure explained</h1>
-<p>This document covers the experiments on the new 128 GB GB10 machine (models: DeepSeek-R1-Distill-Qwen-14B, Qwen3.5-9B, phi-4, Qwen3-14B). It is the companion of <code>notebook/notebook.md</code> (the 1.5B reference document); symbols and procedures are defined there and re-defined here only when they differ.</p>
+<p>Companion of <code>notebook/notebook.md</code> (the DeepSeek-R1-Distill-Qwen-1.5B reference document, written on the Tesla T4 work). This one covers the large models on the new 128 GB machine: DeepSeek-R1-Distill-Qwen-14B first, then Qwen3.5-9B, phi-4, and Qwen3-14B. Symbols and procedures are defined there and re-defined here only when they differ.</p>
 <hr />
-<h1 id="part-0-what-is-different-on-the-big-machine">Part 0. What is different on the big machine</h1>
-<h2 id="01-hardware-and-why-it-changes-the-method">0.1 Hardware and why it changes the method</h2>
-<p>The GB10 in the Spark has 128 GB of <strong>unified memory</strong> (GPU and CPU share one physical pool, ~273 GB/s) and weak fp32 compute (~4.4 TFLOPS measured on a 4096³ matmul). Two consequences drive the whole design:</p>
+<h1 id="part-0-what-changed-when-the-machine-changed-and-what-it-lets-us-do">Part 0. What changed when the machine changed, and what it lets us do</h1>
+<h2 id="01-one-paragraph-of-motivation">0.1 One paragraph of motivation</h2>
+<p>The 1.5B findings — flips happen at near-ties of the top-1/top-2 logit gap, the window sets exact response edges, no growing instability — were established with 20 directions and 12 radii on one small model. The open questions are all about generality: does the same picture hold at 10× the parameters, where the logit gaps, the residual-stream scales, and the numerical floor all sit in different places? The new machine's single pool of 128 GB memory makes FP32 possible for 14B models (impossible on the 15 GB T4), and its weak-but-wide compute rewards batching, which makes 1000-direction ensembles cheap. So the plan is: same protocol, same prompt, many more directions, bigger models, and explicit measurement of everything that has to be re-calibrated (the usable radius window, the noise floor, the margin spectrum).</p>
+<h2 id="02-hardware-facts-that-shaped-the-method-measured-not-asserted">0.2 Hardware facts that shaped the method (measured, not asserted)</h2>
 <ul>
-<li><strong>Weights fit in FP32.</strong> A 14B model needs 59 GB — impossible on the T4, comfortable here (colleagues' servers hold ~49 GB; ~10 GB is left for activations). All science runs are FP32, one precision per model, TF32 disabled (it truncates the mantissa and would fake margins).</li>
-<li><strong>Batches are nearly free.</strong> Every forward pass sweeps the weights once, so 16 perturbed rows cost barely more than 1. The engine therefore (a) batches teacher-forced forwards (one pass over prompt+continuation = one weight sweep), and (b) never materialises the full logits: the margin response uses
-  $$\delta m_t = \delta h_t^{\text{final}}\cdot\big(W_{U}[\text{top1}_t]-W_{U}[\text{top2}_t]\big),$$
-  i.e. one dot product per position instead of a $[B,T,V]$ tensor.</li>
+<li><strong>Unified memory, 128 GB.</strong> GPU and CPU share one physical pool (~273 GB/s). A 14B model in FP32 is 59 GB of weights; colleagues' servers hold ~49 GB; ~10 GB remains for everything else. Consequence: the loader streams shards straight onto the GPU (<code>device_map</code>); a CPU-side copy followed by <code>.cuda()</code> would transiently need 118 GB and kill the machine.</li>
+<li><strong>FP32 compute is ~4.4 TFLOPS</strong> (measured on a 4096³ matmul). Consequence: batch everything. One forward pass sweeps the weights once, so 16 perturbed rows cost about the same per-row as 1 row.</li>
+<li><strong>The fp32 fallback attention path materialises the full score matrix</strong> $[B,H,L,L]$. At $L=3065$, batch 8, that alone is 12 GB. Consequence: long teacher-forced horizons are capped (~1500 tokens at small batch), and long trajectories are generated with the KV cache instead.</li>
 </ul>
-<h2 id="02-protocol-unchanged-in-substance">0.2 Protocol (unchanged in substance)</h2>
-<p>Every rule from the 1.5B protocol carries over: in-batch $r=0$ with bit-identical duplicates, fixed-length greedy decoding, teacher forcing as the workhorse, free runs for flip validation, one precision per model. Directions are built as independent 20-direction simplex blocks on disjoint random coordinates of the prompt embedding (the 1.5B used one such block of 20; here 50 blocks give 1000 directions with the same per-block geometry).</p>
-<h2 id="03-the-numerical-floor-moved-up">0.3 The numerical floor moved up</h2>
-<p><strong>Figure 0.1 — fp32 response floor, DS-R1-14B, window 100, 400 tokens.</strong>
-Data: calibration run <code>results_big/ds14/calib</code> (FP32, greedy, prompt <code>interstellar_travel</code>, P=65). Each row of one direction at radius $r$; the quantity shown is the median over 8 directions and over $t\in[100,400)$ of the last-layer response $\|\delta h_t\|$ (norm of the hidden-state difference at the final norm), divided by $r$.</p>
+<h2 id="03-the-numerical-floor-moved-up-30-where-math8-is-meaningful">0.3 The numerical floor moved up 30×: where $r$ is meaningful</h2>
+<p><strong>Data.</strong> Calibration run on the 14B: prompt <code>interstellar_travel</code> ($P=65$ tokens), 400 greedy tokens, window setting 100 (inactive — see the correction note; the numbers below are unaffected by this because they only depend on forward-pass rounding), 8 perturbation directions at 9 radii, FP32, teacher-forced on the model's own tokens. File: <code>results_big/ds14/calib/calib.npz</code>.</p>
+<p>The quantity is $\mathrm{median}_{u,t\in[100,400)}\lVert\delta h_t^{\mathrm{final}}(u)\rVert / r$: the last-layer response per unit radius. The division by $r$ is the point: in a perfectly linear regime this ratio is a constant, the <em>gain</em>; where it inflates, the response is pinned at the forward-pass rounding floor and says nothing about the perturbation.</p>
 <table>
 <thead>
 <tr>
@@ -79,10 +77,22 @@ Data: calibration run <code>results_big/ds14/calib</code> (FP32, greedy, prompt 
 </thead>
 <tbody>
 <tr>
-<td>$\|\delta h\|/r$</td>
+<td>$\lVert\delta h\rVert$</td>
+<td>2.73e-3</td>
+<td>2.75e-3</td>
+<td>2.82e-3</td>
+<td>3.26e-3</td>
+<td>5.6e-3</td>
+<td>1.46e-2</td>
+<td>4.77e-2</td>
+<td>1.43e-1</td>
+<td>5.64e-1</td>
+</tr>
+<tr>
+<td>$\lVert\delta h\rVert/r$</td>
 <td>27.3</td>
-<td>9.2</td>
-<td>2.8</td>
+<td>9.16</td>
+<td>2.82</td>
 <td>1.09</td>
 <td>0.563</td>
 <td><strong>0.487</strong></td>
@@ -92,35 +102,1493 @@ Data: calibration run <code>results_big/ds14/calib</code> (FP32, greedy, prompt 
 </tr>
 </tbody>
 </table>
-<p>Reading: below $r\approx 0.01$ the response stops shrinking with $r$ — it is pinned at $\|\delta h\|\approx 2.7\times10^{-3}$, the accumulated FP32 forward error of a 48-layer network in fp32. On the 1.5B (28 layers) the same floor sat at $\sim10^{-4}$–$10^{-3}$ and the clean window was $r\in[10^{-3},0.1]$; on the 14B the clean window is <strong>$r\in[0.03,0.3]$</strong> (response strictly proportional to $r$, spread 2%). Relevance: the usable perturbation range is set by numerical precision, not by the model's own scales, and it moves with depth. All big-model ensembles therefore run at $r=0.1$.</p>
-<h2 id="04-margins-on-the-14b">0.4 Margins on the 14B</h2>
-<p><strong>Data: same calibration run.</strong> The margin $m_t$ is the top1−top2 logit gap of the unperturbed greedy continuation. Median $m=1.68$ (the 14B is much more confident than the 1.5B, whose margins were $\sim$0.1–0.5), but near-ties still exist:</p>
+<p>Reading it: below $r\approx0.01$ the response stops shrinking with $r$ — it is stuck at $\approx2.7\times10^{-3}$, which is the accumulated FP32 rounding of a 48-layer network evaluated twice (perturbed minus unperturbed). On the 1.5B (28 layers, on the T4) the same floor sat near $10^{-3}$ with a clean window of $r\in[10^{-3},10^{-1}]$; on the 14B the clean window is $r\in[0.03,0.3]$, shifted up by roughly 30×. Above $r\approx0.3$ the response begins to grow superlinearly (0.564 at $r=1$), the same saturation seen on the small model. Relevance: the usable perturbation range is a property of numerical precision and depth, not of the model's own scales; every big-model radius is chosen inside this window, and the campaign radius is <strong>$r=0.1$</strong>.</p>
+<p><strong>An opinion, since these notes are supposed to argue:</strong> the fp32 floor is not just an inconvenience — it is a <em>physical scale</em> of the system "network + arithmetic", and it grows with depth. That means "perturbation response" experiments on even deeper models in FP32 will eventually be floor-dominated unless radii grow too. At some depth, FP32 stops being a precision that can resolve small perturbations at all. We have not hit that wall at 48 layers; the 14B floor is 0.6% of the $r=0.1$ response, comfortably below signal.</p>
+<h2 id="04-the-margin-spectrum-of-the-14b">0.4 The margin spectrum of the 14B</h2>
+<p>Same calibration run. $m_t=\ell_t^{(1)}-\ell_t^{(2)}$, the top-1 minus top-2 logit gap of the unperturbed greedy continuation — the only scalar that says how close a decision was.</p>
+<p>Over the first 300 steps (the horizon used by the main ensembles): median $m=3.096$ nats, mean $4.996$, p10 $0.435$; 8/300 steps below 0.1 nats; 3 below 0.01. The five smallest:</p>
 <table>
 <thead>
 <tr>
-<th>step $t$</th>
-<th>21</th>
+<th>$t$</th>
+<th style="text-align: right;">21</th>
 <th>19</th>
 <th>189</th>
 <th>273</th>
-<th>339</th>
+<th>255</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>$m_t$</td>
-<td><strong>0.0001</strong></td>
-<td>0.0011</td>
-<td>0.0022</td>
-<td>0.0191</td>
-<td>0.0347</td>
+<td style="text-align: right;"><strong>9.73e-5</strong></td>
+<td>1.14e-3</td>
+<td>2.22e-3</td>
+<td>1.92e-2</td>
+<td>5.15e-2</td>
 </tr>
 </tbody>
 </table>
-<p>Only 6/400 steps have $m<0.05$ (1.5%: comparable to the 1.5B). Relevance: razor-thin decisions — the substrate of the whole flip/threshold story — survive at 10× model size, but they are rarer, and the first one sits very early ($t=21$).</p>
-<h2 id="05-first-signed-thresholds">0.5 First signed thresholds</h2>
-<p>From the same 8 calibration directions, the signed flux-tube radius $r_*(u)=\min_t r_c^-(t,u)$ (the smallest radius at which direction $u$ would flip some token): median $0.14$, min $0.012$ (controlled by the $t=21$ tie), max $0.69$. At the campaign radius $r=0.1$ a substantial minority of directions sit below their threshold — the interesting regime where free runs decide which predictions come true.</p>
-<p><em>(figures and further parts are appended as data arrives)</em></p>
+<p>(Earlier drafts of this Part quoted "median 1.68" — that number came from the smoke test, which used a <em>different prompt</em>; the correct value for this prompt is 3.096. The minimum and the smallest-five table reproduce exactly in the main A1 run.)</p>
+<p>Relevance: razor-thin decisions — the substrate of the whole flip story — exist at 10× model size, are rarer than in the 1.5B per token (8 vs 6 steps below 0.1 nats out of 300, but the 1.5B's thinnest was 2.0e-2, so the 14B's thinnest is 207× thinner), and the first one sits very early ($t=21$).</p>
+<h2 id="05-protocol-details-identical-to-the-15b-and-what-is-new">0.5 Protocol details identical to the 1.5B, and what is new</h2>
+<p>Identical: FP32, one precision per model, TF32 off (it truncates mantissas and would fake margins); in-batch duplicate $r=0$ rows verified bit-identical; fixed-length greedy decoding; teacher forcing as the workhorse (perturbed passes run on the <em>baseline</em> token sequence, isolating the continuous response); free runs to validate flips; the signed threshold rule (below).</p>
+<p>New: directions are built as <strong>independent simplex blocks</strong> — 50 blocks of 20 directions, each block on its own random set of 20 coordinates of the $65\times5120$ prompt embedding, blocks disjoint, so cross-block directions are exactly orthogonal and within-block pairs have inner product $-1/19$. This is the 1.5B's 20-direction geometry, replicated 50 times with independent subspaces. One radius per direction suffices because the response is linear in $r$ throughout the clean window — the 1.5B work established this and the 14B calibration confirms it (the table above), so the threshold ladder $r_c^-(t,u)=m_t r/\max(-\delta m_t(u),0)$ is computed from $\delta m/r$ and is radius-independent.</p>
+<h1 id="part-1-the-1000-direction-a1-run-five-views-of-the-same-data">Part 1. The 1000-direction A1 run: five views of the same data</h1>
+<p><em>(This part and the next two share one dataset; each figure is a different slice of it. The dataset: DeepSeek-R1-Distill-Qwen-14B, FP32, prompt <code>interstellar_travel</code> ($P=65$ tokens), 300 greedy tokens, 1000 unit perturbation directions at radius $r=0.1$ added to the prompt embeddings, every perturbed pass teacher-forced on the baseline tokens. Attention: full — see the correction note. File <code>results_big/ds14/a1_inter_w100/a1.npz</code>, engine <code>run_a1_big</code>, 1590 s on the GB10.)</em></p>
+<p><strong>Why five views.</strong> The dataset has three axes — generated step $t$, saved state index $l$, and direction $u$ — plus one scalar response per $(t,u)$: the margin change $\delta m_t(u)$, and per $(t,l,u)$: the state displacement $\lVert\delta h_t^l(u)\rVert$. A single plot can show at most two of these honestly; the five figures below slice them as (t), (t,l), (t,u), (u), (u | t), so every claim in the summary tables can be checked against a picture.</p>
+<h2 id="11-ds14_marginspng-the-decisions-the-baseline-actually-makes">1.1 <code>ds14_margins.png</code> — the decisions the baseline actually makes</h2>
+<p><img alt="margins" src="figures/ds14_margins.png" /></p>
+<p>Unperturbed run only, $r=0$. <strong>Left:</strong> $m_t=\ell^{(1)}_t-\ell^{(2)}_t$ (nats) against generated step $t$; the six tightest gaps are marked with vertical ticks and labelled with $(t,m_t)$. <strong>Right:</strong> ECDF of the same 300 values on a log $x$ axis. The three labelled spikes below 0.003 nats ($t=21,19,189$) are the ties that later control almost every flip; the median is 3.10 nats, so the model is usually confident and rarely at a knife's edge. This figure is the <em>explanans</em> for everything downstream: thresholds $r_c^-=m\,r/\max(-\delta m,0)$ inherit their smallest values from the smallest margins.</p>
+<h2 id="12-ds14_response_curvespng-what-the-perturbation-does-through-depth-and-time">1.2 <code>ds14_response_curves.png</code> — what the perturbation does through depth and time</h2>
+<p><img alt="response curves" src="figures/ds14_response_curves.png" /></p>
+<p>Median over the 1000 directions of $\lVert\delta h_t^l\rVert/r$ (state displacement per unit radius; the division by $r$ makes runs at different radii comparable and is exact in the linear regime $r\in[0.03,0.3]$ measured in Part 0). One panel per saved state $l\in\{0,6,12,18,24,30,36,42,47\}$; the shaded band is the 10–90 percentile range over directions. State 0 (embedding output at generated positions) is identically zero — the perturbation touches only the 65 prompt positions, so nothing can appear at generated positions before the first attention mix. The response grows with depth (0.077 at state 6 → 0.65 at state 47, median-over-t values; see the table in the deep part) and is <em>bursty</em> in $t$: individual baseline tokens (e.g. $t=258$) act as amplifiers at the deep states.</p>
+<h2 id="13-ds14_rc_ladderpng-the-threshold-map-all-1000-directions-at-once">1.3 <code>ds14_rc_ladder.png</code> — the threshold map, all 1000 directions at once</h2>
+<p><img alt="rc ladder" src="figures/ds14_rc_ladder.png" /></p>
+<p>For every direction $u$ and step $t$: the signed radius $r_c^-(t,u)=m_t\,r/\max(-\delta m_t(u),0)$ at which step $t$ would flip. Directions are sorted by $r_*(u)=\min_t r_c^-$, so the interesting directions are at the top. Color is log $r_c^-$; the dashed contour marks $r_c^-=r=0.1$ — below it in a column means "this step flips at the run radius". The side histogram shows the distribution of $r_*$. Reading: the dark region below the contour is <em>column-shaped</em>, not point-shaped: a few steps ($t=21$, $t=19$) are below the line for hundreds of directions while most steps are above it for all — the flip structure is organised by step, not by direction.</p>
+<h2 id="14-ds14_rstar_ecdfpng-the-flux-tube-radius-distribution">1.4 <code>ds14_rstar_ecdf.png</code> — the flux-tube radius distribution</h2>
+<p><img alt="rstar ecdf" src="figures/ds14_rstar_ecdf.png" /></p>
+<p>ECDF of $r_*(u)$ over the 1000 directions, log $x$; vertical line at the run radius $r=0.1$; annotation: 46.4% of directions have $r_*\le r$ (predicted to flip). $r_*$ quantiles: p10 $=0.0171$, p50 $=0.116$, p90 $=2.59$; 166 directions need $r>1$ to flip anything within 300 tokens. For comparison the 1.5B (20 directions, same protocol and prompt) had $r_*$ p50 $=1.56$ — the 14B's tube is an order of magnitude narrower, entirely because its thinnest margin is 207× thinner (Part 2).</p>
+<h2 id="15-ds14_direction_gainspng-directions-are-not-equal-but-not-special-either">1.5 <code>ds14_direction_gains.png</code> — directions are not equal, but not special either</h2>
+<p><img alt="direction gains" src="figures/ds14_direction_gains.png" /></p>
+<p>$G(u)=\mathrm{median}_t\lVert\delta h_t^{47}(u)\rVert/r$: histogram, log-ECDF, and three individual direction shapes normalised by their own medians (shapes agree to first order; they differ in amplitude by 13.7× from 0.224 to 3.06). The gain distribution is approximately log-normal in $G$. Whether a direction flips, however, is governed by its projection onto the logit-difference vector at the two razor-thin ties — the deep part shows this projection is only ~0.6% of $G$ and essentially independent across the ties.</p>
+<blockquote>
+<p><strong>Correction on the attention window (read this first).</strong> Every 14B result in
+Parts 1 and 2 was produced before we discovered that transformers 4.5x gates
+the sliding window on a <code>layer_types</code> config field that stock Qwen2.5 configs
+never set. The intended <code>window=100</code> was therefore silently ignored: <strong>these
+runs used full attention</strong> (equivalent to W=4096 within the 365-token horizon).
+The data itself is valid and internally consistent (baseline and perturbed
+passes share the same attention pattern; the free-run validation matched it),
+but wherever a sentence below says "window 100" for the 14B, read "full
+attention". A rerun with the window genuinely active is in progress; its
+numbers will replace the affected comparisons. This also fully explains why
+the 14B shows no response surge at t=35 in Part 2: with full attention there
+is nothing to flush.</p>
+</blockquote>
+<h1 id="part-a1-deep-one-thousand-directions-on-the-14b-model-where-the-flips-come-from">Part A1-deep. One thousand directions on the 14B model: where the flips come from</h1>
+<h2 id="summary">Summary</h2>
+<p>A single prompt of 65 tokens is sent through DeepSeek-R1-Distill-Qwen-14B in FP32, the model generates 300 tokens greedily, and then 1000 different unit perturbations of size $r=0.1$ are added to the prompt embeddings while the generated tokens are held fixed. For every direction and every generated step we record how much the top-1/top-2 logit gap would move; from that we compute the radius at which each step would flip. Almost half the directions (464 of 1000) would flip some token at $r=0.1$, but <strong>all 464 flips are decided at only two generated steps, $t=21$ and $t=19$</strong>, the two smallest logit gaps in the run. The directions that destroy the margin at $t=21$ are essentially unrelated to those that destroy it at $t=189$ (correlation $-0.14$), and the 24 stored response vectors are nearly orthogonal (mean cosine $+0.0025$). Consequently the direction's overall response strength $G$ is a weak predictor of its threshold radius (correlation $-0.18$): which razor-thin tie a direction happens to hit matters far more than how strong its hidden-state response is.</p>
+<hr />
+<h2 id="1-exact-setup-data-and-every-quantity-defined">1. Exact setup, data, and every quantity defined</h2>
+<h3 id="11-the-run">1.1 The run</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>model</td>
+<td><code>DeepSeek-R1-Distill-Qwen-14B</code> (48 blocks, hidden size 5120)</td>
+</tr>
+<tr>
+<td>precision</td>
+<td>FP32, one precision for the whole run; TF32 disabled</td>
+</tr>
+<tr>
+<td>decoding</td>
+<td>greedy, fixed length, no sampling, no EOS stop</td>
+</tr>
+<tr>
+<td>prompt</td>
+<td>"Provide a comprehensive technical review of current and proposed propulsion systems for interstellar travel. Compare chemical rockets, nuclear propulsion, laser sails, antimatter drives, and other theoretical concepts in terms of energy requirements, achievable speeds, technological feasibility, and projected timelines for development. Include discussion of major projects in the history of the field."</td>
+</tr>
+<tr>
+<td>prompt length</td>
+<td>$P=65$ tokens</td>
+</tr>
+<tr>
+<td>attention window</td>
+<td><strong>full attention</strong> (the window-100 setting was silently inactive; see the correction note above)</td>
+</tr>
+<tr>
+<td>continuation</td>
+<td>$T=300$ baseline greedy tokens, stored in <code>gen_ids</code></td>
+</tr>
+<tr>
+<td>directions</td>
+<td>$K=1000$, built as 50 independent simplex blocks of 20</td>
+</tr>
+<tr>
+<td>direction geometry</td>
+<td>each direction is a unit vector with 20 non-zero coordinates on the $65\times5120$ prompt-embedding matrix; blocks use disjoint coordinates, so cross-block directions are exactly orthogonal; within a block every pair has inner product $-1/19=-0.0526$</td>
+</tr>
+<tr>
+<td>radius</td>
+<td>one radius $r=0.1$ (<code>radii=[0.1]</code>)</td>
+</tr>
+<tr>
+<td>perturbation support</td>
+<td>all 65 prompt positions (not the generated positions)</td>
+</tr>
+<tr>
+<td>teacher forcing</td>
+<td>every perturbed forward pass is run on the <strong>baseline</strong> <code>prompt_ids</code> + <code>gen_ids</code>; the continuation tokens are identical to the unperturbed run, so the measured $\delta m$ is the continuous response at each baseline step, not the trajectory after a divergence</td>
+</tr>
+<tr>
+<td>baseline check</td>
+<td>two identical rows in one batch produced bit-identical tokens (<code>baseline_duplicate_identical: true</code>)</td>
+</tr>
+<tr>
+<td>saved states</td>
+<td>hidden-state indices <code>[0, 6, 12, 18, 24, 30, 36, 42, 47]</code>; state 0 is the embedding output, state $l\ge1$ is the output of block $l-1$ (transformers convention), so state 47 is the output of block 46, not the final block. The final-norm/lm_head input was stored only as 24 difference vectors (<code>dh_last</code>, directions 0–23)</td>
+</tr>
+<tr>
+<td>engine / environment</td>
+<td><code>run_a1_big</code>, torch 2.14.1+cu130, transformers 4.57.6, 1590.6 s wall time on <code>spark-d5eb</code></td>
+</tr>
+<tr>
+<td>file</td>
+<td><code>results_big/ds14/a1_inter_w100/a1.npz</code> (+ <code>meta.json</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>Because this run used full attention, the prompt stays visible at every generated step: the late-time response is direct prompt influence, attenuated only by the network's own mixing, not by any attention window cutting the prompt off.</p>
+<h3 id="12-quantities-used-in-this-section">1.2 Quantities used in this section</h3>
+<p>For a direction $u$ (row of <code>simplex</code>) and a generated step $t$:</p>
+<table>
+<thead>
+<tr>
+<th>symbol</th>
+<th>explicit expression</th>
+<th>what it is</th>
+<th>why this quantity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$m_t$</td>
+<td>$\ell_t^{(1)}-\ell_t^{(2)}$</td>
+<td>top-1 minus top-2 logit gap of the unperturbed greedy run (nats)</td>
+<td>the only scalar that says how close the baseline decision is; a flip requires this gap to be closed</td>
+</tr>
+<tr>
+<td>$\delta m_t(u)$</td>
+<td>$\ell_t'^{(1)}-\ell_t'^{(2)}-m_t$ at the perturbed forward pass (stored <code>dm</code>)</td>
+<td>change of that gap under perturbation (nats)</td>
+<td>the continuous response of the decision variable; it is measured without letting the trajectory diverge</td>
+</tr>
+<tr>
+<td>$g_t(u)$</td>
+<td>$\lvert\delta m_t(u)\rvert/r$</td>
+<td>local sensitivity of the gap to radius (nats per unit radius)</td>
+<td>converts a response into the radius needed to close the gap</td>
+</tr>
+<tr>
+<td>$r_c^-(t,u)$</td>
+<td>$m_t\,r/\max(-\delta m_t(u),0)$, $+\infty$ if $\delta m_t\ge0$</td>
+<td>the radius at which step $t$ would flip, for direction $u$</td>
+<td>a flip needs $\delta m_t\le -m_t$; solving for the radius gives this expression</td>
+</tr>
+<tr>
+<td>$r_*(u)$</td>
+<td>$\min_t r_c^-(t,u)$</td>
+<td>the direction's threshold radius (smallest radius that flips <strong>some</strong> token)</td>
+<td>one number per direction; direction $u$ flips at the run radius iff $r_*(u)\le r$</td>
+</tr>
+<tr>
+<td>$t_*(u)$</td>
+<td>$\arg\min_t r_c^-(t,u)$</td>
+<td>the controlling step</td>
+<td>identifies which near-tie is the weak point for this direction</td>
+</tr>
+<tr>
+<td>$G(u)$</td>
+<td>$\mathrm{median}_t \lVert\delta h_t^{47}(u)\rVert/r$</td>
+<td>typical last-state response gain (per unit radius)</td>
+<td>a robust, scalar measure of how strongly the direction moves the final stored state</td>
+</tr>
+<tr>
+<td>$R_t^{l}(u)$</td>
+<td>$\lVert\delta h_t^{l}(u)\rVert/\lVert h_t^{l}\rVert$</td>
+<td>relative response at state $l$</td>
+<td>says what fraction of the residual stream is being displaced; the absolute norm alone grows with depth simply because the stream grows</td>
+</tr>
+<tr>
+<td>$\cos_{ij}$</td>
+<td>$\langle \delta h_i,\delta h_j\rangle/(\lVert\delta h_i\rVert\lVert\delta h_j\rVert)$</td>
+<td>angle between two response vectors</td>
+<td>tests whether all directions produce one common response mode (1-D geometry) or many</td>
+</tr>
+<tr>
+<td>$r_*(u)G(u)$</td>
+<td>product of the two scalars above</td>
+<td>collapse test for the naive scaling $r_*\sim m/G$</td>
+<td>if $\delta m_t$ at the controlling step were proportional to $G$, this product would be constant</td>
+</tr>
+</tbody>
+</table>
+<p>The signed threshold is essential. The engine's stored <code>r_c</code> array was computed with $\lvert\delta m\rvert$ (<code>run_a1_big.py</code>, line 212), not with $\max(-\delta m,0)$. Recomputing the signed version is not cosmetic: the unsigned definition calls <strong>810</strong> directions flips at $r=0.1$, including directions whose margin is <em>widened</em> and which cannot flip. The signed definition gives <strong>464</strong>. Every number below uses the signed definition.</p>
+<h3 id="13-the-ten-smallest-gaps-and-who-is-controlled-by-them">1.3 The ten smallest gaps and who is controlled by them</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">step $t$</th>
+<th style="text-align: right;">$m_t$ (nats)</th>
+<th style="text-align: right;">directions with $t_*=t$ (all 1000)</th>
+<th style="text-align: right;">of which flip at $r=0.1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">$9.727\times10^{-5}$</td>
+<td style="text-align: right;">503</td>
+<td style="text-align: right;">421</td>
+</tr>
+<tr>
+<td style="text-align: right;">19</td>
+<td style="text-align: right;">$1.144\times10^{-3}$</td>
+<td style="text-align: right;">236</td>
+<td style="text-align: right;">43</td>
+</tr>
+<tr>
+<td style="text-align: right;">189</td>
+<td style="text-align: right;">$2.224\times10^{-3}$</td>
+<td style="text-align: right;">146</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">273</td>
+<td style="text-align: right;">$1.916\times10^{-2}$</td>
+<td style="text-align: right;">56</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">255</td>
+<td style="text-align: right;">$5.151\times10^{-2}$</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">171</td>
+<td style="text-align: right;">$5.393\times10^{-2}$</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">168</td>
+<td style="text-align: right;">$8.033\times10^{-2}$</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">205</td>
+<td style="text-align: right;">$8.067\times10^{-2}$</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">$1.009\times10^{-1}$</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">247</td>
+<td style="text-align: right;">$1.121\times10^{-1}$</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<p>For reference the margin distribution is very skewed: median $m=3.096$ nats, mean $4.996$, minimum $9.727\times10^{-5}$ at $t=21$; 8 of 300 steps have $m<0.1$, 3 have $m<0.01$. The threshold radii are equally skewed: over all 1000 directions, $r_*$ has p10 $=0.0171$, median $=0.116$, p90 $=2.59$, maximum $55.5$. Among the 464 directions that flip, $r_*$ has median $0.0314$ (p10 $0.0112$, p90 $0.0770$, max $0.0995$); 536 directions have $r_*>0.1$ and 166 have $r_*>1$.</p>
+<hr />
+<h2 id="2-figure-ds14_controlling_stepspng-two-steps-decide-every-flip">2. Figure <code>ds14_controlling_steps.png</code> — two steps decide every flip</h2>
+<p><img alt="controlling steps" src="figures/ds14_controlling_steps.png" /></p>
+<p><strong>Setup.</strong> Same run as §1.1 (DS-R1-14B, FP32, greedy, $P=65$, window 100, $T=300$, 1000 unit directions, $r=0.1$, teacher-forced on the baseline tokens). Panel (a) is a histogram of $t_*(u)$ over all 1000 directions; the light bars are all directions, the dark bars are the subset with $r_*(u)\le0.1$ (the directions that actually flip). Panel (b) restricts the $x$-axis to the ten smallest-margin steps and counts how many directions have that step as their controller.</p>
+<p><strong>Axes.</strong>
+- (a) $x$: generated step $t$ (0 = first generated token); $y$: number of directions with $t_*(u)=t$.
+- (b) $x$: the ten near-tie steps, with the value of $m_t$ printed on the second line; $y$: number of directions controlled by that step, log scale.</p>
+<p><strong>What is in the figure.</strong>
+- There are 22 distinct controlling steps among 1000 directions, but only <strong>2</strong> among the 464 flipping directions.
+- Top-3 overall: $t=21$ controls 503 directions (421 flips), $t=19$ controls 236 (43 flips), $t=189$ controls 146 (0 flips). These three account for $885/1000=88.5\%$ of all directions. The two flipping steps account for $464/464=100\%$ of the flips.
+- The remaining 115 directions are spread over 19 steps, the largest being $t=273$ with 56 directions, $t=247$ with 15, $t=98$ and $t=255$ with 8 each.
+- In panel (b), the bars are not monotone in $m_t$: $t=247$ ($m=0.112$) controls 15 directions while $t=255$ ($m=0.0515$) controls 8 and $t=171$ ($m=0.0539$) controls 5. A near-tie is a necessary condition for a small $r_*$, but the response at that step also has to point the right way.</p>
+<p><strong>What the figure shows.</strong> The weak points are shared: nearly every direction is limited by the same two tokens, $t=21$ and $t=19$. It is not the case that a thousand directions explore a thousand different decisions.</p>
+<p><strong>What it does not show.</strong> It does not show that the other eight near-ties are irrelevant for other radii or other prompts. At $r=0.1$ their $r_*$ is above the run radius, so they do not flip here; at a larger radius they would. The figure also says nothing about the free-run consequences of a flip (that requires the separate free-run validation).</p>
+<hr />
+<h2 id="3-figure-ds14_sign_structurepng-half-destroy-half-widen-and-the-two-ties-are-independent">3. Figure <code>ds14_sign_structure.png</code> — half destroy, half widen, and the two ties are independent</h2>
+<p><img alt="sign structure" src="figures/ds14_sign_structure.png" /></p>
+<p><strong>Setup.</strong> Same run. For each of the three most important controlling steps ($t=21,19,189$) the figure histograms the signed response $\delta m_t(u)/r$ over all 1000 directions. Red is $\delta m_t<0$ (the margin is being destroyed), blue is $\delta m_t\ge0$ (the margin is being widened; such a direction can never flip at that step). The dashed vertical line is $-m_t/r$: a direction to its left would flip <strong>at</strong> this step at radius $r=0.1$. The shaded region is that flip region. Panel (b) is a scatter of $\delta m_{21}$ against $\delta m_{189}$ in millinats (raw $\delta m$, no division by $r$).</p>
+<p><strong>Axes.</strong>
+- (a1)–(a3) $x$: $\delta m_t(u)/r$ (nats per unit radius); $y$: directions per bin.
+- (b) $x$: $\delta m_{21}(u)$ (millinats, $10^{-3}$ nats); $y$: $\delta m_{189}(u)$ (millinats).</p>
+<p><strong>Numbers for the three histograms.</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">step</th>
+<th style="text-align: right;">$m_t$</th>
+<th style="text-align: right;">$\delta m<0$</th>
+<th style="text-align: right;">$\delta m\ge0$</th>
+<th style="text-align: right;">pass $r_c^-\le0.1$ at this step</th>
+<th style="text-align: right;">median $\delta m/r$</th>
+<th style="text-align: right;">p25 / p75</th>
+<th style="text-align: right;">p5 / p95</th>
+<th style="text-align: right;">median $g_t$</th>
+<th style="text-align: right;">median $g_t/G$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">$9.727\times10^{-5}$</td>
+<td style="text-align: right;">52.9%</td>
+<td style="text-align: right;">47.1%</td>
+<td style="text-align: right;">42.7%</td>
+<td style="text-align: right;">$-3.13\times10^{-4}$</td>
+<td style="text-align: right;">$-2.67\times10^{-3}$ / $+2.56\times10^{-3}$</td>
+<td style="text-align: right;">$-8.21\times10^{-3}$ / $+8.99\times10^{-3}$</td>
+<td style="text-align: right;">$2.61\times10^{-3}$</td>
+<td style="text-align: right;">$4.14\times10^{-3}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">19</td>
+<td style="text-align: right;">$1.144\times10^{-3}$</td>
+<td style="text-align: right;">49.1%</td>
+<td style="text-align: right;">50.9%</td>
+<td style="text-align: right;">7.5%</td>
+<td style="text-align: right;">$+2.33\times10^{-4}$</td>
+<td style="text-align: right;">$-4.65\times10^{-3}$ / $+5.11\times10^{-3}$</td>
+<td style="text-align: right;">$-1.40\times10^{-2}$ / $+1.40\times10^{-2}$</td>
+<td style="text-align: right;">$4.87\times10^{-3}$</td>
+<td style="text-align: right;">$7.47\times10^{-3}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">189</td>
+<td style="text-align: right;">$2.224\times10^{-3}$</td>
+<td style="text-align: right;">50.7%</td>
+<td style="text-align: right;">49.3%</td>
+<td style="text-align: right;">0.1%</td>
+<td style="text-align: right;">$-8.63\times10^{-5}$</td>
+<td style="text-align: right;">$-2.64\times10^{-3}$ / $+2.30\times10^{-3}$</td>
+<td style="text-align: right;">$-8.09\times10^{-3}$ / $+6.77\times10^{-3}$</td>
+<td style="text-align: right;">$2.48\times10^{-3}$</td>
+<td style="text-align: right;">$5.23\times10^{-3}$</td>
+</tr>
+</tbody>
+</table>
+<p>The sign split is close to 50/50 at all three steps. The distributions are centered near zero and are symmetric to within a few percent. At $t=21$ the median absolute response is only $3.1\times10^{-4}$ nats per unit radius, i.e. <strong>about 16 times smaller than the median response at $t=19$</strong> ($4.9\times10^{-3}$) and <strong>about 1900 times smaller than the median gain $G$</strong> ($0.583$). The gap at $t=21$ is so thin that even this tiny projection is enough to close it.</p>
+<p>The “pass” column is not the same as the “$\delta m<0$” column. At $t=21$, 52.9% of directions decrease the gap but only 42.7% decrease it by at least $m_t$; the remaining 10.2% move it by less than $9.7\times10^{-5}$ nats and do not flip at $r=0.1$. At $t=19$ the corresponding fraction passing is 7.5%; at $t=189$ it is 0.1%.</p>
+<p><strong>Among the flipping subset.</strong> At $t=21$, 92.45% of the 464 flipping directions have $\delta m_{21}<0$ (the other 7.55% are controlled at $t=19$ and are margin-widening at 21). At $t=19$ only 50.4% are negative, and at $t=189$ 47.2%; those two steps are not the controllers for most flips.</p>
+<p><strong>Panel (b): are the two near-ties the same direction geometry?</strong> No.</p>
+<table>
+<thead>
+<tr>
+<th>pair</th>
+<th style="text-align: right;">Pearson (all)</th>
+<th style="text-align: right;">Spearman (all)</th>
+<th style="text-align: right;">Pearson (flips)</th>
+<th style="text-align: right;">Spearman (flips)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>21 vs 189</td>
+<td style="text-align: right;">$-0.142$ ($p=6.8\times10^{-6}$)</td>
+<td style="text-align: right;">$-0.123$</td>
+<td style="text-align: right;">$-0.053$</td>
+<td style="text-align: right;">$-0.092$</td>
+</tr>
+<tr>
+<td>21 vs 19</td>
+<td style="text-align: right;">$+0.072$</td>
+<td style="text-align: right;">$-0.032$</td>
+<td style="text-align: right;">$-0.176$</td>
+<td style="text-align: right;">$-0.207$</td>
+</tr>
+<tr>
+<td>19 vs 189</td>
+<td style="text-align: right;">$-0.047$</td>
+<td style="text-align: right;">$-0.030$</td>
+<td style="text-align: right;">$-0.027$</td>
+<td style="text-align: right;">$-0.021$</td>
+</tr>
+</tbody>
+</table>
+<p>Quadrant counts for 21 vs 189 (all directions): $(-,-)$ 245, $(-,+)$ 284, $(+,-)$ 262, $(+,+)$ 209 — essentially uniform. The 21-vs-189 correlation is statistically detectable because $n=1000$, but it explains only $0.02$ of the variance ($r^2=0.020$). The 21-vs-19 correlation even changes sign between all directions and the flipping subset. The two near-ties are not controlled by one shared direction geometry: a direction that suppresses the margin at 21 has essentially a 50/50 chance of widening it at 189.</p>
+<p><strong>Why this quantity.</strong> The signed response is the right object because a flip is one-sided: only $\delta m_t\le -m_t$ can flip, so the sign is part of the definition, not a nuisance. A histogram of $\lvert\delta m_t\rvert$ would hide the almost perfect 50/50 split and would make the direction set look uniformly dangerous when half of it is protective.</p>
+<p><strong>What the figure does not show.</strong> It does not show which directions flip in a free run after the first divergence, and it does not resolve the $t=21$ threshold visibly on the plotted scale: the dashed line sits at $-9.7\times10^{-4}$ per unit radius, only about one bin from zero. The printed “pass 42.7%” is the reliable number for that threshold.</p>
+<hr />
+<h2 id="4-figure-ds14_gain_structurepng-strong-broadly-spread-and-nearly-orthogonal-responses">4. Figure <code>ds14_gain_structure.png</code> — strong, broadly spread, and nearly orthogonal responses</h2>
+<p><img alt="gain structure" src="figures/ds14_gain_structure.png" /></p>
+<p><strong>Setup.</strong> Same run. Panel (a) uses all 1000 directions and the state-47 response norm at every step; panel (b) uses the 24 directions (0–23) for which the full final-norm difference vectors were stored.</p>
+<p><strong>Definitions for this figure.</strong>
+- $G(u)=\mathrm{median}_t\lVert\delta h_t^{47}(u)\rVert/r$. State 47 is the deepest stored hidden state (output of block 46, per the transformers index convention). The median is over the 300 generated steps.
+- $\mathrm{median\ step}$ $t_{\rm med}(u)=\arg\min_t\bigl\lvert\lVert\delta h_t(u)\rVert-\mathrm{median}_{t'}\lVert\delta h_{t'}(u)\rVert\bigr\rvert$: the step whose response norm is closest to the direction's median norm. The 24 vectors are compared at their own median step.
+- $\cos_{ij}$: cosine between the final-norm difference vectors of directions $i$ and $j$ at their median steps.</p>
+<p><strong>Gain numbers (all 1000 directions).</strong></p>
+<table>
+<thead>
+<tr>
+<th>statistic</th>
+<th style="text-align: right;">$G(u)$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>min</td>
+<td style="text-align: right;">0.224</td>
+</tr>
+<tr>
+<td>p5</td>
+<td style="text-align: right;">0.370</td>
+</tr>
+<tr>
+<td>p25</td>
+<td style="text-align: right;">0.475</td>
+</tr>
+<tr>
+<td>median</td>
+<td style="text-align: right;">0.583</td>
+</tr>
+<tr>
+<td>p75</td>
+<td style="text-align: right;">0.877</td>
+</tr>
+<tr>
+<td>p95</td>
+<td style="text-align: right;">1.648</td>
+</tr>
+<tr>
+<td>max</td>
+<td style="text-align: right;">3.064</td>
+</tr>
+<tr>
+<td>max/min</td>
+<td style="text-align: right;">13.7×</td>
+</tr>
+</tbody>
+</table>
+<p>The distribution is approximately log-normal (log10 $G$ has mean $-0.181$, std $0.195$). For comparison, the <strong>arithmetic mean over $t$</strong> has median 0.815 (1.40× the median of $G$), and the <strong>maximum over $t$</strong> has median 8.44 (14.5× the median of $G$). The mean and max are dominated by token-locked response bursts (§5), which is why $G$ uses the median. This is a deliberate choice: the mean would rank directions by whether they happen to sit on a burst token, not by their typical strength.</p>
+<p><strong>The 24 stored vectors.</strong> Their norms at the median step have median $1.528\times10^{-2}$ (p5 $1.05\times10^{-2}$, p95 $4.14\times10^{-2}$). Pairwise cosine over all $\binom{24}{2}=276$ pairs:</p>
+<table>
+<thead>
+<tr>
+<th>statistic</th>
+<th style="text-align: right;">pairwise $\cos_{ij}$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>mean</td>
+<td style="text-align: right;">$+0.0025$</td>
+</tr>
+<tr>
+<td>median</td>
+<td style="text-align: right;">$+0.0026$</td>
+</tr>
+<tr>
+<td>p5</td>
+<td style="text-align: right;">$-0.062$</td>
+</tr>
+<tr>
+<td>p25</td>
+<td style="text-align: right;">$-0.028$</td>
+</tr>
+<tr>
+<td>p75</td>
+<td style="text-align: right;">$+0.025$</td>
+</tr>
+<tr>
+<td>p95</td>
+<td style="text-align: right;">$+0.081$</td>
+</tr>
+<tr>
+<td>min</td>
+<td style="text-align: right;">$-0.147$</td>
+</tr>
+<tr>
+<td>max</td>
+<td style="text-align: right;">$+0.222$</td>
+</tr>
+<tr>
+<td>fraction with $\lvert\cos\rvert>0.1$</td>
+<td style="text-align: right;">4.3%</td>
+</tr>
+</tbody>
+</table>
+<p>The responses are nearly orthogonal. The first principal component explains 6.5% of the variance, versus 4.17% expected for 24 isotropic vectors; the first eight PCs are 6.5, 6.3, 5.5, 5.2, 5.1, 4.6, 4.6, 4.5%. The cosine of each response vector to the pooled mean response has median 0.196, essentially the isotropic value $1/\sqrt{24}=0.204$. There is at most a faint common component, not a shared 1-D mode.</p>
+<p>Within-block and cross-block responses are statistically indistinguishable: directions 0–19 share the same input subspace (their input-space cosines are $-1/19=-0.053$) but their response cosines average $+0.0025$; directions 20–23 are input-orthogonal to block 0 and their response cosines to it average $+0.0033$. The network does not preserve the input block geometry, and it does not collapse all responses onto one axis.</p>
+<p>The response vectors are also only partly coherent in time: the median cosine between $\delta h_t$ and $\delta h_{t+1}$ is 0.317 (mean 0.329), at lag 10 it is 0.090 (mean 0.109), and at lag 50 it is 0.061 (mean 0.080). Adjacent steps share about a third of their direction; by ten steps the memory of the direction is mostly gone.</p>
+<p><strong>The requested response-vs-baseline-state angle is not recoverable from this dump.</strong> The run stored baseline state <strong>norms</strong> (<code>norm_h0</code>), not baseline state <strong>vectors</strong>, and it stored the cosine between the perturbed state and the baseline state, $\cos(h',h_0)$. That state cosine is $0.99998\ldots1.0000004$ (median exactly 1.0; 49.9% of entries are exactly 1.0 in float32). With $\lVert\delta h\rVert/\lVert h_0\rVert\sim10^{-4}$, the true angle would change $\cos(h',h_0)$ by only $\sim10^{-8}$, below the float32 resolution of the stored array. Recovering $\theta(\delta h,h_0)$ from these numbers is therefore impossible, not merely noisy. What can be said from the stored state cosine is that the perturbed state differs from the baseline state in direction by at most $\sqrt{2(1-\cos)}\approx0.007$ rad, which is an upper bound on the total rotation, not the angle of the response. A future run that stores the 5120-dimensional baseline vectors would make the requested quantity measurable. The substitute used here is the pairwise response cosine, which answers the more important question for this project: whether the geometry is effectively 1-D.</p>
+<p><strong>What the figure shows.</strong> Strength varies by a factor 13.7, but direction is almost uniformly distributed on the sphere: the responses are not copies of one another and there is no single “perturbation mode.” A scalar gain is therefore an incomplete description of a direction, and one should expect directions with similar $G$ to have very different effects on any particular logit gap.</p>
+<p><strong>What it does not show.</strong> It does not measure the response angle relative to the baseline state (not stored), and 24 directions are a small sample: 20 come from block 0 and 4 from block 1, so the cross-block comparison rests on 80 pairs. The PCA spectrum is estimated from 24 vectors and cannot resolve a common component much below 4%.</p>
+<hr />
+<h2 id="5-figure-ds14_shape_by_layerpng-depth-grows-the-response-the-relative-response-shrinks">5. Figure <code>ds14_shape_by_layer.png</code> — depth grows the response; the relative response shrinks</h2>
+<p><img alt="shape by layer" src="figures/ds14_shape_by_layer.png" /></p>
+<p><strong>Setup.</strong> Same run, all 1000 directions. Each of the nine small panels is one stored hidden state $l\in\{0,6,12,18,24,30,36,42,47\}$. The solid line is the median over directions of $\lVert\delta h_t^l(u)\rVert/r$ at each step; the band is the interquartile range over directions. The right panel is a heatmap of the median <strong>relative</strong> response $\lVert\delta h_t^l(u)\rVert/\lVert h_t^l\rVert$ for the eight non-zero states, with a log color scale.</p>
+<p><strong>Axes.</strong>
+- Small panels: $x$ = generated step $t$ (0–299); $y$ = $\lVert\delta h_t^l\rVert/r$ (state-response norm per unit radius). Free $y$ range per panel.
+- Right panel: $x$ = step $t$; $y$ = state index $l$; color = $\lVert\delta h_t^l\rVert/\lVert h_t^l\rVert$ (dimensionless, log scale 5e-5 to 5e-4).</p>
+<p><strong>State 0 is exactly zero.</strong> At $l=0$ the state of a <em>generated</em> token is its token embedding; the perturbation is added only to the 65 <em>prompt</em> embeddings, so the generated-token embedding is untouched at every $t$. The array <code>dh_norm[:,0,:]</code> is exactly 0.0 for all $1000\times300$ entries (checked; max absolute value 0). This is a structural zero, not a small number. The response first appears at state 6, after attention has mixed prompt information into the generated positions.</p>
+<p><strong>Per-layer numbers (median over directions).</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">state $l$</th>
+<th style="text-align: right;">median $G$-like gain</th>
+<th style="text-align: right;">abs at $t=0$</th>
+<th style="text-align: right;">$t=10$</th>
+<th style="text-align: right;">$t=50$</th>
+<th style="text-align: right;">$t=100$</th>
+<th style="text-align: right;">$t=258$</th>
+<th style="text-align: right;">$t=299$</th>
+<th style="text-align: right;">peak of median curve</th>
+<th style="text-align: right;">end/peak</th>
+<th style="text-align: right;">median relative response</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0.0775</td>
+<td style="text-align: right;">0.286</td>
+<td style="text-align: right;">0.194</td>
+<td style="text-align: right;">0.137</td>
+<td style="text-align: right;">0.0815</td>
+<td style="text-align: right;">0.0473</td>
+<td style="text-align: right;">0.0521</td>
+<td style="text-align: right;">$t=1$, 0.301</td>
+<td style="text-align: right;">0.17</td>
+<td style="text-align: right;">$1.53\times10^{-4}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">0.101</td>
+<td style="text-align: right;">0.359</td>
+<td style="text-align: right;">0.266</td>
+<td style="text-align: right;">0.184</td>
+<td style="text-align: right;">0.133</td>
+<td style="text-align: right;">0.0596</td>
+<td style="text-align: right;">0.0663</td>
+<td style="text-align: right;">$t=1$, 0.380</td>
+<td style="text-align: right;">0.17</td>
+<td style="text-align: right;">$1.23\times10^{-4}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">18</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">0.321</td>
+<td style="text-align: right;">0.281</td>
+<td style="text-align: right;">0.176</td>
+<td style="text-align: right;">0.292</td>
+<td style="text-align: right;">0.125</td>
+<td style="text-align: right;">0.0564</td>
+<td style="text-align: right;">$t=1$, 0.321</td>
+<td style="text-align: right;">0.18</td>
+<td style="text-align: right;">$1.08\times10^{-4}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">24</td>
+<td style="text-align: right;">0.110</td>
+<td style="text-align: right;">0.297</td>
+<td style="text-align: right;">0.253</td>
+<td style="text-align: right;">0.183</td>
+<td style="text-align: right;">0.502</td>
+<td style="text-align: right;">0.230</td>
+<td style="text-align: right;">0.0584</td>
+<td style="text-align: right;">$t=100$, 0.502</td>
+<td style="text-align: right;">0.12</td>
+<td style="text-align: right;">$9.72\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">30</td>
+<td style="text-align: right;">0.151</td>
+<td style="text-align: right;">0.322</td>
+<td style="text-align: right;">0.253</td>
+<td style="text-align: right;">0.242</td>
+<td style="text-align: right;">0.824</td>
+<td style="text-align: right;">0.429</td>
+<td style="text-align: right;">0.100</td>
+<td style="text-align: right;">$t=100$, 0.824</td>
+<td style="text-align: right;">0.12</td>
+<td style="text-align: right;">$8.75\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">36</td>
+<td style="text-align: right;">0.250</td>
+<td style="text-align: right;">0.486</td>
+<td style="text-align: right;">0.334</td>
+<td style="text-align: right;">0.318</td>
+<td style="text-align: right;">0.864</td>
+<td style="text-align: right;">0.692</td>
+<td style="text-align: right;">0.227</td>
+<td style="text-align: right;">$t=97$, 0.946</td>
+<td style="text-align: right;">0.24</td>
+<td style="text-align: right;">$8.11\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">42</td>
+<td style="text-align: right;">0.428</td>
+<td style="text-align: right;">0.767</td>
+<td style="text-align: right;">0.561</td>
+<td style="text-align: right;">0.451</td>
+<td style="text-align: right;">1.242</td>
+<td style="text-align: right;">1.707</td>
+<td style="text-align: right;">0.425</td>
+<td style="text-align: right;">$t=258$, 1.707</td>
+<td style="text-align: right;">0.25</td>
+<td style="text-align: right;">$7.85\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">47</td>
+<td style="text-align: right;">0.653</td>
+<td style="text-align: right;">1.143</td>
+<td style="text-align: right;">0.865</td>
+<td style="text-align: right;">0.631</td>
+<td style="text-align: right;">1.682</td>
+<td style="text-align: right;">3.150</td>
+<td style="text-align: right;">0.688</td>
+<td style="text-align: right;">$t=258$, 3.150</td>
+<td style="text-align: right;">0.22</td>
+<td style="text-align: right;">$6.18\times10^{-5}$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Depth scaling.</strong> The typical gain rises from 0.0775 at state 6 to 0.653 at state 47, a factor <strong>8.43</strong>. The peak of the median curve rises from 0.301 to 3.150, a factor 10.5. The baseline state norm, however, rises much faster:</p>
+<table>
+<thead>
+<tr>
+<th>state</th>
+<th style="text-align: right;">0</th>
+<th style="text-align: right;">6</th>
+<th style="text-align: right;">12</th>
+<th style="text-align: right;">18</th>
+<th style="text-align: right;">24</th>
+<th style="text-align: right;">30</th>
+<th style="text-align: right;">36</th>
+<th style="text-align: right;">42</th>
+<th style="text-align: right;">47</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>median $\lVert h_t^l\rVert$</td>
+<td style="text-align: right;">1.52</td>
+<td style="text-align: right;">51.5</td>
+<td style="text-align: right;">84.0</td>
+<td style="text-align: right;">93.6</td>
+<td style="text-align: right;">114.3</td>
+<td style="text-align: right;">175.2</td>
+<td style="text-align: right;">311.5</td>
+<td style="text-align: right;">549.8</td>
+<td style="text-align: right;">1067.3</td>
+</tr>
+</tbody>
+</table>
+<p>That is why the relative response <em>falls</em>: median relative response goes from $1.53\times10^{-4}$ at state 6 to $6.18\times10^{-5}$ at state 47, a factor <strong>2.47</strong>. The residual stream grows roughly $1067/51.5=20.7\times$ over the same range while the response grows only $8.4\times$.</p>
+<p>Both normalizations are necessary. The absolute norm is what the logits see: the margin change is $\delta m_t=\delta h_t^{\rm final}\cdot(W_{[{\rm top1}]}-W_{[{\rm top2}]})$, so a larger absolute response can move a gap more. The relative norm says what fraction of the state is being displaced, i.e. whether the response is a small perturbation of a growing stream or a large one. At state 47 the displacement is $\sim6\times10^{-5}$ of the state norm: tiny in relative terms, yet $0.65$ units of absolute norm per unit radius, enough to matter because the logit-gap direction is even more sensitive.</p>
+<p><strong>There is no simple rise–peak–decay in time.</strong> The response is largest at $t=0$–$1$ for states 6–18 (the first generated position sees the most direct prompt influence), then decays. At deeper states the largest values move to token-locked bursts: $t=258$ at states 42 and 47, $t=97$–$100$ at states 24–36, and $t=58,39,26$ in individual directions. At state 47 the median curve is 1.143 at $t=0$, 0.631 at $t=50$, 1.682 at $t=100$, <strong>3.150 at $t=258$</strong>, and 0.688 at $t=299$. The peak step of the median curve therefore moves from $t=1$ (states 6–18) to $t=97$–$100$ (states 24–36) to $t=258$ (states 42–47). Per direction, the last-state maximum occurs at $t=258$ for 109/1000 directions, $t=58$ for 62, $t=39$ for 60, $t=97$ for 48, $t=26$ for 45; the rest are spread over many tokens.</p>
+<p>This is why the “rise time” is not a fixed transient: the response amplitude is a property of the <em>baseline token</em> as much as of the layer. The same perturbation produces a 14.5× larger response at its best token than at its median token. Any single “response time” or “decay time” would be an artifact of averaging over token content.</p>
+<p><strong>Why the heatmap.</strong> Plotting eight relative curves on one axis produced an unreadable band because the curves differ by an order of magnitude and all contain sharp token spikes. The heatmap keeps the same information (state × step) and makes the two trends visible at once: an early bright region that fades with depth, and a bright vertical stripe at $t=258$ that appears only at the deepest states.</p>
+<p><strong>What the figure does not show.</strong> It does not separate “the perturbation is decaying” from “the prompt has left the 100-token attention window”; both happen together after $t\approx35$. It also does not show the final-norm response for all 1000 directions (only state 47 is stored for all; the final norm only for 24). And the small panels are medians over directions: a single direction can have a peak anywhere, as the per-direction peak counts show.</p>
+<hr />
+<h2 id="6-figure-ds14_rstar_vs_gainpng-the-tie-not-the-gain-sets-the-threshold">6. Figure <code>ds14_rstar_vs_gain.png</code> — the tie, not the gain, sets the threshold</h2>
+<p><img alt="rstar vs gain" src="figures/ds14_rstar_vs_gain.png" /></p>
+<p><strong>Setup.</strong> Same run. Panel (a) is a log–log scatter of $r_*(u)$ against $G(u)$ for the 834 directions with finite $r_*<1$ (166 directions have $r_*>1$; the threshold is above 1 and is not shown). Points are colored by the controlling step. The dashed lines are $r_*=c_t/G$ fitted separately inside each controlling-step group, with $c_t=\mathrm{median}(r_*G)$ for that group. The dotted line is the naive analytic guess $r_*=m_{\min}/G$ with the global minimum margin $m_{\min}=9.727\times10^{-5}$. Panel (b) is a box plot of $r_*G$ grouped by controlling step, with the number of directions in each group.</p>
+<p><strong>Axes.</strong>
+- (a) $x$: $r_*(u)=\min_t r_c^-(t,u)$ (threshold radius, log); $y$: $G(u)$ (median state-response gain, log).
+- (b) $x$: controlling step $t_*$; $y$: $r_*(u)G(u)$ (nats, log). A horizontal dashed line marks the median over all 834 directions.</p>
+<p><strong>Deriving the scaling.</strong> A step flips when
+$$m_t+\delta m_t\le0 \quad\Longleftrightarrow\quad \lvert\delta m_t\rvert\ge m_t\ (\delta m_t<0).$$
+With $\delta m_t(u)=r\,g_t(u)$ and $g_t(u)=\lvert\delta m_t(u)\rvert/r$,
+$$r_c^-(t,u)=\frac{m_t}{g_t(u)}.$$
+If the local sensitivity at the controlling step were proportional to the global gain, $g_{t_*}(u)=\beta_{t_*}\,G(u)$, then
+$$r_*(u)=\frac{m_{t_*(u)}}{\beta_{t_*(u)}\,G(u)},$$
+so $r_*G=m_{t_*}/\beta_{t_*}$ should be constant <strong>within</strong> a group of directions sharing $t_*$, and should change across groups whenever $m_{t_*}$ or $\beta_{t_*}$ changes. This is the correct statement of the “$r_*\sim m/G$” intuition; the naive version with one global $m$ assumes that every direction is controlled by the same tie, which is false.</p>
+<p><strong>Global correlation.</strong> Over 834 directions,
+$$\mathrm{Pearson}\bigl(\log r_*,\log G\bigr)=-0.176\quad(p=3.1\times10^{-7}),\qquad
+\mathrm{Spearman}=-0.132.$$
+So the raw correlation is weak, negative, and statistically detectable only because $n$ is large; $G$ explains about 3% of the variance in $r_*$. By contrast, $\mathrm{Pearson}(\log r_*,\log m_{t_*})=+0.742$ ($r^2=0.551$). A multiple regression
+$$\log r_*=2.863+0.695\log m_{t_*}-0.687\log G$$
+has $R^2=0.610$: the margin of the controlling tie carries most of the explanatory power, and $G$ enters with a negative coefficient of the expected order ($-0.69$).</p>
+<p><strong>Within-group behavior.</strong> Inside a fixed controlling step, the slope of $\log r_*$ versus $\log G$ should be near $-1$ if $g_{t_*}\propto G$. It is:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">$t_*$</th>
+<th style="text-align: right;">$n$</th>
+<th style="text-align: right;">Pearson$(\log r_*,\log G)$</th>
+<th style="text-align: right;">slope</th>
+<th style="text-align: right;">median $r_*G$</th>
+<th style="text-align: right;">p25–p75 of $r_*G$</th>
+<th style="text-align: right;">median $g_{t_*}/G$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">503</td>
+<td style="text-align: right;">$-0.365$ ($p=2.9\times10^{-17}$)</td>
+<td style="text-align: right;">$-0.806$</td>
+<td style="text-align: right;">0.0222</td>
+<td style="text-align: right;">0.0128–0.0446</td>
+<td style="text-align: right;">$4.37\times10^{-3}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">19</td>
+<td style="text-align: right;">236</td>
+<td style="text-align: right;">$-0.302$ ($p=2.3\times10^{-6}$)</td>
+<td style="text-align: right;">$-0.684$</td>
+<td style="text-align: right;">0.1247</td>
+<td style="text-align: right;">0.0718–0.2217</td>
+<td style="text-align: right;">$9.18\times10^{-3}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">189</td>
+<td style="text-align: right;">146</td>
+<td style="text-align: right;">$-0.545$ ($p=1.2\times10^{-12}$)</td>
+<td style="text-align: right;">$-0.978$</td>
+<td style="text-align: right;">0.4250</td>
+<td style="text-align: right;">0.3000–0.6926</td>
+<td style="text-align: right;">$5.23\times10^{-3}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">273</td>
+<td style="text-align: right;">56</td>
+<td style="text-align: right;">$-0.591$ ($p=1.7\times10^{-6}$)</td>
+<td style="text-align: right;">$-1.213$</td>
+<td style="text-align: right;">1.7771</td>
+<td style="text-align: right;">1.039–3.222</td>
+<td style="text-align: right;">$1.08\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">247</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">$-0.474$ ($p=0.074$)</td>
+<td style="text-align: right;">$-2.447$</td>
+<td style="text-align: right;">3.5006</td>
+<td style="text-align: right;">2.442–4.416</td>
+<td style="text-align: right;">$3.20\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">255</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">$-0.515$ ($p=0.191$)</td>
+<td style="text-align: right;">$-0.470$</td>
+<td style="text-align: right;">4.0585</td>
+<td style="text-align: right;">3.349–5.380</td>
+<td style="text-align: right;">$1.29\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">98</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">$-0.317$ ($p=0.444$)</td>
+<td style="text-align: right;">$-0.627$</td>
+<td style="text-align: right;">9.2162</td>
+<td style="text-align: right;">5.638–10.508</td>
+<td style="text-align: right;">$5.22\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">$-0.759$ ($p=0.137$)</td>
+<td style="text-align: right;">$-1.370$</td>
+<td style="text-align: right;">7.9259</td>
+<td style="text-align: right;">6.215–8.974</td>
+<td style="text-align: right;">$1.27\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">171</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">$-0.823$ ($p=0.087$)</td>
+<td style="text-align: right;">$-1.670$</td>
+<td style="text-align: right;">12.5128</td>
+<td style="text-align: right;">8.392–14.142</td>
+<td style="text-align: right;">$4.31\times10^{-3}$</td>
+</tr>
+</tbody>
+</table>
+<p>Within the four large groups the slope is between $-0.68$ and $-1.21$, i.e. close to the predicted $-1$; the correlation is weak but real because the local sensitivity $g_{t_*}$ has its own spread at fixed $G$. Across groups the median $r_*G$ goes from 0.0222 to 12.51, a factor <strong>563</strong>. That is the collapse failure: the product is not a universal constant. The naive $m_{\min}/G$ line is below the data by a median factor of <strong>513</strong>.</p>
+<p><strong>The product distribution.</strong> Over 834 directions, $r_*G$ has p5 $=0.00826$, p25 $=0.0184$, median $=0.0499$, p75 $=0.152$, p95 $=0.480$; log-standard-deviation 1.295, coefficient of variation 1.43, p95/p5 $=58$. This is not a constant.</p>
+<p><strong>Where the extra factor comes from.</strong> The local sensitivity at the controlling step is much smaller than the median state gain:
+$$g_{t_*}(u)=\frac{\lvert\delta m_{t_*}(u)\rvert}{r},\qquad
+\frac{g_{t_*}}{G}: \text{median }5.996\times10^{-3}\ (p5\ 9.13\times10^{-4},\ p95\ 2.50\times10^{-2}).$$
+The median local sensitivity is $3.80\times10^{-3}$ nats per unit radius, about 0.6% of the median $G=0.583$. The correlation between $\log g_{t_*}$ and $\log G$ is only $+0.317$ (slope 0.77), so a strong direction is somewhat more effective at the tie, but only weakly. The reason is geometric: $G$ measures the norm of the full 5120-dimensional response, while $\delta m_t$ measures its projection onto one particular direction $W_{[\text{top1}_t]}-W_{[\text{top2}_t]}$. A direction can be strong overall and nearly orthogonal to that logit-difference vector, or weak overall and well aligned with it. The near-tie step $t=21$ is precisely such a case: its local gain is $2.61\times10^{-3}$, one of the smallest of the ten near-ties.</p>
+<p><strong>Why this quantity.</strong> The product $r_*G$ is the natural test of the hypothesis that “one scalar gain controls the threshold.” It is not a normalization chosen to make the data collapse; it is what the algebra predicts if $\delta m_t\propto G$. Showing that it fails by 563× across ties, while working approximately inside a tie, is the cleanest way to separate the two effects.</p>
+<p><strong>What the figure shows.</strong> (i) Within a tie, stronger directions do have smaller thresholds, with a slope near $-1$. (ii) Across ties, the margin $m_{t_*}$ dominates: a direction controlled by the $9.7\times10^{-5}$ tie has a threshold $\sim500$ times smaller than a direction of the same gain controlled by the $5\times10^{-2}$ tie. (iii) A single global $r_*\sim m/G$ law with one $m$ is wrong by two to three orders of magnitude.</p>
+<p><strong>What it does not show.</strong> It does not prove that the local sensitivity is unrelated to $G$ at every step; it shows the relation is weak at the controlling steps of this run. It does not include the 166 directions with $r_*>1$, where the linear extrapolation is farthest from the measured radius. And the within-group slopes are themselves uncertain for the small groups ($n\le15$), where the $p$-values are not significant.</p>
+<hr />
+<h2 id="7-what-is-established-and-what-is-a-limitation">7. What is established, and what is a limitation</h2>
+<p><strong>Direct findings.</strong>
+1. At $r=0.1$, 464/1000 directions flip some token; all 464 are controlled by $t=21$ (421) or $t=19$ (43). No other step produces a flip at this radius.
+2. The three smallest-gap steps account for 88.5% of all controlling assignments (503 + 236 + 146 of 1000).
+3. The signed response at a near-tie is almost symmetrically split: 52.9% destroy / 47.1% widen at $t=21$, 49.1%/50.9% at $t=19$, 50.7%/49.3% at $t=189$.
+4. The responses at $t=21$ and $t=189$ are nearly independent across directions (Pearson $-0.142$; quadrants 245/284/262/209). There is no single “danger direction” shared by the two ties.
+5. The state-response gain spans 13.7× (0.224–3.064, median 0.583), and the 24 stored response vectors are nearly orthogonal (mean cosine $+0.0025$; top PC 6.5%). The geometry is not 1-D.
+6. The response grows 8.43× from state 6 to state 47 in absolute terms, but the relative response falls 2.47× because the baseline state norm grows 20.7×. State 0 is exactly zero.
+7. Inside a controlling-step group, $\log r_*$ vs $\log G$ has slope $-0.68$ to $-1.21$; across groups the product $r_*G$ spans 563×. The controlling margin, not $G$, is the leading determinant of $r_*$ ($r^2=0.551$ alone; 0.610 with $G$).
+8. The local logit-gap sensitivity at the controlling step is only $\sim0.6\%$ of the median state gain (median $g_{t_*}/G=6.0\times10^{-3}$), i.e. the decision direction is close to orthogonal to the typical response.</p>
+<p><strong>Limitations of this dump, stated explicitly.</strong>
+- The engine's stored <code>r_c</code>/<code>pred_T</code> use $\lvert\delta m\rvert$ and overcount flips (810 vs 464). Use the signed recomputation.
+- The response angle relative to the baseline state cannot be computed: only baseline norms and the state cosine were stored. The state cosine is 1 at float32 precision.
+- $G$ uses state 47 (output of block 46), not the final-norm input that actually feeds the logits. For the 24 directions where both exist, $G_{47}/G_{\rm final}=4.06$ (p5 3.74, p95 4.20) with log-correlation 0.996; the proxy is a nearly constant rescaling, which is adequate for rankings and for the $r_*$ regression, but its absolute value should not be compared to final-norm numbers.
+- Only one radius ($r=0.1$) was run. The threshold formula extrapolates linearly; the calibration run showed proportionality in $r\in[0.03,0.3]$, so the extrapolation to $r\sim0.002$–$0.05$ is an assumption, not a measurement.
+- Teacher forcing holds the continuation fixed. The measured $\delta m_t$ is the response at each baseline step, before any divergence. It does not include the feedback of an already-flipped token.
+- The 24 response vectors cover directions 0–23 only (20 from block 0, 4 from block 1). The pairwise-cosine result is a 24-dimensional sample of a 1000-dimensional ensemble.
+- This run used full attention (see the correction note), so no part of the decay is attributable to the prompt leaving an attention window. The true-window run will separate that effect.</p>
+<p>All numbers in this section are in <code>notebook_big/figures/ds14_a1_deep_numbers.json</code>; the figures are produced by <code>scripts_spark/figs_a1_deep.py</code> from <code>results_big/ds14/a1_inter_w100/a1.npz</code> and <code>meta.json</code>.</p>
+<hr />
+<h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
+<h2 id="summary_1">Summary</h2>
+<blockquote>
+<p>Same correction note as Part 1: the 14B numbers here are full-attention runs (window inactive). Everything except the flush-ratio row is a same-prompt, same-radius comparison and stands as stated; the flush row is explained by the missing window, and the margin comparison is partially confounded by the window regime (on the 1.5B the window is known to change the margin spectrum). The true-window 14B rerun will close both gaps.</p>
+</blockquote>
+<p>Two models of the same family — 28 layers with $d=1536$, and 48 layers with $d=5120$, roughly eight times the parameters — generate 300 greedy tokens from the identical 65-token prompt with an attention window of 100, and then the same kind of prompt-embedding perturbation (a unit direction times $r=0.1$) is applied and the continuation is teacher-forced. The larger model's decisions are far more fragile: its median top-1/top-2 logit gap is 3.10 nats against 4.78 for the small one, and its thinnest gap (9.7e-5 nats at step 21) is 207 times thinner than the small model's thinnest (2.0e-2 nats at step 123). As a consequence the radius at which a random direction first flips a token — a "flux-tube radius", the largest perturbation size along that direction that leaves the greedy continuation intact — is 13 times smaller in the 14B (median 0.116 vs 1.55 in absolute embedding units, 17 times smaller after dividing by the token-embedding scale), and 464 of 1000 directions flip something at the run radius against 0 of 20. The response itself is <em>not</em> stronger in the bigger model: per unit radius its last-state displacement is 2.3 times smaller in absolute units and 4.6 times smaller relative to the state it lives in, so the fragility is a property of how close the decisions are, not of how hard the perturbation pushes. Two shape features do differ: only the 1.5B shows a window-flush surge at $t=35$ (its last state jumps 1.70x across it, the 14B's 1.11x), and the 1.5B's response decays to 19% of its early level by $t=200$ while the 14B's is still at 68% — though that second difference is partly textual, because the small model falls into a repeating four-token loop at $t=143$ and the large one does not.</p>
+<hr />
+<h2 id="1-the-two-runs-and-every-quantity">1. The two runs and every quantity</h2>
+<h3 id="11-setup">1.1 Setup</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>1.5B</th>
+<th>14B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>model</td>
+<td><code>DeepSeek-R1-Distill-Qwen-1.5B</code></td>
+<td><code>DeepSeek-R1-Distill-Qwen-14B</code></td>
+</tr>
+<tr>
+<td>blocks / hidden size</td>
+<td>28 / 1536</td>
+<td>48 / 5120</td>
+</tr>
+<tr>
+<td>precision</td>
+<td>FP32</td>
+<td>FP32</td>
+</tr>
+<tr>
+<td>prompt</td>
+<td><code>interstellar_travel</code>, "Provide a comprehensive technical review of current and proposed propulsion systems for interstellar travel. …"</td>
+<td>same, <strong>token-identical</strong> (<code>prompt_ids</code> compare equal)</td>
+</tr>
+<tr>
+<td>prompt length</td>
+<td>$P=65$</td>
+<td>$P=65$</td>
+</tr>
+<tr>
+<td>attention window</td>
+<td>$W=100$ (active, transformers 4.50 on x11)</td>
+<td><strong>full attention</strong> (window setting inactive; see the correction note)</td>
+</tr>
+<tr>
+<td>continuation</td>
+<td>$T=300$ greedy tokens, model's own</td>
+<td>$T=300$ greedy tokens, model's own</td>
+</tr>
+<tr>
+<td>decoding</td>
+<td>greedy, no sampling, no EOS stop</td>
+<td>same</td>
+</tr>
+<tr>
+<td>perturbation</td>
+<td>prompt embeddings only, unit direction $u$ times $r$, 20 non-zero coordinates</td>
+<td>same construction</td>
+</tr>
+<tr>
+<td>directions</td>
+<td>$K=20$, <strong>one</strong> simplex block of 20</td>
+<td>$K=1000$, 50 independent blocks of 20</td>
+</tr>
+<tr>
+<td>radius used</td>
+<td>$r=0.1$ (index 4 of <code>radii=[1e-3 … 2]</code>)</td>
+<td>$r=0.1$ (the only radius)</td>
+</tr>
+<tr>
+<td>teacher forcing</td>
+<td>all $K$ perturbed passes reuse baseline <code>prompt_ids</code>+<code>gen_ids</code></td>
+<td>same</td>
+</tr>
+<tr>
+<td>saved states</td>
+<td>layer indices <code>[0,1,2,3,7,14,21,27]</code> (state 0 = embedding, 27 = input to final norm)</td>
+<td><code>[0,6,12,18,24,30,36,42,47]</code> (47 = input to final norm)</td>
+</tr>
+<tr>
+<td><code>dh_last</code> vectors</td>
+<td>3 directions (0–2), 1536-d, last state</td>
+<td>24 directions (0–23), 5120-d, last state</td>
+</tr>
+<tr>
+<td>file</td>
+<td><code>chaos_llm_2026/results/local_data/w100_layers/a1.npz</code> (read-only)</td>
+<td><code>results_big/ds14/a1_inter_w100/a1.npz</code> + <code>meta.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>Two things the table makes explicit. (i) The <strong>prompt is identical but the continuation is not</strong>: the two models generate different tokens, so "$t=21$" is the 22nd token of a different text in each run. Comparable across models are the protocol, the <em>distribution</em> of margins over steps, and the flush step $t^*=W-P=35$ (which follows from the mask, not from the tokens). (ii) The <strong>direction sets are not equally rich</strong>: the 1.5B samples one 20-dimensional input subspace, the 14B samples fifty, and cross-block directions in the 14B are exactly orthogonal while within-block pairs have inner product $-1/19$. An ECDF over 20 directions is a 20-step staircase; an ECDF over 1000 is smooth. That is a sampling-precision difference, not a bias, but it is why the 1.5B curves look coarse.</p>
+<p><em>Note on a quoted number.</em> The analysis brief quotes a 14B median margin of 1.68 nats. The <code>margins</code> array in this npz has median <strong>3.096</strong> (mean 4.996, p10 0.435, min $9.727\times10^{-5}$). I could not reproduce 1.68 from the array (median of the 100 smallest margins is 0.686, of the 20 smallest 0.116, of steps $t<100$ is 4.558). Everything below uses 3.096, which is also the value used in <code>section_a1_deep.md</code>. The quoted minima (9.7e-5 at $t=21$, and 2.0e-2 at $t=123$ for the 1.5B) reproduce exactly.</p>
+<h3 id="12-quantities">1.2 Quantities</h3>
+<p>Notation: $u$ indexes a direction, $t\in\{0,\dots,299\}$ a generated step, $\ell^{(1)}_t,\ell^{(2)}_t$ the top two logits of the unperturbed run, $h_t^{\ell}$ the unperturbed state at saved index $\ell$, $\delta h_t^{\ell}$ the same state under the perturbation.</p>
+<table>
+<thead>
+<tr>
+<th>symbol</th>
+<th>explicit expression</th>
+<th>meaning</th>
+<th>why this quantity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$m_t$</td>
+<td>$\ell^{(1)}_t-\ell^{(2)}_t$</td>
+<td>top-1 minus top-2 logit gap of the unperturbed continuation (nats)</td>
+<td>the only scalar that says how close the baseline decision is; a flip needs this gap closed</td>
+</tr>
+<tr>
+<td>$\delta m_t(u)$</td>
+<td>$m_t(u)-m_t$ at the perturbed pass, stored <code>dm</code> (nats)</td>
+<td>change of that gap under direction $u$ at radius $r$</td>
+<td>response of the decision variable, measured without letting the text diverge</td>
+</tr>
+<tr>
+<td>$r^-_c(t,u)$</td>
+<td>$m_t\,r/\max(-\delta m_t(u),0)$, $+\infty$ if $\delta m_t\ge0$</td>
+<td>radius at which step $t$ would flip under direction $u$</td>
+<td>solving $-\delta m_t\ge m_t$ for the radius, and only $\delta m_t<0$ can close the gap</td>
+</tr>
+<tr>
+<td>$r_*(u)$</td>
+<td>$\min_t r^-_c(t,u)$</td>
+<td><strong>flux-tube radius</strong>: largest $r$ along $u$ that keeps every baseline argmax</td>
+<td>one number per direction, comparable across models and radii (linearity)</td>
+</tr>
+<tr>
+<td>$t_*(u)$</td>
+<td>$\arg\min_t r^-_c(t,u)$</td>
+<td>controlling step</td>
+<td>says which near-tie is the weak point</td>
+</tr>
+<tr>
+<td>$s_{\rm emb}$</td>
+<td>$\mathrm{median}_t\lVert h_t^{0}\rVert$</td>
+<td>median token-embedding norm (layer-0 state norm)</td>
+<td>converts $r$ into "fraction of a token vector"; the perturbation is added at this layer</td>
+</tr>
+<tr>
+<td>$s_{\rm last}$</td>
+<td>$\mathrm{median}_t\lVert h_t^{\ell_{\max}}\rVert$</td>
+<td>median norm of the last saved state</td>
+<td>what the network actually carries at the read-out depth</td>
+</tr>
+<tr>
+<td>$G(u)$</td>
+<td>$\mathrm{median}_t\lVert\delta h_t^{\ell_{\max}}\rVert/r$</td>
+<td>absolute per-direction gain (state units per unit radius)</td>
+<td>robust scalar response strength</td>
+</tr>
+<tr>
+<td>$G_{\rm rel}(u)$</td>
+<td>$\mathrm{median}_t\lVert\delta h_t^{\ell_{\max}}\rVert/\lVert h_t^{\ell_{\max}}\rVert$</td>
+<td>relative gain (dimensionless)</td>
+<td>the only gain comparable across models with different stream norms</td>
+</tr>
+<tr>
+<td>$\rho(u)$</td>
+<td>$G(u)/s_{\rm emb}$</td>
+<td>gain per unit radius in embedding-scale units</td>
+<td>second normalization, used as a robustness check</td>
+</tr>
+</tbody>
+</table>
+<p>Both $r_*$ and $G$ are computed from the <strong>signed</strong> threshold ($\delta m<0$ only). The npz's own <code>r_c</code> array was built with $|\delta m|$; using it would call 810/1000 directions flips in the 14B instead of 464. The recomputation is three lines and is the difference between a physically meaningful threshold and a symmetric one.</p>
+<h3 id="13-what-is-and-is-not-comparable-across-scales">1.3 What is, and is not, comparable across scales</h3>
+<p>This is the part where a cross-scale comparison can quietly go wrong, so it is worth being explicit.</p>
+<ol>
+<li><strong>$r$ itself is comparable by construction.</strong> A direction is a unit vector in $\mathbb{R}^{65\times d}$ with 20 non-zero entries; the perturbation is $r\,u$ scattered into the prompt embedding matrix. Its Euclidean norm is exactly $r$ in both runs, and it is spread over the same number of coordinates (20). So $r=0.1$ is the same <em>absolute</em> perturbation in both models. Raw $r_*$ is therefore already a meaningful comparison: "the perturbation size at which the greedy continuation first breaks".</li>
+<li><strong>But the embedding scale is not identical.</strong> $s_{\rm emb}=1.206$ (1.5B) vs $1.516$ (14B): the 14B's token vectors are 26% longer, so $r=0.1$ is $0.083\,s_{\rm emb}$ in the 1.5B and $0.066\,s_{\rm emb}$ in the 14B. If anything this makes the raw comparison <em>conservative</em> — the 14B is being hit relatively more softly. Dividing by $s_{\rm emb}$ widens the gap from 13x to 17x. Both numbers are reported; neither changes the conclusion, which is the useful outcome of a normalization check.</li>
+<li><strong>Last-layer norms are not comparable and must not be used to normalize $r$.</strong> $s_{\rm last}$ is 545 (1.5B) and 1067 (14B) — the 14B residual stream carries 2.0x more norm — and this ratio is a property of depth, width, and RMSNorm gains, not of the perturbation's entry point. Normalizing the <em>threshold radius</em> by $s_{\rm last}$ would therefore mix a decision property with a representation-scale property. Normalizing the <em>response</em> by it is exactly right, because the question there is "how much of what the layer carries is displaced".</li>
+<li><strong>Raw response norms are not comparable for the same reason.</strong> $\lVert\delta h\rVert$ at the read-out depth is measured in a space whose typical vector is twice as long in the 14B. So $G$ is reported next to $G_{\rm rel}$ and never alone.</li>
+</ol>
+<p>Concretely: $r_*/s_{\rm emb}$ is the normalized <em>input</em> comparison (used in Fig. <code>xscale_rstar</code>), $G_{\rm rel}$ is the normalized <em>output</em> comparison (used in Fig. <code>xscale_gain</code>). Cross-normalizing (radius by the last-layer norm, gain by the embedding norm) is possible but answers a different and less interpretable question; $\rho=G/s_{\rm emb}$ is included in the JSON as the check that this choice does not drive the result (median $\rho$: 1.105 vs 0.385, i.e. 2.9x, between the 2.3x of raw $G$ and the 4.6x of $G_{\rm rel}$).</p>
+<h3 id="14-the-comparison-in-one-table">1.4 The comparison, in one table</h3>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th style="text-align: right;">1.5B</th>
+<th style="text-align: right;">14B</th>
+<th style="text-align: right;">ratio (1.5B / 14B)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$K$ (directions), radius</td>
+<td style="text-align: right;">20, $r=0.1$</td>
+<td style="text-align: right;">1000, $r=0.1$</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>median margin $m_t$</td>
+<td style="text-align: right;">4.778 nats</td>
+<td style="text-align: right;">3.096 nats</td>
+<td style="text-align: right;">1.54</td>
+</tr>
+<tr>
+<td>smallest margin</td>
+<td style="text-align: right;">$2.016\times10^{-2}$ (t=123)</td>
+<td style="text-align: right;">$9.727\times10^{-5}$ (t=21)</td>
+<td style="text-align: right;">207</td>
+</tr>
+<tr>
+<td>steps with $m_t<0.1$ nats</td>
+<td style="text-align: right;">6 / 300</td>
+<td style="text-align: right;">8 / 300</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>controlling step (mode)</td>
+<td style="text-align: right;">$t=116$ (6/20)</td>
+<td style="text-align: right;">$t=21$ (503/1000)</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>directions controlled by the top-3 steps</td>
+<td style="text-align: right;">75%</td>
+<td style="text-align: right;">88.5%</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>$r_*$ median, raw (embedding units)</td>
+<td style="text-align: right;">1.555</td>
+<td style="text-align: right;">0.1164</td>
+<td style="text-align: right;">13.4</td>
+</tr>
+<tr>
+<td>$r_*$ p10 / p90, raw</td>
+<td style="text-align: right;">0.486 / 4.12</td>
+<td style="text-align: right;">0.0171 / 2.59</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>$s_{\rm emb}$</td>
+<td style="text-align: right;">1.206</td>
+<td style="text-align: right;">1.516</td>
+<td style="text-align: right;">0.80</td>
+</tr>
+<tr>
+<td>$r_*$ median, $/s_{\rm emb}$</td>
+<td style="text-align: right;">1.289</td>
+<td style="text-align: right;">0.0768</td>
+<td style="text-align: right;">16.8</td>
+</tr>
+<tr>
+<td>$r_*$ p10 / p90, $/s_{\rm emb}$</td>
+<td style="text-align: right;">0.403 / 3.42</td>
+<td style="text-align: right;">0.0113 / 1.71</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>flips at $r=0.1$</td>
+<td style="text-align: right;">0 / 20</td>
+<td style="text-align: right;">464 / 1000</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>flips at $r=0.3$ / $r=1$</td>
+<td style="text-align: right;">1 / 4</td>
+<td style="text-align: right;">671 / 834</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>smallest $r_*$</td>
+<td style="text-align: right;">0.133 (dir 10)</td>
+<td style="text-align: right;">$2.44\times10^{-3}$ (dir 63)</td>
+<td style="text-align: right;">54</td>
+</tr>
+<tr>
+<td>$G$ median, raw</td>
+<td style="text-align: right;">1.333</td>
+<td style="text-align: right;">0.583</td>
+<td style="text-align: right;">2.29</td>
+</tr>
+<tr>
+<td>$G$ p10 / p90</td>
+<td style="text-align: right;">0.922 / 2.24</td>
+<td style="text-align: right;">0.409 / 1.30</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>$s_{\rm last}$</td>
+<td style="text-align: right;">545.3</td>
+<td style="text-align: right;">1067.3</td>
+<td style="text-align: right;">0.51</td>
+</tr>
+<tr>
+<td>$G_{\rm rel}$ median</td>
+<td style="text-align: right;">$2.535\times10^{-4}$</td>
+<td style="text-align: right;">$5.567\times10^{-5}$</td>
+<td style="text-align: right;">4.55</td>
+</tr>
+<tr>
+<td>$\rho=G/s_{\rm emb}$ median</td>
+<td style="text-align: right;">1.105</td>
+<td style="text-align: right;">0.385</td>
+<td style="text-align: right;">2.87</td>
+</tr>
+<tr>
+<td>fp32 response floor, last state</td>
+<td style="text-align: right;">$1.0\times10^{-3}$</td>
+<td style="text-align: right;">$2.7\times10^{-3}$</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>gain floor $\text{floor}/r$</td>
+<td style="text-align: right;">0.010</td>
+<td style="text-align: right;">0.027</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>measured $G$ / gain floor</td>
+<td style="text-align: right;">133x</td>
+<td style="text-align: right;">22x</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>clean $r$ window</td>
+<td style="text-align: right;">$[10^{-3},0.1]$</td>
+<td style="text-align: right;">$[0.03,0.3]$</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>flush ratio, last state ($\overline{\lVert\delta h\rVert/r}_{36..40}$ over $\overline{\lVert\delta h\rVert/r}_{30..34}$)</td>
+<td style="text-align: right;">1.70</td>
+<td style="text-align: right;">1.11</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>late/early response ratio ($t\in[200,300)$ vs $[0,50)$)</td>
+<td style="text-align: right;">0.186</td>
+<td style="text-align: right;">0.680</td>
+<td style="text-align: right;">0.27</td>
+</tr>
+</tbody>
+</table>
+<p>The fp32 floor is a property of the response measurement, not of this analysis: at the last state a perturbed forward pass at the cleanest radius reproduces the baseline only to $\approx10^{-3}$ (1.5B) / $2.7\times10^{-3}$ (14B) in $\lVert\delta h\rVert$. Both medians sit 22–133x above that floor, so no number here is round-off. The floor does, however, set the smallest meaningful gain, which is why the noisy end of the $r$ ladders is excluded from the table above (clean windows quoted).</p>
+<hr />
+<h2 id="2-figure-xscale_marginspng-the-14bs-weakest-tie-is-207x-thinner">2. Figure <code>xscale_margins.png</code> — the 14B's weakest tie is 207x thinner</h2>
+<p><img alt="margins" src="figures/xscale_margins.png" /></p>
+<p><strong>Setup.</strong> Both runs of §1.1, unperturbed pass only ($r=0$): 300 top-1/top-2 gaps per model. Top row: $m_t$ against $t$. Bottom row: the ECDF of the same 300 values, log $x$. In each bottom panel the own model is bold and the other model is the pale dashed reference. The dotted vertical line at $t=35$ is the flush step $W-P$; the dotted line at 0.1 nats in the ECDF is only a reading aid.</p>
+<p><strong>Axes.</strong>
+- (a),(b) $x$: generated step $t$, 0 = first generated token; $y$: $m_t$ in nats, log scale, range $0.6\min$ to $8\max$ (free per panel). Open circles: the five smallest gaps of that model; the number next to each circle is its rank in the table below/inside the panel.
+- (c),(d) $x$: $m_t$ in nats, log scale; $y$: ECDF $P(m_t\le x)$, linear 0–1. The inset box repeats the five smallest gaps with their steps.</p>
+<p><strong>The five smallest gaps</strong> (the shared table for this figure):</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">rank</th>
+<th style="text-align: right;">1.5B $t$</th>
+<th style="text-align: right;">1.5B $m_t$ (nats)</th>
+<th style="text-align: right;">14B $t$</th>
+<th style="text-align: right;">14B $m_t$ (nats)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">123</td>
+<td style="text-align: right;">$2.016\times10^{-2}$</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">$9.727\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">143</td>
+<td style="text-align: right;">$2.041\times10^{-2}$</td>
+<td style="text-align: right;">19</td>
+<td style="text-align: right;">$1.144\times10^{-3}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">116</td>
+<td style="text-align: right;">$6.902\times10^{-2}$</td>
+<td style="text-align: right;">189</td>
+<td style="text-align: right;">$2.224\times10^{-3}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">$6.959\times10^{-2}$</td>
+<td style="text-align: right;">273</td>
+<td style="text-align: right;">$1.916\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">147</td>
+<td style="text-align: right;">$7.310\times10^{-2}$</td>
+<td style="text-align: right;">255</td>
+<td style="text-align: right;">$5.151\times10^{-2}$</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- The two margin <em>distributions</em> are similar in centre but not identical in shape: median 4.778 vs 3.096 nats, p10 0.628 vs 0.435, and both have 6–8 steps below 0.1 nats. Their ECDFs differ by at most 0.217 (at $m\approx3.1$ nats) and cross at 6.7 nats: below that value the 14B accumulates slightly more mass, above it the 1.5B does.
+- The difference is entirely in the extreme lower tail. The 1.5B's five smallest values are all in $[0.020,0.073]$ — a floor of two hundredths of a nat. The 14B reaches $9.7\times10^{-5}$, then $1.1\times10^{-3}$, then $2.2\times10^{-3}$: three steps more than an order of magnitude below the 1.5B's floor.
+- The 1.5B's weakest steps cluster at $t=116$–$147$ (four of the five within 31 steps); the fifth is at $t=2$. The 14B's are spread over $t=19$–$273$.
+- The zig-zag visible in both curves after $t\approx150$ is the text, not noise. The 1.5B's continuation is the exact 4-token cycle <code>1576, 807, 525, 11050</code> from $t=143$ to the end, so its $m_t$ repeats with period 4 to within 2.2 nats; the 14B's 300 tokens contain no such cycle (the best lag, $p=9$, matches 2.4% of positions — chance). So the 1.5B's late-time statistics describe a degenerate loop, the 14B's describe fresh text.</p>
+<p><strong>What it shows.</strong> The 14B does not merely have slightly tighter decisions; it has a genuinely thinner <em>floor</em>, by two orders of magnitude. That single fact, not the shape of the distribution, is what drives every other cross-scale number in this section.</p>
+<p><strong>What it does not show.</strong> It does not show that thin margins are <em>more common</em> in the 14B — they are not, at the 0.1-nat level (8 vs 6 of 300 steps). It says nothing about whether these margins are <em>stable</em>: a token that is nearly tied at one prefix can be comfortable at another, and only one prefix is measured per model. And it cannot separate "bigger model" from "different text": the 1.5B's continuation is not the 14B's, and margins are a property of the prefix as much as of the model.</p>
+<hr />
+<h2 id="3-figure-xscale_rstarpng-threshold-radii-raw-and-normalized">3. Figure <code>xscale_rstar.png</code> — threshold radii, raw and normalized</h2>
+<p><img alt="rstar" src="figures/xscale_rstar.png" /></p>
+<p><strong>Setup.</strong> Both runs, $r=0.1$. $r_*(u)=\min_t m_t r/\max(-\delta m_t(u),0)$ per direction, ECDF over directions. Panel (a) plots $r_*$ in absolute embedding units; panel (b) plots $r_*/s_{\rm emb}$ with $s_{\rm emb}=\mathrm{median}_t\lVert h_t^{0}\rVert$ = 1.206 (1.5B) and 1.516 (14B). Bottom row: the same data as a log-log survival function $\hat P(r_*>x)=1-\hat F(x)$ with the $+1/K$ correction, which is the only way to see the tail with 20 samples. Short vertical ticks on the ECDFs mark p10/p50/p90; dashed vertical lines mark the run radius $r=0.1$ in the same units as the panel (0.083 and 0.066 in (b)).</p>
+<p><strong>Axes.</strong>
+- (a),(b) $x$: $r_*$ (embedding units) or $r_*/s_{\rm emb}$ (dimensionless), log scale; $y$: ECDF, 0–1.
+- (c),(d) $x$: same as above, log; $y$: $P(r_*>x)$, log.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">1.5B</th>
+<th style="text-align: right;">14B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$r_*$ p10 / p50 / p90 (raw)</td>
+<td style="text-align: right;">0.486 / 1.555 / 4.124</td>
+<td style="text-align: right;">$1.713\times10^{-2}$ / 0.1164 / 2.592</td>
+</tr>
+<tr>
+<td>$r_*$ min / max (raw)</td>
+<td style="text-align: right;">0.133 / 5.53</td>
+<td style="text-align: right;">$2.44\times10^{-3}$ / 55.5</td>
+</tr>
+<tr>
+<td>$r_*/s_{\rm emb}$ p10 / p50 / p90</td>
+<td style="text-align: right;">0.403 / 1.289 / 3.418</td>
+<td style="text-align: right;">$1.13\times10^{-2}$ / $7.68\times10^{-2}$ / 1.710</td>
+</tr>
+<tr>
+<td>flips at $r=0.1$</td>
+<td style="text-align: right;">0 / 20</td>
+<td style="text-align: right;">464 / 1000</td>
+</tr>
+<tr>
+<td>flips at $r=0.3$ / $r=1$ / $r=2$</td>
+<td style="text-align: right;">1 / 4 / 14</td>
+<td style="text-align: right;">671 / 834 / 886</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- The raw medians differ by 13.4x; after dividing by $s_{\rm emb}$ by 16.8x. The normalization <em>increases</em> the gap, because the 14B's embedding vectors are 26% longer and the same absolute $r$ is therefore a relatively smaller kick.
+- The bulk of the 1.5B's distribution spans less than a decade (p10–p90: 0.486–4.12) while the 14B's spans 2.2 decades ($1.7\times10^{-2}$–2.59), and the 14B has an even heavier upper tail: its survival curve stays above $10^{-2}$ out to $r\approx10$, i.e. about ten directions need more than $10r$, with a maximum of 55.5. Those are directions whose perturbation <em>widens</em> every near-tie and therefore never breaks the continuation at any reasonable radius. In this npz all 1000 $r_*$ are finite, so none is literally infinite; the 536 directions above the run radius are simply not flipped at $r=0.1$.
+- The 1.5B's minimum, 0.133, belongs to direction 10 — the same direction that is the most destructive at $t=123$ (§6). It is 1.33x above the run radius, which is why the run has zero flips despite a 0.02-nat tie.
+- The 14B's smallest, $2.4\times10^{-3}$, is 41x <em>below</em> the run radius; 464 directions are below it.</p>
+<p><strong>What it shows.</strong> The threshold radius — the width of the tube of perturbations that leaves the continuation intact — is an order of magnitude narrower in the 14B, and the gap survives the normalization check (it widens slightly rather than closing).</p>
+<p><strong>What it does not show.</strong> With $K=20$ the 1.5B ECDF is a 20-step staircase: its p10 and p90 are each one sample away from the next stair, and the "min" is the minimum of 20 draws, not a population minimum. The 1.5B's max (5.53) is also not a real upper bound — 20 samples cannot see a 55-unit tail even if one exists. And $r_*$ is computed from teacher-forced responses: it is the radius at which the <em>first</em> token would flip while the prefix is still the baseline one, not the radius at which the free-running text changes.</p>
+<hr />
+<h2 id="4-figure-xscale_gainpng-the-14b-responds-less-absolutely-and-relatively">4. Figure <code>xscale_gain.png</code> — the 14B responds <em>less</em>, absolutely and relatively</h2>
+<p><img alt="gain" src="figures/xscale_gain.png" /></p>
+<p><strong>Setup.</strong> Both runs, $r=0.1$, last saved state (index 27 for the 1.5B, 47 for the 14B — both the input to the final norm, i.e. the penultimate exit, matched relative depth 27/28 vs 47/48). $G(u)=\mathrm{median}_t\lVert\delta h_t^{\rm last}\rVert/r$; $G_{\rm rel}(u)=\mathrm{median}_t\lVert\delta h_t^{\rm last}\rVert/\lVert h_t^{\rm last}\rVert$ at the run radius (dimensionless, no division by $r$). ECDFs over directions, log $x$. Dotted vertical lines: the fp32 floor expressed in the same units, $\text{floor}/r$ = 0.010 (1.5B) and 0.027 (14B) in (a), and $\text{floor}/s_{\rm last}$ = $1.8\times10^{-6}$ / $2.5\times10^{-6}$ in (b).</p>
+<p><strong>Axes.</strong>
+- (a) $x$: $G$ in state units per unit $r$, log; $y$: ECDF.
+- (b) $x$: $G_{\rm rel}$, dimensionless, log; $y$: ECDF.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">1.5B</th>
+<th style="text-align: right;">14B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$G$ min / p10 / p50 / p90 / max</td>
+<td style="text-align: right;">0.635 / 0.922 / 1.333 / 2.235 / 7.47</td>
+<td style="text-align: right;">0.224 / 0.409 / 0.583 / 1.297 / 3.06</td>
+</tr>
+<tr>
+<td>$G_{\rm rel}$ min / p10 / p50 / p90 / max</td>
+<td style="text-align: right;">$1.17\times10^{-4}$ / $1.68\times10^{-4}$ / $2.54\times10^{-4}$ / $4.22\times10^{-4}$ / $1.45\times10^{-3}$</td>
+<td style="text-align: right;">$2.12\times10^{-5}$ / $3.89\times10^{-5}$ / $5.57\times10^{-5}$ / $1.24\times10^{-4}$ / $2.95\times10^{-4}$</td>
+</tr>
+<tr>
+<td>$s_{\rm last}$</td>
+<td style="text-align: right;">545.3</td>
+<td style="text-align: right;">1067.3</td>
+</tr>
+<tr>
+<td>median above fp32 gain floor</td>
+<td style="text-align: right;">133x</td>
+<td style="text-align: right;">22x</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- The two raw ECDFs are separated by a factor 2.3 at the median and do not overlap except in the upper tail (the 1.5B's p10, 0.922, is above the 14B's p75, 0.877). The 1.5B also has a single direction at $G=7.47$, 5.6x its own median — a heavy right tail that the 14B does not have (max 3.06, 5.2x its median).
+- In relative units the median separation grows to 4.6x. The bulk is separated — the 1.5B's p10 ($1.68\times10^{-4}$) is 3.0x the 14B's median and 1.36x its p90 — but the tails are not: 12% of the 14B's directions have a larger relative gain than the 1.5B's weakest direction ($1.17\times10^{-4}$), and the 14B maximum ($2.95\times10^{-4}$) is 2.5x that minimum. So the ordering is a shift of the distribution, not a complete separation.
+- Both are far above the fp32 floor, so the ordering is not a precision artifact: 133x and 22x above the respective gain floors.</p>
+<p><strong>What it shows.</strong> The bigger model is the <em>less</em> responsive one per unit perturbation, both in absolute state units and as a fraction of what its residual stream carries. Combined with §3 this localizes the fragility entirely in the decision margins: $r_*\sim m/|\delta m|$ falls 13x because $m$ falls 207x at the weakest step while the response falls only 2.3x.</p>
+<p><strong>What it does not show.</strong> It does not show that the 14B is "less sensitive" in any behavioral sense — a smaller relative displacement can still flip a decision if the decision is nearly tied, which is exactly what happens. $G$ is a median over 300 steps and hides the time structure (that is Fig. <code>xscale_shape</code>). And the normalizations are not interchangeable: dividing by $s_{\rm last}$ answers "what fraction of the carried state", dividing by $s_{\rm emb}$ answers "how many token vectors' worth"; they give 4.6x and 2.9x respectively, and both are reported in the JSON.</p>
+<hr />
+<h2 id="5-figure-xscale_shapepng-same-depth-ordering-different-persistence-and-a-flush-only-in-the-small-model">5. Figure <code>xscale_shape.png</code> — same depth ordering, different persistence, and a flush only in the small model</h2>
+<p><img alt="shape" src="figures/xscale_shape.png" /></p>
+<p><strong>Setup.</strong> Both runs, $r=0.1$, three matched relative depths: early (1.5B L3 / 14B L6, 11% / 13% deep), middle (L14 / L24, 52% / 51%), last saved state (L27 / L47, the penultimate exit in both). Curves are $\mathrm{median}_u\lVert\delta h_t^{l}\rVert/r$ at each $t$, each divided by its own median over $t$ (300 values), so they are dimensionless and their absolute levels are not comparable — only their shapes are. The dotted vertical line is $t^*=W-P=100-65=35$; the annotated ratio is $\bar m_{36..40}/\bar m_{30..34}$, i.e. the mean level just after the flush over the mean level just before it. The horizontal grey line is 1 (the curve's own median).</p>
+<p><strong>Axes.</strong> $x$: generated step $t$; $y$: $\mathrm{median}_u\lVert\delta h_t^{l}\rVert/r$ divided by its median over $t$ (dimensionless), log scale, free per panel.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>depth</th>
+<th style="text-align: right;">late/early (t 200–299 vs 0–49)</th>
+<th style="text-align: right;">peak / late</th>
+<th style="text-align: right;">flush ratio 36–40 / 30–34</th>
+<th style="text-align: right;">step t=34→35</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.5B L3 (11%)</td>
+<td style="text-align: right;">0.0024</td>
+<td style="text-align: right;">643</td>
+<td style="text-align: right;">0.96</td>
+<td style="text-align: right;">1.15</td>
+</tr>
+<tr>
+<td>1.5B L14 (52%)</td>
+<td style="text-align: right;">0.169</td>
+<td style="text-align: right;">15.0</td>
+<td style="text-align: right;">0.78</td>
+<td style="text-align: right;">1.00</td>
+</tr>
+<tr>
+<td>1.5B L27 (last)</td>
+<td style="text-align: right;">0.186</td>
+<td style="text-align: right;">18.4</td>
+<td style="text-align: right;"><strong>1.70</strong></td>
+<td style="text-align: right;"><strong>2.06</strong></td>
+</tr>
+<tr>
+<td>14B L6 (13%)</td>
+<td style="text-align: right;">0.286</td>
+<td style="text-align: right;">2.66</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">1.16</td>
+</tr>
+<tr>
+<td>14B L24 (51%)</td>
+<td style="text-align: right;">0.420</td>
+<td style="text-align: right;">5.95</td>
+<td style="text-align: right;">1.14</td>
+<td style="text-align: right;">1.22</td>
+</tr>
+<tr>
+<td>14B L47 (last)</td>
+<td style="text-align: right;">0.680</td>
+<td style="text-align: right;">3.17</td>
+<td style="text-align: right;"><strong>1.11</strong></td>
+<td style="text-align: right;">0.80</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- <strong>Early depth.</strong> Both curves decline monotonically through the window, but by very different amounts. The 1.5B's normalized response falls from 38 at $t=0$ to 1 at $t=148$, to 0.04 at $t=250$, and is exactly 0 from $t=290$ on (its flush cascade reaches layer 3). The 14B's falls from 4.0 at $t=0$ to 1 at $t=123$ and then flattens at 0.7–0.9 — it never decays away.
+- <strong>Middle depth.</strong> Both show the same qualitative object: a broad hump (1.5B peak at $t=84$, 14B at $t=100$), then decay. The 1.5B falls 14x below its hump by $t=250$; the 14B falls 2.9x and then flattens.
+- <strong>Last state.</strong> The 1.5B has the clearest structure: a rise to a peak at $t=85$ (8.5 in units of $r$, 18x its late level) and a monotone decay afterwards. The 14B's last-state curve is a noisy plateau with excursions (a $3.15\,r$ spike at $t=258$) and no hump: peak/late is 3.2 versus 18.4.
+- <strong>The flush at $t=35$.</strong> The 1.5B's last state jumps by 2.06x in the single step $t=34\to35$ and 1.70x in the 5-step means, then keeps rising to its $t=85$ peak. The 14B's last state does not: the single-step ratio is 0.80 (a <em>decrease</em>) and the 5-step ratio is 1.11. Across all saved layers the 1.5B shows the surge only at L21 (1.38) and L27 (1.70) and a small <em>dip</em> at L1–L14 (0.73–0.96); the 14B never exceeds 1.14 at any saved layer.
+- The zero-response layer is L0 in both (100% of entries exactly 0): the perturbation is on prompt positions and the read positions are generated tokens, so at the embedding layer there is nothing to see.</p>
+<p><strong>What it shows.</strong> The response has the same <em>architecture</em> in both models (zero at the embedding, growing with depth, decaying with $t$), but two scale-dependent differences are visible: the large model's response persists over the whole 300-step window instead of collapsing, and it does not show the window-flush surge that the small model shows at $t=35$. The flush is a mask event and its step is identical in both protocols, so the <em>timing</em> agreement is structural; the <em>amplitude</em> disagreement (1.70 vs 1.11) is the empirical content.</p>
+<p><strong>What it does not show.</strong> It does not establish why the surge is absent in the 14B. Two candidates are (i) the response is dominated by directions that are insensitive to the dropped prompt token, and (ii) the 14B's sliding-window mask was not applied in as many layers — Qwen2 applies the window per layer via <code>max_window_layers</code>, both runs only set <code>config.sliding_window=100</code> and <code>use_sliding_window=True</code>, and neither npz records the resulting per-layer mask or the model config. For the 1.5B the mask is independently known to be live (the controlled same-token $W=100$ vs $W=1000$ comparison departs exactly at $t=35$); for the 14B the npz alone cannot distinguish "no mask" from "mask but no surge". This is a real ambiguity, not a rhetorical one, and it should be resolved by dumping <code>config.sliding_window</code>, <code>use_sliding_window</code>, <code>max_window_layers</code> and the <code>layer_types</code> of the loaded model on the next 14B run. It also does not compare like-for-like text: the two models generate different tokens — the 1.5B's continuation degenerates into a 4-token loop from $t=143$ while the 14B's never repeats — and a response can decay differently simply because the token stream changes how much prompt content is re-injected. The late-time decay difference (0.19 vs 0.68) is therefore <em>not</em> a clean model-size effect.</p>
+<hr />
+<h2 id="6-figure-xscale_dmpng-how-far-the-responses-sit-from-the-margin-they-must-cross">6. Figure <code>xscale_dm.png</code> — how far the responses sit from the margin they must cross</h2>
+<p><img alt="dm" src="figures/xscale_dm.png" /></p>
+<p><strong>Setup.</strong> Both runs, $r=0.1$, at each model's <strong>own</strong> smallest-margin step: $t=123$ for the 1.5B ($m=2.016\times10^{-2}$ nats), $t=21$ for the 14B ($m=9.727\times10^{-5}$ nats). Histogram of $\delta m_t(u)/r$ over all directions of that model. Two vertical markers: the red dashed line at $-m_t/r$ (nats per unit radius) is the slope a direction must beat to close the gap <em>at $r=0.1$</em> — a direction left of it flips; the grey dash-dot line at $-m_t$ (nats) is the same margin without dividing by $r$, i.e. the threshold only if the run radius were 1.</p>
+<p><strong>Axes.</strong> $x$: $\delta m_t(u)/r$ in nats per unit radius; $y$: number of directions (free per panel). The $x$ ranges differ by a factor 2.8 between panels (1.5B: $-0.22$ to $0.06$; 14B: $-0.045$ to $0.055$).</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">1.5B, $t=123$</th>
+<th style="text-align: right;">14B, $t=21$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$m_t$</td>
+<td style="text-align: right;">$2.016\times10^{-2}$ nats</td>
+<td style="text-align: right;">$9.727\times10^{-5}$ nats</td>
+</tr>
+<tr>
+<td>$-m_t/r$ (flip threshold)</td>
+<td style="text-align: right;">$-0.2016$</td>
+<td style="text-align: right;">$-9.727\times10^{-4}$</td>
+</tr>
+<tr>
+<td>$\delta m_t/r$ min / p5 / p50 / p95 / max</td>
+<td style="text-align: right;">$-0.136$ / $-0.0688$ / $+0.0091$ / $+0.0376$ / $+0.0525$</td>
+<td style="text-align: right;">$-0.0399$ / $-0.0082$ / $-3.13\times10^{-4}$ / $+0.0090$ / $+0.0514$</td>
+</tr>
+<tr>
+<td>directions with $\delta m_t<0$</td>
+<td style="text-align: right;">7 / 20</td>
+<td style="text-align: right;">529 / 1000</td>
+</tr>
+<tr>
+<td>directions left of $-m_t/r$</td>
+<td style="text-align: right;">0 / 20</td>
+<td style="text-align: right;">427 / 1000</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- At the 1.5B's weakest step the response distribution is centred slightly <em>positive</em> (+0.0091, so 13 of 20 directions widen the margin) and its most destructive direction reaches $-0.136$ — 68% of the $-0.2016$ needed. The whole distribution lives in a window of about $\pm0.15$, and the threshold sits outside it. This is the visual content of "0 of 20 flip".
+- At the 14B's weakest step the response distribution is centred essentially on zero ($-3.1\times10^{-4}$, a factor 30 smaller than the 1.5B's offset) and is <em>wider than the margin by two orders of magnitude</em>: 42.7% of the mass is left of $-9.7\times10^{-4}$. The threshold line is invisible at this scale because it sits inside the peak — which is the point.
+- The two panels are on the same physical axis (nats per unit radius) but different ranges; drawn on one axis the 14B's distribution would be a spike $\sim$6x narrower than the 1.5B's. The ratio of the widths (1.5B p5–p95 ≈ 0.106, 14B ≈ 0.017) is 6.2 — the opposite direction from the threshold ratio (207), which is what makes the 14B's margin crossable.</p>
+<p><strong>What it shows.</strong> The 14B's decisions are not merely near-tied; they are near-tied at a level that a typical direction's response overshoots by two orders of magnitude. The 1.5B's weakest decision is a real tie (0.02 nats) that a typical perturbation simply cannot reach at this radius — the most destructive of 20 directions still comes up 1.5x short.</p>
+<p><strong>What it does not show.</strong> It does not show what happens <em>after</em> the first flip (the prefix is still the baseline one here; free-running consequences are a separate experiment). It cannot say whether the 42.7% figure would survive a different prompt, since $t=21$ is one token of one continuation. And the grey line is a deliberate unit mismatch kept for readability of the "margin in nats" — the physically correct comparison is the red one.</p>
+<hr />
+<h2 id="7-facts-that-qualify-the-whole-comparison">7. Facts that qualify the whole comparison</h2>
+<ol>
+<li><strong>Different continuations, and one of them is degenerate.</strong> Same prompt, different greedy text. Steps do not correspond across models; only distributions and mask-imposed times do. The 1.5B's continuation is the exact 4-token cycle <code>1576, 807, 525, 11050</code> from $t=143$ on; the 14B's never repeats within 300 steps. Every 1.5B statistic that aggregates over late $t$ (the late/early ratio, the shape curves after $t=150$) is therefore measured on a loop, and the 14B's is not.</li>
+<li><strong>Different $K$ and different direction geometry.</strong> 20 directions from one 20-d subspace (1.5B) vs 1000 from 50 disjoint ones (14B). Within-block pairs have inner product $-1/19$; cross-block pairs are orthogonal. Any tail statement about the 1.5B rests on 20 samples.</li>
+<li><strong>The 14B's flush behaviour is not fully attributable.</strong> The window is set identically in code, but whether it is applied per layer depends on the model config (<code>max_window_layers</code>, <code>layer_types</code>), which was not recorded. The 1.5B's flush is independently known from a controlled same-token $W=100$ vs $W=1000$ comparison; the 14B's is not.</li>
+<li><strong><code>dh_last</code> is not symmetric.</strong> The 1.5B stores 3 directions, the 14B 24. Nothing in this section uses those vectors, so this does not enter any number above — it only limits what a vector-geometry follow-up could do on the 1.5B side.</li>
+<li><strong>One radius.</strong> Both runs use $r=0.1$. The 1.5B's usable range is $r\in[10^{-3},0.1]$ and linearity of the response in $r$ was validated there; the 14B's usable range is quoted as $[0.03,0.3]$, but no 14B linearity curve is included in this npz, so reading $r_*$ as a radius at 14B scale rests on that assumption rather than on a 14B measurement.</li>
+<li><strong>Margins are a prefix property.</strong> A near-tie at $t=21$ of the 14B says that one particular prefix leaves two tokens nearly tied; it is not a statement about the model's general calibration.</li>
+</ol>
+<h2 id="8-what-follows-directly">8. What follows directly</h2>
+<ul>
+<li>Decision fragility scales up with model size <em>here</em> by two orders of magnitude at the worst step (9.7e-5 vs 2.0e-2 nats), and this is what makes the threshold radius 13–17x smaller. The per-direction response is 2.3x <em>weaker</em> in absolute terms and 4.6x weaker relative to the state, so the effect is on the read-out, not on the propagation.</li>
+<li>The window flush is structurally common ($t^*=35$ in both) but its amplitude is not: 1.70 (1.5B, L27) vs 1.11 (14B, L47) in the 5-step means, and 2.06 vs 0.80 in the single step $t=34\to35$.</li>
+<li>Response persistence over 300 steps is the other clear cross-scale difference: late/early 0.19 (1.5B, last) vs 0.68 (14B, last) — but the 1.5B's number is measured inside a degenerate 4-token loop, so the size of that gap is text-dependent and should not be read as a pure model-size effect.</li>
+<li>Anything that wants to claim "the 14B is more chaotic" has to say <em>which</em> quantity: not the response gain ($G$ is smaller), but the distance from the response to the decision threshold ($m_t$ is far smaller), i.e. the fragility is in the read-out geometry.</li>
+</ul>
+<h2 id="9-reproduce">9. Reproduce</h2>
+<pre><code>python scripts_spark/figs_cross_scale.py
+</code></pre>
+<p>Writes <code>notebook_big/figures/xscale_{margins,rstar,gain,shape,dm}.png</code> (dpi 150) and <code>notebook_big/figures/xscale_numbers.json</code>, which contains every quantile quoted above, the per-layer flush ratios, the per-layer late/early ratios, and the p10/p50/p90 of both $r_*$ normalizations and both gains. The 1.5B npz is read in place from the main checkout and is not modified.</p>
 <script src=".preview/katex/katex.min.js"></script>
 <script src=".preview/katex/contrib/auto-render.min.js"></script>
 <script>

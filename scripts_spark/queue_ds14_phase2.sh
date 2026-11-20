@@ -10,7 +10,7 @@ PY=~/LLM/venv/bin/python
 M=~/LLM/models/DeepSeek-R1-Distill-Qwen-14B
 OUT=results_big/ds14
 R=0.1
-WFLAG="--layers 0,4,8,12,16,20,24,28,32,36,40,44,47"
+WFLAG="--layers 0,1,2,3,5,8,12,16,20,24,28,32,36,40,44,47"
 
 # ---- wait for phase 1b (true-window core) ----
 until grep -q PHASE1B_DONE ~/LLM/phase1b.log 2>/dev/null; do sleep 60; done
