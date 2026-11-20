@@ -32,7 +32,7 @@ for W in 50 100 150 200 300 500; do
   if [ ! -f $OUT/a1_inter_w${W}_fixed/a1.npz ]; then
     $PY -m chaos_llm.run_a1_big --model $M --prompt @prompts.txt \
         --window $W --max-new-tokens 500 --num-directions 240 \
-        --radii $R --batch-dirs 16 $WFLAG \
+        --radii $R --batch-dirs 8 $WFLAG \
         --fixed-tokens-from $OUT/a1_inter_w4096 \
         --out $OUT/a1_inter_w${W}_fixed 2>&1 | tee -a $OUT/window.log
   fi
@@ -46,7 +46,7 @@ for POS in 0:22 22:44 44:65; do
   if [ ! -f $OUT/a1_inter_w100_pos$TAG/a1.npz ]; then
     $PY -m chaos_llm.run_a1_big --model $M --prompt @prompts.txt \
         --window 100 --max-new-tokens 300 --num-directions 240 \
-        --radii $R --batch-dirs 16 $WFLAG --positions $POS \
+        --radii $R --batch-dirs 8 $WFLAG --positions $POS \
         --fixed-tokens-from $OUT/a1_inter_w4096 \
         --out $OUT/a1_inter_w100_pos$TAG 2>&1 | tee -a $OUT/window.log
   fi
@@ -67,26 +67,27 @@ for PNAME in short_prompt long_prompt; do
     if [ ! -f $OUT/a1_${PNAME}_w${W}_fixed/a1.npz ]; then
       $PY -m chaos_llm.run_a1_big --model $M --prompt @prompts_flush_extra.txt::$PNAME \
           --window $W --max-new-tokens 300 --num-directions 120 \
-          --radii $R --batch-dirs 16 $WFLAG \
+          --radii $R --batch-dirs 8 $WFLAG \
           --fixed-tokens-from $OUT/a1_${PNAME}_w4096 \
           --out $OUT/a1_${PNAME}_w${W}_fixed 2>&1 | tee -a $OUT/window.log
     fi
   done
 done
 
-# 4. deep cascade: 3000-token teacher-forced run at W=100 (8 dirs), needs a
-#    3000-token baseline trajectory first
+# 4. cascade: fp32 full-forwards at long T materialise [B,H,L,L] attention scores
+#    (SDPA math path), so the horizon is capped at 1500 tokens, batch 2.
+#    t*_l = t*_1 + (l-1)(W-1) covers layers up to ~14 at W=100 within 1500.
 if [ ! -f $OUT/traj_w4096/interstellar_3000.npz ]; then
   printf 'interstellar_3000\t' > /tmp/p3k.txt
   head -1 prompts.txt | cut -f2 >> /tmp/p3k.txt
   $PY -m chaos_llm.collect_trajectories_big --model $M --prompts /tmp/p3k.txt \
-      --window 4096 --max-new-tokens 3000 --layers 47 \
+      --window 4096 --max-new-tokens 1500 --layers 47 \
       --out $OUT/traj_w4096 2>&1 | tee -a $OUT/window.log
 fi
 if [ -f $OUT/traj_w4096/interstellar_3000.npz ] && [ ! -f $OUT/a1_inter_w100_cascade/a1.npz ]; then
   $PY -m chaos_llm.run_a1_big --model $M --prompt @prompts.txt \
-      --window 100 --max-new-tokens 3000 --num-directions 8 \
-      --radii $R --batch-dirs 8 --layers 0,4,8,12,16,20,24,28,32,36,40,44,47 \
+      --window 100 --max-new-tokens 1500 --num-directions 8 \
+      --radii $R --batch-dirs 2 --layers 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14 \
       --fixed-tokens-from $OUT/traj_w4096/interstellar_3000.npz \
       --out $OUT/a1_inter_w100_cascade 2>&1 | tee -a $OUT/window.log
 fi
