@@ -112,6 +112,13 @@ if [ ! -f $OUT/depth_w100/depth.npz ]; then
       --out $OUT/depth_w100 2>&1 | tee $OUT/depth_w100.log
 fi
 
+# 6b. non-normality: MLP + full-block sigma_max, rho, kappa, principal angles
+if [ ! -f $OUT/nonnorm_w100/nonnorm.npz ]; then
+  $PY -m chaos_llm.run_nonnorm_big --model $M --run $OUT/a1_inter_w100 \
+      --tokens 21,50,100,189,273 \
+      --out $OUT/nonnorm_w100 2>&1 | tee $OUT/nonnorm_w100.log
+fi
+
 # 7. second window regime: W=500 A1 (margins + directions under a wide window)
 if [ ! -f $OUT/a1_inter_w500/a1.npz ]; then
   $PY -m chaos_llm.run_a1_big --model $M --prompt @prompts.txt \

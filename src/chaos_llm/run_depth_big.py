@@ -6,7 +6,9 @@ lambda_i = (1/l) log sigma_i(product) per token, local gains, and
 h_depth = sum of positive exponents.
 
 Differences from run_depth.py: big_engine loader (device_map streaming, fp32),
-eager attention kept (JVP needs the same math path as the T4 reference).
+eager attention kept, and the causal/sliding mask built explicitly
+(transformers >=4.5x removed _update_causal_mask from Qwen2Model; the manual
+band mask below is the same additive mask the mask utilities produce).
 """
 import argparse
 import json
@@ -20,12 +22,23 @@ from torch.func import jvp
 from chaos_llm.big_engine import full_embeddings, load_big, save_json, set_window
 
 
+def build_mask(L, window, device, dtype):
+    """Additive 4D mask [1,1,L,L]: causal, with a sliding band if window > 0."""
+    idx = torch.arange(L, device=device)
+    allowed = idx[None, :] <= idx[:, None]
+    if window:
+        allowed = allowed & (idx[None, :] > idx[:, None] - int(window))
+    m = torch.zeros((L, L), device=device, dtype=dtype)
+    m = m.masked_fill(~allowed, torch.finfo(dtype).min)
+    return m[None, None]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", required=True)
     ap.add_argument("--dtype", default="float32")
     ap.add_argument("--run", required=True)
-    ap.add_argument("--tokens", default="0,16,50,100,150,200,250,299")
+    ap.add_argument("--tokens", default="0,21,50,100,150,200,250,299")
     ap.add_argument("--k", type=int, default=8)
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
@@ -38,7 +51,7 @@ def main():
     pos_list = [int(x) for x in args.tokens.split(",") if int(x) < gids.shape[1]]
 
     model, tok, _mp, info = load_big(args.model, dtype=args.dtype, attn="eager")
-    set_window(model, meta.get("window") or 100)
+    active = set_window(model, meta.get("window") or 0)
     nL = info["num_layers"]
     E = full_embeddings(model, pids, gids)
     L = E.shape[1]
@@ -49,8 +62,8 @@ def main():
     D = H0.shape[-1]
     pos_ids = torch.arange(L, device="cuda")[None]
     pe = model.model.rotary_emb(H0, pos_ids)
-    mask = model.model._update_causal_mask(torch.ones((1, L), dtype=torch.long, device="cuda"), H0,
-                                           torch.arange(L, device="cuda"), None, output_attentions=False)
+    mask = build_mask(L, meta.get("window") if active else 0, "cuda", torch.float32)
+    cache_position = torch.arange(L, device="cuda")
     k = args.k
     lam = np.zeros((len(pos_list), nL, k), dtype=np.float32)
     local = np.zeros((len(pos_list), nL), dtype=np.float32)
@@ -65,7 +78,8 @@ def main():
 
             def f(Hin, layer=layer):
                 return layer(Hin, attention_mask=mask, position_ids=pos_ids,
-                             position_embeddings=pe, use_cache=False)[0]
+                             position_embeddings=pe, use_cache=False,
+                             cache_position=cache_position)[0]
             Us = []
             for i in range(k):
                 V = torch.zeros_like(o.hidden_states[l])
@@ -94,3 +108,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
