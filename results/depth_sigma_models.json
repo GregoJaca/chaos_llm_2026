@@ -1,0 +1,22 @@
+{
+ "DeepSeek-1.5B": {
+  "late_quarter_log_gain": 0.26749157905578624,
+  "total": 28.559234619140625
+ },
+ "Qwen3-4B": {
+  "late_quarter_log_gain": 0.6132030934095383,
+  "total": 7.241402626037598
+ },
+ "Qwen2.5-3B": {
+  "late_quarter_log_gain": 0.6957278251647949,
+  "total": 24.197546005249023
+ },
+ "Phi-4-mini": {
+  "late_quarter_log_gain": 0.44270266592502594,
+  "total": 9.16489315032959
+ },
+ "Qwen3.5-2B": {
+  "late_quarter_log_gain": 0.3392744436860085,
+  "total": 6.8931498527526855
+ }
+}

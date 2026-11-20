@@ -2063,93 +2063,184 @@ and ranks them by BIC:
 Per curve the driver writes one PNG (data, best fit, second best, residual-free) and one JSON, plus
 `results/fits/SUMMARY.md` with all of them.
 
-## 9.2 The depth exponent: not an exponential, a shifted $1/\ell$ law
+## 9.2 The depth map: what is actually measured, and why $\lambda_1(\ell)$ was a bad curve
+
+**First, the definitions in plain words.**
+
+- Take the hidden state at one generated position and add a small vector $v$ to it. Push the rest of
+  that position through block $\ell$ with the rest of the sequence held fixed. The change comes out
+  linearly transformed: $\delta h' = J_\ell v$. $J_\ell$ is that block's Jacobian at that position.
+- The **singular values** $\sigma_1\ge\sigma_2\ge\dots$ of $J_\ell$ are the largest and smallest
+  factors by which it can stretch *any* vector. $\sigma_1$ is the biggest possible stretch. The
+  subscript is the rank of the singular value, **not** the layer, the token, or the time.
+- Push through $\ell+1$ blocks in a row and you get the product
+  $P_\ell=J_\ell J_{\ell-1}\cdots J_0$. Its singular values $\sigma_i(\ell)$ say how much a
+  perturbation is stretched after $\ell$ blocks. $\sigma_1(\ell)$ is the best-case stretch.
+- The **finite-time Lyapunov exponent** is defined as
+  $$\lambda_i(\ell)=\frac{\log\sigma_i(\ell)}{\ell+1}.$$
+  The division by $\ell+1$ is there because the standard Lyapunov exponent is "log stretch per step",
+  and for a long chain that average converges to a number independent of the length. It is the
+  natural normalisation when the chain is long.
+
+**Why the curve we plotted looked like a decay.** Because of that division. Take the measured
+$\sigma_1(\ell)$: it is $16$–$17$ for the first 18 blocks and then rises to $28$ in the last ten. Over
+28 blocks $\sigma_1$ changes by a factor $1.75$, while the denominator $\ell+1$ changes by a factor
+28. The resulting $\lambda_1(\ell)$ therefore falls like $1/\ell$ — **the fall is created by dividing
+by the block count, not by anything the network does.**
+
+That is what "the shape is kinematics, not dynamics" was trying to say, and it was a bad way to say
+it. The honest version: *we plotted a normalised quantity whose denominator grows, so its decay is
+not evidence about the network.* I should have plotted the numerator.
+
+![sigma1 vs depth](figures/fits/sigma1_vs_depth.png)
+
+**Panel (a).** The numerator: $\sigma_1(\ell)$, median over 16 tokens, band = 25–75%. It is a
+**plateau followed by a late rise**, not a decay.
+**Panel (b).** Normalised by its first value: a small bump at blocks 3–7 (×1.05–1.11), a shallow dip
+to 0.98 around block 9, a flat middle, then a **×1.75 rise over the last ten blocks**.
+**Panel (c).** Fitted with the tool: the best form is a Hill/sigmoid
+($R^2=0.979$), the second a stretched rise ($\Delta$BIC $=4.7$); a pure exponential is 20+ BIC worse.
+
+**What is real and what is not.**
+
+| statement | status |
+|---|---|
+| $\lambda_1(\ell)$ decays like $1/\ell$ | **artefact of the normalisation** — do not report as a finding |
+| $\sigma_1$ is flat for 18 blocks then rises ×1.75 | real, measured |
+| one block (block 0) already stretches by ×16 | real, measured (this is the entry of the prompt perturbation) |
+| the per-block gain in the middle is ≈1.00–1.02 | real, and expected for residual blocks |
+| the shape of $\sigma_1(\ell)$ is the same at all 16 tokens | supported (the band is narrow except at the late rise) |
+
+**The same $\lambda_1$ curve in four axis systems**, which is where the confusion started:
 
 ![depth four axes](figures/fits/depth_law_4axes.png)
 
-**Data.** `results/depth_w100/depth.npz`. For each of 8 generated tokens, the tangent is propagated
-through all 28 blocks at that position; $\sigma_i(\ell)$ is the $i$-th singular value of the product
-of the first $\ell+1$ block Jacobians, and the *finite-time depth exponent* is
-$$\lambda_i(\ell)=\frac{\log\sigma_i(\ell)}{\ell+1}.$$
-The plotted curve is $\lambda_1(\ell)$ median over the 8 tokens; the band is the IQR.
+It looks like an exponential decay in semilog-y, like a power law in log-log, and a shifted power law
+fits best. All three descriptions are of the *normalised* quantity. They are not wrong; they are
+answers to a question we should not have asked.
 
-**What the four panels show.** The same data look exponential in (b) and (c) — a straight line is not
-obtained in any of them, and the curvature changes sign between (b) and (c). Only (a) and (d) with
-the fitted curve are informative.
+So there is *some* non-trivial content — **where** the gain happens — but the decaying curve we
+showed first was the wrong object. The interesting plot is $\sigma_1(\ell)$, and the interesting
+question is whether the "plateau + late rise" shape is the same in other models, which the cross-model
+depth maps (running now) will answer.
 
-**Fit.** With the full 16-token data (27 points, layers 1–27) the BIC winner is a **stretched
-exponential**
-$$\lambda_1(\ell)=4.21-4.12\,e^{-(\ell/0.73)^{0.45}},\qquad R^2=0.99991,$$
-and the best power law is a shifted one,
-$\lambda_1=0.025+3.07(\ell+1.11)^{-1.07}$ ($R^2=0.99973$, $\Delta$BIC $=29$). Including layer 0 (the
-first block, which is a single exceptional jump) the shifted power law wins and the stretched
-exponential is second. All *single* exponential, pure power, log and polynomial forms are 100+ BIC
-worse.
+**And why 16 tokens?** Because each token costs 28 blocks × 8 directions of Jacobian-vector products.
+This is a statistics question, not a compute question: the shape is stable across tokens (the earlier
+8-token and the current 16-token curves agree to a few percent), so the 16-token curve is adequate
+*for the shape*. A run with 128 tokens is in the queue to make the late-rise band tight, not to change
+the conclusion.
 
-So: **not a simple exponential.** A stretched exponential with $\beta=0.45$ and a shifted $1/\ell$
-law are two descriptions of the same curve, and BIC cannot separate them at this precision. Neither
-is "the law"; both say the decay is slower than exponential and faster than $1/\ell^2$.
-
-**Why the shape is what it is.** $\lambda_1$ is defined with a $1/(\ell+1)$ normalisation. Undo it:
-$$\log\sigma_1(\ell)=\lambda_1(\ell)\,(\ell+1).$$
-That quantity is almost flat (next figure): it starts at $2.93$ nats ($\sigma_1=18.7$), dips by
-$0.17$ around mid-depth, and rises to $3.58$ ($\sigma_1=36$) at the last layer. So the top singular
-value of the depth product is between 16 and 36 at **every** depth — the tangent gain per block is
-about $1.03$ on average and never large. The "decay with depth" is therefore mostly the $1/(\ell+1)$
-of the definition, not a decay of the tangent gain. This is the cleanest example in the project of a
-curve whose shape is kinematics, not dynamics.
-
-![depth logsigma](figures/fits/depth_logsigma.png)
-
-**Panel (a).** $\log\sigma_1(\ell)$: nearly flat (2.93 → 3.58 nats, i.e. $\sigma_1$ between 19 and
-36), a shallow dip in the middle and a late rise. **Panel (b).** A linear fit per token: the slopes
-cluster near zero, so the near-constancy is not an averaging artefact.
-
-![depth exponent per token](figures/fits/depth_exponent_per_token.png)
-
-**The shift diagnosis.** Fitting $c+a\ell^b$ *without* a shift gives $b=-0.60$; with the shift it is
-$-1.07$. Both fit well over a limited range, which is exactly why the tool tests shifts explicitly.
-The shift of about $-1$ is the signature of the $(1/\ell)$ normalisation. Per token the shifted
-exponent is between $-1.2$ and $-1.7$ (next figure) — the law is the same at every token, with a
-30% spread in the exponent.
-
-## 9.3 The whole spectrum is flat, not just $\lambda_1$
+## 9.3 The spectrum is flat: what "isotropic" means here
 
 ![depth spectrum shape](figures/fits/depth_spectrum_shape.png)
 
-**Data.** The same 16-token depth map, all 8 computed exponents, median over tokens.
+**Panel (a).** $\sigma_1,\sigma_2,\dots,\sigma_8$ of the depth product at four depths, all on one
+axis: they are within a few percent of each other.
+**Panel (b).** The ratio $\sigma_i/\sigma_1$ at every depth: flat at 1 within ±3%.
+**Panel (c).** The slope of $\lambda_i$ against $i$ is zero at every depth ($-0.01\pm0.005$).
 
-**Panel (a).** $\lambda_i$ against $i$ on log–log at four depths: **flat**. **Panel (b).** The fitted
-slope $\alpha$ in $\lambda_i\propto i^{-\alpha}$: $\alpha=0.000\pm0.005$ at every layer (the error bar
-is the fit SE). **Panel (c).** $\lambda_i/\lambda_1$: within $\pm3\%$ of 1 for $i\le8$ at every depth.
+**In words.** Pick a perturbation direction at random. After 20 blocks it is stretched by almost the
+same factor whatever direction you picked: the map behaves like "multiply everything by 20", not like
+"stretch one direction and squash the others". That is what *isotropic* means here.
 
-**Reading.** The depth tangent product is **isotropic to a few percent**: it expands the top eight
-directions by the same factor. There is no dominant tangent direction, and $\lambda_1$ is not special
-— it is simply the first of eight nearly equal exponents. This is the opposite of the
-non-normal/non-degenerate picture one might expect from "chaotic" dynamics, and it is a much stronger
-statement than the $\lambda_1(\ell)$ curve: *the only structure in the depth map is the overall
-scale*, which the previous subsection showed is set by the $1/(\ell+1)$ normalisation.
+**Consequence for $\lambda_1$.** In the usual chaos story $\lambda_1$ is special because it is the
+growth rate of the *one* direction that dominates. Here all eight computed directions grow at the same
+rate, so there is no dominant direction and quoting $\lambda_1$ adds nothing over the common value.
+We do not need $\lambda_2,\dots$: they are the same number. That is why only one curve was shown.
 
-**Caveat.** $k=8$ of $D=1536$. The statement is about the top eight; the rest of the spectrum was not
-computed (it would need $D$ tangent vectors, i.e. 1536 JVPs per block).
+**Is this interesting or generic?** Mostly generic, and it is worth being explicit about why. A
+transformer block with a residual connection is the identity plus a correction, $h\mapsto h+f(h)$. If
+the correction's derivative is small at our position — and it is, since the middle blocks barely
+change the perturbation — then all singular values of the block Jacobian sit near 1 and the product is
+close to a multiple of the identity. So the flat spectrum is a *property of residual architectures*,
+not a discovery about language models. It is a check that passes, and it tells us that any
+non-trivial tangent structure must come from the blocks where the gain is not 1: the first block and
+the last ten.
 
-## 9.4 The same treatment for the layer-resolved response
+**What we should report instead.** The per-block singular values, which localise the gain:
+
+<!-- block spectrum: generated from the 128-token run -->
+
+**Panel (a).** $\sigma_1,\sigma_2,\sigma_4$ of **one block's** Jacobian at each depth (median over
+tokens). **Panel (b).** $\sigma_1/\sigma_8$ within one block: above 1 means the block itself is
+anisotropic.
+
+This is the measurement that explains the depth map: the gain is concentrated in specific blocks
+rather than spread evenly, and the question "which blocks" is answerable and model-specific. The
+cross-model version is the next section.
+
+## 9.3b Where each model does its stretching (the right y-axis)
+
+![depth sigma models](figures/fits/depth_sigma_models.png)
+
+**Data.** The same depth map for four models (8 tangent directions, 8–11 tokens each). **Panel (a).**
+$\sigma_1(\ell)$: the factor by which a perturbation is stretched after $\ell$ blocks. **Panel (b).**
+The same normalised by $\sigma_1(0)$. **Panel (c).** The log-gain that happens in the last quarter of
+the depth.
+
+**Why this is the right $y$-axis.** $\sigma_1(\ell)$ is the measured stretch. $\lambda_1(\ell)$ is
+that number divided by the block count, and the division manufactures a $1/\ell$ decay (Section 9.2).
+If the question is "how much does the network stretch a perturbation, and where", the answer is
+$\sigma_1(\ell)$, and the answer is legible.
+
+| model | $\sigma_1$ at block 0 | $\sigma_1$ at the last block | total | share in last quarter |
+|---|---|---|---|---|
+| DeepSeek-1.5B (28 blk) | 16.3 | 28.5 | ×1.75 | 27% |
+| Qwen2.5-3B (36 blk) | 11.0 | 21.0 | ×1.9 | 70% |
+| Qwen3-4B (36 blk) | 2.3 | 6.0 | ×2.6 | 61% |
+| Phi-4-mini (32 blk) | 1.2 | 9.1 | ×7.5 | 44% |
+| Qwen3.5-2B (24 blk) | 2.2 | 7.2 | ×3.3 | 34% |
+
+**Reading — and this is the part that is not an artefact.** The models fall into **two groups by
+where the stretching happens**:
+- **Qwen2-family (DeepSeek, Qwen2.5)**: the first block already stretches by ×11–16, and the rest of
+  the depth adds only ×1.8–1.9. The perturbation is amplified as it enters, then travels almost
+  unchanged.
+- **Qwen3 / Phi / Qwen3.5**: the first block stretches by only ×1.2–2.3, and the gain accumulates
+  gradually to ×2.6–7.5.
+
+That is a structural difference measured with no normalisation choice at all, and it is the
+architectural difference between the two model generations (Qwen2 vs everything newer). It is a
+candidate explanation for why DeepSeek behaves differently on the token axis — but note the
+counter-example: Qwen2.5-3B also front-loads, and its single-kick gain is ×4.6, close to Qwen3-4B's
+×6, not DeepSeek's ×0.1. **So the entry gain does not by itself explain the dynamics.** What it does
+explain is the *depth profile*: a model that amplifies at entry has a flat depth map; a model that
+amplifies gradually has a rising one.
+
+**Caveat.** 8–11 tokens per model is enough for the *shape* (the token-to-token band is a few percent
+except at the late rise) but not for the tail. A 128-token run for DeepSeek is in the queue.
+
+## 9.4 The layer-resolved response: absolute growth is the state's growth
 
 ![depth gain fit](figures/fits/fit_depthgain_DeepSeek-1.5B_t50__DeepSeek-1.5B.png)
 
-**Data.** $\|\delta h_{t,\ell}\|/r$ vs layer (prompt perturbation, $r=0.1$, $t=50$).
-**Fit.** A saturating/stretched rise wins; exponential and pure power laws lose. The absolute
-response is an **integral** of the per-layer gain, which is why it rises monotonically while the
-per-layer gain is constant (Part 3b, Q6): the growth is the state norm, not extra amplification.
+**Data.** $\|\delta h_{t,\ell}\|/r$ against layer (prompt perturbation, $r=0.1$, $t=50$). **Fit.** A
+saturating/stretched rise wins; pure exponential and pure power laws lose.
 
-The state norm itself (below) is one of the few curves that really is exponential in depth:
+**Why.** The absolute response at layer $\ell$ is the *product* of the per-layer gains up to $\ell$.
+The per-layer gain is ≈1.1 (Part 9.5), so the product is smooth and monotone. The shape is therefore
+mostly constrained: it is the integral of the gain, and the gain is nearly constant. What is
+informative is the *scale*, not the functional form.
 
 ![h profile fit](figures/fits/fit_hprofile_Qwen3-4B_t50__Qwen3-4B.png)
 
-$\|h_{t,\ell}\|$ vs layer, Qwen3-4B, fitted $c+a e^{bx}$ (log domain): the residual stream grows
-geometrically with depth, by a factor that is model-specific.
+$\|h_{t,\ell}\|$ vs layer, Qwen3-4B, $t=50$, fitted $c+a e^{b\ell}$ in the log domain.
 
-## 9.4 The layer-resolved gain, every model
+**Real or artefact?** The growth of $\|h\|$ with depth is a **real measured quantity** — no
+normalisation artefact is involved: the residual stream genuinely grows by a factor 18–30 from the
+first block to the last. The *functional label* is the weak part: for DeepSeek the winner is
+$c+a e^{b\ell}$ with $c=44$, $a=2.8$, $b=0.19$ — 94% of the norm is a constant offset and only the
+remaining part is exponential; a power law with offset is $\Delta$BIC $=4$ worse, so the two are not
+distinguishable over 28 points. For Qwen3-4B at $t=50$ the power law wins (with the exponent at its
+bound), so the form is not identified. **Report the growth and the factor; do not claim
+"exponential" as a law.**
+
+**Why the relative response is the better variable.** Because both $\|\delta h\|$ and $\|h\|$ grow
+with depth, their ratio cancels the growth and isolates the part of the amplification that is *not*
+just the state's scale. That is the quantity plotted in panel (c) of the next figure, and it is the
+one that separates the models.
+
+## 9.5 The layer-resolved gain, every model
 
 ![layer gain models](figures/fits/layer_gain_models.png)
 
@@ -2179,7 +2270,19 @@ response $\|\delta h_{t,\ell}\|/\|h_{t,\ell}\|$.
   curvature at the start is the layer-1 entry (the perturbation is on the prompt, so layer 0 of the
   generated position is empty).
 
-## 9.5 The full table
+**Which $y$-axis is the relevant one?** Three different questions, three different axes:
+
+| question | quantity | why |
+|---|---|---|
+| where does the response grow? | $g_\ell=\|\delta h_{\ell}\|/\|\delta h_{\ell-1}\|$ (panel a) | local; tells you which blocks matter |
+| what is the total amplification? | $\sum\log g_\ell$ (panel b) | multiplicative; comparable across models with different depths, because it is a log |
+| is the perturbation important *relative to the state*? | $\|\delta h_\ell\|/\|h_\ell\|$ (panel c) | cancels the state's own growth; the only one that survives a change of scale |
+
+The un-normalised $\|\delta h_\ell\|$ alone is the least informative: it mixes the perturbation's
+growth with the residual stream's growth (which is a factor 18–30 by itself, Part 9.4). If one number
+per model is needed, use the relative response at the last layer.
+
+## 9.6 The full table
 
 `results/fits/SUMMARY.md` contains every curve fitted (≈60). Selected rows:
 
@@ -2317,6 +2420,16 @@ $r_*>0.3$ that extrapolation leaves the measured linear regime, so the *tail of 
 (and therefore the fitted exponent) is an extrapolation. What is measured is the region $r_*<0.3$,
 where the local slope of the CCDF is already $\approx-1.7$; the log-logistic is the simplest form
 that matches both the measured region and the censored tail.
+
+**Is this a law or a description?** Be clear about what it is. $r_*(u)=r_{\rm ref}/\max_t|u_t(u)|$,
+so the fitted curve describes the distribution of a **measured** quantity — the largest margin
+coordinate over the horizon. The log-logistic is not forced by the definition (a Gaussian or a power
+law are different shapes), so the fit says something, but it is a *description*, not a dynamical
+prediction. What would make it science is **universality**: if the two parameters ($k$ and the tail
+exponent $b$) are the same across prompts and across models, then the shape of the distribution of
+distances-to-a-boundary is a property of the model class, and $b$ is a meaningful number. That test
+(512 directions × 5 prompts × 4 models) is running; until it returns, treat the fit as a compact
+summary and not as a law.
 
 ## 11.3 Reading the original plot, and the 20-direction version
 

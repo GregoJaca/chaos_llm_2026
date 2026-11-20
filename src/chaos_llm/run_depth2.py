@@ -73,13 +73,15 @@ def main():
 
     k = args.k
     lam = np.zeros((len(pos_list), nL, k), dtype=np.float32)
+    block_sv = np.zeros((len(pos_list), nL, k), dtype=np.float32)
+    block_norm = np.zeros((len(pos_list), nL), dtype=np.float32)
     local = np.zeros((len(pos_list), nL), dtype=np.float32)
     t0 = time.time()
     for ti, gen_t in enumerate(pos_list):
         t = P + gen_t
         g = torch.Generator(device="cuda").manual_seed(1234 + ti)
         Q = torch.linalg.qr(torch.randn(D, k, device="cuda", generator=g).float())[0]
-        cum = torch.zeros(k, device="cuda")
+        cum = torch.zeros(k, device="cuda", dtype=torch.float32)
         for l in range(nL):
             layer = blocks[l]
             kw = caps[l]
@@ -90,16 +92,19 @@ def main():
             Us = []
             for i in range(k):
                 V = torch.zeros_like(Hl)
-                V[0, t] = Q[:, i]
+                V[0, t] = Q[:, i].to(Hl.dtype)
                 with torch.no_grad():
                     _, dy = torch.func.jvp(f, (Hl,), (V,))
                 v = dy[0, t] if dy.dim() == 3 else dy[t]
-                Us.append(v)
-            U = torch.stack(Us, dim=1)
+                Us.append(v.float())
+            U = torch.stack(Us, dim=1)                 # [D,k] float32
             local[ti, l] = U.norm(dim=0).mean().item()
+            sv = torch.linalg.svdvals(U)               # per-block singular values
+            block_sv[ti, l] = sv.detach().cpu().numpy()
+            block_norm[ti, l] = float(sv[0])
             Q, R = torch.linalg.qr(U)
             cum = cum + torch.log(torch.abs(torch.diag(R)) + 1e-30)
-            lam[ti, l] = (cum / (l + 1)).detach().float().cpu().numpy()
+            lam[ti, l] = (cum / (l + 1)).detach().cpu().numpy()
             del U, Us
         print(f"token {gen_t}: lambda1 final {float(lam[ti, -1, 0]):.3f} "
               f"h_depth {float(np.maximum(lam[ti, -1], 0).sum()):.3f} "
@@ -107,6 +112,7 @@ def main():
 
     h_depth = np.maximum(lam[:, -1, :], 0).sum(axis=1)
     np.savez(os.path.join(args.out, "depth.npz"), lam=lam, local_gain=local, h_depth=h_depth,
+             block_sv=block_sv, block_norm=block_norm,
              tokens=np.asarray(pos_list), layers=np.arange(nL), k=k)
     save_json(os.path.join(args.out, "meta.json"),
               dict(run=args.run, tokens=pos_list, k=k, n_layers=nL, hidden_dim=D,
