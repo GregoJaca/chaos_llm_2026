@@ -27,7 +27,7 @@ A single prompt of 65 tokens is sent through DeepSeek-R1-Distill-Qwen-14B in FP3
 | baseline check | two identical rows in one batch produced bit-identical tokens (`baseline_duplicate_identical: true`) |
 | saved states | hidden-state indices `[0, 6, 12, 18, 24, 30, 36, 42, 47]`; state 0 is the embedding output, state $l\ge1$ is the output of block $l-1$ (transformers convention), so state 47 is the output of block 46, not the final block. The final-norm/lm_head input was stored only as 24 difference vectors (`dh_last`, directions 0–23) |
 | engine / environment | `run_a1_big`, torch 2.14.1+cu130, transformers 4.57.6, 1590.6 s wall time on `spark-d5eb` |
-| file | `results_big/ds14/a1_inter_w100/a1.npz` (+ `meta.json`) |
+| file | `results_big/ds14/a1_inter_full/a1.npz` (+ `meta.json`) |
 
 “Window 100” matters for interpretation: once $65+t>100$, the earliest prompt positions fall outside the attention window. The perturbation is applied only to prompt positions, so at late steps its influence reaches the current token indirectly, through the states of generated tokens that were computed while the prompt was still visible. The late-time response is therefore not a direct prompt-embedding effect.
 
@@ -308,4 +308,4 @@ The median local sensitivity is $3.80\times10^{-3}$ nats per unit radius, about 
 - The 24 response vectors cover directions 0–23 only (20 from block 0, 4 from block 1). The pairwise-cosine result is a 24-dimensional sample of a 1000-dimensional ensemble.
 - The window is 100 tokens, so after $t\approx35$ the prompt is progressively outside the attention window; late-time responses are propagated through generated-token states. The layer curves mix “depth growth” with “prompt leaving the window.”
 
-All numbers in this section are in `notebook_big/figures/ds14_a1_deep_numbers.json`; the figures are produced by `scripts_spark/figs_a1_deep.py` from `results_big/ds14/a1_inter_w100/a1.npz` and `meta.json`.
+All numbers in this section are in `notebook_big/figures/ds14_a1_deep_numbers.json`; the figures are produced by `scripts_spark/figs_a1_deep.py` from `results_big/ds14/a1_inter_full/a1.npz` and `meta.json`.
