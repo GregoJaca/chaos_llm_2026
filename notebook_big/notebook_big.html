@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>notebook_big.md</title>
+<link rel="stylesheet" href=".preview/katex/katex.min.css">
+<style>
+:root { --fg:#1a1a1a; --muted:#666; --line:#d8d8d8; --accent:#0b5cad; }
+* { box-sizing: border-box; }
+body {
+  font-family: "Charter", "Georgia", "Cambria", serif;
+  font-size: 15px; line-height: 1.55; color: var(--fg);
+  margin: 0 auto; max-width: 210mm; padding: 18mm 16mm 24mm;
+  background: #fff;
+}
+h1, h2, h3, h4 { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; line-height:1.25; }
+h1 { font-size: 1.65em; margin: 1.4em 0 .5em; border-bottom: 2px solid var(--line); padding-bottom:.25em; }
+h2 { font-size: 1.3em; margin: 1.3em 0 .4em; color:#111; }
+h3 { font-size: 1.08em; margin: 1.1em 0 .3em; color:#222; }
+p, li { margin: .45em 0; }
+ul, ol { margin: .45em 0 .45em 1.3em; padding: 0; }
+code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: .86em; }
+code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; }
+pre { background:#f7f7f7; border:1px solid #e5e5e5; border-radius:4px; padding:8px 10px; overflow-x:auto; }
+img { max-width: 100%; height: auto; display:block; margin: 10px auto; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .93em; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: #f5f7f9; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.8em 0; }
+blockquote { margin: .6em 0; padding: .3em 1em; border-left: 3px solid var(--line); color:#333; }
+a { color: var(--accent); }
+.katex-display { margin: .7em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.03em; }
+header.banner {
+  font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; color: var(--muted);
+  border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 18px;
+}
+header.banner a { text-decoration: none; }
+h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid; }
+@page { size: A4; margin: 15mm 14mm 16mm; }
+</style>
+</head><body>
+<header class="banner">
+  built 2026-11-20 15:48:46 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
+  <a href="notebook_big.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook_big.md">Markdown</a>
+</header>
+<h1 id="large-models-on-the-dgx-spark-definitions-data-and-every-figure-explained">Large models on the DGX Spark: definitions, data, and every figure explained</h1>
+<p>This document covers the experiments on the new 128 GB GB10 machine (models: DeepSeek-R1-Distill-Qwen-14B, Qwen3.5-9B, phi-4, Qwen3-14B). It is the companion of <code>notebook/notebook.md</code> (the 1.5B reference document); symbols and procedures are defined there and re-defined here only when they differ.</p>
+<p><em>(empty — figures and results will be appended as data arrives)</em></p>
+<script src=".preview/katex/katex.min.js"></script>
+<script src=".preview/katex/contrib/auto-render.min.js"></script>
+<script>
+renderMathInElement(document.body, {
+  delimiters: [{left:"$$", right:"$$", display:true}, {left:"$", right:"$", display:false}],
+  throwOnError: false,
+  strict: false
+});
+</script>
+</body></html>
