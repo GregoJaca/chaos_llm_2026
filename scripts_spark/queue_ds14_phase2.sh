@@ -12,9 +12,14 @@ OUT=results_big/ds14
 R=0.1
 WFLAG="--layers 0,4,8,12,16,20,24,28,32,36,40,44,47"
 
-# ---- wait for phase 1 ----
-until grep -q PHASE1_DONE ~/LLM/queue_p1.log 2>/dev/null; do sleep 60; done
+# ---- wait for phase 1b (true-window core) ----
+until grep -q PHASE1B_DONE ~/LLM/phase1b.log 2>/dev/null; do sleep 60; done
 echo "=== phase2 start $(date) ==="
+
+# window actuation sanity (phase1b already verified; cheap re-check)
+if [ ! -f $OUT/window_verified ]; then
+  echo "!!! window_verified marker missing - refusing to run the window program"; exit 3
+fi
 
 # 1. no-clipping reference: W=4096, 32 dirs, 500 tokens (also the fixed-token source)
 if [ ! -f $OUT/a1_inter_w4096/a1.npz ]; then

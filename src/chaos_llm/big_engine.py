@@ -125,15 +125,39 @@ def load_big(model, dtype="float32", attn="sdpa", load_guard_gb=8.0):
 
 
 def set_window(model, window):
-    """Same semantics as protocol.set_window (config-level sliding window)."""
+    """Set the sliding window on every layer.
+
+    transformers >=4.5x gates per-layer windows on config.layer_types AND
+    caches has_sliding_layers / attention_type / self_attn.sliding_window at
+    model init, so all of them must be patched after loading. With window=0
+    or >= max_position_embeddings the model runs full attention.
+    """
     cfg = model.config
-    if hasattr(cfg, "sliding_window"):
-        cfg.sliding_window = int(window)
-        if hasattr(cfg, "use_sliding_window"):
-            cfg.use_sliding_window = True
-        return True
-    print("WARNING: config has no sliding_window; window ignored", flush=True)
-    return False
+    tc = getattr(cfg, "text_config", cfg)
+    if not hasattr(tc, "sliding_window"):
+        print("WARNING: config has no sliding_window; window ignored", flush=True)
+        return False
+    n = getattr(tc, "num_hidden_layers", None)
+    if not n:
+        print("WARNING: cannot find num_hidden_layers; window ignored", flush=True)
+        return False
+    max_pos = getattr(tc, "max_position_embeddings", 10 ** 9) or 10 ** 9
+    full = (not window) or (int(window) >= max_pos)
+    w = max_pos if full else int(window)
+    tc.sliding_window = w
+    if hasattr(tc, "use_sliding_window"):
+        tc.use_sliding_window = not full
+    tc.layer_types = ["sliding_attention"] * n if not full else ["full_attention"] * n
+    try:
+        b = base_model(model)
+        b.has_sliding_layers = not full
+        for layer in b.layers:
+            layer.attention_type = "sliding_attention" if not full else "full_attention"
+            if hasattr(layer, "self_attn"):
+                layer.self_attn.sliding_window = w if not full else None
+    except RuntimeError:
+        pass
+    return not full
 
 
 def base_model(model):
