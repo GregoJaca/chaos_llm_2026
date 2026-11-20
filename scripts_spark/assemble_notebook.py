@@ -8,6 +8,7 @@ import re
 HERE = "notebook_big"
 
 part0 = open(f"{HERE}/sections/part0.md", encoding="utf-8").read()
+part1 = open(f"{HERE}/sections/part1_core.md", encoding="utf-8").read()
 a1 = open(f"{HERE}/sections/section_a1_deep.md", encoding="utf-8").read()
 xs = open(f"{HERE}/sections/section_cross_scale.md", encoding="utf-8").read()
 
@@ -67,6 +68,6 @@ xs = xs.replace(
     "regime (on the 1.5B the window is known to change the margin spectrum). The "
     "true-window 14B rerun will close both gaps.", 1)
 
-out = part0 + "\n\n" + CALL + "\n\n" + a1 + "\n\n---\n\n" + xs + "\n"
+out = part0 + "\n\n" + part1 + "\n\n" + CALL + "\n\n" + a1 + "\n\n---\n\n" + xs + "\n"
 open(f"{HERE}/notebook_big.md", "w", encoding="utf-8").write(out)
 print("assembled", len(out), "chars")
