@@ -68,9 +68,16 @@ def resolve_model_path(model):
     return p
 
 
-def load_big(model, dtype="float32", attn="sdpa", gpu_mem_gb=None):
-    """Load a large model in one fixed precision. Returns (model, tokenizer, path, info)."""
+def load_big(model, dtype="float32", attn="sdpa", load_guard_gb=8.0):
+    """Load a large model in one fixed precision. Returns (model, tokenizer, path, info).
+
+    Refuses to load when the unified-memory pool cannot hold the weights plus
+    `load_guard_gb` of headroom (shared machine; colleagues' servers must not
+    be disturbed).
+    """
     from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+
+    from chaos_llm.protocol import estimate_params
 
     configure_torch()
     path = resolve_model_path(model)
@@ -79,17 +86,28 @@ def load_big(model, dtype="float32", attn="sdpa", gpu_mem_gb=None):
     H = getattr(tc, "hidden_size", getattr(cfg, "hidden_size", None))
     L = getattr(tc, "num_hidden_layers", getattr(cfg, "num_hidden_layers", None))
     V = getattr(tc, "vocab_size", getattr(cfg, "vocab_size", None))
+    params = estimate_params(tc)
+    bytes_per = {"float32": 4, "bfloat16": 2, "float16": 2}[dtype]
+    weights_gb = params * bytes_per / 1e9
+    if mem_available_gb() < weights_gb + load_guard_gb:
+        raise RuntimeError(
+            f"memory guard: need ~{weights_gb:.0f} GB weights + {load_guard_gb} GB headroom, "
+            f"only {mem_available_gb():.1f} GB available; refusing to load")
     info = dict(path=path, dtype=dtype, hidden_size=H, num_layers=L, vocab_size=V,
+                params=params, weights_gb=round(weights_gb, 1),
                 sliding_window=getattr(tc, "sliding_window", None),
                 arch=cfg.architectures[0] if getattr(cfg, "architectures", None) else "?")
     tok = AutoTokenizer.from_pretrained(path, local_files_only=True)
     td = {"float32": torch.float32, "bfloat16": torch.bfloat16, "float16": torch.float16}[dtype]
-    if dtype == "float32":
-        need = (gpu_mem_gb if gpu_mem_gb else 0)
+    # GB10 unified memory: CPU and GPU share one physical pool, so a CPU-side
+    # materialisation followed by .cuda() would transiently need 2x the weights
+    # (118 GB for a 14B fp32) and OOM the shared machine. device_map streams
+    # shards tensor-by-tensor straight onto the GPU instead.
     m = AutoModelForCausalLM.from_pretrained(
         path, torch_dtype=td, local_files_only=True, attn_implementation=attn,
-        low_cpu_mem_usage=True,
-    ).cuda().eval()
+        low_cpu_mem_usage=True, device_map={"": 0},
+    )
+    m.eval()
     m._chaos_info = info
     return m, tok, path, info
 

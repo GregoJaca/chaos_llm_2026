@@ -41,19 +41,26 @@ def merge_parts(parts_dir, nr, K, nl, T, D, nvec, radii):
     dm = np.zeros((nr, K, T), dtype=np.float32)
     cos = np.zeros((nr, K, nl, T), dtype=np.float32)
     dh_last = np.zeros((nr, nvec, T, D), dtype=np.float32) if nvec else None
+    filled = np.zeros((nr, K), dtype=bool)
     for ri in range(nr):
-        for start in range(0, K):
-            p = os.path.join(parts_dir, f"r{ri}_d{start:05d}.npz")
-            if not os.path.exists(p):
-                raise FileNotFoundError(f"missing part {p}")
-            d = np.load(p)
-            end = min(start + d["dh_norm"].shape[0], K)
-            dh_norm[ri, start:end] = d["dh_norm"][:end - start]
-            dm[ri, start:end] = d["dm"][:end - start]
-            cos[ri, start:end] = d["cos"][:end - start]
-            for j in range(end - start):
-                if start + j < nvec and "dh_final" in d:
-                    dh_last[ri, start + j] = d["dh_final"][j]
+        for name in sorted(os.listdir(parts_dir)):
+            if not name.startswith(f"r{ri}_"):
+                continue
+            d = np.load(os.path.join(parts_dir, name))
+            starts = d["starts"]
+            n = len(starts)
+            if filled[ri, starts].any():
+                raise RuntimeError(f"overlapping part {name}")
+            dh_norm[ri, starts] = d["dh_norm"]
+            dm[ri, starts] = d["dm"]
+            cos[ri, starts] = d["cos"]
+            if "vec_starts" in d and d["vec_starts"].size:
+                for j, di in enumerate(d["vec_starts"]):
+                    dh_last[ri, di] = d["dh_final"][j]
+            filled[ri, starts] = True
+        missing = int((~filled[ri]).sum())
+        if missing:
+            raise RuntimeError(f"radius {radii[ri]}: {missing} directions missing from parts")
     return dh_norm, dm, cos, dh_last
 
 
@@ -137,24 +144,42 @@ def main():
 
     simplex, subspace = build_direction_blocks(K, P, D, block=args.dirs_per_block, seed=args.seed)
     nl = len(layers)
-    m_t = torch.as_tensor(margins, device="cuda")
-    top1v = torch.as_tensor(top1, device="cuda").view(1, T, 1)
-    top2v = torch.as_tensor(top2, device="cuda").view(1, T, 1)
 
     for ri, r in enumerate(radii):
-        for start in range(0, K, args.batch_dirs):
-            part = os.path.join(parts_dir, f"r{ri}_d{start:05d}.npz")
-            if os.path.exists(part):
+        # resume: directions already covered by existing parts for this radius
+        covered = np.zeros(K, dtype=bool)
+        for name in os.listdir(parts_dir):
+            if name.startswith(f"r{ri}_"):
+                covered[np.load(os.path.join(parts_dir, name))["starts"]] = True
+        todo = [di for di in range(K) if not covered[di]]
+        cur = max(1, args.batch_dirs)
+        i = 0
+        while i < len(todo):
+            chunk = todo[i:i + cur]
+            try:
+                E = perturb_rows(Efull, P, D, simplex, subspace, chunk, r)
+                with torch.inference_mode():
+                    res = teacher_batch(
+                        model, E, P, T, layers, h0, wdiff, capture,
+                        vector_rows=[j for j, di in enumerate(chunk) if di < min(args.vector_rows, K)])
+            except torch.OutOfMemoryError:
+                torch.cuda.empty_cache()
+                if cur == 1:
+                    raise
+                cur = max(1, cur // 2)
+                print(f"OOM at r={r:g}; halving batch to {cur}", flush=True)
                 continue
-            idx = list(range(start, min(start + args.batch_dirs, K)))
-            E = perturb_rows(Efull, P, D, simplex, subspace, idx, r)
-            with torch.inference_mode():
-                res = teacher_batch(model, E, P, T, layers, h0, wdiff, capture,
-                                    vector_rows=[j for j in range(len(idx)) if idx[j] < args.vector_rows])
-            np.savez(part, dh_norm=res["dh_norm"], dm=res["dm"], cos=res["cos"],
-                     dh_final=np.stack(list(res["dh_final_rows"].values())) if res.get("dh_final_rows") else np.zeros(0))
-            print(f"r={r:g} dirs {start}-{start+len(idx)-1}  t={time.time()-t0:.0f}s "
-                  f"mem={torch.cuda.memory_allocated()/2**30:.1f}G avail_ok", flush=True)
+            vec_idx = [di for di in chunk if di < min(args.vector_rows, K)]
+            np.savez(os.path.join(parts_dir, f"r{ri}_d{chunk[0]:05d}.npz"),
+                     starts=np.asarray(chunk, dtype=np.int64),
+                     dh_norm=res["dh_norm"], dm=res["dm"], cos=res["cos"],
+                     vec_starts=np.asarray(vec_idx, dtype=np.int64),
+                     dh_final=(np.stack([res["dh_final_rows"][j] for j, di in enumerate(chunk)
+                                          if di < min(args.vector_rows, K)])
+                               if vec_idx else np.zeros((0, T, D), dtype=np.float32)))
+            print(f"r={r:g} dirs {chunk[0]}-{chunk[-1]} (n={len(chunk)})  t={time.time()-t0:.0f}s "
+                  f"mem_avail={check_mem(0):.1f}G", flush=True)
+            i += len(chunk)
             del E, res
             torch.cuda.empty_cache()
 
