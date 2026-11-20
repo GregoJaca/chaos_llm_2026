@@ -228,7 +228,7 @@ def baseline_pass(model, Efull, P, T, layers, capture):
         # state 0 = the embeddings themselves (embed_tokens is skipped with inputs_embeds)
         h0[l] = (Efull[0, P:P + T] if l == 0 else capture.store[l][0, P:P + T]).detach().clone()
     h0["final"] = hf.detach().clone()
-    return margins, top2.indices[0, 0].cpu().numpy(), top2.indices[0, 1].cpu().numpy(), h0
+    return margins, top2.indices[:, 0].cpu().numpy(), top2.indices[:, 1].cpu().numpy(), h0
 
 
 @torch.inference_mode()
