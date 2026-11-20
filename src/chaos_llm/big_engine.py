@@ -47,9 +47,12 @@ def configure_torch():
     """Deterministic fp32 matmul settings; call before loading the model."""
     assert not torch.backends.cuda.matmul.allow_tf32, "TF32 must stay off (margin science)"
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
-    os.environ.setdefault(
-        "C_INCLUDE_PATH",
-        os.path.expanduser("~/LLM/pydev/extracted/usr/include/python3.12"))
+    inc = os.path.expanduser("~/LLM/pydev/extracted/usr/include")
+    pyinc = os.path.join(inc, "python3.12")
+    if os.path.exists(os.path.join(pyinc, "Python.h")):
+        plat = os.path.join(inc, "aarch64-linux-gnu", "python3.12")
+        os.environ["C_INCLUDE_PATH"] = pyinc + (os.pathsep + plat if os.path.isdir(plat) else "")
+    os.environ.setdefault("C_INCLUDE_PATH", "")
     torch.backends.cudnn.benchmark = False
 
 
