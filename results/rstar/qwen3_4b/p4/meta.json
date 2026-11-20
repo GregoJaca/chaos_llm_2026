@@ -1,0 +1,24 @@
+{
+  "model": "/u0/grego/LLM/models--Qwen--Qwen3-4B-Instruct-2507",
+  "model_path": "/u0/grego/LLM/models--Qwen--Qwen3-4B-Instruct-2507",
+  "dtype": "float32",
+  "window": 100,
+  "prompt": "Explain the relationship between sleep and memory. Cover sleep stages, consolidation of declarative and procedural memories, the role of the hippocampus and cortex, dream function theories, and the effects of sleep deprivation. Discuss what the evidence does and does not support.",
+  "prompt_len": 51,
+  "max_new_tokens": 300,
+  "num_directions": 512,
+  "radii": [
+    0.1
+  ],
+  "layers": [
+    7,
+    14,
+    21
+  ],
+  "seed": 69,
+  "fixed_tokens_from": null,
+  "baseline_duplicate_identical": true,
+  "torch": "2.5.1+cu121",
+  "transformers": "4.57.6",
+  "elapsed_sec": 156.4
+}

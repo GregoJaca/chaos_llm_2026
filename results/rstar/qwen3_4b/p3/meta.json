@@ -1,0 +1,24 @@
+{
+  "model": "/u0/grego/LLM/models--Qwen--Qwen3-4B-Instruct-2507",
+  "model_path": "/u0/grego/LLM/models--Qwen--Qwen3-4B-Instruct-2507",
+  "dtype": "float32",
+  "window": 100,
+  "prompt": "Explain modern software engineering practices in depth. Cover version control, testing strategies, continuous integration, code review, design patterns, refactoring, observability, and incident response. Discuss trade-offs and common failure modes in large codebases.",
+  "prompt_len": 47,
+  "max_new_tokens": 300,
+  "num_directions": 512,
+  "radii": [
+    0.1
+  ],
+  "layers": [
+    7,
+    14,
+    21
+  ],
+  "seed": 69,
+  "fixed_tokens_from": null,
+  "baseline_duplicate_identical": true,
+  "torch": "2.5.1+cu121",
+  "transformers": "4.57.6",
+  "elapsed_sec": 154.8
+}

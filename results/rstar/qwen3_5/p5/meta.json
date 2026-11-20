@@ -1,0 +1,24 @@
+{
+  "model": "/u0/grego/LLM/models--Qwen--Qwen3.5-2B",
+  "model_path": "/u0/grego/LLM/models--Qwen--Qwen3.5-2B",
+  "dtype": "float32",
+  "window": 100,
+  "prompt": "Explain how volcanoes work and how they relate to plate tectonics. Cover magma generation, eruption styles, hazards, prediction methods, and the role of volcanism in the carbon cycle and mass extinctions. Provide examples from different tectonic settings.",
+  "prompt_len": 53,
+  "max_new_tokens": 300,
+  "num_directions": 512,
+  "radii": [
+    0.1
+  ],
+  "layers": [
+    7,
+    14,
+    21
+  ],
+  "seed": 69,
+  "fixed_tokens_from": null,
+  "baseline_duplicate_identical": true,
+  "torch": "2.7.0+cu126",
+  "transformers": "5.23.0",
+  "elapsed_sec": 84.8
+}

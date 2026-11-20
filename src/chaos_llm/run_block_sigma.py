@@ -80,11 +80,11 @@ def main():
                 with torch.no_grad():
                     _, u = torch.func.jvp(f, (Hl,), (V,))
                 u = (u[0, t] if u.dim() == 3 else u[t]).float()
-                # J^T u : vjp with a cotangent that is zero except at position t
-                _, vjp_fn = torch.func.vjp(f, Hl)
-                cot = torch.zeros_like(Hl); cot[0, t] = u.to(Hl.dtype)
-                with torch.no_grad():
-                    (w,) = vjp_fn(cot)
+                # J^T u by reverse mode on the block (vjp transform breaks on in-place rotary)
+                Hl2 = Hl.detach().clone().requires_grad_(True)
+                out = f(Hl2)
+                o = out[0, t] if out.dim() == 3 else out[t]
+                (w,) = torch.autograd.grad((o * u.to(o.dtype)).sum(), Hl2)
                 w = w[0, t].float()
                 nv = w.norm()
                 v = w / (nv + 1e-30)
