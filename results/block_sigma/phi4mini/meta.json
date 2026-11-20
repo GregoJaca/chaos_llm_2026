@@ -1,0 +1,12 @@
+{
+  "model": "/u0/grego/LLM/models--microsoft--Phi-4-mini-instruct",
+  "run": "results/models/phi4mini/a1",
+  "tokens": [
+    16,
+    50,
+    100,
+    143
+  ],
+  "iters": 20,
+  "elapsed": 65.9
+}

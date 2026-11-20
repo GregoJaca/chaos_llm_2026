@@ -34,7 +34,7 @@ def main():
     nL = len(blocks)
     E = full_embeddings(model, pids, gids)
     L = int(E.shape[1])
-    with torch.inference_mode():
+    with torch.no_grad():
         o = model(inputs_embeds=E,
                   attention_mask=torch.ones((1, L), dtype=torch.long, device="cuda"),
                   output_hidden_states=True, use_cache=False)
@@ -53,7 +53,7 @@ def main():
 
     for i, b in enumerate(blocks):
         handles.append(b.register_forward_pre_hook(mk(i), with_kwargs=True))
-    with torch.inference_mode():
+    with torch.no_grad():
         model(inputs_embeds=E,
               attention_mask=torch.ones((1, L), dtype=torch.long, device="cuda"),
               output_hidden_states=False, use_cache=False)
