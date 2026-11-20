@@ -47,6 +47,9 @@ def configure_torch():
     """Deterministic fp32 matmul settings; call before loading the model."""
     assert not torch.backends.cuda.matmul.allow_tf32, "TF32 must stay off (margin science)"
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+    os.environ.setdefault(
+        "C_INCLUDE_PATH",
+        os.path.expanduser("~/LLM/pydev/extracted/usr/include/python3.12"))
     torch.backends.cudnn.benchmark = False
 
 
@@ -77,8 +80,6 @@ def load_big(model, dtype="float32", attn="sdpa", load_guard_gb=8.0):
     """
     from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
 
-    from chaos_llm.protocol import estimate_params
-
     configure_torch()
     path = resolve_model_path(model)
     cfg = AutoConfig.from_pretrained(path, local_files_only=True)
@@ -86,7 +87,14 @@ def load_big(model, dtype="float32", attn="sdpa", load_guard_gb=8.0):
     H = getattr(tc, "hidden_size", getattr(cfg, "hidden_size", None))
     L = getattr(tc, "num_hidden_layers", getattr(cfg, "num_hidden_layers", None))
     V = getattr(tc, "vocab_size", getattr(cfg, "vocab_size", None))
-    params = estimate_params(tc)
+    F = getattr(tc, "intermediate_size", 4 * (H or 2560))
+    kv = getattr(tc, "num_key_value_heads", getattr(tc, "num_attention_heads", 1) or 1)
+    nh = getattr(tc, "num_attention_heads", kv)
+    hd = getattr(tc, "head_dim", (H or 2560) // (nh or 1))
+    # q/k/v/o projections (GQA) + SwiGLU MLP (gate, up, down = 3*H*F)
+    attn = 2 * H * (nh * hd) + 2 * H * (kv * hd)
+    emb = V * H * (1 if getattr(tc, "tie_word_embeddings", False) else 2)
+    params = emb + L * (attn + 3 * H * F) + 2 * H
     bytes_per = {"float32": 4, "bfloat16": 2, "float16": 2}[dtype]
     weights_gb = params * bytes_per / 1e9
     if mem_available_gb() < weights_gb + load_guard_gb:
