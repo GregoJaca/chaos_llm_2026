@@ -50,9 +50,10 @@ def configure_torch():
     inc = os.path.expanduser("~/LLM/pydev/extracted/usr/include")
     pyinc = os.path.join(inc, "python3.12")
     if os.path.exists(os.path.join(pyinc, "Python.h")):
-        plat = os.path.join(inc, "aarch64-linux-gnu", "python3.12")
-        os.environ["C_INCLUDE_PATH"] = pyinc + (os.pathsep + plat if os.path.isdir(plat) else "")
-    os.environ.setdefault("C_INCLUDE_PATH", "")
+        # Python.h itself lives in python3.12/, but its platform pyconfig.h is
+        # included as <aarch64-linux-gnu/python3.12/pyconfig.h>, i.e. relative
+        # to the base include dir; both must be on the search path.
+        os.environ["C_INCLUDE_PATH"] = pyinc + os.pathsep + inc
     torch.backends.cudnn.benchmark = False
 
 
