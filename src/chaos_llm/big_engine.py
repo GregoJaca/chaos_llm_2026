@@ -92,9 +92,9 @@ def load_big(model, dtype="float32", attn="sdpa", load_guard_gb=8.0):
     nh = getattr(tc, "num_attention_heads", kv)
     hd = getattr(tc, "head_dim", (H or 2560) // (nh or 1))
     # q/k/v/o projections (GQA) + SwiGLU MLP (gate, up, down = 3*H*F)
-    attn = 2 * H * (nh * hd) + 2 * H * (kv * hd)
+    attn_params = 2 * H * (nh * hd) + 2 * H * (kv * hd)
     emb = V * H * (1 if getattr(tc, "tie_word_embeddings", False) else 2)
-    params = emb + L * (attn + 3 * H * F) + 2 * H
+    params = emb + L * (attn_params + 3 * H * F) + 2 * H
     bytes_per = {"float32": 4, "bfloat16": 2, "float16": 2}[dtype]
     weights_gb = params * bytes_per / 1e9
     if mem_available_gb() < weights_gb + load_guard_gb:
