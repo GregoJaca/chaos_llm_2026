@@ -1,0 +1,122 @@
+{
+  "run_dir": "C:\\Users\\hjaca\\research\\chaos_llm_2026\\results\\local_data\\w100_layers",
+  "model": null,
+  "window": null,
+  "meta_json_present": false,
+  "n_steps": 300,
+  "n_directions": 20,
+  "n_layers": 8,
+  "layers": [
+    0,
+    1,
+    2,
+    3,
+    7,
+    14,
+    21,
+    27
+  ],
+  "radii": [
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    0.2,
+    0.3,
+    0.5,
+    0.7,
+    1.0,
+    1.5,
+    2.0
+  ],
+  "run_radius": 0.3,
+  "gain_reference_radius": 0.03,
+  "min_margin": {
+    "step": 123,
+    "value": 0.0201568603515625
+  },
+  "smallest_margins": [
+    {
+      "step": 123,
+      "value": 0.0201568603515625
+    },
+    {
+      "step": 143,
+      "value": 0.020409584045410156
+    },
+    {
+      "step": 116,
+      "value": 0.06901931762695312
+    },
+    {
+      "step": 2,
+      "value": 0.06958770751953125
+    },
+    {
+      "step": 147,
+      "value": 0.07309913635253906
+    },
+    {
+      "step": 14,
+      "value": 0.08747100830078125
+    }
+  ],
+  "n_steps_below_0.1": 6,
+  "r_star_quantiles": {
+    "p10": 0.42009543151171075,
+    "p50": 1.4563735373094682,
+    "p90": 3.8285971412897224
+  },
+  "n_directions_infinite_threshold": 0,
+  "predicted_flip_fraction_at_run_radius": 0.05,
+  "predicted_flip_directions_at_run_radius": 1,
+  "free": {
+    "path": "C:\\Users\\hjaca\\research\\chaos_llm_2026\\results\\local_data\\fr_w100_large.npz",
+    "n_radii": 3,
+    "exact_fraction_all": 0.9666666666666667,
+    "false_alarms_total": 0,
+    "misses_total": 0,
+    "per_radius": [
+      {
+        "radius": 0.5,
+        "n_directions": 20,
+        "n_observed_flips": 3,
+        "n_predicted_flips": 3,
+        "n_exact": 20,
+        "exact_fraction_all": 1.0,
+        "exact_fraction_among_flipped": 1.0,
+        "false_alarms": 0,
+        "misses": 0,
+        "mean_observed_first_flip_step": 47.0,
+        "mean_predicted_first_flip_step": 47.0
+      },
+      {
+        "radius": 1.0,
+        "n_directions": 20,
+        "n_observed_flips": 8,
+        "n_predicted_flips": 8,
+        "n_exact": 19,
+        "exact_fraction_all": 0.95,
+        "exact_fraction_among_flipped": 0.875,
+        "false_alarms": 0,
+        "misses": 0,
+        "mean_observed_first_flip_step": 67.25,
+        "mean_predicted_first_flip_step": 70.0
+      },
+      {
+        "radius": 2.0,
+        "n_directions": 20,
+        "n_observed_flips": 16,
+        "n_predicted_flips": 16,
+        "n_exact": 19,
+        "exact_fraction_all": 0.95,
+        "exact_fraction_among_flipped": 0.9375,
+        "false_alarms": 0,
+        "misses": 0,
+        "mean_observed_first_flip_step": 45.0,
+        "mean_predicted_first_flip_step": 45.125
+      }
+    ]
+  }
+}
