@@ -1,13 +1,16 @@
-"""Build notebook.md -> notebook.html (KaTeX math, offline) -> notebook.pdf (Edge/Chrome headless).
+"""Build notebook.md -> notebook.html (offline KaTeX) -> notebook.pdf (headless Chrome),
+optionally serve over HTTP and rebuild automatically whenever notebook.md changes.
 
 Usage:
   python .preview/build.py            # build once
   python .preview/build.py --watch    # rebuild on change
-  python .preview/build.py --serve    # build, serve over HTTP (Tailscale), watch
+  python .preview/build.py --serve    # build, serve over HTTP (Tailscale), keep watching
+
+Self-healing: the loop rebuilds whenever notebook.md is newer than notebook.pdf, so a
+missed event, a crashed browser, a killed process or a laptop restart all recover by
+themselves. Every run is logged to .preview/build.log.
 """
 
-import base64
-import html as htmllib
 import os
 import re
 import socket
@@ -15,16 +18,20 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 NOTE_DIR = os.path.dirname(HERE)
-ROOT = os.path.dirname(NOTE_DIR)          # chaos_llm_2026
 SRC = os.path.join(NOTE_DIR, "notebook.md")
 HTML_OUT = os.path.join(NOTE_DIR, "notebook.html")
 PDF_OUT = os.path.join(NOTE_DIR, "notebook.pdf")
+LOG_PATH = os.path.join(HERE, "build.log")
 KATEX = os.path.join(HERE, "katex")
 PORT = int(os.environ.get("NOTEBOOK_PORT", "8899"))
+
+POLL_SECONDS = 2.0          # how often to check notebook.md
+RETRY_SECONDS = 20.0        # back-off after a failed build
 
 BROWSERS = [
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
@@ -71,6 +78,34 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 """
 
 
+# --------------------------------------------------------------------------- utils
+
+def log(msg):
+    line = "%s  %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), msg)
+    print(line, flush=True)
+    try:
+        if os.path.exists(LOG_PATH) and os.path.getsize(LOG_PATH) > 2_000_000:
+            os.replace(LOG_PATH, LOG_PATH + ".1")
+        with open(LOG_PATH, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+
+
+def mtime(path):
+    try:
+        return os.path.getmtime(path)
+    except OSError:
+        return 0.0
+
+
+def is_stale():
+    """True when notebook.md is newer than the built PDF (or the PDF is missing)."""
+    return mtime(SRC) > mtime(PDF_OUT) or mtime(SRC) > mtime(HTML_OUT)
+
+
+# --------------------------------------------------------------------------- build
+
 def protect_math(text):
     """Replace $...$ / $$...$$ with tokens so markdown doesn't mangle them."""
     store = []
@@ -92,18 +127,27 @@ def restore_math(html, store):
 
 
 def build():
+    """Render markdown -> html -> pdf. Returns True on success, never raises."""
     import markdown
 
     t0 = time.time()
-    with open(SRC, "r", encoding="utf-8") as f:
-        md = f.read()
+    try:
+        with open(SRC, "r", encoding="utf-8") as f:
+            md = f.read()
+    except Exception as e:
+        log("! cannot read %s: %s" % (SRC, e))
+        return False
 
-    body_md, math = protect_math(md)
-    body = markdown.markdown(
-        body_md,
-        extensions=["tables", "fenced_code", "sane_lists", "attr_list", "toc"],
-    )
-    body = restore_math(body, math)
+    try:
+        body_md, math = protect_math(md)
+        body = markdown.markdown(
+            body_md,
+            extensions=["tables", "fenced_code", "sane_lists", "attr_list", "toc"],
+        )
+        body = restore_math(body, math)
+    except Exception:
+        log("! markdown error:\n" + traceback.format_exc())
+        return False
 
     stamp = time.strftime("%Y-%m-%d %H:%M:%S")
     page = f"""<!DOCTYPE html>
@@ -115,8 +159,8 @@ def build():
 <style>{CSS}</style>
 </head><body>
 <header class="banner">
-  built {stamp} &nbsp;·&nbsp; source: notebook.md &nbsp;·&nbsp;
-  <a href="notebook.pdf">PDF</a> &nbsp;·&nbsp; <a href="notebook.md">Markdown</a>
+  built {stamp} &nbsp;&middot;&nbsp; source: notebook.md &nbsp;&middot;&nbsp;
+  <a href="notebook.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook.md">Markdown</a>
 </header>
 {body}
 <script src=".preview/katex/katex.min.js"></script>
@@ -130,17 +174,27 @@ renderMathInElement(document.body, {{
 </script>
 </body></html>
 """
-    with open(HTML_OUT, "w", encoding="utf-8") as f:
-        f.write(page)
+    try:
+        tmp_html = HTML_OUT + ".tmp"
+        with open(tmp_html, "w", encoding="utf-8") as f:
+            f.write(page)
+        os.replace(tmp_html, HTML_OUT)
+    except Exception:
+        log("! html write error:\n" + traceback.format_exc())
+        return False
 
     exe = next((b for b in BROWSERS if os.path.exists(b)), None)
     if not exe:
-        print("! no Edge/Chrome found; wrote HTML only")
+        log("! no Edge/Chrome found; wrote HTML only")
         return False
 
     tmp_pdf = PDF_OUT + ".tmp.pdf"
-    if os.path.exists(tmp_pdf):
-        os.remove(tmp_pdf)
+    try:
+        if os.path.exists(tmp_pdf):
+            os.remove(tmp_pdf)
+    except OSError:
+        pass
+
     cmd = [
         exe,
         "--headless=new",
@@ -151,25 +205,101 @@ renderMathInElement(document.body, {{
         f"--print-to-pdf={tmp_pdf}",
         "file:///" + HTML_OUT.replace("\\", "/"),
     ]
-    r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
-    ok = os.path.exists(tmp_pdf) and os.path.getsize(tmp_pdf) > 10000
-    if ok:
-        os.replace(tmp_pdf, PDF_OUT)
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    except subprocess.TimeoutExpired:
+        log("! browser timed out after 300s")
+        return False
+    except Exception:
+        log("! browser launch failed:\n" + traceback.format_exc())
+        return False
+
+    if os.path.exists(tmp_pdf) and os.path.getsize(tmp_pdf) > 10_000:
+        # sanity: a healthy PDF is much bigger than a blank page
+        try:
+            os.replace(tmp_pdf, PDF_OUT)
+        except Exception:
+            log("! cannot replace pdf: %s" % traceback.format_exc())
+            return False
     else:
-        print("! pdf failed:", (r.stderr or r.stdout)[-600:])
-    print(
-        "built %s  html %.0f kB  pdf %.0f kB  in %.1fs"
+        tail = (r.stderr or r.stdout or "")[-600:]
+        log("! pdf failed (exit %s): %s" % (r.returncode, tail.replace("\n", " ")))
+        try:
+            os.remove(tmp_pdf)
+        except OSError:
+            pass
+        return False
+
+    log("built %s  html %.0f kB  pdf %.1f MB  in %.1fs"
         % (stamp, os.path.getsize(HTML_OUT) / 1e3,
-           os.path.getsize(PDF_OUT) / 1e3 if os.path.exists(PDF_OUT) else 0,
-           time.time() - t0)
-    )
-    return ok
+           os.path.getsize(PDF_OUT) / 1e6, time.time() - t0))
+    return True
+
+
+# --------------------------------------------------------------------------- server
+
+INDEX = """<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>notebook</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;margin:0;padding:28px 20px;
+max-width:640px;margin:0 auto;color:#111;background:#fafafa}
+h1{font-size:1.35em;margin:0 0 4px}
+p.meta{color:#666;font-size:.85em;margin:0 0 26px}
+a.card{display:block;text-decoration:none;color:inherit;background:#fff;border:1px solid #ddd;
+border-radius:10px;padding:16px 18px;margin:10px 0;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+a.card b{display:block;font-size:1.05em;margin-bottom:3px}
+a.card span{color:#666;font-size:.85em}
+</style></head><body>
+<h1>notebook</h1>
+<p class="meta">%s</p>
+<a class="card" href="notebook.pdf"><b>PDF (newest)</b><span>Download / open &mdash; equations and figures included</span></a>
+<a class="card" href="notebook.html"><b>HTML</b><span>Scroll online</span></a>
+<a class="card" href="notebook.md"><b>Markdown</b><span>Raw source</span></a>
+</body></html>
+"""
+
+
+def serve():
+    os.chdir(NOTE_DIR)
+
+    class Handler(SimpleHTTPRequestHandler):
+        def end_headers(self):
+            self.send_header("Cache-Control", "no-store, max-age=0")
+            self.send_header("Pragma", "no-cache")
+            super().end_headers()
+
+        def do_GET(self):
+            if self.path in ("/", "/index.html"):
+                body = (INDEX % (
+                    "notebook.md last edited %s"
+                    % time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime(SRC)))
+                )).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
+            super().do_GET()
+
+        def log_message(self, fmt, *args):
+            pass
+
+    srv = ThreadingHTTPServer(("0.0.0.0", PORT), Handler)
+    srv.daemon_threads = True
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    log("serving %s on port %d" % (NOTE_DIR, PORT))
+    for ip in local_ips():
+        log("  http://%s:%d/   (pdf: /notebook.pdf)" % (ip, PORT))
 
 
 def local_ips():
     ips = set()
     try:
-        for line in subprocess.run(["tailscale", "ip", "-4"], capture_output=True, text=True).stdout.split():
+        out = subprocess.run(["tailscale", "ip", "-4"], capture_output=True, text=True,
+                             timeout=10).stdout
+        for line in out.split():
             if line.strip():
                 ips.add(line.strip())
     except Exception:
@@ -184,55 +314,59 @@ def local_ips():
     return sorted(ips)
 
 
-def serve():
-    os.chdir(NOTE_DIR)
-
-    class Quiet(SimpleHTTPRequestHandler):
-        def log_message(self, *a):
-            pass
-
-    srv = ThreadingHTTPServer(("0.0.0.0", PORT), Quiet)
-    threading.Thread(target=srv.serve_forever, daemon=True).start()
-    print("serving %s on port %d" % (NOTE_DIR, PORT))
-    for ip in local_ips():
-        print("  http://%s:%d/notebook.html" % (ip, PORT))
-        print("  http://%s:%d/notebook.pdf" % (ip, PORT))
+def port_in_use():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.settimeout(1.0)
+        return s.connect_ex(("127.0.0.1", PORT)) == 0
+    finally:
+        s.close()
 
 
-def watch():
-    last = None
-    pending = False
-    changed_at = 0.0
-    print("watching", SRC)
+# --------------------------------------------------------------------------- loop
+
+def watch(serve_mode=False):
+    log("watching %s (pid %d)" % (SRC, os.getpid()))
+    last_attempt = 0.0
     while True:
         try:
-            m = os.path.getmtime(SRC)
-        except OSError:
-            time.sleep(1)
-            continue
-        if last is None:
-            last = m
-        elif m != last:
-            last = m
-            pending = True
-            changed_at = time.time()
-        if pending and time.time() - changed_at > 1.2:
-            pending = False
-            try:
-                build()
-                print("  (re)built after change", time.strftime("%H:%M:%S"))
-            except Exception as e:
-                print("! build error:", e)
-        time.sleep(0.5)
+            if is_stale() and time.time() - last_attempt > RETRY_SECONDS:
+                last_attempt = time.time()
+                if build():
+                    # guard against a file edited *during* the build
+                    if is_stale():
+                        log("source changed during build; rebuilding")
+                        last_attempt = 0.0
+        except Exception:
+            log("! loop error:\n" + traceback.format_exc())
+        time.sleep(POLL_SECONDS)
+
+
+def main():
+    args = sys.argv[1:]
+    if "--serve" in args:
+        if port_in_use():
+            log("port %d already in use - another instance is running, exiting" % PORT)
+            return 0
+        serve()                      # serve the previous PDF immediately
+        try:
+            build()                  # then refresh it
+        except Exception:
+            log("! initial build error:\n" + traceback.format_exc())
+        watch(serve_mode=True)
+    elif "--watch" in args:
+        try:
+            build()
+        except Exception:
+            log("! initial build error:\n" + traceback.format_exc())
+        watch()
+    else:
+        return 0 if build() else 1
+    return 0
 
 
 if __name__ == "__main__":
-    if "--serve" in sys.argv:
-        build()
-        serve()
-        watch()
-    elif "--watch" in sys.argv:
-        build()
-        watch()
-    else:
-        sys.exit(0 if build() else 1)
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(0)
