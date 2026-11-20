@@ -25,16 +25,18 @@ if [ ! -f $OUT/calib/meta.json ]; then
 fi
 
 # 2. core A1 ensemble: 1000 directions at the calibrated radius, 300 tokens.
-#    (Radii placeholder 0.1: REPLACE after reading the calibration output.)
 R=${A1_RADIUS:-0.1}
 if [ ! -f $OUT/a1_inter_w100/a1.npz ]; then
   $PY -m chaos_llm.run_a1_big --model $M --prompt @prompts.txt \
       --window 100 --max-new-tokens 300 --num-directions 1000 \
       --radii $R --batch-dirs 16 --vector-rows 24 \
       --out $OUT/a1_inter_w100 2>&1 | tee -a $OUT/a1_inter_w100.log
+  if [ ! -f $OUT/a1_inter_w100/a1.npz ]; then
+    echo "!!! A1 FAILED - stopping the queue (inspect $OUT/a1_inter_w100.log)"; exit 1
+  fi
 fi
 
-# 3. free-run validation at three radii (all 1000 directions are cheap in batch)
+# 3. free-run validation at three radii (all 1000 directions, batched)
 if [ ! -f $OUT/free_inter_w100/summary.json ]; then
   $PY -m chaos_llm.run_free_big --model $M --run $OUT/a1_inter_w100 \
       --radii 0.05,0.1,0.3 --chunk 24 --out $OUT/free_inter_w100 2>&1 | tee $OUT/free_inter_w100.log

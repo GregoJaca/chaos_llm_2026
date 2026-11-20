@@ -22,6 +22,9 @@ if [ ! -f $OUT/a1_inter_w4096/a1.npz ]; then
       --window 4096 --max-new-tokens 500 --num-directions 32 \
       --radii $R --batch-dirs 8 $WFLAG \
       --out $OUT/a1_inter_w4096 2>&1 | tee -a $OUT/window.log
+  if [ ! -f $OUT/a1_inter_w4096/a1.npz ]; then
+    echo "!!! w4096 reference FAILED - stopping (inspect $OUT/window.log)"; exit 1
+  fi
 fi
 
 # 2. window sweep on the SAME tokens (the causal control): departure at t* = W - P
@@ -80,7 +83,7 @@ if [ ! -f $OUT/traj_w4096/interstellar_3000.npz ]; then
       --window 4096 --max-new-tokens 3000 --layers 47 \
       --out $OUT/traj_w4096 2>&1 | tee -a $OUT/window.log
 fi
-if [ ! -f $OUT/a1_inter_w100_cascade/a1.npz ]; then
+if [ -f $OUT/traj_w4096/interstellar_3000.npz ] && [ ! -f $OUT/a1_inter_w100_cascade/a1.npz ]; then
   $PY -m chaos_llm.run_a1_big --model $M --prompt @prompts.txt \
       --window 100 --max-new-tokens 3000 --num-directions 8 \
       --radii $R --batch-dirs 8 --layers 0,4,8,12,16,20,24,28,32,36,40,44,47 \

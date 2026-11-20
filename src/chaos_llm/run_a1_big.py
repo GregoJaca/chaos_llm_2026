@@ -153,7 +153,7 @@ def main():
     margins, top1, top2, h0 = baseline_pass(model, Efull, P, T, layers, capture)
     norm_h0 = np.stack([h0[l].norm(dim=-1).float().cpu().numpy() for l in layers])
     wdiff = wdiff_tensor(model, top1, top2)
-    print(f"baseline done: P={P} T={T} min margins {sorted(margins)[:4].round(4).tolist()}", flush=True)
+    print(f"baseline done: P={P} T={T} min margins {np.sort(margins)[:4].tolist()}", flush=True)
 
     positions = None
     if args.positions:
@@ -238,7 +238,7 @@ def main():
     save_json(os.path.join(args.out, "meta.json"), meta)
     print(json.dumps({k: v for k, v in meta.items() if k != "prompt"}, indent=2), flush=True)
     print("min margins (step,value):", sorted(
-        [(int(i), float(v)) for i, v in enumerate(margins)], key=lambda x: x[1])[:8])
+        [(int(i), float(v)) for i, v in enumerate(margins)], key=lambda x: x[1])[:8], flush=True)
 
 
 if __name__ == "__main__":
