@@ -137,18 +137,22 @@ once $P+t>W$ the oldest tokens are invisible. That is the only way $W$ can chang
 
 ## 1.2 The three things we vary
 
-**(A) Prompt perturbation** ("A1"). Add the same vector to every prompt embedding:
-$$e'_{p_i}=e_{p_i}+r\,u_i,\qquad i=1,\dots,P,$$
-where $u=(u_1,\dots,u_P)\in\mathbb{R}^{Pd}$ is a unit vector and $r$ its length. The 20
-directions used in most runs form a *simplex*: each $u$ is supported on one coordinate per
-prompt position, and any two are nearly orthogonal. Nothing is added to generated positions.
-The model then runs teacher-forced (1.3) on the unperturbed token sequence.
+**(A) Prompt perturbation** ("A1"). Add a matrix of the same shape as the prompt embeddings:
+$$E'=E+r\,u,\qquad E,u\in\mathbb{R}^{P\times d},\quad \|u\|_2=1,$$
+where $\|u\|_2$ is the Euclidean norm over the whole $P\times d$ tensor (not per position) and $r$ is
+the radius. In practice $u$ is **sparse**: we draw $K$ random entries of the flattened $P\cdot d$
+tensor (the same $K$ entries for all directions, seed 69) and fill them with an orthonormal set of
+signed patterns (a simplex, $K=20$ in most runs, $K=1536$ in the all-directions run). So a direction
+touches $K$ scattered (position, coordinate) pairs, and the nonzero entries are of order $r/\sqrt K$.
+Nothing is added to generated positions. The model then runs teacher-forced (1.3) on the unperturbed
+token sequence.
 
-**(B) Single-position ("current-state") perturbation.** Add a vector to one generated position:
-$$e'_{P+s}=e_{P+s}+r\,v,\qquad \|v\|_2=1,$$
-with $v$ a fixed Gaussian direction (24 directions in the latest runs). This is what earlier
-texts called "kick" or "nudge". **They are the same thing; from now on the word is
-perturbation.**
+**(B) Single-position ("current-state") perturbation.** Add one vector of length $d$ to one hidden
+state at one position and one layer:
+$$h'_{t,\ell}=h_{t,\ell}+r\,v,\qquad v\in\mathbb{R}^{d},\ \|v\|_2=1,$$
+with $v$ a fixed Gaussian direction (6–24 directions depending on the run). This is what earlier
+texts called "kick" or "nudge". **They are the same thing; from now on the word is perturbation.**
+All norms in the document are Euclidean.
 
 **(C) Window change.** Keep the prompt and the exact token sequence; only change $W$. This
 isolates the effect of the attention mask, with no perturbation at all ($r=0$).
