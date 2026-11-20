@@ -143,15 +143,20 @@ def final_norm(model):
 # --------------------------------------------------------------------- hooks
 
 class Capture:
-    """Forward hooks that keep only the selected layers' outputs (references,
-    not copies) plus the final-norm output (the lm_head input)."""
+    """Forward hooks that keep only the selected states (references, not copies).
+
+    Layer index follows the transformers `output_hidden_states` convention:
+    state 0 = embedding output, state l (>=1) = output of block l-1, plus the
+    final-norm output under key -1 (the lm_head input).
+    """
 
     def __init__(self, model, layers):
         self.store = {}
         self.handles = []
         b = base_model(model)
         for l in layers:
-            self.handles.append(b.layers[l].register_forward_hook(self._wrap(l)))
+            mod = b.embed_tokens if l == 0 else b.layers[l - 1]
+            self.handles.append(mod.register_forward_hook(self._wrap(l)))
         self.handles.append(final_norm(model).register_forward_hook(self._wrap(-1)))
 
     def _wrap(self, key):
@@ -208,7 +213,8 @@ def baseline_pass(model, Efull, P, T, layers, capture):
     margins = (top2.values[:, 0] - top2.values[:, 1]).detach().float().cpu().numpy()
     h0 = {}
     for l in layers:
-        h0[l] = capture.store[l][0, P:P + T].detach().clone()
+        # state 0 = the embeddings themselves (embed_tokens is skipped with inputs_embeds)
+        h0[l] = (Efull[0, P:P + T] if l == 0 else capture.store[l][0, P:P + T]).detach().clone()
     h0["final"] = hf.detach().clone()
     return margins, top2.indices[0, 0].cpu().numpy(), top2.indices[0, 1].cpu().numpy(), h0
 
@@ -232,7 +238,7 @@ def teacher_batch(model, E, P, T, layers, h0, wdiff, capture, vector_rows=()):
     dh_norm = np.zeros((B, len(layers), T), dtype=np.float32)
     cos = np.zeros((B, len(layers), T), dtype=np.float32)
     for li, l in enumerate(layers):
-        h = capture.store[l][:, P:P + T, :]  # [B, T, D]
+        h = E[:, P:P + T, :] if l == 0 else capture.store[l][:, P:P + T, :]  # [B, T, D]
         base = h0[l][None]
         diff = h - base
         dh_norm[:, li] = diff.norm(dim=-1).detach().float().cpu().numpy()
