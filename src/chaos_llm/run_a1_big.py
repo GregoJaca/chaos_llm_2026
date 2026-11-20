@@ -202,6 +202,8 @@ def main():
             torch.cuda.empty_cache()
 
     capture.remove()
+    h0_last_np = h0["final"].float().cpu().numpy()
+    h0_mid_np = h0[layers[len(layers) // 2]].float().cpu().numpy()
     del wdiff, h0, Efull
     torch.cuda.empty_cache()
 
@@ -230,6 +232,7 @@ def main():
     np.savez(final_path,
              prompt_ids=pids[0].cpu().numpy(), gen_ids=gen_ids[0].cpu().numpy(),
              margins=margins, top1=top1, top2=top2, norm_h0=norm_h0,
+             h0_last=h0_last_np, h0_mid=h0_mid_np,
              dh_norm=dh_norm, dm=dm, cos=cos,
              dh_last=dh_last if dh_last is not None else np.zeros(0),
              r_c=r_c, pred_T=pred_T,
