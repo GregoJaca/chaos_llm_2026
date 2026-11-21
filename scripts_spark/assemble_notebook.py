@@ -10,6 +10,7 @@ HERE = "notebook_big"
 part0 = open(f"{HERE}/sections/part0.md", encoding="utf-8").read()
 roadmap = open(f"{HERE}/sections/part0b_roadmap.md", encoding="utf-8").read()
 floor = open(f"{HERE}/sections/section_floor.md", encoding="utf-8").read()
+d2pipe = open(f"{HERE}/sections/section_d2_pipeline.md", encoding="utf-8").read()
 part1 = open(f"{HERE}/sections/part1_core.md", encoding="utf-8").read()
 a1 = open(f"{HERE}/sections/section_a1_deep.md", encoding="utf-8").read()
 xs = open(f"{HERE}/sections/section_cross_scale.md", encoding="utf-8").read()
@@ -70,7 +71,7 @@ xs = xs.replace(
     "regime (on the 1.5B the window is known to change the margin spectrum). The "
     "true-window 14B rerun will close both gaps.", 1)
 
-out = (part0 + "\n\n" + roadmap + "\n\n" + floor + "\n\n" + part1 + "\n\n"
+out = (part0 + "\n\n" + roadmap + "\n\n" + floor + "\n\n" + d2pipe + "\n\n" + part1 + "\n\n"
        + CALL + "\n\n" + a1 + "\n\n---\n\n" + xs + "\n")
 open(f"{HERE}/notebook_big.md", "w", encoding="utf-8").write(out)
 print("assembled", len(out), "chars")
