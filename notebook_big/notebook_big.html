@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  built 2026-11-20 20:49:07 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
+  built 2026-11-20 21:37:31 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
   <a href="notebook_big.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook_big.md">Markdown</a>
 </header>
 <h1 id="large-models-on-the-dgx-spark-definitions-data-and-every-figure-explained">Large models on the DGX Spark: definitions, data, and every figure explained</h1>
@@ -599,6 +599,237 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 <li><strong>The margin is measurable in advance.</strong> Both $F_l$ and $G_l$ come from the same cheap calibration run at two radii ($10^{-4}$ and 0.1), so $r_{\min}$ is known before the campaign, per layer, without any assumption about the model's dynamics.</li>
 <li><strong>The wall exists but is far.</strong> For this 48-block fp32 network the floor is 5.7% of the measured $r=0.1$ response at the last state (3.2% at state 12), and the response is at least 7× the floor at every one of the 300 steps, 17.5–31× in the per-state medians. A model whose state norm grows another order of magnitude at fixed gain would put $r_{\min}$ near $5\times10^{-2}$ and force the campaign radius up. The measurement here is the calibration that would detect that before it silently corrupts a result.</li>
 </ol>
+<h1 id="part-d2-the-correlation-dimension-pipeline-run-locally-from-distance-matrices">Part D2. The correlation-dimension pipeline, run locally from distance matrices</h1>
+<h2 id="summary_1">Summary</h2>
+<p>The D2 analysis is now split so that the GPU only does what it is needed for. A GPU job (<code>scripts_spark/d2_distances.py</code>) writes one full $[N,N]$ Euclidean distance matrix per trajectory; a laptop script (<code>scripts_spark/d2_local.py</code>) turns those matrices into the correlation integral $C(\epsilon)$, its local slope, the valid-window bookkeeping, TwoNN, the Levina–Bickel MLE and two loop screens — figures and JSON, no GPU, no model, no <code>torch</code>. Run time is <strong>6–7 s per 4095-token trajectory</strong> including building the matrix from the saved states, and <strong>2–3 s</strong> per trajectory at $N=4000$ from a precomputed <code>.npy</code> (1000 tokens: 1.1 s).</p>
+<p>Validated against the four 1.5B trajectories that exist locally. The reference estimator of <code>results/d2/</code> is reproduced <strong>exactly</strong> — 2.978 vs 2.978, 3.894 vs 3.894, 9.195 vs 9.195 — which is the check that matters, because it means any disagreement below is about interpretation, not arithmetic. The interpretation does change: the reference "plateau" is a chord across 6–8 adjacent points of a percentile-spaced grid, <strong>0.04–0.10 decades wide</strong>, with the $R^2$ of 0.9999 that any smooth curve gives over such a span; and on the two healthy trajectories the whole eps range between the depletion floor $10/N$ and saturation is only <strong>0.08 decades</strong> wide, so no plateau can exist there by construction. The loop trajectories are identified by a lag-distance dip (period 53 and 69, dip to 6–10% of the neighbouring lags), and one of them produces a <em>convincing but spurious</em> 0.54-decade window with $\hat D_2=1.09$. Run over all 20 local trajectories the same test finds <strong>nine repetition loops and two partial ones</strong>, including six of the sixteen 1000-token runs that had been recorded as non-loops.</p>
+<hr />
+<h2 id="1-what-the-pipeline-is">1. What the pipeline is</h2>
+<h3 id="11-input-output-command">1.1 Input, output, command</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>input (GPU)</td>
+<td><code>dist_&lt;name&gt;_h_last.npy</code>, fp32 $[N,N]$ Euclidean distance matrix, one per trajectory</td>
+</tr>
+<tr>
+<td>input (GPU, optional)</td>
+<td><code>summary.json</code>: <code>n</code>, <code>dim</code>, <code>norm_median</code>, <code>norm_growth</code>, <code>rel_nearest</code>, <code>rel_nearest_p05</code></td>
+</tr>
+<tr>
+<td>input (laptop, validation only)</td>
+<td><code>.pt</code> (torch save, read here without torch) or <code>.npz</code> with <code>h_last</code> $[N,D]$</td>
+</tr>
+<tr>
+<td>output</td>
+<td><code>notebook_big/figures/d2pipe_&lt;tag&gt;_&lt;name&gt;.png</code>, <code>…_summary.png</code>, <code>d2pipe_&lt;tag&gt;.json</code></td>
+</tr>
+<tr>
+<td>command</td>
+<td><code>python scripts_spark/d2_local.py --dir results_big/ds14/d2 --theiler 0,50,500 --out notebook_big/figures --tag ds14</code></td>
+</tr>
+<tr>
+<td>alternative</td>
+<td><code>--pt &lt;files or dirs&gt;</code> (or <code>--dist &lt;matrix.npy&gt; …</code>) computes the matrices locally in float64</td>
+</tr>
+</tbody>
+</table>
+<p>Every epsilon below is quoted in units of $d_{typ}$, the median over points of the rms distance to the other points (a robust typical separation). That makes a 1.5B trajectory (state norm ≈ 10²) and a 14B one comparable on the same axis.</p>
+<h3 id="12-definitions">1.2 Definitions</h3>
+<p>Let $d_{ij}=\lVert x_i-x_j\rVert$, $N$ points, Theiler window $W$.</p>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th>expression</th>
+<th>note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>correlation integral</td>
+<td>$C(\epsilon)=\dfrac{\#\{(i,j):\ |i-j|>W,\ d_{ij}<\epsilon\}}{\#\{(i,j):\ |i-j|>W\}}$</td>
+<td>denominator $N(N-1)-2\sum_{k\le W}(N-k)$, so $C\to1$; for $W=0$ it is exactly $\frac{2}{N(N-1)}\#\{i<j:d_{ij}<\epsilon\}$</td>
+</tr>
+<tr>
+<td>evaluation</td>
+<td>sort the upper triangle once, then <code>searchsorted</code> at each $\epsilon$</td>
+<td>90 log-spaced values of $\epsilon/d_{typ}\in[10^{-2},2.5]$; the $W$-band counts are subtracted from the $k=1\ldots W$ diagonals</td>
+</tr>
+<tr>
+<td>local slope</td>
+<td>$\mathrm{d}\log C/\mathrm{d}\log\epsilon$</td>
+<td>central differences, second-order at the edges</td>
+</tr>
+<tr>
+<td>TwoNN</td>
+<td>$\mu_i=r_2^{(i)}/r_1^{(i)}$, $\ \hat d=1/\langle\ln\mu\rangle$</td>
+<td>MLE for the Pareto tail $P(\mu>M)=M^{-d}$; the reference code's OLS fit of $-\ln(1-F)$ vs $\ln\mu$ is the same estimator and is returned too</td>
+</tr>
+<tr>
+<td>Levina–Bickel MLE</td>
+<td>$m_k(i)=\frac{1}{k-1}\sum_{j<k}\ln\frac{d_k(i)}{d_j(i)}$, $\ \hat d_k=\langle 1/m_k\rangle$</td>
+<td>$k=5,10,20$</td>
+</tr>
+<tr>
+<td>repetition screen</td>
+<td>fraction of points with nearest distance at $\lvert i-j\rvert\ge50$ below $10^{-3}d_{typ}$</td>
+<td>plus the median and p05 of that relative distance</td>
+</tr>
+<tr>
+<td>loop-period screen</td>
+<td>$p(k)=\overline{\lVert x_t-x_{t+k}\rVert}/d_{typ}$; prominence $=p(k)/\mathrm{median}\,p(k\pm1,2,3)$</td>
+<td>a drifting loop has a sharp dip at its period; a healthy trajectory has none</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-the-valid-window-rule-this-replaces-the-max-math249-search">1.3 The valid-window rule (this replaces the max-$R^2$ search)</h3>
+<p>A window is marked valid only if all three hold simultaneously:</p>
+<ol>
+<li><strong>flatness.</strong> The longest run of $\epsilon$ in which the local slope stays within $\mathrm{tol}$ of its own median, with $\mathrm{tol}=\max(0.15,\ 0.06\,\lvert\hat D_2\rvert)$ — i.e. "within 6% of its own value", with an absolute floor so low dimensions are not judged in relative units — and the run at least <strong>0.4 decades</strong> wide. The test is applied to a 3-point median filter of the slope so a single grid point cannot open a window.</li>
+<li><strong>depletion floor.</strong> $\epsilon$ above the point where $C(\epsilon)=10/N$ (at least $\sim5N$ pairs inside the ball). This is the $10/N$ edge of <code>docs/FINDINGS_AND_PROCEDURE.md</code>.</li>
+<li><strong>below saturation.</strong> $C(\epsilon)\le0.1$.</li>
+</ol>
+<p>The window width in decades is reported whether or not it is valid, together with the slope at both edges of the admissible range, so "no plateau" is a number and not a verdict. The finite-$N$ slope ceiling $2\log_{10}N$ (7.2 at $N=4095$) is drawn on every slope panel. If the window is empty the verdict is <em>no scaling region</em>; the pipeline also reports $\hat D_2$ over the whole admissible range ($C$ from $10/N$ to $0.1$) so the window dependence stays visible.</p>
+<h2 id="2-validation-on-the-15b-trajectories">2. Validation on the 1.5B trajectories</h2>
+<p>Four trajectories: two of the local long runs are period-53 / period-69 loops (<code>cyber</code>, <code>great</code>, both 4095 tokens at the last layer), two are healthy (<code>interstellar</code>, 1026 tokens; <code>astronomy_observations</code>, 1000 tokens). All four are 1536-dimensional last-layer states, greedy FP32, window 4096.</p>
+<p><img alt="pipeline summary" src="figures/d2pipe_validation_summary.png" /></p>
+<table>
+<thead>
+<tr>
+<th>trajectory</th>
+<th style="text-align: right;">$N$</th>
+<th>loop period (coverage)</th>
+<th style="text-align: right;">nearest-twin median</th>
+<th>$\hat D_2$ valid window</th>
+<th style="text-align: right;">window width</th>
+<th>T4 estimator (reproduced / published)</th>
+<th style="text-align: right;">TwoNN</th>
+<th style="text-align: right;">MLE $k{=}10$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>great</code> (loop)</td>
+<td style="text-align: right;">4095</td>
+<td><strong>69</strong> (90%)</td>
+<td style="text-align: right;">0.016</td>
+<td>— (none)</td>
+<td style="text-align: right;">0.00 dec</td>
+<td><strong>2.978 / 2.978</strong></td>
+<td style="text-align: right;">5.44</td>
+<td style="text-align: right;">3.19</td>
+</tr>
+<tr>
+<td><code>cyber</code> (loop)</td>
+<td style="text-align: right;">4095</td>
+<td><strong>53</strong> (94%)</td>
+<td style="text-align: right;">0.017</td>
+<td><strong>1.09</strong> (spurious)</td>
+<td style="text-align: right;">0.54 dec</td>
+<td><strong>3.894 / 3.894</strong></td>
+<td style="text-align: right;">6.21</td>
+<td style="text-align: right;">3.12</td>
+</tr>
+<tr>
+<td><code>interstellar</code> (healthy)</td>
+<td style="text-align: right;">1026</td>
+<td>— (0%)</td>
+<td style="text-align: right;">0.419</td>
+<td>— (none)</td>
+<td style="text-align: right;">0.00 dec</td>
+<td><strong>9.195 / 9.195</strong></td>
+<td style="text-align: right;">6.23</td>
+<td style="text-align: right;">7.91</td>
+</tr>
+<tr>
+<td><code>astronomy_observations</code> (healthy)</td>
+<td style="text-align: right;">1000</td>
+<td>— (0%)</td>
+<td style="text-align: right;">0.538</td>
+<td>— (none)</td>
+<td style="text-align: right;">0.00 dec</td>
+<td>11.35 / —</td>
+<td style="text-align: right;">6.12</td>
+<td style="text-align: right;">10.13</td>
+</tr>
+</tbody>
+</table>
+<p>Four things to read off it.</p>
+<p><strong>The reference numbers are reproduced exactly.</strong> The T4 estimator column is <code>dimension.py:d2_curve</code> run on the first 2000 states with Theiler 20, i.e. the code path that produced <code>results/d2/d2_raw_vs_shuffled.json</code>; it matches to the published four digits (2.9777, 3.8943, 9.1947). So the correlation integral and the fit search here are the same objects as in the reference implementation, and the rest of this section is a statement about what those numbers mean, not about whether they were computed right.</p>
+<p><strong>The healthy trajectories have no scaling region, and there is no room for one.</strong> For <code>interstellar</code> the admissible range runs from $\epsilon/d_{typ}=0.61$ ($C=10/N$) to $0.81$ ($C=0.1$) — <strong>0.08 decades</strong> — and across it the local slope climbs 6.1 → 8.9. A 9-dimensional cloud with 1000 points simply cannot be measured: the depletion floor and saturation are 0.08 decades apart, which is why the whole "valid interval" in the earlier analysis was 0.00–0.04 decades wide. The T4 value 9.195 comes from a window 0.102 decades wide, 6 of 22 grid points, inside which $C$ rises by 0.14 (a seventh of the full range): a chord, not a plateau.</p>
+<p><strong>Loops give a low number, and one of them gives a <em>valid-looking</em> one.</strong> <code>cyber</code> has a 0.54-decade window with $\hat D_2=1.09$ that passes all three criteria — the drifting period-53 orbit really does trace a one-dimensional curve with $C\sim\epsilon^{1.1}$ over that range. The verdict is decided by the loop screens, not by the fit: 94% of its positions return to within $0.1\,d_{typ}$ after 53 tokens (90% for <code>great</code>), against 0% for both healthy trajectories, and the lag-distance dip is 0.06 of its neighbouring lags. <code>great</code> has the same structure but no flat run at all. The correct reading of a low $\hat D_2$ is therefore always <em>"is this a loop?"</em> first.</p>
+<p><strong>What does not separate the groups:</strong> TwoNN sits at 5.4–6.2 on all four, loops included, and the $k$-neighbour MLE at $k=10$ agrees with the truth on the healthy pair (7.9, 10.1) but is 3.1–3.2 on the loops — both are point-cloud statistics and neither is a loop detector. The repetition screen at the $10^{-3}$ threshold in the brief finds <strong>nothing</strong> in any of the 20 local trajectories: these loops drift, so a repeat sits at 1.6% of the cloud scale, not at $10^{-3}$. The usable screen is the lag-distance dip: over all 20 local trajectories the prominence is <strong>≤0.22 for the nine full loops, 0.21 and 0.45 for two partial ones, and 0.91–0.99 for the nine clean ones</strong> — a factor-2 margin with no free parameter. There is no smoothness confound in this metric: consecutive last-layer states are already 0.84–1.03 $d_{typ}$ apart, so the lag curve is flat at $\approx1$ for a healthy run and only a genuine return produces a dip.</p>
+<p>Theiler windows change nothing for the healthy trajectories (no window at $W=0$ or $W=500$) and remove even the spurious window of <code>cyber</code> at $W=500$; the same run at $N/2$ and $N/4$ loses it too, so it is a small-$N$ feature of the orbit.</p>
+<h3 id="21-the-screens-applied-to-all-20-local-trajectories">2.1 The screens applied to all 20 local trajectories</h3>
+<p>The same two screens, run over every 1.5B trajectory that exists on this machine (three 4095-token prompt runs and the sixteen 1000-token runs, plus <code>interstellar</code>), split them <strong>nine loops / two partial / nine clean</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>period found</th>
+<th style="text-align: right;">coverage</th>
+<th>trajectories</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>12, 17, 27</td>
+<td style="text-align: right;">95%, 76%, 89%</td>
+<td><code>renewable_energy_economics</code>, <code>history_of_music</code>, <code>sleep_and_memory</code></td>
+</tr>
+<tr>
+<td>53, 63, 69, 74, 81</td>
+<td style="text-align: right;">94%, 77%, 90%, 91%, 70%</td>
+<td><code>cyber</code>, <code>history_of_computing</code>, <code>great</code>, <code>future</code>, <code>ocean_currents</code></td>
+</tr>
+<tr>
+<td>53</td>
+<td style="text-align: right;">80%</td>
+<td><code>cybersecurity</code> (the 1000-token run of the same prompt as <code>cyber</code>)</td>
+</tr>
+<tr>
+<td>50, 79</td>
+<td style="text-align: right;">39%, 50%</td>
+<td><code>transformer_architecture</code>, <code>urban_transportation</code> (partial: prominence 0.45, 0.21)</td>
+</tr>
+<tr>
+<td>—</td>
+<td style="text-align: right;">0–5%</td>
+<td><code>interstellar</code>, <code>astronomy_observations</code>, <code>childhood_experiences</code>, <code>evolution_of_language</code>, <code>healthy_habits</code>, <code>history_of_mathematics</code>, <code>interstellar_travel</code>, <code>software_engineering_practices</code>, <code>volcanoes_and_plate_tectonics</code></td>
+</tr>
+</tbody>
+</table>
+<p>This contradicts the earlier note that the sixteen fresh 1000-token trajectories "flag none as loops (worst relative distance 0.135)". The two statements are reconcilable only if that screen thresholded something other than the <em>fraction of positions</em> that return — for <code>renewable_energy_economics</code>, 95% of positions come back to within $0.1d_{typ}$ after 12 tokens, with a mean lag-12 distance of $0.037d_{typ}$ against $1.06d_{typ}$ at the surrounding lags, so the loop shows up as a <em>dip</em> that a median or a maximum over points can easily miss. Whatever the earlier screen was, <strong>six of those sixteen trajectories (plus two partial ones) are repetition loops and their D2/MLE numbers are not usable as non-loop controls.</strong> The twelve trajectories behind <code>results/d2/d2_raw_vs_shuffled.json</code> live on the T4 and cannot be screened here; the three that are loops were correctly identified there, and the other nine need this check before their $\hat D_2$ of 9–11 is quoted.</p>
+<h2 id="3-three-problems-with-the-earlier-estimator-worth-knowing">3. Three problems with the earlier estimator, worth knowing</h2>
+<p>Everything in <code>results/d2/</code> was produced by <code>fit_plateau</code>, which slides over every sub-interval of the $\epsilon$ grid and keeps the one with the largest $R^2$. Three consequences, all visible in the numbers above:</p>
+<ol>
+<li><strong>The reported $R^2$ is a maximum over ~200 candidate windows, not a goodness of fit.</strong> A smooth log–log curve gives $R^2>0.9999$ over two or three adjacent points, so quoting 0.9998 as evidence of a plateau is circular. The winning windows here are 0.039, 0.060, 0.083 and 0.102 decades wide.</li>
+<li><strong><code>min_points=6</code> counts grid points, not decades.</strong> The $\epsilon$ grid is made of percentiles of pairwise distances, so its spacing is very uneven (one 0.19-decade jump near the 2nd percentile, then ~0.01-decade steps near the 60th). Six adjacent points can be 0.02 or 0.3 decades; the width is never checked, so the "plateau" can be one grid step.</li>
+<li><strong>The grid itself depends on $N$.</strong> Percentiles 2–60 of a 1000-point subsample move with the sample, so the quoted $\hat D_2$ changes with $N$ both through the data and through the grid — which is why the earlier N-convergence check could not separate the two. (Two smaller ones: <code>d2_all_controls.py</code> ran the raw curves at Theiler 20 and the shuffled ones at Theiler 0, so even the tautological raw-vs-shuffled comparison was not matched; and <code>rqa</code> passes <code>theiler=0</code> to <code>correlation_curve</code> regardless of its argument, using the argument only for the recurrence mask.)</li>
+</ol>
+<p>TwoNN is implemented correctly there (the CDF slope fit is the Pareto MLE), but the widely quoted variant $\log 2/\langle\log\mu\rangle$ is <strong>not</strong>: it returns $\ln^2 2\cdot d=0.48\,d$, which was checked on uniform hypercubes of dimension 2, 5 and 10. The pipeline returns both so the difference stays visible. A related trap: exact duplicates give $r_1=0$, so $\mu=\infty$ and the point is dropped — the published <code>vocab</code> control lost 16 of 2000 points this way, and a bit-exact loop would hide its own degeneracy.</p>
+<h2 id="4-known-artifacts-in-plain-language">4. Known artifacts, in plain language</h2>
+<ul>
+<li><strong>Repetition loops.</strong> A model that repeats a phrase produces states that revisit almost the same point every period. The point cloud then contains a thin closed curve, and $C(\epsilon)\propto\epsilon^{1}$ over a wide range: a low, clean, completely spurious $\hat D_2$. Screen first, fit second.</li>
+<li><strong>First-layer exact duplicates.</strong> At the embedding output, equal tokens give bit-identical vectors. That is a pile of exactly coincident points, which inflates $C$ at small $\epsilon$ and depresses the slope; the earlier fix was to de-duplicate, which changes $N$ and destroys the comparison with the last layer.</li>
+<li><strong>Fill dimension from delay embedding.</strong> Building vectors $(x_t,x_{t+1},\ldots,x_{t+m-1})$ and measuring their dimension reports roughly the embedding dimension, not the attractor's, whenever the data are smooth in time. That is why the delay-D2 rose 5.9 → 6.3 → 11.1 → 14.9 → 17.6 as $m$ and $\tau$ grew.</li>
+<li><strong>First-PC saturation.</strong> If one direction carries most of the variance, distances saturate as soon as $\epsilon$ reaches it, and everything above that is a step, not a slope.</li>
+<li><strong>Self-pairs and linear $\epsilon$ grids.</strong> Counting $i=j$ adds $N$ zero distances and drags the slope at small $\epsilon$; a linear $\epsilon$ grid concentrates all points where nothing happens. Both are removed here (upper triangle only, log grid).</li>
+</ul>
+<p>All five mechanisms were reproduced by the earlier pass on synthetic data, and the estimator recovers Hénon ($\hat D_2=1.18$ over a 1.1-decade window) and a uniform 3-cube (2.82, no valid window at $N=1500$ because the admissible range is 0.40 decades) — so the absence of scaling in the LLM states is a property of the data, not of the estimator.</p>
+<h2 id="5-running-it-on-the-new-matrices">5. Running it on the new matrices</h2>
+<pre><code># on the laptop, once the GPU job has written results_big/&lt;model&gt;/d2/
+python scripts_spark/d2_local.py --dir results_big/ds14/d2 \
+    --theiler 0,50,500 --out notebook_big/figures --tag ds14
+</code></pre>
+<p><code>summary.json</code> from the GPU side is picked up automatically and its <code>rel_nearest</code> is stored next to the laptop-side screen, so the two can be compared for every trajectory. Per-trajectory figures carry eight panels: $C(\epsilon)$ for all Theiler windows with the valid window shaded, the local slope against the $2\log_{10}N$ ceiling, the same slope at $N$, $N/2$, $N/4$, the TwoNN $\mu$ CDF, the MLE against $k$, the repetition histogram, the lag-distance loop test, and a numbers block. The JSON holds every quoted number including the T4-style reproduction and its window width.</p>
+<p><strong>What this does not show.</strong> One model, one layer (the last), one prompt set per trajectory. The valid-window rule has three thresholds (0.4 decades, 6%, 0.1 saturation) that were chosen before looking at the new data and are reported in the JSON for every run; the verdicts are robust to them here (the healthy trajectories have no admissible range at all, and the loops are caught by an independent period test), but a marginal case would need the width quoted, not just the verdict.</p>
 <h1 id="part-1-the-1000-direction-a1-run-five-views-of-the-same-data">Part 1. The 1000-direction A1 run: five views of the same data</h1>
 <p><em>(This part and the next two share one dataset; each figure is a different slice of it. The dataset: DeepSeek-R1-Distill-Qwen-14B, FP32, prompt <code>interstellar_travel</code> ($P=65$ tokens), 300 greedy tokens, 1000 unit perturbation directions at radius $r=0.1$ added to the prompt embeddings, every perturbed pass teacher-forced on the baseline tokens. Attention: full — see the correction note. File <code>results_big/ds14/a1_inter_w100/a1.npz</code>, engine <code>run_a1_big</code>, 1590 s on the GB10.)</em></p>
 <p><strong>Why five views.</strong> The dataset has three axes — generated step $t$, saved state index $l$, and direction $u$ — plus one scalar response per $(t,u)$: the margin change $\delta m_t(u)$, and per $(t,l,u)$: the state displacement $\lVert\delta h_t^l(u)\rVert$. A single plot can show at most two of these honestly; the five figures below slice them as (t), (t,l), (t,u), (u), (u | t), so every claim in the summary tables can be checked against a picture.</p>
@@ -632,7 +863,7 @@ the 14B shows no response surge at t=35 in Part 2: with full attention there
 is nothing to flush.</p>
 </blockquote>
 <h1 id="part-a1-deep-one-thousand-directions-on-the-14b-model-where-the-flips-come-from">Part A1-deep. One thousand directions on the 14B model: where the flips come from</h1>
-<h2 id="summary_1">Summary</h2>
+<h2 id="summary_2">Summary</h2>
 <p>A single prompt of 65 tokens is sent through DeepSeek-R1-Distill-Qwen-14B in FP32, the model generates 300 tokens greedily, and then 1000 different unit perturbations of size $r=0.1$ are added to the prompt embeddings while the generated tokens are held fixed. For every direction and every generated step we record how much the top-1/top-2 logit gap would move; from that we compute the radius at which each step would flip. Almost half the directions (464 of 1000) would flip some token at $r=0.1$, but <strong>all 464 flips are decided at only two generated steps, $t=21$ and $t=19$</strong>, the two smallest logit gaps in the run. The directions that destroy the margin at $t=21$ are essentially unrelated to those that destroy it at $t=189$ (correlation $-0.14$), and the 24 stored response vectors are nearly orthogonal (mean cosine $+0.0025$). Consequently the direction's overall response strength $G$ is a weak predictor of its threshold radius (correlation $-0.18$): which razor-thin tie a direction happens to hit matters far more than how strong its hidden-state response is.</p>
 <hr />
 <h2 id="1-exact-setup-data-and-every-quantity-defined">1. Exact setup, data, and every quantity defined</h2>
@@ -1413,7 +1644,7 @@ The median local sensitivity is $3.80\times10^{-3}$ nats per unit radius, about 
 <p>All numbers in this section are in <code>notebook_big/figures/ds14_a1_deep_numbers.json</code>; the figures are produced by <code>scripts_spark/figs_a1_deep.py</code> from <code>results_big/ds14/a1_inter_full/a1.npz</code> and <code>meta.json</code>.</p>
 <hr />
 <h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
-<h2 id="summary_2">Summary</h2>
+<h2 id="summary_3">Summary</h2>
 <blockquote>
 <p>Same correction note as Part 1: the 14B numbers here are full-attention runs (window inactive). Everything except the flush-ratio row is a same-prompt, same-radius comparison and stands as stated; the flush row is explained by the missing window, and the margin comparison is partially confounded by the window regime (on the 1.5B the window is known to change the margin spectrum). The true-window 14B rerun will close both gaps.</p>
 </blockquote>
