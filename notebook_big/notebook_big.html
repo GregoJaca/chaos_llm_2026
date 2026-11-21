@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  built 2026-11-21 10:47:12 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
+  built 2026-11-21 12:04:27 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
   <a href="notebook_big.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook_big.md">Markdown</a>
 </header>
 <h1 id="large-models-on-the-dgx-spark-definitions-data-and-every-figure-explained">Large models on the DGX Spark: definitions, data, and every figure explained</h1>
@@ -2821,7 +2821,7 @@ This uses only stored quantities and is exact under the definition of <code>obs<
 </code></pre>
 <p>Writes <code>notebook_big/figures/ds14reg_{margins,response_shape,rstar,direction_gain,depth_gain}.png</code> (dpi 170) and <code>notebook_big/figures/ds14reg_numbers.json</code>. The JSON contains the eight smallest margins and threshold counts per run, the full median response profiles, the per-state flush ratios, the burst ranges, the $r_*$ distributions, the gain distributions, the controlling-step tables, the flip-set comparison, the radius-linearity table, and both auxiliary checks. The script reads the npz files in place and does not modify them.</p>
 <hr />
-<h1 id="part-window-program-the-14b-death-law-is-exact-to-the-token-the-cascade-line-is-only-an-upper-bound">Part window program. The 14B death law is exact to the token; the cascade line is only an upper bound</h1>
+<h1 id="part-window-program-the-14b-death-law-is-exact-to-the-token-for-prompts-of-8-and-190-tokens-the-cascade-line-is-only-an-upper-bound">Part window program. The 14B death law is exact to the token for prompts of 8 and 190 tokens; the cascade line is only an upper bound</h1>
 <h2 id="summary_5">Summary</h2>
 <p>Six true sliding-window runs of <code>DeepSeek-R1-Distill-Qwen-14B</code> (FP32, same
 65-token prompt <code>interstellar_travel</code>, the same 240 directions at radius
@@ -2864,9 +2864,23 @@ at $W=50$ the prompt does not fit and the $t=21$ tie is destroyed. Every
 window shows a flush surge one step after $t=W-P$: x2.19 at $W=100$ (the
 1000-direction core run gave x2.20), x2.00 at $W=150$, x2.59 at $W=200$,
 x3.95 at $W=300$, x2.41 at $W=500$ (the 1.5B reference was x1.73).
-The prompt-length scan and the 1500-token cascade run are <strong>pending</strong> (not
-yet local); their figures are placeholders and the script processes them
-automatically if the files appear.</p>
+Two further scans close the remaining free parameters. A prompt-length scan
+(the same construction with an 8-token prompt and a 190-token prompt, 120
+directions each, $W=50,100,200,300,500$) gives the same equality:
+$t^*=p_{\rm last}+(W-P)$ predicts the death step with $P$ read from the
+tokenizer, not guessed. With $P=8$, all 240 directions over $W=50,100$ are
+exact, and at $W=200$ 100 of the 112 resolved directions are exact with the
+other 12 one step late. With $P=190$ and $P>W$ ($W=50,100$) the prompt does
+not fit at $t=0$, yet 180 of 240 directions are exact and all 240 are within
+two tokens; for $W=200,300$ ($P<W$) the deaths again sit on the line (all 120
+at $W=300$ exactly on it). The only failures are at the 300-step horizon:
+$W-P=292$ ($P=8,W=300$) and $W-P=310,492$ ($W=500$) put the predicted death
+at or beyond the last step, and then the run, not the model, sets the limit —
+the floor rule degenerates there and its "deaths" are crossings of a
+contaminated floor. Margins of the fixed tokens follow the same onset rule as
+the 65-token prompt (bit-identical through $t=W-P$, first change at $W-P+1$)
+and, for the short prompt, the same monotone approach to the full-attention
+value. The 1500-token cascade run is still pending.</p>
 <hr />
 <h2 id="1-runs-construction-and-the-fp32-floor">1. Runs, construction, and the fp32 floor</h2>
 <h3 id="11-setup_3">1.1 Setup</h3>
@@ -3042,7 +3056,7 @@ returns the same steps as the literal rule; on the 14B it is the only rule
 that can be applied to all 240 directions. The raw arrays are unchanged; the
 JSON reports the literal counts alongside the calibrated ones.</p>
 <hr />
-<h2 id="2-figure-ds14win_departurepng-state-1-dies-exactly-at-math1411">2. Figure <code>ds14win_departure.png</code> — state 1 dies exactly at $p_{\rm last}+(W-P)$</h2>
+<h2 id="2-figure-ds14win_departurepng-state-1-dies-exactly-at-math1430">2. Figure <code>ds14win_departure.png</code> — state 1 dies exactly at $p_{\rm last}+(W-P)$</h2>
 <p><img alt="departure" src="figures/ds14win_departure.png" /></p>
 <p><strong>Setup.</strong> Each point is one direction: predicted death step
 $p_{\rm last}(u)+(W-P)$ on $x$, measured death (first step at the floor, rule
@@ -3338,33 +3352,402 @@ support moved, and the death step moved with it one-for-one.</p>
 test the $(W-P)$ term (that is the six-window scan in §2). The +1/+2 tokens
 in the early groups are floor-crossing jitter, not a second mechanism.</p>
 <hr />
-<h2 id="5-figure-ds14win_plenpng-prompt-length-scan-pending">5. Figure <code>ds14win_plen.png</code> — prompt-length scan: PENDING</h2>
+<h2 id="5-figure-ds14win_plenpng-prompt-length-only-shifts-the-death-step">5. Figure <code>ds14win_plen.png</code> — prompt length only shifts the death step</h2>
 <p><img alt="prompt length" src="figures/ds14win_plen.png" /></p>
-<p><strong>Setup.</strong> The intended figure: for <code>short_prompt</code> ($P\approx6$) and
-<code>long_prompt</code> ($P\approx250$) at each $W$, measured state-1 death versus
-$p_{\rm last}+(W-P)$, with the $P<W$, $P\approx W$ and $P>W$ regimes
-annotated. The 12 files
-(<code>results_big/ds14/a1_short_prompt_w{W}_fixed/a1.npz</code> and
-<code>a1_long_prompt_w{W}_fixed/a1.npz</code>, $W=50\ldots500$) are <strong>not yet local</strong>.
-The figure is a placeholder; <code>figs_window.py</code> detects and processes them
-automatically when they arrive.</p>
-<p><strong>What the completed scan would test, and what is already known.</strong> The
-formula predicts three regimes. For $P<W$ every prompt position is visible at
-$t=0$ and dies at $p+(W-P)$, so the deaths spread over $W-P$ steps and are
-late. For $P\approx W$ the spread collapses to a few steps around $W-P\approx0$.
-For $P>W$ the earliest $P-W$ prompt positions are already outside the window
-at $t=0$: their formula value is negative, so they are dead from the first
-generated step, while the remaining positions die at $p+(W-P)\in[0,W-1]$.
-The already-available $W=50$ run is exactly the $P>W$ case ($P=65>50$): its
-deaths span $40$–$49$, and the baseline margin trace differs from the
-no-clipping reference from $t=0$ (not from $W-P$), because the first 16
-prompt tokens are invisible from the start. This is the qualitative
-prediction the pending short/long scan will quantify.</p>
-<p><strong>What it does not show.</strong> Everything quantitative: the actual short and long
-$P$, the exact death distribution, and whether the flush survives when the
-prompt is much shorter or much longer than the window.</p>
+<p><strong>Setup.</strong> Two prompt lengths, each with its own no-clipping reference. The
+short prompt is <code>Explain how tides work.</code>, <strong>$P=8$ tokens</strong>; the long prompt
+is a review of climate physics, <strong>$P=190$ tokens</strong> (both read from
+<code>meta.json</code>; the brief's estimates of $\approx6$ and $\approx250$ were not
+exact). For each prompt, five true sliding-window runs
+$W=50,100,200,300,500$ (no $W=150$), 120 directions at $r=0.1$, 300
+teacher-forced tokens fixed from that prompt's own $W=4096$ run
+(<code>a1_short_prompt_w4096</code>, <code>a1_long_prompt_w4096</code>), the same 16 saved states
+and the same floor/death rule as §1.3. The five windows of a prompt share
+identical <code>gen_ids</code> with their reference (checked), so there is no text
+divergence. A direction's $p_{\rm last}$ is the largest perturbed prompt
+position. Directions are built in blocks of 20 that share their 20 prompt
+positions (only the coordinates inside them differ), so $p_{\rm last}$ takes
+one value per block: 1 block at 6 and 5 blocks at 7 for the short prompt
+(20 directions at 6, 100 at 7), and 164, 168, 173, 174, 182, 186 (20
+directions each) for the long prompt. Panel (a) is the short
+prompt, panel (b) the long one; colour is the window, and circle/triangle
+distinguishes the prompt, but the panels never mix. Only runs with at least
+one resolved direction are plotted.</p>
+<p><strong>Axes.</strong> $x$: predicted death step $p_{\rm last}+(W-P)$, with $P$ from
+<code>meta.json</code>. $y$: measured state-1 death (first step at the floor). Dashed
+identity line; equal aspect. Panel (b) marks the 300-step horizon
+($t=299$): a predicted death beyond it cannot be observed in these runs.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>prompt</th>
+<th style="text-align: right;">$P$</th>
+<th style="text-align: right;">$W$</th>
+<th style="text-align: right;">$W-P$</th>
+<th>$p_{\rm last}$</th>
+<th style="text-align: right;">$t^*=p_{\rm last}+(W-P)$</th>
+<th style="text-align: right;">died at $t^*$</th>
+<th style="text-align: right;">resolved</th>
+<th style="text-align: right;">exact</th>
+<th style="text-align: right;">within ±2</th>
+<th style="text-align: right;">max dev</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>short</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">+42</td>
+<td>6–7</td>
+<td style="text-align: right;">48–49</td>
+<td style="text-align: right;">120 / 120</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>short</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">+92</td>
+<td>6–7</td>
+<td style="text-align: right;">98–99</td>
+<td style="text-align: right;">120 / 120</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>short</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">+192</td>
+<td>6–7</td>
+<td style="text-align: right;">198–199</td>
+<td style="text-align: right;">120 / 120</td>
+<td style="text-align: right;">112</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">112</td>
+<td style="text-align: right;">+1</td>
+</tr>
+<tr>
+<td>short</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">+292</td>
+<td>6–7</td>
+<td style="text-align: right;">298–299</td>
+<td style="text-align: right;">at horizon</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>short</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">+492</td>
+<td>6–7</td>
+<td style="text-align: right;">498–499</td>
+<td style="text-align: right;">none</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">190</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">−140</td>
+<td>164–186</td>
+<td style="text-align: right;">24–46</td>
+<td style="text-align: right;">120 / 120</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">+1</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">190</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">−90</td>
+<td>164–186</td>
+<td style="text-align: right;">74–96</td>
+<td style="text-align: right;">120 / 120</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">80</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">+2</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">190</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">+10</td>
+<td>164–186</td>
+<td style="text-align: right;">174–196</td>
+<td style="text-align: right;">120 / 120</td>
+<td style="text-align: right;">27</td>
+<td style="text-align: right;">26</td>
+<td style="text-align: right;">27</td>
+<td style="text-align: right;">+1</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">190</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">+110</td>
+<td>164–186</td>
+<td style="text-align: right;">274–296</td>
+<td style="text-align: right;">120 / 120</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">190</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">+310</td>
+<td>164–186</td>
+<td style="text-align: right;">474–496</td>
+<td style="text-align: right;">none</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<p><code>resolved</code>, <code>exact</code>, <code>within ±2</code> and <code>max dev</code> use the §1.3 resolution guard
+(pre-death signal at least $10\times$ the floor and 11 steps left); <code>died at
+$t^*$</code> counts all 120 directions regardless of the guard. The two rows with
+0 resolved are horizon statements, not measured deaths.</p>
+<p><em>Short prompt.</em> With $P=8$, $W=50$ gives $t^*=p_{\rm last}+42=48$–$49$, not
+$p_{\rm last}+44$: the window regime is indeed $W\gg P$, and the predicted
+offset is larger than guessed. Every one of the 120 directions dies exactly
+on the line at $W=50$ and at $W=100$ (240/240 exact, no scatter). At $W=200$
+all 120 die at 199: 100 of the 112 resolved directions exactly and the other
+12 one step late (their $t^*=198$). At $W=300$ the predicted death is
+298–299 — the last
+one or two steps of the run — so the 30-step excursion test cannot be
+applied; the per-state floor estimate is also contaminated ($4.2\times
+10^{-4}$ instead of $3.0\times10^{-5}$, because the response never reaches
+the floor inside the run), and the 120 "deaths" the rule returns are not
+usable. At $W=500$ the prompt would leave the window at $t=492$–$499$,
+beyond the 300-step run: the state-1 response is still $1.1\times10^{-3}$ at
+$t=299$ (literal minimum over $t$: $7.3\times10^{-4}$), so no death occurs;
+the 102 crossings reported by the rule are crossings of the contaminated
+floor ($7.7\times10^{-4}$). In both cases the horizon, not the law, sets the
+limit.</p>
+<p><em>Long prompt, $P>W$ ($W=50,100$).</em> The prompt does not fit: at $t=0$ the
+window already excludes prompt positions $0\ldots140$ ($W=50$) or
+$0\ldots90$ ($W=100$), so the model sees only the last $W-1$ prompt
+positions plus generated tokens. The law as stated nevertheless applies
+without correction, because it refers only to $p_{\rm last}$: every
+direction has $p_{\rm last}=164$–$186>P-W$, hence its last perturbed
+position is visible at $t=0$ and $t^*=p_{\rm last}-140=24$–$46$ (or
+$p_{\rm last}-90=74$–$96$) is positive. Measured: 100 of 120 directions
+exact at $W=50$ (the other 20 are one token late) and 80 of 120 exact at
+$W=100$ (20 one step late and 20 two steps late); all 120 are within two
+tokens in both runs. There is <strong>no systematic early, late, or absent death</strong>:
+the deaths sit on the line. What the non-fitting window changes is the amplitude
+— the state-1 response starts at $3.4\times10^{-3}$ ($W=50$) or
+$7.0\times10^{-3}$ ($W=100$) instead of $6.8\times10^{-3}$ ($W=500$) because
+most of each direction's positions are already invisible — and the flush
+kink: $t=W-P=-140$ or $-90$ lies before the first generated token, so the
+flush happens inside the prompt and there is no surge in the generated trace
+(the surge ratios are undefined here).</p>
+<p><em>Long prompt, $P<W$.</em> At $W=200$ ($W-P=10$) all 120 directions die at
+175–196; 100 are exact and 20 (the $p_{\rm last}=164$ block, $t^*=174$) one
+token late, and 26 of the 27 resolved are exact. Only 27 pass the resolution
+guard, because the pre-death response
+over $[t^*-10,t^*]$ is $2.3\times10^{-4}$, below the $10\times$floor
+threshold ($3.0\times10^{-4}$): the surviving perturbed token is already
+$\approx200$ positions behind the query. At $W=300$ ($W-P=110$) all 120
+directions die exactly at $274$–$296$ — the death groups are precisely the
+six $p_{\rm last}$ groups shifted by 110 — though only 5 are "resolved":
+the group at 292/296 is within 11 steps of the end, and the pre-death
+response is $1.9\times10^{-4}$ against a $4.3\times10^{-4}$ threshold. The
+drop at $t^*$ itself is $1.6\times10^{-4}\to5.4\times10^{-5}$, so the death
+is real; the strict guard rejects it, it is not a different mechanism.
+$W=500$ is the no-op case: $W\ge P+T=490$, so no prompt position ever leaves
+the window at any of the 300 steps. The state-1 response is still
+$2.2\times10^{-3}$ at $t=299$, the floor estimate ($6.9\times10^{-4}$) is
+signal, 42 directions never cross it and 78 cross only spuriously, and the
+margin trace is bit-identical to the $W=4096$ reference.</p>
+<p><strong>What it shows.</strong> Prompt length only shifts $t^*$. The equality holds with
+$P$ read from the tokenizer: 240/240 short-prompt directions exact at
+$W=50,100$, 180/240 long-prompt directions exact over the same windows and
+240/240 within two tokens. The regime that looked most likely to break the
+law — the prompt not fitting the window — does not break it, because the law
+concerns the last perturbed position, which is still inside the window when
+$p_{\rm last}>P-W$; deaths are neither early nor late. The law fails only
+where it cannot be measured: when $W-P$ puts $t^*$ at or beyond the horizon.</p>
+<h3 id="51-margins-of-the-fixed-tokens">5.1 Margins of the fixed tokens</h3>
+<p>The same fixed-token comparison as §7, each prompt against its own $W=4096$
+reference:</p>
+<table>
+<thead>
+<tr>
+<th>prompt</th>
+<th style="text-align: right;">$W$</th>
+<th style="text-align: right;">median margin</th>
+<th style="text-align: right;">minimum (step)</th>
+<th style="text-align: right;">steps $<0.1$</th>
+<th style="text-align: right;">steps $<0.5$</th>
+<th style="text-align: right;">first step differing from 4096</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>short</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">1.542</td>
+<td style="text-align: right;">0.0113 (61)</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">72</td>
+<td style="text-align: right;">43</td>
+</tr>
+<tr>
+<td>short</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">2.134</td>
+<td style="text-align: right;">0.0198 (168)</td>
+<td style="text-align: right;">10</td>
+<td style="text-align: right;">57</td>
+<td style="text-align: right;">93</td>
+</tr>
+<tr>
+<td>short</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">2.801</td>
+<td style="text-align: right;">0.0060 (297)</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">49</td>
+<td style="text-align: right;">193</td>
+</tr>
+<tr>
+<td>short</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">4.474</td>
+<td style="text-align: right;">0.0087 (222)</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">32</td>
+<td style="text-align: right;">293</td>
+</tr>
+<tr>
+<td>short</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">4.507</td>
+<td style="text-align: right;">0.0087 (222)</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">31</td>
+<td style="text-align: right;">none (identical)</td>
+</tr>
+<tr>
+<td>short</td>
+<td style="text-align: right;">4096</td>
+<td style="text-align: right;">4.507</td>
+<td style="text-align: right;">0.0087 (222)</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">31</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">1.635</td>
+<td style="text-align: right;">0.0033 (71)</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">58</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">1.197</td>
+<td style="text-align: right;">0.0367 (94)</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">66</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">0.722</td>
+<td style="text-align: right;">0.0014 (167)</td>
+<td style="text-align: right;">30</td>
+<td style="text-align: right;">114</td>
+<td style="text-align: right;">11</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">1.346</td>
+<td style="text-align: right;">0.0016 (270)</td>
+<td style="text-align: right;">17</td>
+<td style="text-align: right;">72</td>
+<td style="text-align: right;">111</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">2.471</td>
+<td style="text-align: right;">0.0020 (165)</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">45</td>
+<td style="text-align: right;">none (identical)</td>
+</tr>
+<tr>
+<td>long</td>
+<td style="text-align: right;">4096</td>
+<td style="text-align: right;">2.471</td>
+<td style="text-align: right;">0.0020 (165)</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">45</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<p>For the short prompt the $W$-dependence is the same in kind as for the
+65-token interstellar prompt: the trace is bit-identical to the reference
+through $t=W-P$ and first differs at $t=W-P+1$ (43, 93, 193, 293 for
+$W=50,100,200,300$), the median margin rises monotonically toward the
+full-attention value (1.542 → 2.134 → 2.801 → 4.474 → 4.507, reference
+4.507), and the count below 0.5 nats falls (72 → 57 → 49 → 32 → 31, reference
+31). At $W=500$, $W\ge P+T=308$, so the window is a no-op and the trace is
+bit-identical to full attention. The difference from the interstellar scan is
+only in level — that scan goes 1.135 → 2.463 with reference 2.989 and 120 → 62
+near-ties against 63 — because the prompt and the continuation differ; the
+onset rule and the direction of the change are identical.</p>
+<p>The long prompt does <strong>not</strong> follow that pattern. $W=50$ and $W=100$ differ
+from $t=0$ (the prompt does not fit), and the median margin is not monotone
+in $W$: 1.635, 1.197, 0.722, 1.346, 2.471, with the minimum at $W=200$
+(114 of 300 steps below 0.5 nats). So "a narrower window flattens the
+decisions" transfers from the short and interstellar prompts to the long one
+only in the onset rule (first change at $W-P+1$, or at $t=0$ when $P>W$), not
+in the sense of the change. $W=500$ again reproduces the reference
+bit-for-bit.</p>
+<p><strong>What it does not show.</strong> The scan has no window within a few tokens of $P$:
+with $P=8$ and $P=190$ against $W\in\{50,100,200,300,500\}$, the $P\approx W$
+regime is not sampled. It cannot observe the death of prompt positions with
+$p<P-W$ when the prompt does not fit: those are already invisible at $t=0$,
+the law assigns them $t^*<0$, and no measurement here can confirm it. It
+cannot separate the floor crossing from a true zero (the same fp32 residue as
+§1.3; 0 of 1200 plen directions reach exactly 0 or $10^{-6}$), and the
+$W=300$/$W=500$ rows are horizon-limited statements about the floor rule, not
+measurements of the law.</p>
 <hr />
-<h2 id="6-figure-ds14win_response_shapepng-a-flush-surge-one-step-after-math1501">6. Figure <code>ds14win_response_shape.png</code> — a flush surge one step after $t=W-P$</h2>
+<h2 id="6-figure-ds14win_response_shapepng-a-flush-surge-one-step-after-math1624">6. Figure <code>ds14win_response_shape.png</code> — a flush surge one step after $t=W-P$</h2>
 <p><img alt="response shape" src="figures/ds14win_response_shape.png" /></p>
 <p><strong>Setup.</strong> For each window, $\lVert\delta h_t^{47}\rVert/r$ at the last saved
 state (layer 47), median over the 240 directions at each step; the band is
@@ -3613,22 +3996,22 @@ is below the fp32 batch residue, so the observable crossing must be earlier.
 The 14B's <em>lower</em> numerical precision therefore costs the exact-zero test,
 not the law.</p>
 <hr />
-<h2 id="9-what-is-pending">9. What is pending</h2>
-<p>Two items from the brief are not yet available locally:</p>
+<h2 id="9-what-remains">9. What remains</h2>
+<p>One item from the brief is not yet available locally:</p>
 <ol>
-<li><strong>Prompt-length scan</strong> (<code>a1_short_prompt_w*_fixed</code>, <code>a1_long_prompt_w*_fixed</code>):
-   figure placeholder <code>ds14win_plen.png</code>; the script will populate it and add
-   the numbers to <code>ds14win_numbers.json</code> when the files appear. §5 states the
-   three predicted regimes and the already-observed $P>W$ case ($W=50$).</li>
 <li><strong>1500-token cascade</strong> (<code>a1_inter_w100_cascade</code>): panel (b) of
    <code>ds14win_cascade.png</code> is a placeholder; it will show states 0–14 at
    $W=100$ with the same bound line. It is the only way to follow the
    cascade beyond the plotted range without the 500-token horizon; the
    present 14B cascade is plotted to $l=4$ for $W=100$ and $l=2$ for $W=200$.</li>
 </ol>
-<p>Everything else in the brief is complete. The script <code>scripts_spark/figs_window.py</code>
-detects each file independently, so a partial later arrival produces the
-corresponding figure without touching the rest.</p>
+<p>The prompt-length scan of §5 is complete: all ten runs
+($P=8$ and $P=190$; $W=50,100,200,300,500$) are local and processed. The scan
+does not include $W=150$: with $P=8$ or $P=190$ it would only repeat the
+$P<W$ or $P>W$ regime already sampled and would not reach $P\approx W$.</p>
+<p>Everything else in the brief is complete. The script
+<code>scripts_spark/figs_window.py</code> detects each file independently, so a partial
+later arrival produces the corresponding figure without touching the rest.</p>
 <hr />
 <h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
 <h2 id="summary_6">Summary</h2>
