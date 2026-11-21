@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  built 2026-11-21 04:04:43 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
+  built 2026-11-21 10:47:12 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
   <a href="notebook_big.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook_big.md">Markdown</a>
 </header>
 <h1 id="large-models-on-the-dgx-spark-definitions-data-and-every-figure-explained">Large models on the DGX Spark: definitions, data, and every figure explained</h1>
@@ -57,7 +57,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 <li><strong>FP32 compute is ~4.4 TFLOPS</strong> (measured on a 4096³ matmul). Consequence: batch everything. One forward pass sweeps the weights once, so 16 perturbed rows cost about the same per-row as 1 row.</li>
 <li><strong>The fp32 fallback attention path materialises the full score matrix</strong> $[B,H,L,L]$. At $L=3065$, batch 8, that alone is 12 GB. Consequence: long teacher-forced horizons are capped (~1500 tokens at small batch), and long trajectories are generated with the KV cache instead.</li>
 </ul>
-<h2 id="03-the-numerical-floor-moved-up-30-where-math10-is-meaningful">0.3 The numerical floor moved up 30×: where $r$ is meaningful</h2>
+<h2 id="03-the-numerical-floor-moved-up-30-where-math13-is-meaningful">0.3 The numerical floor moved up 30×: where $r$ is meaningful</h2>
 <p><strong>Data.</strong> Calibration run on the 14B: prompt <code>interstellar_travel</code> ($P=65$ tokens), 400 greedy tokens, window setting 100 (inactive — see the correction note; the numbers below are unaffected by this because they only depend on forward-pass rounding), 8 perturbation directions at 9 radii, FP32, teacher-forced on the model's own tokens. File: <code>results_big/ds14/calib/calib.npz</code>.</p>
 <p>The quantity is $\mathrm{median}_{u,t\in[100,400)}\lVert\delta h_t^{\mathrm{final}}(u)\rVert / r$: the last-layer response per unit radius. The division by $r$ is the point: in a perfectly linear regime this ratio is a constant, the <em>gain</em>; where it inflates, the response is pinned at the forward-pass rounding floor and says nothing about the perturbation.</p>
 <table>
@@ -689,7 +689,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </tr>
 </tbody>
 </table>
-<h3 id="13-the-valid-window-rule-this-replaces-the-max-math251-search">1.3 The valid-window rule (this replaces the max-$R^2$ search)</h3>
+<h3 id="13-the-valid-window-rule-this-replaces-the-max-math254-search">1.3 The valid-window rule (this replaces the max-$R^2$ search)</h3>
 <p>A window is marked valid only if all three hold simultaneously:</p>
 <ol>
 <li><strong>flatness.</strong> The longest run of $\epsilon$ in which the local slope stays within $\mathrm{tol}$ of its own median, with $\mathrm{tol}=\max(0.15,\ 0.06\,\lvert\hat D_2\rvert)$ — i.e. "within 6% of its own value", with an absolute floor so low dimensions are not judged in relative units — and the run at least <strong>0.4 decades</strong> wide. The test is applied to a 3-point median filter of the slope so a single grid point cannot open a window.</li>
@@ -2821,15 +2821,824 @@ This uses only stored quantities and is exact under the definition of <code>obs<
 </code></pre>
 <p>Writes <code>notebook_big/figures/ds14reg_{margins,response_shape,rstar,direction_gain,depth_gain}.png</code> (dpi 170) and <code>notebook_big/figures/ds14reg_numbers.json</code>. The JSON contains the eight smallest margins and threshold counts per run, the full median response profiles, the per-state flush ratios, the burst ranges, the $r_*$ distributions, the gain distributions, the controlling-step tables, the flip-set comparison, the radius-linearity table, and both auxiliary checks. The script reads the npz files in place and does not modify them.</p>
 <hr />
-<h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
+<h1 id="part-window-program-the-14b-death-law-is-exact-to-the-token-the-cascade-line-is-only-an-upper-bound">Part window program. The 14B death law is exact to the token; the cascade line is only an upper bound</h1>
 <h2 id="summary_5">Summary</h2>
+<p>Six true sliding-window runs of <code>DeepSeek-R1-Distill-Qwen-14B</code> (FP32, same
+65-token prompt <code>interstellar_travel</code>, the same 240 directions at radius
+$r=0.1$, the same 500 teacher-forced baseline tokens, windows
+$W=50,100,150,200,300,500$) show that a prompt perturbation disappears from
+the first block at exactly the step the window law predicts. For every
+direction whose perturbed prompt positions have maximum $p_{\rm last}$, the
+block-0 response is nonzero while some perturbed prompt position is inside the
+window and reaches the numerical floor at
+$t^*=p_{\rm last}+(W-P)$. The equality is exact for all 240 directions at
+$W=50$ and all 205 resolved directions at $W=100$; at larger $W$ the floor
+sits closer to the pre-death signal and the measured crossing jitters by
+$-3\ldots+2$ tokens, never more. A separate support scan (the same $W=100$,
+the same prompt length, the same tokens and directions, only the perturbed
+positions moved to $[0,22)$, $[22,44)$ or $[44,65)$) moves the death step by
+exactly the change in $p_{\rm last}$: 720 of 720 directions lie within two
+tokens of $p_{\rm last}+35$.
+The literal test asked for in the brief — "the response becomes bitwise zero"
+— <strong>fails on the 14B for a numerical reason, not a physical one</strong>: 0 of 1440
+directions ever reach exactly zero or even $10^{-6}$: fp32 SDPA leaves a
+round-off residue of about $1.0\times10^{-6}$ of the state norm
+($2.9$–$3.0\times10^{-5}$ absolute at block 0, rising with depth), consistent
+with the baseline being a single row while the perturbed rows run in batches
+of 8. The same
+test on the 1.5B, where the residue is absent, gives exact zeros at
+$p_{\rm last}+(W-P)$ to the token for all five windows.
+The cascade prediction $t^*_l=t^*_1+(l-1)(W-1)$ is confirmed as an <strong>upper
+bound</strong>, not an equality, at the 14B's observable precision: every measured
+death is at or before the bound, but the response reaches the floor 9–32
+tokens early at state 2 and 30–129 tokens early at state 3 (medians; the gap
+grows with depth). On the 1.5B, where the exact zero is observable, the
+cascade is an exact equality: state 2 dies at 177, 277, 377 for
+$W=100,150,200$ — exactly $t^*_1+(W-1)$. The 14B's smooth decay simply falls
+below the fp32 floor before the last (already tiny) contribution disappears.
+Finally, the window changes the decision landscape itself on identical
+tokens: the two early razor ties are preserved bit-for-bit for every
+$W\ge100$, while the number of margins below 0.5 nats nearly doubles from 62
+($W=500$, approaching the no-clipping reference) to 116–120 at $W=100/50$;
+at $W=50$ the prompt does not fit and the $t=21$ tie is destroyed. Every
+window shows a flush surge one step after $t=W-P$: x2.19 at $W=100$ (the
+1000-direction core run gave x2.20), x2.00 at $W=150$, x2.59 at $W=200$,
+x3.95 at $W=300$, x2.41 at $W=500$ (the 1.5B reference was x1.73).
+The prompt-length scan and the 1500-token cascade run are <strong>pending</strong> (not
+yet local); their figures are placeholders and the script processes them
+automatically if the files appear.</p>
+<hr />
+<h2 id="1-runs-construction-and-the-fp32-floor">1. Runs, construction, and the fp32 floor</h2>
+<h3 id="11-setup_3">1.1 Setup</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>model</td>
+<td><code>DeepSeek-R1-Distill-Qwen-14B</code> (48 blocks, hidden size 5120)</td>
+</tr>
+<tr>
+<td>precision / decoding</td>
+<td>FP32, TF32 off; greedy baseline, teacher-forced repeats</td>
+</tr>
+<tr>
+<td>prompt</td>
+<td><code>interstellar_travel</code>, $P=65$ tokens</td>
+</tr>
+<tr>
+<td>perturbation</td>
+<td>unit direction $\times\,r=0.1$, added to prompt embeddings only</td>
+</tr>
+<tr>
+<td>directions</td>
+<td>$K=240$ per run, 12 disjoint simplex blocks of 20, same seed, same directions in all six runs</td>
+</tr>
+<tr>
+<td>window</td>
+<td>true sliding window, patched and verified; $W=50,100,150,200,300,500$</td>
+</tr>
+<tr>
+<td>continuation</td>
+<td>the <strong>same</strong> 500 greedy tokens in every run (fixed from <code>a1_inter_w4096</code>)</td>
+</tr>
+<tr>
+<td>saved states</td>
+<td>16 per run, <code>layers = [0,1,2,3,5,8,12,16,20,24,28,32,36,40,44,47]</code>; state 1 = block-0 output, state 0 = input embedding</td>
+</tr>
+<tr>
+<td>reference</td>
+<td><code>a1_inter_w4096</code>, $W=4096$ (no clipping within 500 tokens), 32 directions</td>
+</tr>
+<tr>
+<td>files</td>
+<td><code>results_big/ds14/a1_inter_w{W}_fixed/a1.npz</code></td>
+</tr>
+</tbody>
+</table>
+<p>All six runs share the identical <code>gen_ids</code> array (checked), so there is no
+text divergence anywhere in this section: every margin difference is caused
+by the attention mask alone. The 240 directions are also identical across
+runs; the perturbed positions of each direction are 20 random prompt
+positions, and $p_{\rm last}(u)$ — the largest of them — takes values
+$55\ldots64$ with median 59.5 in every run.</p>
+<h3 id="12-window-mechanics-the-law-being-tested">1.2 Window mechanics (the law being tested)</h3>
+<p>With a sliding window of width $W$, the generated position $P+t$ attends only
+to positions $\max(0,P+t-W+1)\ldots P+t$. A perturbed prompt position $p$
+(0-indexed) is therefore inside the window while
+$p\ge P+t-W+1$, i.e. while $t\le p+(W-P)$; the first generated step at which
+it is gone is
+$$t^*(p)=p+(W-P).$$
+For a direction $u$ whose perturbed positions have maximum $p_{\rm last}(u)$,
+the block-0 response must fall to the floor at
+$$t^*_1(u)=p_{\rm last}(u)+(W-P),$$
+because before that at least one perturbed position is visible and after it
+none is. Deeper blocks keep a response longer: block $\ell$ at position
+$P+t$ reads block-$(\ell-1)$ states at previous positions <strong>inside its own
+window</strong>, so the last possible path carries the information one window span
+per block,
+$$t^*_\ell=t^*_1+(\ell-1)(W-1).$$
+This is a strict upper bound on the last nonzero contribution (a "front"),
+not a claim about where the response becomes numerically invisible. When
+$P>W$ the formula still applies: positions $p<P-W$ are already outside the
+window at $t=0$ (the formula gives $t^*<0$, i.e. dead from the start), and
+the surviving positions die at $t^*=p+(W-P)\in[0,W-1]$.</p>
+<h3 id="13-the-literal-zero-test-0-of-1440-directions-reach-zero-on-the-14b">1.3 The literal zero test: 0 of 1440 directions reach zero on the 14B</h3>
+<p>The brief asks for the first $t$ with <code>dh_norm[1] &lt;= 0</code> (state 1 = block-0
+output), with $10^{-6}$ as a tolerance. Measured over all six runs:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">W</th>
+<th style="text-align: right;">directions</th>
+<th style="text-align: right;">reach exactly 0</th>
+<th style="text-align: right;">reach $<10^{-6}$</th>
+<th style="text-align: right;">smallest value over all $t$</th>
+<th style="text-align: right;">floor (5th pct of tail)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">$2.19\times10^{-5}$</td>
+<td style="text-align: right;">$2.99\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">$2.14\times10^{-5}$</td>
+<td style="text-align: right;">$2.94\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">$2.02\times10^{-5}$</td>
+<td style="text-align: right;">$2.92\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">$2.09\times10^{-5}$</td>
+<td style="text-align: right;">$2.91\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">$2.12\times10^{-5}$</td>
+<td style="text-align: right;">$2.89\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">$2.49\times10^{-5}$</td>
+<td style="text-align: right;">$2.98\times10^{-5}$</td>
+</tr>
+</tbody>
+</table>
+<p>So the literal test gives <strong>no deaths at all</strong>, and the reason is visible in
+the last two columns: the response bottoms out at the same
+$2$–$3\times10^{-5}$ in every window. This is not physics. The residue is present at every step,
+before and after the expected death, and its size scales with the state norm:
+it behaves like fp32 round-off from the different batch shapes (a single-row
+baseline forward versus perturbed rows in batches of 8), not like a surviving
+response. At block 0 the relative size is
+$\approx1.0\times10^{-6}$ of the state norm (median norm 29.9,
+hence $3\times10^{-5}$). At deeper states the residue scales with the larger
+residual norm, reaching $2.3$–$3.5\times10^{-6}$ relative at layers 8–47
+($1.7\times10^{-4}$ to $3.1\times10^{-3}$ absolute). The residue is
+direction-independent in size and present at every step, including the
+pre-death plateau, so it cannot be mistaken for a surviving response. At
+$W=500$ the directions with the latest support do not reach the floor inside
+the 500-token horizon (their predicted death is at 490–499); the 5th
+percentile of the tail is then only a floor estimate, not evidence that all
+directions died, which is why no $W=500$ direction is counted as resolved.
+On the 1.5B the baseline and perturbed passes are numerically identical at
+zero response, and exact zeros do occur (§8).</p>
+<p><strong>Death is therefore defined in this section as the first step that starts
+the final excursion below the round-off floor</strong>: <code>dh_norm(t) &lt;= 2 x floor</code>
+and at least 90% of the next 30 steps stay below <code>4 x floor</code>, where the floor
+is the 5th percentile of the last 60 steps (per state) and at least
+$10^{-6}\times$ the median state norm. A direction is counted as <em>resolved</em>
+only if its pre-death signal exceeds $10\times$ the floor and at least 11
+steps remain in the run. On the 1.5B, where exact zeros exist, this rule
+returns the same steps as the literal rule; on the 14B it is the only rule
+that can be applied to all 240 directions. The raw arrays are unchanged; the
+JSON reports the literal counts alongside the calibrated ones.</p>
+<hr />
+<h2 id="2-figure-ds14win_departurepng-state-1-dies-exactly-at-math1411">2. Figure <code>ds14win_departure.png</code> — state 1 dies exactly at $p_{\rm last}+(W-P)$</h2>
+<p><img alt="departure" src="figures/ds14win_departure.png" /></p>
+<p><strong>Setup.</strong> Each point is one direction: predicted death step
+$p_{\rm last}(u)+(W-P)$ on $x$, measured death (first step at the floor, rule
+above) on $y$; one colour per window. Panel (a) is state 1 (block-0 output),
+which should follow the law exactly. Panels (b) and (c) are states 2 and 3,
+which are tested against the cascade bound $t^*_\ell$; the line there is a
+bound, so all points must be at or below it. Open black squares in (a) are the
+1.5B's exact zeros (four directions per window, five windows); they are not
+used in any 14B statistic.</p>
+<p><strong>Axes.</strong> $x$: predicted step, tokens since the first generated token.
+$y$: measured death step. Both axes share the identity line; limits are
+chosen per panel to contain every point. No logarithmic compression.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">W</th>
+<th style="text-align: right;">directions resolved</th>
+<th style="text-align: right;">exactly on the line</th>
+<th style="text-align: right;">within ±2 tokens</th>
+<th style="text-align: right;">median deviation</th>
+<th style="text-align: right;">min</th>
+<th style="text-align: right;">max</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">240 / 240</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">205 / 240</td>
+<td style="text-align: right;">205</td>
+<td style="text-align: right;">205</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">185 / 240</td>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">185</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">+1</td>
+</tr>
+<tr>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">149 / 240</td>
+<td style="text-align: right;">64</td>
+<td style="text-align: right;">148</td>
+<td style="text-align: right;">+1</td>
+<td style="text-align: right;">−3</td>
+<td style="text-align: right;">+2</td>
+</tr>
+<tr>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">52 / 240</td>
+<td style="text-align: right;">45</td>
+<td style="text-align: right;">52</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">−2</td>
+<td style="text-align: right;">+1</td>
+</tr>
+<tr>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">0 / 240</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<p>The "unresolved" directions are not failures of the law: at $W=500$ the
+predicted death is $490$–$499$, leaving fewer than 11 steps, and at large $W$
+the pre-death signal of directions with late $p_{\rm last}$ has decayed to
+within a factor 3 of the floor, so the crossing step cannot be localised
+better than a token or two. The maximum absolute deviation among all 831
+resolved directions is 3 tokens, in one $W=200$ direction.</p>
+<p><strong>What it shows.</strong> The equality holds to the token wherever the measurement
+is resolved: for $W=50$ and $W=100$ every single direction dies exactly at
+$p_{\rm last}+(W-P)$, with no scatter at all (240/240 and 205/205). The
+identity line is not a fit. The support of $p_{\rm last}$ is the same in
+every run (55–64), so the five colours that have resolved points occupy
+disjoint diagonal segments at the predicted offsets $W-65$: this is a scan
+of the window width, not of the directions.</p>
+<p><strong>What it does not show.</strong> It cannot show the exact zero the brief asked
+for, for the numerical reason in §1.3. It also cannot distinguish "the
+response is exactly zero" from "the response is below $3\times10^{-5}$";
+the 1.5B points show that where the exact zero is observable, the two
+coincide. It says nothing about what happens at $W>500$ with 500 tokens,
+because the predicted death then lies beyond the horizon.</p>
+<hr />
+<h2 id="3-figure-ds14win_cascadepng-the-cascade-bound-is-an-upper-bound-at-14b-precision">3. Figure <code>ds14win_cascade.png</code> — the cascade bound is an upper bound at 14B precision</h2>
+<p><img alt="cascade" src="figures/ds14win_cascade.png" /></p>
+<p><strong>Setup.</strong> Panel (a): for each window, the median over directions of the
+measured death at saved state $l$ (solid, markers) and of the predicted bound
+$t^*_l$ computed from each direction's own $t^*_1$ (dashed, same colour).
+$W=100$ and $W=200$ are drawn bold, the other windows thin for context.
+Panel (b) is reserved for the 1500-token cascade run (8 directions, window
+100, states 0–14), which is <strong>pending</strong>; it will be drawn automatically when
+<code>results_big/ds14/a1_inter_w100_cascade/a1.npz</code> appears.</p>
+<p><strong>Axes.</strong> $x$: saved state index $l$ (1 = block-0 output; the saved-state
+spacing in depth is not uniform, but the cascade prediction depends only on
+the index). $y$: death step, median over directions. Linear axes; the dashed
+bounds have slope $W-1$ by construction.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">W</th>
+<th style="text-align: right;">l=1</th>
+<th style="text-align: right;">l=2</th>
+<th style="text-align: right;">l=3</th>
+<th style="text-align: right;">l=4</th>
+<th style="text-align: right;">l=6</th>
+<th style="text-align: right;">l=8</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">50 measured</td>
+<td style="text-align: right;">44.5</td>
+<td style="text-align: right;">84.0</td>
+<td style="text-align: right;">111.0</td>
+<td style="text-align: right;">141.0</td>
+<td style="text-align: right;">182.0</td>
+<td style="text-align: right;">208.0</td>
+</tr>
+<tr>
+<td style="text-align: right;">50 bound</td>
+<td style="text-align: right;">44.5</td>
+<td style="text-align: right;">93.0</td>
+<td style="text-align: right;">142.5</td>
+<td style="text-align: right;">191.5</td>
+<td style="text-align: right;">289.5</td>
+<td style="text-align: right;">387.5</td>
+</tr>
+<tr>
+<td style="text-align: right;">100 measured</td>
+<td style="text-align: right;">94.0</td>
+<td style="text-align: right;">168.0</td>
+<td style="text-align: right;">224.0</td>
+<td style="text-align: right;">279.0</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td style="text-align: right;">100 bound</td>
+<td style="text-align: right;">94.0</td>
+<td style="text-align: right;">193.0</td>
+<td style="text-align: right;">292.5</td>
+<td style="text-align: right;">391.5</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td style="text-align: right;">150 measured</td>
+<td style="text-align: right;">144.0</td>
+<td style="text-align: right;">264.0</td>
+<td style="text-align: right;">310.0</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td style="text-align: right;">150 bound</td>
+<td style="text-align: right;">144.0</td>
+<td style="text-align: right;">294.0</td>
+<td style="text-align: right;">442.5</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td style="text-align: right;">200 measured</td>
+<td style="text-align: right;">195.0</td>
+<td style="text-align: right;">346.0</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td style="text-align: right;">200 bound</td>
+<td style="text-align: right;">194.0</td>
+<td style="text-align: right;">394.0</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<p>Median deviation (measured − bound), in tokens, with the 5th–95th percentile range:
+$W=50$: state 2 −9 [−17,−1], state 3 −29.5 [−44,−11], state 4 −50 [−69,−17],
+state 6 −107, state 8 −180; $W=100$: state 2 −27 [−42,−6], state 3 −70
+[−96,−43], state 4 −111 [−138,−60]; $W=150$: state 2 −32, state 3 −129;
+$W=200$: state 2 −50 [−77,−16]. For every cascade state ($l\ge2$), 100% of
+resolved directions die at or before the bound except $W=50$ state 2, where
+one direction is one token late ($98.7\%$ at or before). State 1 is the
+equality of §2, so its ±1–3 token jitter puts a minority of points on either
+side of the line.</p>
+<p><strong>What it shows.</strong> The bound is respected everywhere, but it is loose at the
+observable level: the measured slope is 61 tokens per state at $W=100$
+(against 99 for the bound) and 151 at $W=200$ (against 199), and at $W=50$ it
+saturates: states 6 and 8 differ by only 26 tokens while the bound grows by
+another 98. This is consistent with the raw traces: block $\ell$'s response
+is a sum over block-$(\ell-1)$ states that are already decaying inside the
+sliding window, so the last surviving path carries a signal that is far below
+the fp32 floor before it finally disappears. The data establish the early
+floor crossing; they do not by themselves separate "already below the floor"
+from "the last path is weaker than the bound allows".</p>
+<p><strong>What it does not show.</strong> It does not measure the exact-zero cascade on the
+14B (the floor hides the last contribution); it measures the time to reach
+the floor, which is an observable upper bound on the true death but not a
+physical constant (it depends on the $10^{-6}$-relative residue). The 1.5B
+provides the exact-zero counterpart (§8). The pending 1500-token run is the
+only way to follow states beyond $l=4$ at $W=100$ (or beyond $l=2$ at
+$W=200$) without the horizon cutting the measurement.</p>
+<hr />
+<h2 id="4-figure-ds14win_supportpng-moving-the-support-moves-the-death-step-exactly">4. Figure <code>ds14win_support.png</code> — moving the support moves the death step exactly</h2>
+<p><img alt="support" src="figures/ds14win_support.png" /></p>
+<p><strong>Setup.</strong> Three support-scan runs at $W=100$: 240 directions restricted to
+prompt positions $[0,22)$, $[22,44)$ and $[44,65)$, 300 tokens, the same
+prompt, the same fixed tokens, the same direction construction. Each
+direction's $p_{\rm last}$ is computed from its own restricted coordinates;
+prediction $p_{\rm last}+35$ (because $W-P=35$). Points: one per direction,
+colour by support. Everything except the support is held fixed — this is the
+controlled version of the law.</p>
+<p><strong>Axes.</strong> $x$: predicted death step $p_{\rm last}+35$. $y$: measured death
+step (state 1, same floor rule). Identity line dashed. Equal aspect.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>support</th>
+<th>$p_{\rm last}$</th>
+<th style="text-align: right;">predicted</th>
+<th style="text-align: right;">resolved</th>
+<th style="text-align: right;">exactly on line</th>
+<th style="text-align: right;">within ±2</th>
+<th style="text-align: right;">max deviation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$[0,22)$</td>
+<td>18–21</td>
+<td style="text-align: right;">53–56</td>
+<td style="text-align: right;">240 / 240</td>
+<td style="text-align: right;">80</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">+2</td>
+</tr>
+<tr>
+<td>$[22,44)$</td>
+<td>40–43</td>
+<td style="text-align: right;">75–78</td>
+<td style="text-align: right;">240 / 240</td>
+<td style="text-align: right;">140</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">+2</td>
+</tr>
+<tr>
+<td>$[44,65)$</td>
+<td>61–64</td>
+<td style="text-align: right;">96–99</td>
+<td style="text-align: right;">240 / 240</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">240</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What it shows.</strong> All 720 directions are resolved and all lie within two
+tokens of $p_{\rm last}+35$; the latest-support group is exact for 240/240.
+The three clusters are disjoint and separated by exactly the $p_{\rm last}$
+shift (about 22 and 21 tokens). This rules out the
+alternative explanation that the death step is set by the window width alone
+or by the token index: the width and the prompt are identical; only the
+support moved, and the death step moved with it one-for-one.</p>
+<p><strong>What it does not show.</strong> It is a single window width ($W=100$); it does not
+test the $(W-P)$ term (that is the six-window scan in §2). The +1/+2 tokens
+in the early groups are floor-crossing jitter, not a second mechanism.</p>
+<hr />
+<h2 id="5-figure-ds14win_plenpng-prompt-length-scan-pending">5. Figure <code>ds14win_plen.png</code> — prompt-length scan: PENDING</h2>
+<p><img alt="prompt length" src="figures/ds14win_plen.png" /></p>
+<p><strong>Setup.</strong> The intended figure: for <code>short_prompt</code> ($P\approx6$) and
+<code>long_prompt</code> ($P\approx250$) at each $W$, measured state-1 death versus
+$p_{\rm last}+(W-P)$, with the $P<W$, $P\approx W$ and $P>W$ regimes
+annotated. The 12 files
+(<code>results_big/ds14/a1_short_prompt_w{W}_fixed/a1.npz</code> and
+<code>a1_long_prompt_w{W}_fixed/a1.npz</code>, $W=50\ldots500$) are <strong>not yet local</strong>.
+The figure is a placeholder; <code>figs_window.py</code> detects and processes them
+automatically when they arrive.</p>
+<p><strong>What the completed scan would test, and what is already known.</strong> The
+formula predicts three regimes. For $P<W$ every prompt position is visible at
+$t=0$ and dies at $p+(W-P)$, so the deaths spread over $W-P$ steps and are
+late. For $P\approx W$ the spread collapses to a few steps around $W-P\approx0$.
+For $P>W$ the earliest $P-W$ prompt positions are already outside the window
+at $t=0$: their formula value is negative, so they are dead from the first
+generated step, while the remaining positions die at $p+(W-P)\in[0,W-1]$.
+The already-available $W=50$ run is exactly the $P>W$ case ($P=65>50$): its
+deaths span $40$–$49$, and the baseline margin trace differs from the
+no-clipping reference from $t=0$ (not from $W-P$), because the first 16
+prompt tokens are invisible from the start. This is the qualitative
+prediction the pending short/long scan will quantify.</p>
+<p><strong>What it does not show.</strong> Everything quantitative: the actual short and long
+$P$, the exact death distribution, and whether the flush survives when the
+prompt is much shorter or much longer than the window.</p>
+<hr />
+<h2 id="6-figure-ds14win_response_shapepng-a-flush-surge-one-step-after-math1501">6. Figure <code>ds14win_response_shape.png</code> — a flush surge one step after $t=W-P$</h2>
+<p><img alt="response shape" src="figures/ds14win_response_shape.png" /></p>
+<p><strong>Setup.</strong> For each window, $\lVert\delta h_t^{47}\rVert/r$ at the last saved
+state (layer 47), median over the 240 directions at each step; the band is
+the 25–75% range over directions, drawn for $W=100$ only to keep the panel
+readable. The dashed grey curve is the $W=4096$ no-clipping reference on the
+same tokens (32 directions). Vertical dotted lines mark $t=W-P$ for each
+window. Log $y$.</p>
+<p><strong>Axes.</strong> $x$: generated step $t$, 0–500. $y$: response norm per unit radius
+at layer 47 (median over directions, log). Free $y$-range $3\times10^{-2}$ to
+$30$; the curves span three decades.</p>
+<p><strong>Numbers.</strong> Ratio of the median response in the ten steps after the first
+clipped position to the ten steps before,
+$\Phi_W=\mathrm{median}<em>{t\in[t^<em>+1,t^</em>+10]}\rho_t/
+\mathrm{median}</em>{t\in[t^<em>-10,t^</em>-1]}\rho_t$:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">W</th>
+<th style="text-align: right;">$t^*=W-P$</th>
+<th style="text-align: right;">$\Phi_W$</th>
+<th style="text-align: right;">per-direction median ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">−15 (prompt does not fit)</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">35</td>
+<td style="text-align: right;">2.19</td>
+<td style="text-align: right;">2.34</td>
+</tr>
+<tr>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">85</td>
+<td style="text-align: right;">2.00</td>
+<td style="text-align: right;">2.02</td>
+</tr>
+<tr>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">135</td>
+<td style="text-align: right;">2.59</td>
+<td style="text-align: right;">2.33</td>
+</tr>
+<tr>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">235</td>
+<td style="text-align: right;">3.95</td>
+<td style="text-align: right;">3.58</td>
+</tr>
+<tr>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">435</td>
+<td style="text-align: right;">2.41</td>
+<td style="text-align: right;">2.36</td>
+</tr>
+<tr>
+<td style="text-align: right;">4096 (ref)</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">no kink</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<p>The 1000-direction true-window-100 core run gives $\Phi=2.20$ by the same
+pooled definition (2.28 by the per-direction median); the 1.5B window-100
+value is 1.73 (quoted from the earlier 1.5B analysis).</p>
+<p><strong>What it shows.</strong> Each window produces a visible upward step exactly at its
+own $t=W-P$, not at a fixed token: 35, 85, 135, 235, 435. The no-clipping
+reference has no such step anywhere. The surge is not a small effect — it
+doubles the last-layer response at $W=100$ and nearly quadruples it at
+$W=300$; the six values ($W=100\ldots500$) range from 2.00 to 3.95 and are
+not monotonic in $W$. The $W=50$ curve starts
+high (median 4.6) because its window already excludes prompt positions
+0–15 at $t=0$, so the baseline itself is different from the first step.</p>
+<p><strong>What it does not show.</strong> It does not establish the mechanism of the surge
+(renormalisation after dropping one key versus a burst of the surviving
+paths); both are consistent with these traces. It also does not show whether
+the surge changes any decision — that is the margin panel, and there the
+changes are at other steps. The absolute levels are not comparable across
+windows before $t=W-P$: a smaller window changes the baseline forward pass
+itself, so the same direction produces a different response even while no
+perturbed prompt position has yet left.</p>
+<hr />
+<h2 id="7-figure-ds14win_margins_by_wpng-the-window-changes-the-decision-landscape-itself">7. Figure <code>ds14win_margins_by_w.png</code> — the window changes the decision landscape itself</h2>
+<p><img alt="margins by W" src="figures/ds14win_margins_by_w.png" /></p>
+<p><strong>Setup.</strong> The same 500 fixed tokens and the same 240 directions under each
+window. Panel (a): median and minimum top-1 minus top-2 gap over the 500
+steps versus $W$ (log $x$); dashed/dotted grey lines are the $W=4096$
+reference median and minimum. Panel (b): the full margin trace of each run,
+one light line per $W$, with the $t=35=W-P$ line for $W=100$.</p>
+<p><strong>Axes.</strong> (a) $x$: window width in tokens (log, labelled with the six
+values); $y$: margin in nats (log). (b) $x$: generated step 0–500; $y$:
+margin in nats (log).</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">W</th>
+<th style="text-align: right;">median margin</th>
+<th style="text-align: right;">minimum margin (step)</th>
+<th style="text-align: right;">steps &lt; 0.1 nats</th>
+<th style="text-align: right;">steps &lt; 0.5 nats</th>
+<th style="text-align: right;">first step differing from W=4096</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">1.135</td>
+<td style="text-align: right;">$8.20\times10^{-5}$ (122)</td>
+<td style="text-align: right;">28</td>
+<td style="text-align: right;">120</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">1.357</td>
+<td style="text-align: right;">$1.030\times10^{-4}$ (21)</td>
+<td style="text-align: right;">31</td>
+<td style="text-align: right;">116</td>
+<td style="text-align: right;">36</td>
+</tr>
+<tr>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">1.507</td>
+<td style="text-align: right;">$1.030\times10^{-4}$ (21)</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">113</td>
+<td style="text-align: right;">86</td>
+</tr>
+<tr>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">1.471</td>
+<td style="text-align: right;">$1.030\times10^{-4}$ (21)</td>
+<td style="text-align: right;">25</td>
+<td style="text-align: right;">108</td>
+<td style="text-align: right;">136</td>
+</tr>
+<tr>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">1.936</td>
+<td style="text-align: right;">$1.030\times10^{-4}$ (21)</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">86</td>
+<td style="text-align: right;">236</td>
+</tr>
+<tr>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">2.463</td>
+<td style="text-align: right;">$1.030\times10^{-4}$ (21)</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">62</td>
+<td style="text-align: right;">436</td>
+</tr>
+<tr>
+<td style="text-align: right;">4096</td>
+<td style="text-align: right;">2.989</td>
+<td style="text-align: right;">$1.030\times10^{-4}$ (21)</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">63</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<p>The early ties are preserved to the bit for every $W\ge100$: the two razor
+gaps are $m_{21}=1.02997\times10^{-4}$ and $m_{19}=1.1293\times10^{-3}$,
+identical in all five runs and in the reference (these are the same two ties
+seen in the 1000-direction full/window comparison). For $W\ge100$ the margin
+trace is bit-identical to the reference through $t=W-65$ and first differs at
+$t=W-64$; for $W=50$, where $P>W$, it differs from $t=0$.</p>
+<p><strong>What it shows.</strong> Two separate effects. First, the mask changes the logits
+on <em>identical</em> tokens: median margin rises overall from 1.135 at $W=50$ to
+2.463 at $W=500$, approaching the reference 2.989, and the count below 0.5
+nats falls from 120 to 62. Second, the early landscape is untouched for
+$W\ge100$: the $t=21$ and $t=19$ ties survive to the bit, because both lie
+before the first clipped position. At $W=50$ the prompt does not fit and the
+first clipped position is $t=0$: both ties are gone ($m_{21}=0.382$,
+$m_{19}=0.119$ nats), and the minimum margin moves to a new step, $t=122$.
+So the window does not merely attenuate propagation of a perturbation; it
+reshapes which decisions are close.</p>
+<p><strong>What it does not show.</strong> These are margins of a <em>teacher-forced</em> baseline
+that is identical in all runs, so no text divergence contaminates the
+comparison — but also no free-running consequence is measured. The margin
+distribution of one 500-token continuation is not the margin distribution of
+the model, and the count "below 0.5 nats" is not a flip count. The reference
+has 32 directions, not 240, although margins do not depend on directions.</p>
+<hr />
+<h2 id="8-comparison-with-the-15b-law">8. Comparison with the 1.5B law</h2>
+<p>The 1.5B flush sweep (<code>chaos_llm_2026/results/local_data/flush_sweep/w*</code>,
+read-only) used the same 65-token prompt, $r=0.1$, 4 directions, 500 tokens,
+and exact zeros are attained there (the baseline and perturbed passes are
+numerically identical at zero response).</p>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th>1.5B</th>
+<th>14B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>state corresponding to block 0</td>
+<td>saved state 0</td>
+<td>saved state 1</td>
+</tr>
+<tr>
+<td>exact-zero death, $W=100/150/200/300/500$</td>
+<td>78 / 128 / 178 / 278 / 478</td>
+<td>not observable (floor $3\times10^{-5}$)</td>
+</tr>
+<tr>
+<td>predicted $p_{\rm last}+(W-P)$</td>
+<td>78 / 128 / 178 / 278 / 478</td>
+<td>matched exactly at $W=50,100$; ±1–3 tokens at $W=150$–$300$</td>
+</tr>
+<tr>
+<td>exact-zero cascade, state 2, $W=100/150/200$</td>
+<td>177 / 277 / 377</td>
+<td>floor crossing 27–50 tokens early (median)</td>
+</tr>
+<tr>
+<td>exact-zero cascade, state 3, $W=100/150$</td>
+<td>276 / 426</td>
+<td>floor crossing 70–129 tokens early (median)</td>
+</tr>
+<tr>
+<td>flush ratio at $W=100$</td>
+<td>1.73</td>
+<td>2.19 (fixed 240 dirs), 2.20 (core 1000 dirs)</td>
+</tr>
+</tbody>
+</table>
+<p>The 1.5B numbers satisfy both formulas <em>exactly</em>: 78 = 43+35, 177 = 78+99,
+276 = 78+198, 277 = 128+149, 426 = 128+298, 377 = 178+199, with
+$p_{\rm last}=43$ and $P=65$. On the 14B the first formula is confirmed at
+the floor-crossing level and the second is confirmed as an upper bound. The
+two statements are consistent: the cascade's exact-zero time is the moment
+the last, already tiny contribution vanishes; on the 14B that contribution
+is below the fp32 batch residue, so the observable crossing must be earlier.
+The 14B's <em>lower</em> numerical precision therefore costs the exact-zero test,
+not the law.</p>
+<hr />
+<h2 id="9-what-is-pending">9. What is pending</h2>
+<p>Two items from the brief are not yet available locally:</p>
+<ol>
+<li><strong>Prompt-length scan</strong> (<code>a1_short_prompt_w*_fixed</code>, <code>a1_long_prompt_w*_fixed</code>):
+   figure placeholder <code>ds14win_plen.png</code>; the script will populate it and add
+   the numbers to <code>ds14win_numbers.json</code> when the files appear. §5 states the
+   three predicted regimes and the already-observed $P>W$ case ($W=50$).</li>
+<li><strong>1500-token cascade</strong> (<code>a1_inter_w100_cascade</code>): panel (b) of
+   <code>ds14win_cascade.png</code> is a placeholder; it will show states 0–14 at
+   $W=100$ with the same bound line. It is the only way to follow the
+   cascade beyond the plotted range without the 500-token horizon; the
+   present 14B cascade is plotted to $l=4$ for $W=100$ and $l=2$ for $W=200$.</li>
+</ol>
+<p>Everything else in the brief is complete. The script <code>scripts_spark/figs_window.py</code>
+detects each file independently, so a partial later arrival produces the
+corresponding figure without touching the rest.</p>
+<hr />
+<h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
+<h2 id="summary_6">Summary</h2>
 <blockquote>
 <p>Same correction note as Part 1: the 14B numbers here are full-attention runs (window inactive). Everything except the flush-ratio row is a same-prompt, same-radius comparison and stands as stated; the flush row is explained by the missing window, and the margin comparison is partially confounded by the window regime (on the 1.5B the window is known to change the margin spectrum). The true-window 14B rerun will close both gaps.</p>
 </blockquote>
 <p>Two models of the same family — 28 layers with $d=1536$, and 48 layers with $d=5120$, roughly eight times the parameters — generate 300 greedy tokens from the identical 65-token prompt with an attention window of 100, and then the same kind of prompt-embedding perturbation (a unit direction times $r=0.1$) is applied and the continuation is teacher-forced. The larger model's decisions are far more fragile: its median top-1/top-2 logit gap is 3.10 nats against 4.78 for the small one, and its thinnest gap (9.7e-5 nats at step 21) is 207 times thinner than the small model's thinnest (2.0e-2 nats at step 123). As a consequence the radius at which a random direction first flips a token — a "flux-tube radius", the largest perturbation size along that direction that leaves the greedy continuation intact — is 13 times smaller in the 14B (median 0.116 vs 1.55 in absolute embedding units, 17 times smaller after dividing by the token-embedding scale), and 464 of 1000 directions flip something at the run radius against 0 of 20. The response itself is <em>not</em> stronger in the bigger model: per unit radius its last-state displacement is 2.3 times smaller in absolute units and 4.6 times smaller relative to the state it lives in, so the fragility is a property of how close the decisions are, not of how hard the perturbation pushes. Two shape features do differ: only the 1.5B shows a window-flush surge at $t=35$ (its last state jumps 1.70x across it, the 14B's 1.11x), and the 1.5B's response decays to 19% of its early level by $t=200$ while the 14B's is still at 68% — though that second difference is partly textual, because the small model falls into a repeating four-token loop at $t=143$ and the large one does not.</p>
 <hr />
 <h2 id="1-the-two-runs-and-every-quantity">1. The two runs and every quantity</h2>
-<h3 id="11-setup_3">1.1 Setup</h3>
+<h3 id="11-setup_4">1.1 Setup</h3>
 <table>
 <thead>
 <tr>
