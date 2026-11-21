@@ -19,6 +19,7 @@ wreg = open(f"{HERE}/sections/section_w100_vs_full.md", encoding="utf-8").read()
 window = open(f"{HERE}/sections/section_window.md", encoding="utf-8").read()
 sd = open(f"{HERE}/sections/section_state_depth.md", encoding="utf-8").read()
 d2ds = open(f"{HERE}/sections/section_d2_ds14.md", encoding="utf-8").read()
+q35 = open(f"{HERE}/sections/section_qwen35.md", encoding="utf-8").read()
 xs = open(f"{HERE}/sections/section_cross_scale.md", encoding="utf-8").read()
 
 CALL = """
@@ -80,6 +81,6 @@ xs = xs.replace(
 out = (part0 + "\n\n" + roadmap + "\n\n" + floor + "\n\n" + d2pipe + "\n\n" + part1 + "\n\n"
        + CALL + "\n\n" + a1 + "\n\n---\n\n" + freefull + "\n\n---\n\n" + freew100
        + "\n\n---\n\n" + wreg + "\n\n---\n\n" + window + "\n\n---\n\n" + sd
-       + "\n\n---\n\n" + d2ds + "\n\n---\n\n" + xs + "\n")
+       + "\n\n---\n\n" + d2ds + "\n\n---\n\n" + q35 + "\n\n---\n\n" + xs + "\n")
 open(f"{HERE}/notebook_big.md", "w", encoding="utf-8").write(out)
 print("assembled", len(out), "chars")
