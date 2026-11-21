@@ -13,6 +13,7 @@ floor = open(f"{HERE}/sections/section_floor.md", encoding="utf-8").read()
 d2pipe = open(f"{HERE}/sections/section_d2_pipeline.md", encoding="utf-8").read()
 part1 = open(f"{HERE}/sections/part1_core.md", encoding="utf-8").read()
 a1 = open(f"{HERE}/sections/section_a1_deep.md", encoding="utf-8").read()
+freefull = open(f"{HERE}/sections/section_free_full.md", encoding="utf-8").read()
 xs = open(f"{HERE}/sections/section_cross_scale.md", encoding="utf-8").read()
 
 CALL = """
@@ -72,6 +73,6 @@ xs = xs.replace(
     "true-window 14B rerun will close both gaps.", 1)
 
 out = (part0 + "\n\n" + roadmap + "\n\n" + floor + "\n\n" + d2pipe + "\n\n" + part1 + "\n\n"
-       + CALL + "\n\n" + a1 + "\n\n---\n\n" + xs + "\n")
+       + CALL + "\n\n" + a1 + "\n\n---\n\n" + freefull + "\n\n---\n\n" + xs + "\n")
 open(f"{HERE}/notebook_big.md", "w", encoding="utf-8").write(out)
 print("assembled", len(out), "chars")
