@@ -109,10 +109,13 @@ def main():
         layer = model.model.layers[l]
         H = o.hidden_states[l].clone()
 
+        def layer_out(res):
+            return res[0] if isinstance(res, tuple) else res
+
         def f(Hin):
-            return layer(Hin, attention_mask=mask, position_ids=pos_ids,
-                         position_embeddings=pe, use_cache=False,
-                         cache_position=cache_position)[0]
+            return layer_out(layer(Hin, attention_mask=mask, position_ids=pos_ids,
+                                   position_embeddings=pe, use_cache=False,
+                                   cache_position=cache_position))
 
         def jv(v):
             V = torch.zeros_like(H)

@@ -64,6 +64,11 @@ def main():
     pe = model.model.rotary_emb(H0, pos_ids)
     mask = build_mask(L, meta.get("window") if active else 0, "cuda", torch.float32)
     cache_position = torch.arange(L, device="cuda")
+    def layer_out(res):
+        """transformers <=4.5x returns (tensor, ...) tuples; >=4.57 returns a
+        bare tensor from decoder layers."""
+        return res[0] if isinstance(res, tuple) else res
+
     k = args.k
     lam = np.zeros((len(pos_list), nL, k), dtype=np.float32)
     local = np.zeros((len(pos_list), nL), dtype=np.float32)
@@ -77,9 +82,9 @@ def main():
             layer = model.model.layers[l]
 
             def f(Hin, layer=layer):
-                return layer(Hin, attention_mask=mask, position_ids=pos_ids,
-                             position_embeddings=pe, use_cache=False,
-                             cache_position=cache_position)[0]
+                return layer_out(layer(Hin, attention_mask=mask, position_ids=pos_ids,
+                                      position_embeddings=pe, use_cache=False,
+                                      cache_position=cache_position))
             Us = []
             for i in range(k):
                 V = torch.zeros_like(o.hidden_states[l])
