@@ -1,0 +1,21 @@
+{
+  "model": "/u0/grego/LLM/models--state-spaces--mamba-370m-hf",
+  "tokens_from": "results/ctrl/mamba370/a1i_txt/a1.npz",
+  "prompt_len": 67,
+  "t0_list": [
+    80,
+    150,
+    220
+  ],
+  "horizon": 200,
+  "dirs": 8,
+  "eps": 0.01,
+  "diag_t_list": [
+    70,
+    100,
+    150,
+    220,
+    290
+  ],
+  "elapsed_sec": 615.2
+}

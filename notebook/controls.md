@@ -199,15 +199,57 @@ law (transformer-specific), and the phase-controlled positive control
 
 ---
 
-## Part 4 — The state-level story (Jacobians) — *running*
+## Part 4 — The state-level story: measured, not just proved
 
-Queued: in-batch state-kick growth curves (perturb the SSM state directly,
-teacher-force 200 tokens), the state-Jacobian diagonal spectrum
-$\log\exp(\Delta_t A)$ per layer and step, one-step $\sigma_\max$ by power
-iteration (non-normal transient growth, the concrete answer to R1.2's
-"transient growth without chaos"), and the block-structure check
-(higher-layer perturbations cannot touch lower layers within a step —
-expected exactly zero, measured bit-exact).
+**Data.** In-batch finite-difference Jacobian measurements (bit-exact within
+each batch). The state vector is the concatenation over layers of (SSM state
+$[d_\text{inner},16]$, conv register $[d_\text{inner},4]$). Experiments on the
+real teacher-forced trajectory of the txt prompt (300 tokens): (A) kick the
+full state with $\varepsilon=10^{-2}$, 8 random unit directions, follow 200
+tokens; (C) sample the state-Jacobian diagonal $\log J_{ii}=\Delta_t A_i$
+(24 channels × 16 SSM dims per layer, 13 layers, 5 token positions); (B)
+one-step $\sigma_\max(J_t)$ by power iteration.
+
+![kick](figures_controls/c4_kick.png)
+
+(A) A direct kick to the *internal state* (the thing the KV cache is for a
+transformer): the response is **bounded** — a transient bump to ×1.5–3 of
+the initial size (peaking 3–54 tokens in), then flat or decaying. No
+exponential growth over 200 tokens. Mamba-370m behaves the same (right
+panel, dashed).
+
+![diag](figures_controls/c4_diag.png)
+
+(C) The exponent spectrum, measured: **every sampled state exponent is
+negative** (130m: median $\log J_{ii}=-0.73$; 370m: $-0.68$), with a long
+slow-channel tail — the 90th percentile is $-0.004$ (130m) / $-0.015$
+(370m), i.e. channels with **half-lives of 50–700 tokens**. This tail is
+the measured mechanism behind Part 2's "the control carries the kick":
+persistence comes from marginal channels, not from instability.
+
+![sigma](figures_controls/c4_sigma.png)
+
+(B) $\sigma_\max(J_t)\approx0.99$–$1.01$ at all measured steps: the *worst*
+direction is marginally non-expanding while all eigenvalues are $<1$ (a
+strongly non-normal regime). A random vector gets transiently amplified up
+to **×10** on the first application of $J_t$ (panel b, $\log\|Jv\|$ up to
+2.3), then contracts. This is the concrete, measured instance of R1.2's
+"transient growth without chaos": it exists, it is worth ×2–10, and it
+decays.
+
+**Block structure, verified bit-exact.** Perturbing layer $\ell$'s state
+produced an exactly-zero response in every layer $<\ell$ at the next step
+(max leak $=0$ over all sampled channels, layers, and steps, both models) —
+the teacher-forced one-step Jacobian is block lower-triangular as the
+theory requires, so its eigenvalues are exactly the sampled diagonal
+entries above.
+
+**Part 4 verdict.** The control's smooth part is non-expanding at every
+level we can measure: eigenvalues (all $<0$), worst singular value
+($\approx1$), and finite kicks (bounded, decaying). Against this, the
+transformer's distinguishing features are the *size* of its carried
+response (×3 at the last layer, Part 2) and its window flush law — not the
+mere existence of amplification.
 
 ## Part 5 — Trajectories, D2, recurrence: the control fools these diagnostics too
 
