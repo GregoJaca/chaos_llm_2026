@@ -1,0 +1,8 @@
+#!/bin/bash
+# pull the window-sweep + support-scan results to the laptop
+cd ~/LLM/chaos_llm_2026/results_big/ds14
+for d in a1_inter_w50_fixed a1_inter_w100_fixed a1_inter_w150_fixed a1_inter_w200_fixed \
+         a1_inter_w300_fixed a1_inter_w500_fixed \
+         a1_inter_w100_posearly_0-22 a1_inter_w100_posearly_22-44 a1_inter_w100_posearly_44-65; do
+  echo "$d"
+done

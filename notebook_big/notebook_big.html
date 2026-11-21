@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  built 2026-11-21 02:38:49 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
+  built 2026-11-21 04:04:43 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
   <a href="notebook_big.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook_big.md">Markdown</a>
 </header>
 <h1 id="large-models-on-the-dgx-spark-definitions-data-and-every-figure-explained">Large models on the DGX Spark: definitions, data, and every figure explained</h1>
@@ -2192,15 +2192,644 @@ This uses only stored quantities and is exact under the definition of <code>obs<
 </code></pre>
 <p>Writes <code>notebook_big/figures/ds14free_{scorecard,survival,latency,resync,flipword}.png</code> (dpi 170) and <code>notebook_big/figures/ds14free_numbers.json</code>, which contains the full scorecard, the sign-blind comparison, the latency distributions, the survival curves, the per-run post-flip records (including the decoded longest shared run), the population inference, and the decoded gate tokens with their ids. The script reads the two npz files and the summary in place; it does not modify them. The tokenizer is <code>assets/tok_ds14/tokenizer.json</code> via the <code>tokenizers</code> package.</p>
 <hr />
-<h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
+<h1 id="part-window-regime-true-window-100-against-full-attention-on-the-14b-the-same-two-razor-ties-a-x22-flush-and-a-late-response-that-does-not-decay">Part window regime. True window 100 against full attention on the 14B: the same two razor ties, a x2.2 flush, and a late response that does not decay</h1>
 <h2 id="summary_4">Summary</h2>
+<p>The same prompt, seed and 1000 directions were run twice on <code>DeepSeek-R1-Distill-Qwen-14B</code> in FP32, once with full attention and once with a <em>true</em> sliding window of 100 tokens (the <code>layer_types</code> patch was verified by a bitwise departure test). The two runs are bit-identical up to generated step 34 and first differ at exactly $t=35=W-P$, as the window law requires; the greedy text itself changes at $t=45$. The same two razor ties survive: $m_{21}=9.727\times10^{-5}$ and $m_{19}=1.144\times10^{-3}$ nats in both runs, and 418 and 41 of the windowed flips are still controlled at $t=21$ and $t=19$. The window adds one new late tie at $t=297$ ($m=4.79\times10^{-3}$ nats), which raises the predicted flip fraction from 46.4% to 49.3% without removing a single full-attention flip. The last-layer response jumps by a factor 2.20 across $t=35$ (the 1.5B showed 1.73), the typical response gain rises from 0.58 to 1.49, and the late-time response decays to 0.58 of its early value under full attention but stays at 0.93 under the window. In other words the window does not cut the late response: it makes it larger and more bursty, because only one prompt position leaves the window per step and the perturbation survives in the generated-token states that stay inside it.</p>
+<hr />
+<h2 id="1-the-runs-the-quantities-and-the-verification">1. The runs, the quantities, and the verification</h2>
+<h3 id="11-setup_2">1.1 Setup</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>full attention</th>
+<th>true window 100</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>model</td>
+<td><code>DeepSeek-R1-Distill-Qwen-14B</code> (48 blocks, hidden size 5120)</td>
+<td>same</td>
+</tr>
+<tr>
+<td>precision / decoding</td>
+<td>FP32, TF32 off; greedy, fixed length</td>
+<td>same</td>
+</tr>
+<tr>
+<td>prompt</td>
+<td><code>interstellar_travel</code>, $P=65$ tokens</td>
+<td>same</td>
+</tr>
+<tr>
+<td>continuation</td>
+<td>$T=300$ baseline greedy tokens</td>
+<td>same, but <strong>a different text from $t=45$</strong></td>
+</tr>
+<tr>
+<td>directions</td>
+<td>$K=1000$, 50 disjoint simplex blocks of 20, unit norm on the $65\times5120$ prompt embeddings</td>
+<td>same construction, same seed</td>
+</tr>
+<tr>
+<td>radius</td>
+<td>$r=0.1$ only</td>
+<td>same</td>
+</tr>
+<tr>
+<td>attention</td>
+<td>full: the request <code>window=100</code> was silently inactive (transformers gates it on <code>layer_types</code>, which the stock config does not set)</td>
+<td>true: patched, window 100, verified</td>
+</tr>
+<tr>
+<td>saved states</td>
+<td>indices $[0,6,12,18,24,30,36,42,47]$</td>
+<td>same</td>
+</tr>
+<tr>
+<td>file</td>
+<td><code>results_big/ds14/a1_inter_full/a1.npz</code></td>
+<td><code>results_big/ds14/a1_inter_w100/a1.npz</code></td>
+</tr>
+<tr>
+<td>wall time</td>
+<td>1590.6 s</td>
+<td>1606.8 s</td>
+</tr>
+</tbody>
+</table>
+<p>Two auxiliary files are used for checks, not for the main comparison:</p>
+<ul>
+<li><code>results_big/ds14/a1_inter_w4096/a1.npz</code> — 32 directions, 500 tokens, window 4096. Its first 300 baseline tokens are <strong>identical</strong> to the full-attention run's and its margins differ from them by at most $4.8\times10^{-5}$ nats (batch-shape round-off). It confirms that the full-attention run is a valid "no clipping within the horizon" reference.</li>
+<li><code>results_big/ds14/calib/calib.npz</code> — 8 directions, 400 tokens, 9 radii, <code>meta.json</code> says <code>window: 100</code>. <strong>It is not a true-window run.</strong> Its first 300 baseline tokens are identical to the <em>full-attention</em> run's (not to the windowed run's) and its margins differ from the full run's by at most $7.2\times10^{-5}$ nats. The <code>window</code> field in these metadata files records the requested value, not the active mask (the full-attention meta also says <code>window: 100</code>). The calibration therefore establishes radius linearity for full attention only; it is used below with that caveat.</li>
+</ul>
+<h3 id="12-data-facts-that-must-precede-any-number">1.2 Data facts that must precede any number</h3>
+<ol>
+<li><strong>The window is real and starts at exactly $W-P$.</strong> For $P=65$, $W=100$ the 100-key window of the response position $P+t$ is $P+t-99\dots P+t$, so the first prompt key (position 0) leaves at $t=100-65=35$. Measured: every saved state is bit-identical for $t\le34$ and differs from $t=35$ onward. This is the same departure test used for the 1.5B and for the other 14B window runs; the first departure is at exactly $t=W-P$.</li>
+<li><strong>Margins lag the states by one step.</strong> The engine stores the response at absolute position $P+t$ (<code>dh_norm[:, P:P+T]</code>) and the margin of the token predicted from position $P+t-1$. The first margin difference is therefore at $t=36$, one step after the first state difference. The first <em>token</em> difference is at $t=45$; the two baseline continuations diverge there (<code>" has"</code> versus <code>"'s"</code>), so every margin, threshold and response after $t=45$ refers to a different text in the two runs.</li>
+<li><strong>The baseline scale is unchanged.</strong> The median baseline residual norm at the last saved state over $t\in[150,300)$ is 1046.6 (full) and 1077.3 (window). The absolute response comparison is therefore not a normalisation artefact.</li>
+</ol>
+<h3 id="13-quantities">1.3 Quantities</h3>
+<p>Let $u$ index a direction and $t\in\{0,\dots,299\}$ a generated step. All thresholds use the signed rule, because only a <em>negative</em> change of the top-1/top-2 gap can close it.</p>
+<table>
+<thead>
+<tr>
+<th>symbol</th>
+<th>explicit expression</th>
+<th>meaning</th>
+<th>why it is used</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$m_t$</td>
+<td>$\ell_t^{(1)}-\ell_t^{(2)}$ (nats)</td>
+<td>gap between the two best tokens of that run's own baseline</td>
+<td>a flip requires this gap to be closed</td>
+</tr>
+<tr>
+<td>$\delta m_t(u)$</td>
+<td>$m_t(u)-m_t$ (nats, stored <code>dm</code>)</td>
+<td>change of that gap under direction $u$ at $r=0.1$</td>
+<td>response of the decision variable without letting the text diverge</td>
+</tr>
+<tr>
+<td>$r_c^-(t,u)$</td>
+<td>$m_t\,r/\max(-\delta m_t(u),0)$; $+\infty$ if $\delta m_t\ge0$</td>
+<td>radius at which step $t$ would flip</td>
+<td>solve $-\delta m_t\ge m_t$ for the radius</td>
+</tr>
+<tr>
+<td>$r_*(u)$</td>
+<td>$\min_t r_c^-(t,u)$</td>
+<td>threshold radius of the direction</td>
+<td>flips at the run radius iff $r_*(u)\le0.1$</td>
+</tr>
+<tr>
+<td>$t_*(u)$</td>
+<td>$\arg\min_t r_c^-(t,u)$</td>
+<td>controlling step</td>
+<td>which near-tie is the weak point</td>
+</tr>
+<tr>
+<td>$\rho_t^{47}(u)$</td>
+<td>$\lVert\delta h_t^{47}(u)\rVert/r$</td>
+<td>absolute response of the last saved state (layer 47) per unit radius</td>
+<td>the quantity that the window acts on</td>
+</tr>
+<tr>
+<td>$G(u)$</td>
+<td>$\mathrm{median}_t\,\rho_t^{47}(u)$</td>
+<td>typical last-state gain of the direction</td>
+<td>one number per direction, robust to single-step bursts</td>
+</tr>
+<tr>
+<td>$\Phi$</td>
+<td>$\mathrm{median}_{t\in[36,45]}\rho_t^{47}\big/\mathrm{median}_{t\in[25,34]}\rho_t^{47}$</td>
+<td>flush ratio across the first clipped position</td>
+<td>tests the 1.5B flush signature</td>
+</tr>
+<tr>
+<td>$\Lambda$</td>
+<td>$\mathrm{median}_{t\in[150,300)}\rho_t^{47}\big/\mathrm{median}_{t\in[0,50)}\rho_t^{47}$</td>
+<td>late-time fraction</td>
+<td>tests whether the window suppresses the late response</td>
+</tr>
+</tbody>
+</table>
+<p>The two windows in $\Phi$ and $\Lambda$ are pooled over directions and steps; medians over directions at each step, then over steps, give the same answers to within 5% and are reported in the JSON.</p>
+<h3 id="14-the-comparison-in-one-table">1.4 The comparison in one table</h3>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th style="text-align: right;">full attention</th>
+<th style="text-align: right;">true window 100</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>smallest margin, step</td>
+<td style="text-align: right;">$9.727\times10^{-5}$ (t=21)</td>
+<td style="text-align: right;">$9.727\times10^{-5}$ (t=21)</td>
+</tr>
+<tr>
+<td>second margin, step</td>
+<td style="text-align: right;">$1.144\times10^{-3}$ (t=19)</td>
+<td style="text-align: right;">$1.144\times10^{-3}$ (t=19)</td>
+</tr>
+<tr>
+<td>median / mean margin over 300 steps (nats)</td>
+<td style="text-align: right;">3.096 / 5.00</td>
+<td style="text-align: right;">1.826 / 2.92</td>
+</tr>
+<tr>
+<td>margins below 0.05 / 0.1 / 0.5</td>
+<td style="text-align: right;">4 / 8 / 34</td>
+<td style="text-align: right;">6 / 9 / 52</td>
+</tr>
+<tr>
+<td>predicted flips at $r=0.1$</td>
+<td style="text-align: right;">464 (46.4%)</td>
+<td style="text-align: right;">493 (49.3%)</td>
+</tr>
+<tr>
+<td>flips controlled at t=19 / 21 / 297</td>
+<td style="text-align: right;">43 / 421 / 0</td>
+<td style="text-align: right;">41 / 418 / 34</td>
+</tr>
+<tr>
+<td>flips that are new under the window</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">29, all at t=297</td>
+</tr>
+<tr>
+<td>flush ratio $\Phi$</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;">2.20</td>
+</tr>
+<tr>
+<td>late fraction $\Lambda$</td>
+<td style="text-align: right;">0.58</td>
+<td style="text-align: right;">0.93</td>
+</tr>
+<tr>
+<td>median gain $G$</td>
+<td style="text-align: right;">0.583</td>
+<td style="text-align: right;">1.493</td>
+</tr>
+<tr>
+<td>depth growth, state 1 -&gt; state 8</td>
+<td style="text-align: right;">x8.4</td>
+<td style="text-align: right;">x38.6</td>
+</tr>
+<tr>
+<td>first differing baseline token</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">t=45 (<code>" has"</code> vs <code>"'s"</code>)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-figure-ds14reg_marginspng-the-early-razor-ties-are-untouched-every-late-near-tie-is-new">2. Figure <code>ds14reg_margins.png</code> — the early razor ties are untouched; every late near-tie is new</h2>
+<p><img alt="margins" src="figures/ds14reg_margins.png" /></p>
+<p><strong>Setup.</strong> Both runs, same prompt, same directions, $r=0.1$. Each panel plots the full margin trace $m_t$ of that run's own greedy continuation, $t=0\dots299$. The grey band on the left is the region $t\le35$ where the two runs are identical by construction (it contains both razor ties); the dashed line is $t=35=W-P$. Dotted horizontals are 0.05, 0.1 and 0.5 nats. The inset lists the five smallest gaps and the number of steps below each threshold; the eight smallest are given in the table below.</p>
+<p><strong>Axes.</strong> $x$: generated step $t$ (0 = first generated token), 0–300. $y$: top-1 minus top-2 logit gap in nats, log scale $6\times10^{-5}$–40, chosen freely because the gaps span six decades.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">rank</th>
+<th>full attention (step: nats)</th>
+<th>true window 100 (step: nats)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">1</td>
+<td>21: $9.727\times10^{-5}$</td>
+<td>21: $9.727\times10^{-5}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">2</td>
+<td>19: $1.144\times10^{-3}$</td>
+<td>19: $1.144\times10^{-3}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">3</td>
+<td>189: $2.224\times10^{-3}$</td>
+<td>297: $4.791\times10^{-3}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">4</td>
+<td>273: $1.916\times10^{-2}$</td>
+<td>145: $4.010\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">5</td>
+<td>255: $5.151\times10^{-2}$</td>
+<td>88: $4.050\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">6</td>
+<td>171: $5.394\times10^{-2}$</td>
+<td>239: $4.109\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">7</td>
+<td>168: $8.033\times10^{-2}$</td>
+<td>271: $5.221\times10^{-2}$</td>
+</tr>
+<tr>
+<td style="text-align: right;">8</td>
+<td>205: $8.067\times10^{-2}$</td>
+<td>152: $5.965\times10^{-2}$</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>threshold (nats)</th>
+<th style="text-align: right;">full</th>
+<th style="text-align: right;">window</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$m_t<0.05$</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">6</td>
+</tr>
+<tr>
+<td>$m_t<0.1$</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">9</td>
+</tr>
+<tr>
+<td>$m_t<0.5$</td>
+<td style="text-align: right;">34</td>
+<td style="text-align: right;">52</td>
+</tr>
+<tr>
+<td>median $m_t$</td>
+<td style="text-align: right;">3.096</td>
+<td style="text-align: right;">1.826</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- The first two gaps are identical to the bit, because both steps precede the first clipped margin at $t=36$. The two ties are not merely "similar"; they are the same numbers.
+- The margin traces diverge from $t=36$ onward. The maximum difference is 20.0 nats at $t=53$, where the full run has a very confident decision (21.2 nats) and the windowed run has a nearly tied one (1.20 nats; different tokens: ids 51998/24306 vs 11/13).
+- The whole spectrum shifts down under the window: the median gap falls from 3.096 to 1.826 nats and the mean from 5.00 to 2.92, so the count below 0.5 nats rises from 34 to 52. This is not caused by the truncation of a few states; it is a property of the different continuation.
+- The late near-tie list is completely replaced. Full attention has 189, 273, 255, 171, 168, 205; the window has 297, 145, 88, 239, 271, 152. Only $t=21$ and $t=19$ survive.
+- The baseline text itself changes at $t=45$: full continues <code>"The user has specified several systems to compare: chemical rockets, nuclear propulsion, ..."</code>; the window continues <code>"The user's query is detailed, well-organized, suitable for a graduate-level course or professional reference. The document is detailed, well..."</code>. The windowed text is visibly more repetitive (see §3 and §8).</p>
+<p><strong>What it shows.</strong> The window changes the decision landscape in two distinct ways: it raises the number of gaps below 0.05 nats from 4 to 6 and below 0.5 nats from 34 to 52, and it replaces every late weak point with a new one, while leaving the two earliest ties exactly where they were.</p>
+<p><strong>What it does not show.</strong> It cannot say whether a given late margin differs because the attention renormalisation changed the state or because the text took a different branch at $t=45$; after $t=45$ the two traces are margins of different sentences. It also says nothing about which of these late ties would actually flip a <em>free-running</em> windowed continuation, because no such run exists yet and the thresholds are teacher-forced predictions.</p>
+<hr />
+<h2 id="3-figure-ds14reg_response_shapepng-a-x22-flush-at-the-first-clipped-token-then-bursts">3. Figure <code>ds14reg_response_shape.png</code> — a x2.2 flush at the first clipped token, then bursts</h2>
+<p><img alt="response shape" src="figures/ds14reg_response_shape.png" /></p>
+<p><strong>Setup.</strong> For each run, $\rho_t^{47}(u)=\lVert\delta h_t^{47}(u)\rVert/r$ at the last saved state (layer 47), median over the 1000 directions at each step; the shaded band is the 25–75% range over directions. Both curves use their own run's baseline (the perturbed and unperturbed forward passes of the same run), so the difference is the response to the same direction under the two attention masks — after $t=45$ on two different baseline sentences. Dashed line: $t=35=W-P$. Log $y$.</p>
+<p><strong>Axes.</strong> $x$: generated step $t$, 0–300. $y$: $\lVert\delta h_t^{47}\rVert/r$, median and interquartile band, log scale 0.15–25.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th style="text-align: right;">full</th>
+<th style="text-align: right;">true window 100</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>median $\rho^{47}$ over $t\in[25,34]$ (pre-clip)</td>
+<td style="text-align: right;">0.836</td>
+<td style="text-align: right;">0.836</td>
+</tr>
+<tr>
+<td>median $\rho^{47}$ over $t\in[36,45]$</td>
+<td style="text-align: right;">0.832</td>
+<td style="text-align: right;">1.837</td>
+</tr>
+<tr>
+<td>flush ratio $\Phi$</td>
+<td style="text-align: right;">0.99</td>
+<td style="text-align: right;"><strong>2.20</strong></td>
+</tr>
+<tr>
+<td>$\Phi$ from per-step medians (median of ratios)</td>
+<td style="text-align: right;">0.93</td>
+<td style="text-align: right;">2.11</td>
+</tr>
+<tr>
+<td>steps with median $\rho^{47}>3$</td>
+<td style="text-align: right;">1 / 300</td>
+<td style="text-align: right;">57 / 300</td>
+</tr>
+<tr>
+<td>largest per-step median $\rho^{47}$</td>
+<td style="text-align: right;">3.15 at $t=258$</td>
+<td style="text-align: right;">15.25 at $t=291$</td>
+</tr>
+</tbody>
+</table>
+<p>Step-by-step ratio of the two median curves just after the first clip:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">step</th>
+<th style="text-align: right;">$\rho^{47}$ full</th>
+<th style="text-align: right;">$\rho^{47}$ window</th>
+<th style="text-align: right;">window / full</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">35</td>
+<td style="text-align: right;">0.0877</td>
+<td style="text-align: right;">0.0910</td>
+<td style="text-align: right;">1.04</td>
+</tr>
+<tr>
+<td style="text-align: right;">36</td>
+<td style="text-align: right;">0.0864</td>
+<td style="text-align: right;">0.2059</td>
+<td style="text-align: right;">2.38</td>
+</tr>
+<tr>
+<td style="text-align: right;">37</td>
+<td style="text-align: right;">0.0592</td>
+<td style="text-align: right;">0.1414</td>
+<td style="text-align: right;">2.39</td>
+</tr>
+<tr>
+<td style="text-align: right;">38</td>
+<td style="text-align: right;">0.0751</td>
+<td style="text-align: right;">0.1585</td>
+<td style="text-align: right;">2.11</td>
+</tr>
+</tbody>
+</table>
+<p>The per-state flush ratio for the window run is 1.65 (state 1, block 0), 2.83 (state 2), 2.72, 2.32, 2.11, 2.12, 2.02, 2.20 (state 8, layer 47); for the full run it lies between 0.92 and 1.12 at every state.</p>
+<p><strong>What is in the figure.</strong>
+- The two curves are identical up to $t=34$. At $t=35$ the windowed response is 4% larger; at $t=36$ it is 2.4x larger, and it stays around 2x through $t=45$. This is the same flush the 1.5B showed, with a larger amplitude (2.20 against 1.73).
+- The flush is strongest at shallow depth: 2.83 at state 2, against 1.65 at state 1 and 2.20 at the last state. The effect of the truncation is largest just after the first block and is partly damped on the way to layer 47.
+- Beyond $t=50$ the windowed curve does not decay smoothly. It has two burst stretches, $t\approx114$–$132$ and $t\approx260$–$294$, where the median response reaches 6–15 per unit radius; the full run never exceeds 3.15. These stretches coincide with the most repetitive passages of the windowed text (<code>"...sections like an introduction, a structure, then sections on..."</code> around $t=114$; <code>"introduction, structure, content organization, conclusion..."</code> around $t=270$). The coincidence is suggestive but not a controlled test.
+- In the troughs between bursts the windowed curve falls to 0.3–1.0, so the median over $[150,300)$ is 1.03 while the burst steps reach 15. The median is the robust statistic used below; the band shows the spread over directions is wide at every step.</p>
+<p><strong>What it shows.</strong> The true window produces the advertised flush at the first clipped prompt position, with a depth-dependent amplitude. It does not suppress the deep response later; if anything it amplifies it, intermittently.</p>
+<p><strong>What it does not show.</strong> The median curve is not a typical trajectory: the 25–75% band is a factor 2–3 wide and the bursts are a population effect, not a single direction blowing up. It does not establish that repetition causes the bursts (the text is itself an output of the window), and it cannot separate the direct effect of dropping a prompt key from the indirect effect of the different continuation. The response is measured at one radius only; a larger radius may leave the linear regime.</p>
+<hr />
+<h2 id="4-figure-ds14reg_rstarpng-464-493-predicted-flips-all-of-them-still-at-the-same-two-ties">4. Figure <code>ds14reg_rstar.png</code> — 46.4% -&gt; 49.3% predicted flips, all of them still at the same two ties</h2>
+<p><img alt="rstar" src="figures/ds14reg_rstar.png" /></p>
+<p><strong>Setup.</strong> Left: empirical distribution (ECDF) of the signed threshold radius $r_*(u)=\min_t r_c^-(t,u)$ over all 1000 directions, for both runs, truncated at $r_*=60$ (the largest finite value is 55.5). The vertical dashed line is the measurement radius $r=0.1$; the dotted horizontals are the predicted flip fractions. Right: the number of directions whose controlling step is each of eight steps, for both runs.</p>
+<p><strong>Axes.</strong> Left: $x$: threshold radius $r_*$, log, $2\times10^{-3}$–60; $y$: fraction of directions, 0–1. Right: $x$: directions with that controlling step, 0–590; $y$: step $t_*$, categorical.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th style="text-align: right;">full</th>
+<th style="text-align: right;">true window 100</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>predicted flip fraction at $r=0.1$</td>
+<td style="text-align: right;">46.4% (464)</td>
+<td style="text-align: right;">49.3% (493)</td>
+</tr>
+<tr>
+<td>$r_*$ p10 / p50 / p90 / p95</td>
+<td style="text-align: right;">0.0171 / 0.116 / 2.59 / 7.21</td>
+<td style="text-align: right;">0.0171 / 0.104 / 1.85 / 3.47</td>
+</tr>
+<tr>
+<td>$r_*>1$</td>
+<td style="text-align: right;">166</td>
+<td style="text-align: right;">148</td>
+</tr>
+<tr>
+<td>controlling step 21 / 19</td>
+<td style="text-align: right;">503 / 236</td>
+<td style="text-align: right;">488 / 201</td>
+</tr>
+<tr>
+<td>controlling step 297 / 276</td>
+<td style="text-align: right;">0 / 0</td>
+<td style="text-align: right;">174 / 80</td>
+</tr>
+<tr>
+<td>flips controlled at 19 / 21 / 297</td>
+<td style="text-align: right;">43 / 421 / 0</td>
+<td style="text-align: right;">41 / 418 / 34</td>
+</tr>
+<tr>
+<td>flips shared with the other run</td>
+<td style="text-align: right;">464</td>
+<td style="text-align: right;">464</td>
+</tr>
+<tr>
+<td>flips present only in this run</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">29 (all at t=297)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- The two ECDFs are indistinguishable below $r_*\approx0.02$ and separate only in the upper tail. The median threshold falls from 0.116 to 0.104 and the 90th percentile from 2.59 to 1.85; the window makes the average direction somewhat easier to flip, but not dramatically.
+- The flip fraction is 46.4% under full attention, exactly the number in the earlier A1 section, and 49.3% under the window: a rise of 2.9 percentage points.
+- The flip sets are nested: every one of the 464 full-attention flips is also a predicted flip at $r=0.1$ under the window. The 29 new flips are all controlled at $t=297$, the window's new late near-tie ($m=4.79\times10^{-3}$ nats). Five further directions have their controlling step moved to $t=297$ while already flipping at 19 or 21, which is why 34 flips are attributed to $t=297$.
+- The controlling-step counts stay concentrated: 68.9% of all directions have $t_*=21$ or $19$ under the window (73.9% full), and 93.1% of the windowed flips are decided at those two steps (100% full). The window adds a third late gate; it does not replace the first two.</p>
+<p><strong>What it shows.</strong> The window changes the <em>count</em> of predicted flips by +2.9 points, but changes the <em>mechanism</em> of the extra flips completely: they come from a new late tie, not from the two razor ties moving. This is the opposite of the 1.5B window comparison quoted in the introduction: there the minimum margin moved from 0.0201 to 0.0031 and the controlling step changed. On the 14B the minimum margin is at $t=21$, before the first clipped position, so it cannot move; the window's effect appears only in the late tail.</p>
+<p><strong>What it does not show.</strong> These are <em>predicted</em> flips from a first-order teacher-forced response, not observed free-run flips. The prediction for the window run uses the window's own margins and <code>dm</code> on its own text; it is a statement about that continuation, not about all windowed continuations. The ECDF is truncated at 60; the tail above that is not shown. And the +29 is an addition to the flip <em>set</em>, not evidence that a free-running window run would flip 29 more directions: the linear rule is calibrated at $r=0.1$ but not re-validated on a windowed free run.</p>
+<hr />
+<h2 id="5-figure-ds14reg_direction_gainpng-the-typical-gain-is-26x-larger-and-the-late-decay-nearly-disappears">5. Figure <code>ds14reg_direction_gain.png</code> — the typical gain is 2.6x larger and the late decay nearly disappears</h2>
+<p><img alt="direction gain" src="figures/ds14reg_direction_gain.png" /></p>
+<p><strong>Setup.</strong> Left: ECDF of $G(u)=\mathrm{median}_t\lVert\delta h_t^{47}(u)\rVert/r$ over the 1000 directions, both runs. Right: ECDF of the per-direction late/early ratio $\mathrm{median}_{t\in[150,300)}\rho_t^{47}(u)\big/\mathrm{median}_{t\in[0,50)}\rho_t^{47}(u)$, both runs; the vertical black line is 1 (no change), the dotted lines are the medians.</p>
+<p><strong>Axes.</strong> Left: $x$: $G(u)$, log, 0.3–5; $y$: fraction of directions. Right: $x$: late/early ratio, log, 0.2–4; $y$: fraction of directions.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th style="text-align: right;">full</th>
+<th style="text-align: right;">true window 100</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$G$ p10 / p50 / p90</td>
+<td style="text-align: right;">0.409 / 0.583 / 1.297</td>
+<td style="text-align: right;">0.936 / 1.493 / 2.659</td>
+</tr>
+<tr>
+<td>$G$ mean</td>
+<td style="text-align: right;">0.738</td>
+<td style="text-align: right;">1.670</td>
+</tr>
+<tr>
+<td>median per-direction late/early</td>
+<td style="text-align: right;">0.570</td>
+<td style="text-align: right;">0.917</td>
+</tr>
+<tr>
+<td>median per-direction late/pre-clip early ($t\in[25,34]$)</td>
+<td style="text-align: right;">0.594</td>
+<td style="text-align: right;">1.147</td>
+</tr>
+<tr>
+<td>pooled late/early ($\Lambda$)</td>
+<td style="text-align: right;">0.577</td>
+<td style="text-align: right;">0.930</td>
+</tr>
+<tr>
+<td>directions with late/early $>1$</td>
+<td style="text-align: right;">6.1%</td>
+<td style="text-align: right;">42.3%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- The entire gain distribution shifts right by a factor 2.6 at the median. The shift is not a few outliers: p10 rises from 0.41 to 0.94 and p90 from 1.30 to 2.66, so the two ECDFs barely overlap.
+- Under full attention the late response is systematically smaller than the early one: the median direction retains 57% of its $[0,50)$ response, and 94% of directions are below 1. Under the window the median retains 92%, and 42% of directions are above 1.
+- Measured against the pre-clip level $[25,34]$, which is bit-identical in the two runs, the contrast is sharper: full falls to 0.59, the window <em>rises</em> to 1.15. The window does not cut the late response; it roughly preserves it, and at depth it increases it.
+- The premise "the window cuts the prompt's direct influence after $t=35$, so the late response should be smaller" is not what the data show. The direct prompt visibility does fall — one prompt position leaves per step, and none are left after $t=99$ — but by then the perturbation has been written into the key/value states of generated tokens that remain inside the window, and those states feed every later step. The late response is therefore carried by the generated-token chain rather than by direct prompt attention, and it is larger, not smaller. The data cannot apportion the effect between attention reweighting, the different continuation, and deep-layer amplification.</p>
+<p><strong>What it shows.</strong> The window raises the response gain of every direction and nearly removes the late-time decay that full attention shows. The effect is a population shift, not a tail.</p>
+<p><strong>What it does not show.</strong> $G$ is an absolute norm; the response relative to the residual-stream norm stays small (about $10^{-4}$ typically and $10^{-3}$ at the largest burst), so "larger gain" does not mean a destabilised state. The comparison is between two different texts after $t=45$, so the late/early ratio mixes the mask effect with the continuation effect. The $[0,50)$ window contains the flush in the windowed run, which inflates its denominator; the $[25,34]$ variant is given for that reason.</p>
+<hr />
+<h2 id="6-figure-ds14reg_depth_gainpng-the-window-halves-block-0-and-doubles-layer-47">6. Figure <code>ds14reg_depth_gain.png</code> — the window halves block 0 and doubles layer 47</h2>
+<p><img alt="depth gain" src="figures/ds14reg_depth_gain.png" /></p>
+<p><strong>Setup.</strong> For each saved state $l$, the median of $\lVert\delta h^l(u)\rVert/r$ over all directions and all 300 steps, both runs. The dashed grey line is the same quantity computed on $t<35$ only; there the two runs are bit-identical, so one line serves both and it is a direct check that the pre-window depth profile is the common starting point. State 0 is omitted because its response is exactly zero (the perturbation is added to the prompt embeddings, not to the generated-token embeddings).</p>
+<p><strong>Axes.</strong> $x$: saved state index 1–8, labelled with the layer the engine stored (state 1 = block 0 output, layer 6; state 8 = layer 47). $y$: $\lVert\delta h^l\rVert/r$, median over $t$ and directions, log 0.028–2.6.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>state (layer)</th>
+<th style="text-align: right;">full, all $t$</th>
+<th style="text-align: right;">window, all $t$</th>
+<th style="text-align: right;">both, $t<35$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 (6)</td>
+<td style="text-align: right;">0.0775</td>
+<td style="text-align: right;">0.0376</td>
+<td style="text-align: right;">0.2035</td>
+</tr>
+<tr>
+<td>2 (12)</td>
+<td style="text-align: right;">0.1006</td>
+<td style="text-align: right;">0.1587</td>
+<td style="text-align: right;">0.2484</td>
+</tr>
+<tr>
+<td>3 (18)</td>
+<td style="text-align: right;">0.1001</td>
+<td style="text-align: right;">0.1785</td>
+<td style="text-align: right;">0.2192</td>
+</tr>
+<tr>
+<td>4 (24)</td>
+<td style="text-align: right;">0.1102</td>
+<td style="text-align: right;">0.2051</td>
+<td style="text-align: right;">0.2095</td>
+</tr>
+<tr>
+<td>5 (30)</td>
+<td style="text-align: right;">0.1510</td>
+<td style="text-align: right;">0.3145</td>
+<td style="text-align: right;">0.2317</td>
+</tr>
+<tr>
+<td>6 (36)</td>
+<td style="text-align: right;">0.2504</td>
+<td style="text-align: right;">0.5237</td>
+<td style="text-align: right;">0.3241</td>
+</tr>
+<tr>
+<td>7 (42)</td>
+<td style="text-align: right;">0.4285</td>
+<td style="text-align: right;">0.9234</td>
+<td style="text-align: right;">0.5626</td>
+</tr>
+<tr>
+<td>8 (47)</td>
+<td style="text-align: right;">0.6532</td>
+<td style="text-align: right;">1.4509</td>
+<td style="text-align: right;">0.8739</td>
+</tr>
+<tr>
+<td>growth 1→8</td>
+<td style="text-align: right;">x8.4</td>
+<td style="text-align: right;">x38.6</td>
+<td style="text-align: right;">x4.3</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- Before the window acts, the depth profile is identical in the two runs: it rises from 0.2035 at block 0 to 0.8739 at layer 47, a factor 4.3.
+- Averaged over all 300 steps, full attention <em>lowers</em> the whole profile because the late response decays: 0.0775 at block 0 to 0.6532 at layer 47 (factor 8.4). The window lowers block 0 further (0.0376, half the full-run value) but raises every state from 2 upward, ending at 1.4509 at layer 47 (2.2x the full-run value; factor 38.6 from block 0).
+- The two profiles cross between states 1 and 2 relative to each other (window below full at state 1, above it from state 2 on); the window profile crosses its own pre-window level between states 4 and 5. Shallow layers see a <em>smaller</em> time-averaged response under the window, deep layers a <em>larger</em> one. This is the opposite of a uniform attenuation, and it is consistent with the shallow flush being damped on the way down while the late bursts accumulate at depth.</p>
+<p><strong>What it shows.</strong> The window reverses the direction of the depth change: the response becomes more top-heavy, not uniformly weaker. The growth from the first block to layer 47 rises from 8.4x to 38.6x.</p>
+<p><strong>What it does not show.</strong> The profile is descriptive: it mixes two effects (the time average includes the late bursts and the different text) and the eight states are samples, not all 48 blocks. A monotone statement about every layer is not justified. The pre-window line is a check on the setup, not a separate condition.</p>
+<hr />
+<h2 id="7-facts-that-qualify-the-whole-comparison">7. Facts that qualify the whole comparison</h2>
+<ol>
+<li><strong>The window changes the text itself.</strong> The greedy continuations are identical only up to $t=44$ and differ at $t=45$ (<code>" has"</code> vs <code>"'s"</code>). Every margin, threshold and response after that step describes a different sentence. The design is paired in prompt and directions, not in continuation.</li>
+<li><strong>The available calibration is not a true-window calibration.</strong> <code>results_big/ds14/calib/</code> has <code>window: 100</code> in its metadata and was intended as a true-window calibration, but its baseline tokens equal the full-attention run's and its margins match them to $7\times10^{-5}$ nats. The window was inactive in that run too. Radius linearity is therefore established for full attention (at layer 47, $\mathrm{d}h/r$ is flat to 1.1% between $r=0.03$ and $0.3$, and rises at $r\ge1$), not for the windowed run. The windowed run provides a single radius.</li>
+<li><strong>Index offset.</strong> The engine stores the response at position $P+t$ and the margin of the token predicted from $P+t-1$. All statements about "the first clipped step" use $t=35$ for states and $t=36$ for margins; comparing a margin at 35 to a response at 35 would be off by one.</li>
+<li><strong>Flips are predictions.</strong> 464 and 493 are teacher-forced first-order predictions at $r=0.1$, not observed free-run flips. The 46.4% full-attention value reproduces the earlier A1 section exactly, which is a consistency check, not a new validation.</li>
+<li><strong>A "burst" is a deep-layer response, not a divergence.</strong> It reaches $\lVert\delta h^{47}\rVert\approx1.5$ at unit radius, about $1.4\times10^{-3}$ of the baseline state norm (1077). The baseline scale is nearly the same in both runs, so the burst is a real absolute difference, but it is small relative to the stream.</li>
+<li><strong>The 29 extra flips are one gate, not a broad increase.</strong> All 29 are controlled at $t=297$, a step whose margin is $4.8\times10^{-3}$ nats. Five more directions switch their <em>controlling</em> step to 297 without changing their flip status. Any statement about "the window makes the model more flippable" rests on this single late tie.</li>
+<li><strong>One prompt, one model, one radius, teacher forcing.</strong> The windowed run has no free-run counterpart; the free-run validation was performed on the full-attention run only. The text after $t=45$ is specific to this prompt and seed.</li>
+</ol>
+<hr />
+<h2 id="8-what-follows-directly_1">8. What follows directly</h2>
+<ul>
+<li>The window law holds on the 14B exactly: states are bit-identical for $t<35=W-P$ and depart at $t=35$, the same test that held to the token on the 1.5B for five windows.</li>
+<li>The 1.5B's margin result does <strong>not</strong> transfer as a change of the minimum: on the 14B the minimum is $9.727\times10^{-5}$ nats at $t=21$ in both runs, because $t=21$ lies before the first clipped position. The window's margin effect appears as new late ties and a lower median gap (3.10 -&gt; 1.83 nats), not as a moved razor tie.</li>
+<li>The predicted flip fraction rises from 46.4% to 49.3%, entirely by adding 29 directions controlled at the new $t=297$ tie. No full-attention flip is lost, and 93% of the windowed flips are still decided at $t=19/21$.</li>
+<li>The flush signature is present and larger than on the 1.5B: the last-layer response jumps by 2.20 across $t=35$ (1.5B: 1.73), and the jump is strongest at shallow depth (2.83 at state 2).</li>
+<li>The late response is <em>not</em> suppressed. The median direction keeps 0.92 of its early response under the window against 0.57 under full attention, and the median gain is 2.6x larger. The window therefore does not behave like a truncation of the prompt's influence; it behaves like a persistent, more repetitive context.</li>
+<li>The windowed continuation is visibly repetitive from about $t=60$ (<code>"...professional reference. The document is detailed, well-organized, suitable for a graduate-level course or professional reference..."</code>). The two response bursts fall inside the most repetitive stretches. Whether the repetition causes the bursts is an open question and the natural target of the windowed free run.</li>
+</ul>
+<h2 id="9-reproduce_1">9. Reproduce</h2>
+<pre><code>python scripts_spark/figs_w100_vs_full.py
+</code></pre>
+<p>Writes <code>notebook_big/figures/ds14reg_{margins,response_shape,rstar,direction_gain,depth_gain}.png</code> (dpi 170) and <code>notebook_big/figures/ds14reg_numbers.json</code>. The JSON contains the eight smallest margins and threshold counts per run, the full median response profiles, the per-state flush ratios, the burst ranges, the $r_*$ distributions, the gain distributions, the controlling-step tables, the flip-set comparison, the radius-linearity table, and both auxiliary checks. The script reads the npz files in place and does not modify them.</p>
+<hr />
+<h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
+<h2 id="summary_5">Summary</h2>
 <blockquote>
 <p>Same correction note as Part 1: the 14B numbers here are full-attention runs (window inactive). Everything except the flush-ratio row is a same-prompt, same-radius comparison and stands as stated; the flush row is explained by the missing window, and the margin comparison is partially confounded by the window regime (on the 1.5B the window is known to change the margin spectrum). The true-window 14B rerun will close both gaps.</p>
 </blockquote>
 <p>Two models of the same family — 28 layers with $d=1536$, and 48 layers with $d=5120$, roughly eight times the parameters — generate 300 greedy tokens from the identical 65-token prompt with an attention window of 100, and then the same kind of prompt-embedding perturbation (a unit direction times $r=0.1$) is applied and the continuation is teacher-forced. The larger model's decisions are far more fragile: its median top-1/top-2 logit gap is 3.10 nats against 4.78 for the small one, and its thinnest gap (9.7e-5 nats at step 21) is 207 times thinner than the small model's thinnest (2.0e-2 nats at step 123). As a consequence the radius at which a random direction first flips a token — a "flux-tube radius", the largest perturbation size along that direction that leaves the greedy continuation intact — is 13 times smaller in the 14B (median 0.116 vs 1.55 in absolute embedding units, 17 times smaller after dividing by the token-embedding scale), and 464 of 1000 directions flip something at the run radius against 0 of 20. The response itself is <em>not</em> stronger in the bigger model: per unit radius its last-state displacement is 2.3 times smaller in absolute units and 4.6 times smaller relative to the state it lives in, so the fragility is a property of how close the decisions are, not of how hard the perturbation pushes. Two shape features do differ: only the 1.5B shows a window-flush surge at $t=35$ (its last state jumps 1.70x across it, the 14B's 1.11x), and the 1.5B's response decays to 19% of its early level by $t=200$ while the 14B's is still at 68% — though that second difference is partly textual, because the small model falls into a repeating four-token loop at $t=143$ and the large one does not.</p>
 <hr />
 <h2 id="1-the-two-runs-and-every-quantity">1. The two runs and every quantity</h2>
-<h3 id="11-setup_2">1.1 Setup</h3>
+<h3 id="11-setup_3">1.1 Setup</h3>
 <table>
 <thead>
 <tr>
@@ -2373,7 +3002,7 @@ This uses only stored quantities and is exact under the definition of <code>obs<
 <li><strong>Raw response norms are not comparable for the same reason.</strong> $\lVert\delta h\rVert$ at the read-out depth is measured in a space whose typical vector is twice as long in the 14B. So $G$ is reported next to $G_{\rm rel}$ and never alone.</li>
 </ol>
 <p>Concretely: $r_*/s_{\rm emb}$ is the normalized <em>input</em> comparison (used in Fig. <code>xscale_rstar</code>), $G_{\rm rel}$ is the normalized <em>output</em> comparison (used in Fig. <code>xscale_gain</code>). Cross-normalizing (radius by the last-layer norm, gain by the embedding norm) is possible but answers a different and less interpretable question; $\rho=G/s_{\rm emb}$ is included in the JSON as the check that this choice does not drive the result (median $\rho$: 1.105 vs 0.385, i.e. 2.9x, between the 2.3x of raw $G$ and the 4.6x of $G_{\rm rel}$).</p>
-<h3 id="14-the-comparison-in-one-table">1.4 The comparison, in one table</h3>
+<h3 id="14-the-comparison-in-one-table_1">1.4 The comparison, in one table</h3>
 <table>
 <thead>
 <tr>
@@ -2814,7 +3443,7 @@ This uses only stored quantities and is exact under the definition of <code>obs<
 <p><strong>What it shows.</strong> The 14B's decisions are not merely near-tied; they are near-tied at a level that a typical direction's response overshoots by two orders of magnitude. The 1.5B's weakest decision is a real tie (0.02 nats) that a typical perturbation simply cannot reach at this radius — the most destructive of 20 directions still comes up 1.5x short.</p>
 <p><strong>What it does not show.</strong> It does not show what happens <em>after</em> the first flip (the prefix is still the baseline one here; free-running consequences are a separate experiment). It cannot say whether the 42.7% figure would survive a different prompt, since $t=21$ is one token of one continuation. And the grey line is a deliberate unit mismatch kept for readability of the "margin in nats" — the physically correct comparison is the red one.</p>
 <hr />
-<h2 id="7-facts-that-qualify-the-whole-comparison">7. Facts that qualify the whole comparison</h2>
+<h2 id="7-facts-that-qualify-the-whole-comparison_1">7. Facts that qualify the whole comparison</h2>
 <ol>
 <li><strong>Different continuations, and one of them is degenerate.</strong> Same prompt, different greedy text. Steps do not correspond across models; only distributions and mask-imposed times do. The 1.5B's continuation is the exact 4-token cycle <code>1576, 807, 525, 11050</code> from $t=143$ on; the 14B's never repeats within 300 steps. Every 1.5B statistic that aggregates over late $t$ (the late/early ratio, the shape curves after $t=150$) is therefore measured on a loop, and the 14B's is not.</li>
 <li><strong>Different $K$ and different direction geometry.</strong> 20 directions from one 20-d subspace (1.5B) vs 1000 from 50 disjoint ones (14B). Within-block pairs have inner product $-1/19$; cross-block pairs are orthogonal. Any tail statement about the 1.5B rests on 20 samples.</li>
@@ -2823,14 +3452,14 @@ This uses only stored quantities and is exact under the definition of <code>obs<
 <li><strong>One radius.</strong> Both runs use $r=0.1$. The 1.5B's usable range is $r\in[10^{-3},0.1]$ and linearity of the response in $r$ was validated there; the 14B's usable range is quoted as $[0.03,0.3]$, but no 14B linearity curve is included in this npz, so reading $r_*$ as a radius at 14B scale rests on that assumption rather than on a 14B measurement.</li>
 <li><strong>Margins are a prefix property.</strong> A near-tie at $t=21$ of the 14B says that one particular prefix leaves two tokens nearly tied; it is not a statement about the model's general calibration.</li>
 </ol>
-<h2 id="8-what-follows-directly_1">8. What follows directly</h2>
+<h2 id="8-what-follows-directly_2">8. What follows directly</h2>
 <ul>
 <li>Decision fragility scales up with model size <em>here</em> by two orders of magnitude at the worst step (9.7e-5 vs 2.0e-2 nats), and this is what makes the threshold radius 13–17x smaller. The per-direction response is 2.3x <em>weaker</em> in absolute terms and 4.6x weaker relative to the state, so the effect is on the read-out, not on the propagation.</li>
 <li>The window flush is structurally common ($t^*=35$ in both) but its amplitude is not: 1.70 (1.5B, L27) vs 1.11 (14B, L47) in the 5-step means, and 2.06 vs 0.80 in the single step $t=34\to35$.</li>
 <li>Response persistence over 300 steps is the other clear cross-scale difference: late/early 0.19 (1.5B, last) vs 0.68 (14B, last) — but the 1.5B's number is measured inside a degenerate 4-token loop, so the size of that gap is text-dependent and should not be read as a pure model-size effect.</li>
 <li>Anything that wants to claim "the 14B is more chaotic" has to say <em>which</em> quantity: not the response gain ($G$ is smaller), but the distance from the response to the decision threshold ($m_t$ is far smaller), i.e. the fragility is in the read-out geometry.</li>
 </ul>
-<h2 id="9-reproduce_1">9. Reproduce</h2>
+<h2 id="9-reproduce_2">9. Reproduce</h2>
 <pre><code>python scripts_spark/figs_cross_scale.py
 </code></pre>
 <p>Writes <code>notebook_big/figures/xscale_{margins,rstar,gain,shape,dm}.png</code> (dpi 150) and <code>notebook_big/figures/xscale_numbers.json</code>, which contains every quantile quoted above, the per-layer flush ratios, the per-layer late/early ratios, and the p10/p50/p90 of both $r_*$ normalizations and both gains. The 1.5B npz is read in place from the main checkout and is not modified.</p>
