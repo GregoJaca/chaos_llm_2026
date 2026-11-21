@@ -1,6 +1,7 @@
 # Controls: what a provably non-chaotic system does in our pipeline
 
-Status: **in progress** (Parts 2–3 measured and final; Parts 4–7 queued on the GPU).
+Status: **in progress** (Parts 2–5 and 7 measured and final; Part 6 gain
+sweep running on the GPU, first point g=1 done).
 
 This document is the control leg of the project. The reviewers' alternative
 explanation for our LLM results is: *"the threshold alone causes divergence"*
@@ -130,6 +131,19 @@ order as DeepSeek's $3\times10^{-4}$.
 tokens ($0.52\to0.26$ in units of $a/r$) and never grows. No sustained
 positive stretching rate exists in the provably-contracting system.
 
+### Scale check
+
+![scale](figures_controls/c2b_scale.png)
+
+Mamba-130m (24 layers) vs 370m/790m/1.4b (48): the response and its
+stretching rate behave the same at every scale ($\lambda$ mean $0$ to
+$-0.004$, transient excursions $\le+0.21$; no size produces a persistent
+amplified response). Per-prompt thresholds are margin-landscape-dependent
+($r^*$ for the txt prompt: 4.26 / 0.28 / 14.3 / 1.66 at
+130m/370m/790m/1.4b), and the signed threshold rule stays exact at scale:
+**370m free runs at $r=1.4,3,5$: 8/8 flips predicted exactly; 790m and
+1.4b: 2/3 and 1/1 exact, 0 false alarms, 0 misses.**
+
 ---
 
 ## Part 3 — The argmax layer: the control reproduces the entire flip phenomenology
@@ -196,6 +210,46 @@ chaos in the LLMs. The discriminating measurements must come from the smooth
 part: response size and its Jacobian spectrum (Part 4), the window flush
 law (transformer-specific), and the phase-controlled positive control
 (Part 6).
+
+### Part 3b — One teacher-forced pass is an *exact* flip simulator for the control too; and its directions are anisotropic too
+
+Two more LLM findings transferred to the control. A *teacher-forced (TF)
+pass* feeds the model the baseline token sequence with a perturbed prompt
+embedding; the *free run* decodes autoregressively. For DeepSeek it was
+established that one TF pass predicts the free run exactly up to the first
+flip (29/29 exact, 0 false positives). Here: Mamba-130m, txt prompt, 20
+directions, radii $0.3\dots5$, 300 tokens, both passes per direction-run.
+
+![tfp](figures_controls/c3b_tfp.png)
+
+Scorecard over 100 direction-runs: **97 bit-identical (no flip in either
+pass), 3 flips — all 3 predicted exactly, step *and* token, 0 false alarms,
+0 misses.** The three $r=5$ flips are direction 15 at $t=0$, direction 10 at
+$t=3$ (token 1984), direction 17 at $t=21$ (token 310); at $r\le3$ nothing
+flips, consistent with the measured threshold $r^*=4.26$.
+
+**Verdict.** TF-exactness is a property of the argmax decision boundary,
+not of chaos and not of attention: the control reproduces DeepSeek's 29/29
+scorecard at its own radii. TF remains a legitimate cheap simulator for
+response/threshold work — but it carries no information about the dynamics
+*between* flips, which is where the models actually differ (Parts 2 and 4).
+
+![dirs](figures_controls/c3b_dirs.png)
+
+Per-direction response gain $g_u=\mathrm{median}_{t\in[1,50]}\|\delta
+h_L(t,u)\|/r$ at the last measured layer, $r=0.1$ (sorted, log scale).
+The control has a real gain spread — **×6.5** (min 0.27, max 1.78) — so
+direction anisotropy exists without attention and without chaos (it is
+Part 4's non-normality: $\sigma_{\max}\approx1$ while the median direction
+contracts). But the transformer's spread in the same window is ×21 (×11.5
+over the full horizon, consistent with the established ×7–12), and its
+direction ordering is more time-stable (Spearman $\rho = 0.92$ between
+$t\in[1,50]$ and $t\in[150,299]$, vs $\rho = 0.77$ for the control).
+
+**Verdict.** "Directions are not equivalent" is *not* an attention/chaos
+signature by itself — a qualifier for the LLM result. What discriminates is
+the *size* of the spread and its time-stability, both still larger for the
+transformer.
 
 ---
 
@@ -304,17 +358,85 @@ project's existing conclusion that these diagnostics are descriptive at
 best; the control removes any remaining doubt that they could be cited as
 positive evidence.
 
-## Part 6 — Random transformer: ordered vs chaotic phase — *running*
+## Part 6 — Random transformer: ordered vs chaotic phase — *sweep running*
 
-8 gains $g\in\{0.35\dots4\}$ × (update-matrix init std $0.02\,g$), exact
+8 gains $g\in\{0.35\dots4\}$ (update-matrix init std $0.02\,g$), exact
 DeepSeek-1.5B architecture, random init, through the full A1 + free-run +
-depth-probe pipeline. Calibrates which of our depth ("vertical")
-measurements actually track the mean-field order parameter, and gives the
-positive control: at large $g$ the teacher-forced response must *grow* at
-the measured rate, with argmax on top.
+depth-probe pipeline. **First results (g=1, the standard Qwen2 init):**
 
-## Part 7 — Pythia (attention, same training data) — *data collected, analysis pending*
+- **Depth-wise growth rate $\lambda_\text{depth}\approx+0.99$ per layer**
+  (kick at token 20, measured at $t=10$): a *random* 28-layer transformer
+  at standard init already amplifies exponentially along depth — as does
+  DeepSeek itself and (more weakly) even the Mamba control (Part 2's depth
+  panel). Depth amplification alone therefore calibrates to nothing; the
+  *phase* of this axis will come from the $g$-sweep (small $g$ must
+  contract).
+- Along tokens, the same model is neutral: $\lambda_{10}$ mean $-0.001$,
+  max $+0.014$; the response $a/r$ runs $55\to42$ and decays.
+- **Greedy argmax on top: flips occur — 2/20 directions at
+  $r=2.4\times10^{-4}$, both predicted exactly by the signed rule
+  (step and token), 0 false alarms.** In the time-neutral phase, the
+  threshold alone produces divergence. The remaining gains map the
+  boundary: at large $g$ the teacher-forced response must *grow* along
+  tokens at the measured rate — the positive control cell of the design
+  table.
 
-Pythia-410m/1b trained on the Pile like Mamba: the attention-vs-no-attention
-comparison at fixed data. Plus the Pythia-410m step0 checkpoint as a
-real-size random-init example.
+Sweep status: g=1.0 done; 0.5, 2.0, 0.35, 4.0, 0.71, 1.41, 2.83 queued
+(each ~15 min on the T4, memory-gated around the other agent's jobs).
+
+## Part 7 — Pythia (attention, same Pile data) and the step0 random-init checkpoint
+
+**Data.** Pythia-410m and Pythia-1b, pretrained on the Pile like Mamba;
+the txt prompt; wide-radius in-batch A1 (10 radii $0.05\dots3$); free runs
+at $0.19, 0.3, 0.7, 1.4, 3$ with the threshold measured *at each target
+radius*. Also the Pythia-410m *step0* checkpoint (random init at standard
+scale, a free real-size random-init example).
+
+![pyresp](figures_controls/c7_pythia_resp.png)
+
+**(a)** Same pipeline, same prompt: **Pythia-410m/1b's teacher-forced
+response decays** ($a/r$: 0.9→0.19 and 1.3→0.38 over 300 tokens,
+$\lambda$ mean $\approx-0.002$) — like the Mamba control, not like
+DeepSeek-1.5B's persistent $a/r\approx2.5$. So the *large, persistent*
+response of our LLM is not a generic attention property; it is
+scale/training-dependent. What Pythia *does* share with DeepSeek is the
+sub-linearity caveat: its response saturates in $r$ ($a/r$ at $r=0.1$ is
+1.3, at $r=0.3$ it is 0.9), so thresholds must be measured at the radius
+being predicted — which is exactly the project's standing protocol rule.
+
+**(b)** The step0 random-init transformer at standard init scale is
+empirically in the **ordered phase**: its response decays, and the local
+stretching rate never exceeds $+0.001$ nats/token. This is the real-size
+companion to the phase-sweep of Part 6. Its free runs (radii $0.6\times,
+1.2\times, 3.6\times$ its $r^*=2.7\times10^{-3}$) give **2 flips, both
+predicted exactly (steps 80 and 181 — *delayed* flips at later
+close calls), 0 false alarms, 58/60 bit-identical**: a genuine
+random-weight, ordered-phase transformer still flips at near-ties with
+exact threshold prediction — a second, independent confirmation of the
+threshold-only mechanism (R1.2).
+
+![pyobs](figures_controls/c7_pythia_obspred.png)
+
+Free-run scorecard for Pythia-410m (100 direction-runs): **19/19 flips
+predicted exactly (step and token), 0 false alarms; 3 misses at
+$r\ge1.4$** (directions whose free run flipped without a predicted
+crossing — the two-token margin rule can miss when a third token enters
+the top-2; the same rule showed the identical failure mode on DeepSeek at
+extrapolated radii). The signed threshold rule now transfers exactly to a
+third architecture, trained on the same data as the control.
+
+![rstar](figures_controls/c7_rstar.png)
+
+Per-model signed thresholds $r^*$ on the same prompt (log scale): random
+init $2.7\times10^{-3}$ (tiny margins), DeepSeek $0.13$, Pythia-1b $0.19$,
+Pythia-410m $0.43$, Mamba $4.26$. $r^*$ tracks each model's margin
+landscape, not its architecture: every model flips the same way, at its
+own near-ties.
+
+**Part 7 verdict.** The attention-vs-no-attention comparison at matched
+training data shows: (i) the flip phenomenology is fully architecture- and
+data-independent (threshold rule exact on all four pretrained models);
+(ii) response *persistence and size* — the smooth-part quantities — differ
+by model scale/training, with small attention models behaving like the
+control; (iii) standard-scale random init is ordered, so the *phase* of a
+real LLM is an empirical question — Part 6 measures it directly.
