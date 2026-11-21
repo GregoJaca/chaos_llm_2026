@@ -1,6 +1,7 @@
 # Controls: what a provably non-chaotic system does in our pipeline
 
-Status: **in progress** (Parts 2–3 measured and final; Parts 4–7 queued on the GPU).
+Status: **in progress** (Parts 2–5 and 7 measured and final; Part 6 gain
+sweep running on the GPU, first point g=1 done).
 
 This document is the control leg of the project. The reviewers' alternative
 explanation for our LLM results is: *"the threshold alone causes divergence"*
@@ -357,14 +358,31 @@ project's existing conclusion that these diagnostics are descriptive at
 best; the control removes any remaining doubt that they could be cited as
 positive evidence.
 
-## Part 6 — Random transformer: ordered vs chaotic phase — *running*
+## Part 6 — Random transformer: ordered vs chaotic phase — *sweep running*
 
-8 gains $g\in\{0.35\dots4\}$ × (update-matrix init std $0.02\,g$), exact
+8 gains $g\in\{0.35\dots4\}$ (update-matrix init std $0.02\,g$), exact
 DeepSeek-1.5B architecture, random init, through the full A1 + free-run +
-depth-probe pipeline. Calibrates which of our depth ("vertical")
-measurements actually track the mean-field order parameter, and gives the
-positive control: at large $g$ the teacher-forced response must *grow* at
-the measured rate, with argmax on top.
+depth-probe pipeline. **First results (g=1, the standard Qwen2 init):**
+
+- **Depth-wise growth rate $\lambda_\text{depth}\approx+0.99$ per layer**
+  (kick at token 20, measured at $t=10$): a *random* 28-layer transformer
+  at standard init already amplifies exponentially along depth — as does
+  DeepSeek itself and (more weakly) even the Mamba control (Part 2's depth
+  panel). Depth amplification alone therefore calibrates to nothing; the
+  *phase* of this axis will come from the $g$-sweep (small $g$ must
+  contract).
+- Along tokens, the same model is neutral: $\lambda_{10}$ mean $-0.001$,
+  max $+0.014$; the response $a/r$ runs $55\to42$ and decays.
+- **Greedy argmax on top: flips occur — 2/20 directions at
+  $r=2.4\times10^{-4}$, both predicted exactly by the signed rule
+  (step and token), 0 false alarms.** In the time-neutral phase, the
+  threshold alone produces divergence. The remaining gains map the
+  boundary: at large $g$ the teacher-forced response must *grow* along
+  tokens at the measured rate — the positive control cell of the design
+  table.
+
+Sweep status: g=1.0 done; 0.5, 2.0, 0.35, 4.0, 0.71, 1.41, 2.83 queued
+(each ~15 min on the T4, memory-gated around the other agent's jobs).
 
 ## Part 7 — Pythia (attention, same Pile data) and the step0 random-init checkpoint
 
@@ -389,7 +407,13 @@ being predicted — which is exactly the project's standing protocol rule.
 **(b)** The step0 random-init transformer at standard init scale is
 empirically in the **ordered phase**: its response decays, and the local
 stretching rate never exceeds $+0.001$ nats/token. This is the real-size
-companion to the phase-sweep of Part 6.
+companion to the phase-sweep of Part 6. Its free runs (radii $0.6\times,
+1.2\times, 3.6\times$ its $r^*=2.7\times10^{-3}$) give **2 flips, both
+predicted exactly (steps 80 and 181 — *delayed* flips at later
+close calls), 0 false alarms, 58/60 bit-identical**: a genuine
+random-weight, ordered-phase transformer still flips at near-ties with
+exact threshold prediction — a second, independent confirmation of the
+threshold-only mechanism (R1.2).
 
 ![pyobs](figures_controls/c7_pythia_obspred.png)
 
