@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  master.md &nbsp;&middot;&nbsp; built 2026-11-20 19:11:01 &nbsp;&middot;&nbsp;
+  master.md &nbsp;&middot;&nbsp; built 2026-11-21 12:20:44 &nbsp;&middot;&nbsp;
   <a href="master.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="master.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="veto.html">veto</a> &middot; <a href="notebook.html">notebook</a>
@@ -74,6 +74,142 @@ whether I would include them.</p>
 <li><strong>Several earlier quantities are definitions or artefacts</strong> (§10). They are listed so they are not
    cited.</li>
 </ol>
+<h3 id="figure-parameters-one-table-so-nothing-has-to-be-guessed">Figure parameters (one table, so nothing has to be guessed)</h3>
+<p><code>W</code> = sliding-window size. "native" = the model's own window setting; "inert" = the model has no
+window mechanism, so <code>W</code> has no effect. <code>dirs</code> = number of random perturbation directions. All
+teacher-forced unless stated.</p>
+<table>
+<thead>
+<tr>
+<th>figure</th>
+<th>model(s)</th>
+<th>prompt</th>
+<th>W</th>
+<th>r</th>
+<th>dirs</th>
+<th>tokens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>flux_models_all_layers</code></td>
+<td>DeepSeek, Qwen3-4B, Phi, Qwen3.5</td>
+<td><code>prompts.txt</code> (65 tok)</td>
+<td>100 (inert except DeepSeek)</td>
+<td>0.1 / 0.3 (Phi)</td>
+<td>20</td>
+<td>300</td>
+</tr>
+<tr>
+<td><code>model_lambda_compare</code></td>
+<td>same four</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.3</td>
+<td>20</td>
+<td>300</td>
+</tr>
+<tr>
+<td><code>long_horizon</code></td>
+<td>DeepSeek</td>
+<td><code>prompts_long2.txt</code></td>
+<td><strong>4096</strong></td>
+<td>0.1</td>
+<td>4</td>
+<td><strong>4000</strong></td>
+</tr>
+<tr>
+<td><code>block_sigma_full</code></td>
+<td>DeepSeek, Qwen3-4B, Phi</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>Jacobian (no r)</td>
+<td>1 (power iteration, 20 it)</td>
+<td>4 positions</td>
+</tr>
+<tr>
+<td><code>sigma_vs_real</code></td>
+<td>DeepSeek</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.1</td>
+<td>8 (depth map) / 6 (probe)</td>
+<td>300</td>
+</tr>
+<tr>
+<td><code>relative_response_models</code></td>
+<td>five models</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.1 / 0.3</td>
+<td>10–20</td>
+<td>300, $t=50$</td>
+</tr>
+<tr>
+<td><code>kernel_deepseek</code></td>
+<td>DeepSeek</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.1</td>
+<td>8</td>
+<td>300, 65 positions</td>
+</tr>
+<tr>
+<td><code>superposition</code></td>
+<td>DeepSeek</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.003–0.1</td>
+<td>3 trials, same $u$</td>
+<td>300</td>
+</tr>
+<tr>
+<td><code>margin_coordinate</code></td>
+<td>DeepSeek</td>
+<td><code>window_sweep</code> prompt (63 tok)</td>
+<td><strong>200</strong></td>
+<td>0.03–0.3</td>
+<td>10</td>
+<td>300</td>
+</tr>
+<tr>
+<td><code>state_kick_latent_validated</code></td>
+<td>DeepSeek</td>
+<td><code>prompts.txt</code> (65 tok)</td>
+<td><strong>100</strong></td>
+<td>0.1</td>
+<td>24</td>
+<td>300, $s=16,50$</td>
+</tr>
+<tr>
+<td><code>posscan_A_heatmap</code>, <code>peak_is_absolute</code></td>
+<td>five models</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.1 / 0.3</td>
+<td>8</td>
+<td>300, 22 positions</td>
+</tr>
+<tr>
+<td><code>window4d_models</code></td>
+<td>Qwen3-4B, Phi (+ DeepSeek)</td>
+<td><code>prompts.txt</code></td>
+<td>60–4096</td>
+<td>0.1</td>
+<td>6</td>
+<td>300</td>
+</tr>
+<tr>
+<td><code>rstar_per_model</code></td>
+<td>four models</td>
+<td>5 prompts</td>
+<td>100</td>
+<td>0.1</td>
+<td><strong>512</strong></td>
+<td>300</td>
+</tr>
+</tbody>
+</table>
 <hr />
 <h2 id="2-what-is-perturbed-exactly">2. What is perturbed, exactly</h2>
 <h3 id="21-prompt-perturbation">2.1 Prompt perturbation</h3>
@@ -280,10 +416,13 @@ one-off amplifying directions. This is a measured property of the weights.</p>
 <p><strong>Panel (a)</strong> is the maximum stretch of the same-position tangent, $\sigma_1(\ell)/\sigma_1(1)$, from
 the block Jacobians. <strong>Panel (b)</strong> is the <em>actual</em> relative size of the perturbation,
 $[\|\delta h_\ell\|/\|h_\ell\|]$ at $t=50$, normalised at layer 1, measured from the hidden states.</p>
+<p><img alt="relative response" src="figures/fits/relative_response_models.png" /></p>
+<p><strong>Parameters.</strong> Prompt perturbation, $r=0.1$ ($r=0.3$ for Phi), 10–20 directions, generated token
+$t=50$; line = median over directions, band = 25–75%; all saved layers.</p>
 <p><strong>Answer.</strong> Only <strong>Phi-4-mini</strong> makes the perturbation more relevant: its relative size grows ×20
-through the depth. DeepSeek and Qwen3-4B peak at ×4 and ×3 near mid-depth and then decline; Qwen3.5
-stays within ×1.2. This is the quantity to quote when the question is "is the perturbation important
-for the state", because it cancels the residual stream's own growth (×18–30).</p>
+through the depth. DeepSeek peaks at ×3 near layer 13 and then declines; Qwen3-4B, Qwen2.5 and Qwen3.5
+stay within ×1.5–2 of their initial value. This is the quantity to quote when the question is "is the
+perturbation important for the state", because it cancels the residual stream's own growth (×18–30).</p>
 <h3 id="52-the-same-position-tangent-is-not-the-mechanism">5.2 The same-position tangent is not the mechanism</h3>
 <p><img alt="sigma vs real" src="figures/fits/sigma_vs_real.png" /></p>
 <p>From layer 1 to 27 the same-position chain grows <strong>×1.54</strong>; the actual prompt response grows <strong>×53</strong>.
@@ -305,6 +444,8 @@ prediction is an extrapolation. I would report the rule with its range, not as a
 <hr />
 <h2 id="6b-the-perturbation-waits-latency-before-the-flip">6b. The perturbation waits: latency before the flip</h2>
 <p><img alt="latent" src="figures/state_kick_latent_validated.png" /></p>
+<p><strong>Parameters.</strong> DeepSeek-1.5B, prompt <code>prompts.txt</code> (65 tokens), <strong>window $W=100$</strong>, $r=0.1$, <strong>24
+directions</strong>, free-running generation, 300 tokens, perturbation positions $s=16$ and $s=50$.</p>
 <p><strong>What is plotted.</strong> (a) Predicted (teacher-forced rule) against observed (free run) first changed
 token, five perturbations. (b) Token agreement with the unperturbed run along the continuation for one
 direction. (c) The same for 24 directions at $s=16$.</p>
@@ -377,7 +518,7 @@ separately, add $u$ to position $p$ alone for each $p$ and sum the responses: $S
 </tr>
 </tbody>
 </table>
-<p>So superposition holds to <strong>7%</strong> at a total perturbation norm of 0.24 — inside the measured linear
+<p><strong>Why 0.36 at the smallest radius is not a failure.</strong> At r=0.003 the single-position response is ~1e-4 while the hidden states are ~500, so the difference of two forward passes is at the float32 resolution (relative 2e-7); the measured 36% is the round-off floor of the subtraction, not physics. The meaningful number is the minimum of the curve, 6.8%. Superposition holds to <strong>7%</strong> at a total perturbation norm of 0.24 — inside the measured linear
 regime ($r\le0.3$) — and degrades outside it. The error at the two smallest radii is the float32
 round-off of the difference of two ~500-magnitude states, not physics. This is the quantitative
 support for using $K$ as a decomposition: <strong>it is valid at total norms ≲0.3, which is exactly the
@@ -386,14 +527,24 @@ range in which the rest of the analysis is done.</strong></p>
 test at $r=0.03$ for the other four models is running.</p>
 <hr />
 <h2 id="8-result-5-models-differ">8. Result 5 — models differ</h2>
-<p><img alt="perturbation vs position" src="figures/fits/perturbation_vs_position.png" /></p>
-<p><strong>What is plotted.</strong> A one-vector perturbation at <strong>one generated position</strong> $s$. For each direction,
-take the largest response at the <strong>last layer</strong> in the 50 tokens after $s$; plot the median over
-directions (line) and the 10–90% range (band), divided by $r$. 22 positions, generated-token
-positions, $r=0.1$ ($r=0.3$ for Phi).</p>
-<p><strong>What it shows.</strong> Phi rises from ×30 at $s=4$ to ×130 at $s=40$ and falls back; DeepSeek stays below
-×2.5 with a maximum at $s=16$; Qwen3-4B (×11–18), Qwen2.5 (×8–10) and Qwen3.5 (×1–3) are flat. The
-model difference is in the <em>level</em> and in whether there are hot spots.</p>
+<p><img alt="heatmap" src="figures/positions/posscan_A_heatmap.png" /></p>
+<p><strong>Parameters.</strong> One vector of norm $r=0.1$ ($r=0.3$ for Phi) at <strong>one generated position</strong> $s$,
+injected at block 0, read at the last block $L$; 8 random directions, median over directions; the
+prompt is <code>prompts.txt</code> (65 tokens), teacher-forced, 300 generated tokens; 22 positions from 4 to 100.</p>
+<p><strong>What is plotted.</strong> The response $\log_{10}\|\delta h_{s+\tau,L}\|/r$ as a function of the position $s$
+and the lag $\tau$ (0–50 tokens after $s$).</p>
+<p><strong>What it shows — and it corrects the earlier reading.</strong> For Phi there is a <strong>bright diagonal</strong>: a
+perturbation at position $s$ is amplified when the continuation reaches a particular <em>absolute</em> token,
+so the peak lag shrinks as $s$ grows. DeepSeek shows horizontal bands (the response depends on the
+position, not on the lag) and a global decay.</p>
+<p><img alt="peak absolute" src="figures/positions/peak_is_absolute.png" /></p>
+<p><strong>Panel (a).</strong> The lag of the peak against the position. <strong>Panel (b).</strong> The absolute token of the peak,
+$s+\tau^*$. For early positions it is <strong>flat</strong> at a model-specific value (DeepSeek ≈20–45, Qwen3-4B
+≈20, Qwen2.5-3B ≈27, Phi ≈45, Qwen3.5 ≈42); for late positions it follows the position.</p>
+<p><strong>Consequence.</strong> The "hot spot at $s\approx40$" in the max-over-lag plot was a projection artefact: a
+perturbation at $s=40$ peaks at lag ≈5, i.e. at the same absolute token where a perturbation at $s=16$
+peaks at lag ≈29. <strong>There is one amplification gate per continuation, not one per position.</strong> The model
+difference is the <em>time</em> of that gate (or its absence, for DeepSeek) and its amplitude, not a position.</p>
 <p><img alt="perturbation vs depth" src="figures/fits/perturbation_vs_depth.png" /></p>
 <p><strong>What is plotted.</strong> The same quantity against the <strong>block where the perturbation is injected</strong>, for
 $s=16$ (left) and $s=50$ (right). The curve is flat over the first 60–75% of the depth: injecting at

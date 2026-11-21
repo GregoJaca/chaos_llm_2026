@@ -29,6 +29,28 @@ Models: DeepSeek-R1-Distill-Qwen-1.5B (28 blocks, d=1536), Qwen2.5-3B (36, 2048)
 6. **Several earlier quantities are definitions or artefacts** (§10). They are listed so they are not
    cited.
 
+### Figure parameters (one table, so nothing has to be guessed)
+
+`W` = sliding-window size. "native" = the model's own window setting; "inert" = the model has no
+window mechanism, so `W` has no effect. `dirs` = number of random perturbation directions. All
+teacher-forced unless stated.
+
+| figure | model(s) | prompt | W | r | dirs | tokens |
+|---|---|---|---|---|---|---|
+| `flux_models_all_layers` | DeepSeek, Qwen3-4B, Phi, Qwen3.5 | `prompts.txt` (65 tok) | 100 (inert except DeepSeek) | 0.1 / 0.3 (Phi) | 20 | 300 |
+| `model_lambda_compare` | same four | `prompts.txt` | 100 | 0.3 | 20 | 300 |
+| `long_horizon` | DeepSeek | `prompts_long2.txt` | **4096** | 0.1 | 4 | **4000** |
+| `block_sigma_full` | DeepSeek, Qwen3-4B, Phi | `prompts.txt` | 100 | Jacobian (no r) | 1 (power iteration, 20 it) | 4 positions |
+| `sigma_vs_real` | DeepSeek | `prompts.txt` | 100 | 0.1 | 8 (depth map) / 6 (probe) | 300 |
+| `relative_response_models` | five models | `prompts.txt` | 100 | 0.1 / 0.3 | 10–20 | 300, $t=50$ |
+| `kernel_deepseek` | DeepSeek | `prompts.txt` | 100 | 0.1 | 8 | 300, 65 positions |
+| `superposition` | DeepSeek | `prompts.txt` | 100 | 0.003–0.1 | 3 trials, same $u$ | 300 |
+| `margin_coordinate` | DeepSeek | `window_sweep` prompt (63 tok) | **200** | 0.03–0.3 | 10 | 300 |
+| `state_kick_latent_validated` | DeepSeek | `prompts.txt` (65 tok) | **100** | 0.1 | 24 | 300, $s=16,50$ |
+| `posscan_A_heatmap`, `peak_is_absolute` | five models | `prompts.txt` | 100 | 0.1 / 0.3 | 8 | 300, 22 positions |
+| `window4d_models` | Qwen3-4B, Phi (+ DeepSeek) | `prompts.txt` | 60–4096 | 0.1 | 6 | 300 |
+| `rstar_per_model` | four models | 5 prompts | 100 | 0.1 | **512** | 300 |
+
 ---
 
 ## 2. What is perturbed, exactly
@@ -169,10 +191,15 @@ Two different questions, two different curves:
 the block Jacobians. **Panel (b)** is the *actual* relative size of the perturbation,
 $[\|\delta h_\ell\|/\|h_\ell\|]$ at $t=50$, normalised at layer 1, measured from the hidden states.
 
+![relative response](figures/fits/relative_response_models.png)
+
+**Parameters.** Prompt perturbation, $r=0.1$ ($r=0.3$ for Phi), 10–20 directions, generated token
+$t=50$; line = median over directions, band = 25–75%; all saved layers.
+
 **Answer.** Only **Phi-4-mini** makes the perturbation more relevant: its relative size grows ×20
-through the depth. DeepSeek and Qwen3-4B peak at ×4 and ×3 near mid-depth and then decline; Qwen3.5
-stays within ×1.2. This is the quantity to quote when the question is "is the perturbation important
-for the state", because it cancels the residual stream's own growth (×18–30).
+through the depth. DeepSeek peaks at ×3 near layer 13 and then declines; Qwen3-4B, Qwen2.5 and Qwen3.5
+stay within ×1.5–2 of their initial value. This is the quantity to quote when the question is "is the
+perturbation important for the state", because it cancels the residual stream's own growth (×18–30).
 
 ### 5.2 The same-position tangent is not the mechanism
 
@@ -206,6 +233,9 @@ prediction is an extrapolation. I would report the rule with its range, not as a
 ## 6b. The perturbation waits: latency before the flip
 
 ![latent](figures/state_kick_latent_validated.png)
+
+**Parameters.** DeepSeek-1.5B, prompt `prompts.txt` (65 tokens), **window $W=100$**, $r=0.1$, **24
+directions**, free-running generation, 300 tokens, perturbation positions $s=16$ and $s=50$.
 
 **What is plotted.** (a) Predicted (teacher-forced rule) against observed (free run) first changed
 token, five perturbations. (b) Token agreement with the unperturbed run along the continuation for one
@@ -271,7 +301,7 @@ separately, add $u$ to position $p$ alone for each $p$ and sum the responses: $S
 | 0.03 | 0.24 | **0.068** |
 | 0.1 | 0.81 | 0.155 |
 
-So superposition holds to **7%** at a total perturbation norm of 0.24 — inside the measured linear
+**Why 0.36 at the smallest radius is not a failure.** At r=0.003 the single-position response is ~1e-4 while the hidden states are ~500, so the difference of two forward passes is at the float32 resolution (relative 2e-7); the measured 36% is the round-off floor of the subtraction, not physics. The meaningful number is the minimum of the curve, 6.8%. Superposition holds to **7%** at a total perturbation norm of 0.24 — inside the measured linear
 regime ($r\le0.3$) — and degrades outside it. The error at the two smallest radii is the float32
 round-off of the difference of two ~500-magnitude states, not physics. This is the quantitative
 support for using $K$ as a decomposition: **it is valid at total norms ≲0.3, which is exactly the
@@ -284,16 +314,30 @@ test at $r=0.03$ for the other four models is running.
 
 ## 8. Result 5 — models differ
 
-![perturbation vs position](figures/fits/perturbation_vs_position.png)
+![heatmap](figures/positions/posscan_A_heatmap.png)
 
-**What is plotted.** A one-vector perturbation at **one generated position** $s$. For each direction,
-take the largest response at the **last layer** in the 50 tokens after $s$; plot the median over
-directions (line) and the 10–90% range (band), divided by $r$. 22 positions, generated-token
-positions, $r=0.1$ ($r=0.3$ for Phi).
+**Parameters.** One vector of norm $r=0.1$ ($r=0.3$ for Phi) at **one generated position** $s$,
+injected at block 0, read at the last block $L$; 8 random directions, median over directions; the
+prompt is `prompts.txt` (65 tokens), teacher-forced, 300 generated tokens; 22 positions from 4 to 100.
 
-**What it shows.** Phi rises from ×30 at $s=4$ to ×130 at $s=40$ and falls back; DeepSeek stays below
-×2.5 with a maximum at $s=16$; Qwen3-4B (×11–18), Qwen2.5 (×8–10) and Qwen3.5 (×1–3) are flat. The
-model difference is in the *level* and in whether there are hot spots.
+**What is plotted.** The response $\log_{10}\|\delta h_{s+\tau,L}\|/r$ as a function of the position $s$
+and the lag $\tau$ (0–50 tokens after $s$).
+
+**What it shows — and it corrects the earlier reading.** For Phi there is a **bright diagonal**: a
+perturbation at position $s$ is amplified when the continuation reaches a particular *absolute* token,
+so the peak lag shrinks as $s$ grows. DeepSeek shows horizontal bands (the response depends on the
+position, not on the lag) and a global decay.
+
+![peak absolute](figures/positions/peak_is_absolute.png)
+
+**Panel (a).** The lag of the peak against the position. **Panel (b).** The absolute token of the peak,
+$s+\tau^*$. For early positions it is **flat** at a model-specific value (DeepSeek ≈20–45, Qwen3-4B
+≈20, Qwen2.5-3B ≈27, Phi ≈45, Qwen3.5 ≈42); for late positions it follows the position.
+
+**Consequence.** The "hot spot at $s\approx40$" in the max-over-lag plot was a projection artefact: a
+perturbation at $s=40$ peaks at lag ≈5, i.e. at the same absolute token where a perturbation at $s=16$
+peaks at lag ≈29. **There is one amplification gate per continuation, not one per position.** The model
+difference is the *time* of that gate (or its absence, for DeepSeek) and its amplitude, not a position.
 
 ![perturbation vs depth](figures/fits/perturbation_vs_depth.png)
 
