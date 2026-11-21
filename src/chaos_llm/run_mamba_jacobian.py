@@ -131,9 +131,9 @@ def main():
     g = torch.Generator(device="cuda").manual_seed(args.seed)
 
     def rand_dirs(k):
-        v = torch.randn(L, cfg.intermediate_size, cfg.state_size + cfg.conv_kernel,
+        v = torch.randn(k, L, cfg.intermediate_size, cfg.state_size + cfg.conv_kernel,
                         device="cuda", generator=g)
-        v = v / v.norm(dim=(1, 2), keepdim=True)
+        v = v / v.flatten(1).norm(dim=1).view(k, 1, 1, 1)  # total norm 1 per direction
         return v  # [k, L, d_inner, d_state+d_conv]
 
     # ---------------- Experiment A: state kick growth ----------------
