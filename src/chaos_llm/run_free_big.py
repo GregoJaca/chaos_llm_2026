@@ -59,6 +59,7 @@ def main():
     ref_ids = None
     all_gen = {}
     for ri, r in enumerate(radii):
+        gen_rows = []
         for start in range(0, len(dirs), args.chunk - 1):
             batch_dirs = dirs[start:start + args.chunk - 1]
             plan = [dict(kind="ref", di=-1)] + [dict(kind="pert", di=di) for di in batch_dirs]
@@ -81,11 +82,12 @@ def main():
                     obs[ri, di] = first_mismatch(ref, gen[j])
                     n = min(len(ref), len(gen[j]))
                     agreement[ri, di] = float((gen[j][:n] == ref[:n]).mean())
-            all_gen[f"r{ri}"] = np.vstack([gen[1:]])
+            gen_rows.append(np.vstack([gen[1:]]))
             print(f"r={r:g} dirs {batch_dirs[0]}-{batch_dirs[-1]}: "
                   f"T={[(di, int(obs[ri, di])) for di in batch_dirs]}", flush=True)
             del E, gen
             torch.cuda.empty_cache()
+        all_gen[f"r{ri}"] = np.vstack(gen_rows)
 
     pred = d["pred_T"]
     mradii = np.asarray(meta["radii"])
