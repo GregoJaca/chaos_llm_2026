@@ -892,6 +892,10 @@ def main():
         if D.shape[0] != D.shape[1]:
             print(f"skip {p}: not square {D.shape}", flush=True)
             continue
+        if args.max_n and D.shape[0] > args.max_n:
+            # same horizon for every trajectory: keep the first max_n states
+            print(f"{name}: truncating N={D.shape[0]} -> {args.max_n}", flush=True)
+            D = D[: args.max_n, : args.max_n]
         res, fav = analyse(D, name, theilers=theilers,
                            t4_style=not args.no_t4_style, states=h)
         res["source"] = os.path.abspath(p)

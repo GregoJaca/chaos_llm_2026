@@ -1,0 +1,128 @@
+{
+ "shuffle": {
+  "interstellar": {
+   "0": {
+    "d2_raw": 9.732814687389718,
+    "dec_raw": 0.08082943849456292,
+    "d2_shuf": 9.732814687389718,
+    "dec_shuf": 0.08082943849456292,
+    "max_abs_dC": 0.0,
+    "max_rel_dC": 0.0,
+    "valid_raw": false,
+    "valid_shuf": false
+   },
+   "50": {
+    "d2_raw": 10.031222193902504,
+    "dec_raw": 0.08082943849456292,
+    "d2_shuf": 9.75353758477487,
+    "dec_shuf": 0.08082943849456292,
+    "max_abs_dC": 0.010541844600965022,
+    "max_rel_dC": 1.0,
+    "valid_raw": false,
+    "valid_shuf": false
+   },
+   "500": {
+    "d2_raw": 11.0541509565495,
+    "dec_raw": 0.053886292329708534,
+    "d2_shuf": 9.726447003831344,
+    "dec_shuf": 0.08082943849456292,
+    "max_abs_dC": 0.03852505010020041,
+    "max_rel_dC": 104208416.83366734,
+    "valid_raw": false,
+    "valid_shuf": false
+   },
+   "twonn_raw": 8.896537342648772,
+   "twonn_shuf": 8.896537342648772,
+   "permutation_seed": 20261121
+  },
+  "great_emu_war": {
+   "0": {
+    "d2_raw": 10.265809207372797,
+    "dec_raw": 0.08082943849456292,
+    "d2_shuf": 10.265809207372797,
+    "dec_shuf": 0.08082943849456292,
+    "max_abs_dC": 0.0,
+    "max_rel_dC": 0.0,
+    "valid_raw": false,
+    "valid_shuf": false
+   },
+   "50": {
+    "d2_raw": 10.759170946811633,
+    "dec_raw": 0.05388629232970878,
+    "d2_shuf": 10.259196466802313,
+    "dec_shuf": 0.08082943849456292,
+    "max_abs_dC": 0.01776274194442906,
+    "max_rel_dC": 0.26386036960985626,
+    "valid_raw": false,
+    "valid_shuf": false
+   },
+   "500": {
+    "d2_raw": 11.517561329748942,
+    "dec_raw": 0.05388629232970878,
+    "d2_shuf": 10.454091739599118,
+    "dec_shuf": 0.08082943849456292,
+    "max_abs_dC": 0.02018436873747495,
+    "max_rel_dC": 24048096.192384772,
+    "valid_raw": false,
+    "valid_shuf": false
+   },
+   "twonn_raw": 4.660588762140087,
+   "twonn_shuf": 4.660588762140087,
+   "permutation_seed": 20261121
+  }
+ },
+ "ndep": {
+  "names": [
+   "great_emu_war",
+   "interstellar"
+  ],
+  "series": {
+   "great_emu_war": {
+    "500": {
+     "twonn": 7.815697462652416,
+     "d2_admissible": 10.36886040355861,
+     "decades_admissible": 0.05388629232970878,
+     "window_decades": 0.0,
+     "valid": false
+    },
+    "750": {
+     "twonn": 6.3016205712342455,
+     "d2_admissible": 10.175428179526683,
+     "decades_admissible": 0.05388629232970878,
+     "window_decades": 0.0,
+     "valid": false
+    },
+    "1000": {
+     "twonn": 4.660588762140087,
+     "d2_admissible": 10.265809207372797,
+     "decades_admissible": 0.08082943849456292,
+     "window_decades": 0.0,
+     "valid": false
+    }
+   },
+   "interstellar": {
+    "500": {
+     "twonn": 9.508836405972467,
+     "d2_admissible": NaN,
+     "decades_admissible": NaN,
+     "window_decades": 0.0,
+     "valid": false
+    },
+    "750": {
+     "twonn": 8.745752855074194,
+     "d2_admissible": 9.39092691600054,
+     "decades_admissible": 0.08082943849456292,
+     "window_decades": 0.0,
+     "valid": false
+    },
+    "1000": {
+     "twonn": 8.896537342648772,
+     "d2_admissible": 9.732814687389718,
+     "decades_admissible": 0.08082943849456292,
+     "window_decades": 0.0,
+     "valid": false
+    }
+   }
+  }
+ }
+}
