@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  built 2026-11-20 21:37:31 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
+  built 2026-11-21 02:38:49 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
   <a href="notebook_big.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook_big.md">Markdown</a>
 </header>
 <h1 id="large-models-on-the-dgx-spark-definitions-data-and-every-figure-explained">Large models on the DGX Spark: definitions, data, and every figure explained</h1>
@@ -57,7 +57,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 <li><strong>FP32 compute is ~4.4 TFLOPS</strong> (measured on a 4096³ matmul). Consequence: batch everything. One forward pass sweeps the weights once, so 16 perturbed rows cost about the same per-row as 1 row.</li>
 <li><strong>The fp32 fallback attention path materialises the full score matrix</strong> $[B,H,L,L]$. At $L=3065$, batch 8, that alone is 12 GB. Consequence: long teacher-forced horizons are capped (~1500 tokens at small batch), and long trajectories are generated with the KV cache instead.</li>
 </ul>
-<h2 id="03-the-numerical-floor-moved-up-30-where-math8-is-meaningful">0.3 The numerical floor moved up 30×: where $r$ is meaningful</h2>
+<h2 id="03-the-numerical-floor-moved-up-30-where-math10-is-meaningful">0.3 The numerical floor moved up 30×: where $r$ is meaningful</h2>
 <p><strong>Data.</strong> Calibration run on the 14B: prompt <code>interstellar_travel</code> ($P=65$ tokens), 400 greedy tokens, window setting 100 (inactive — see the correction note; the numbers below are unaffected by this because they only depend on forward-pass rounding), 8 perturbation directions at 9 radii, FP32, teacher-forced on the model's own tokens. File: <code>results_big/ds14/calib/calib.npz</code>.</p>
 <p>The quantity is $\mathrm{median}_{u,t\in[100,400)}\lVert\delta h_t^{\mathrm{final}}(u)\rVert / r$: the last-layer response per unit radius. The division by $r$ is the point: in a perfectly linear regime this ratio is a constant, the <em>gain</em>; where it inflates, the response is pinned at the forward-pass rounding floor and says nothing about the perturbation.</p>
 <table>
@@ -689,7 +689,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </tr>
 </tbody>
 </table>
-<h3 id="13-the-valid-window-rule-this-replaces-the-max-math249-search">1.3 The valid-window rule (this replaces the max-$R^2$ search)</h3>
+<h3 id="13-the-valid-window-rule-this-replaces-the-max-math251-search">1.3 The valid-window rule (this replaces the max-$R^2$ search)</h3>
 <p>A window is marked valid only if all three hold simultaneously:</p>
 <ol>
 <li><strong>flatness.</strong> The longest run of $\epsilon$ in which the local slope stays within $\mathrm{tol}$ of its own median, with $\mathrm{tol}=\max(0.15,\ 0.06\,\lvert\hat D_2\rvert)$ — i.e. "within 6% of its own value", with an absolute floor so low dimensions are not judged in relative units — and the run at least <strong>0.4 decades</strong> wide. The test is applied to a 3-point median filter of the slope so a single grid point cannot open a window.</li>
@@ -1643,15 +1643,564 @@ The median local sensitivity is $3.80\times10^{-3}$ nats per unit radius, about 
 - This run used full attention (see the correction note), so no part of the decay is attributable to the prompt leaving an attention window. The true-window run will separate that effect.</p>
 <p>All numbers in this section are in <code>notebook_big/figures/ds14_a1_deep_numbers.json</code>; the figures are produced by <code>scripts_spark/figs_a1_deep.py</code> from <code>results_big/ds14/a1_inter_full/a1.npz</code> and <code>meta.json</code>.</p>
 <hr />
-<h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
+<h1 id="part-free-run-validating-the-signed-flip-rule-against-free-running-generation-14b-full-attention">Part free-run. Validating the signed flip rule against free-running generation (14B, full attention)</h1>
 <h2 id="summary_3">Summary</h2>
+<p>At free-run radii $\rho=0.05,0.1,0.3$, the fraction of the 1000 directions that actually change the greedy continuation is 32.1%, 45.3% and 64.3%, against 31.6%, 46.4% and 67.1% predicted by the signed teacher-forced rule; at the calibrated radius $\rho=0.1$ there are 449 exact step matches, 1 wrong step, 14 false alarms and 3 misses out of 1000. Every flip happens at one of two razor-thin ties, $t=19$ or $t=21$ (plus 33 at $t=189$ and one at $t=273$ only at $\rho=0.3$), where the competing tokens are <code>" reference"</code> vs <code>" research"</code> and <code>"Alright"</code> vs <code>"Okay"</code>. The stored 73.0/61.9/47.5% "post-flip agreement" is not a post-flip number: it averages over all directions, including the non-flipped ones that contribute exactly 1.0; among flipped directions the whole-run agreement is 16.0/15.9/18.4%, and strictly after the first flip it is 9.7/9.7/9.6%. After the shared 18-token restatement of the prompt the agreement falls to 1.7%, no run ever re-synchronises to the baseline, and the large apparent agreement is local boilerplate, not re-convergence. The flipped runs do re-converge to each other: all 33 saved raw continuations contain only three distinct texts, and flips at the two gates differ by a single token.</p>
+<hr />
+<h2 id="1-the-run-the-quantities-and-what-is-being-validated">1. The run, the quantities, and what is being validated</h2>
+<h3 id="11-setup_1">1.1 Setup</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>model</td>
+<td><code>DeepSeek-R1-Distill-Qwen-14B</code> (48 blocks, hidden size 5120)</td>
+</tr>
+<tr>
+<td>precision</td>
+<td>FP32</td>
+</tr>
+<tr>
+<td>attention</td>
+<td><strong>full attention</strong> — the intended window-100 setting was silently inactive (correction note in the notebook); a true-window rerun is being generated</td>
+</tr>
+<tr>
+<td>prompt</td>
+<td><code>interstellar_travel</code>, $P=65$ tokens, identical to the A1 run</td>
+</tr>
+<tr>
+<td>baseline</td>
+<td>$T=300$ greedy tokens, no sampling, no EOS stop</td>
+</tr>
+<tr>
+<td>A1 (calibration)</td>
+<td>1000 unit directions at $r=0.1$, added to the prompt embeddings only; every perturbed pass teacher-forced on the baseline <code>prompt_ids</code>+<code>gen_ids</code>; 50 disjoint blocks of 20 non-zero coordinates per direction</td>
+</tr>
+<tr>
+<td>free run</td>
+<td>the <strong>same</strong> 1000 directions and the same perturbation construction, at $\rho\in\{0.05,0.1,0.3\}$; each row generates its own 300 greedy tokens with a KV cache</td>
+</tr>
+<tr>
+<td>reference</td>
+<td>an in-batch $r=0$ row in every chunk; it is not stored in <code>gen_ids</code>, but the non-flipped saved rows are bit-identical to A1's <code>gen_ids</code></td>
+</tr>
+<tr>
+<td>baseline identity</td>
+<td>A1 <code>top1[t] == gen_ids[t]</code> for all $t$ (checked); the baseline is self-consistent</td>
+</tr>
+<tr>
+<td>files</td>
+<td><code>results_big/ds14/a1_inter_full/a1.npz</code>, <code>results_big/ds14/free_inter_full/free_run.npz</code>, <code>results_big/ds14/free_inter_full/summary.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>Two data facts have to be stated before any number. (i) The summary's <code>run</code> field says <code>results_big/ds14/a1_inter_w100</code>, but the correction note applies: that run used full attention. The free rows confirm it — every non-flipped row equals the full-attention A1 <code>gen_ids</code> exactly. (ii) The writer of <code>free_run.npz</code> overwrote its <code>all_gen</code> dictionary once per generation chunk, so <code>gen_ids</code> contains only the <strong>last</strong> chunk: directions 989–999, 11 of 1000, at each radius. The mapping is not assumed: the first mismatch of each row reproduces <code>obs[:,989:1000]</code> exactly for all three radii, and non-flipped rows are bit-identical to A1. Direct token-level post-flip analysis therefore rests on 19 flipped rows (4 at $\rho=0.05$, 7 at $\rho=0.1$, 8 at $\rho=0.3$); the population statements below are recovered exactly from the stored whole-run agreement, as shown in §5.</p>
+<h3 id="12-quantities_1">1.2 Quantities</h3>
+<p>Notation: $u$ indexes a direction, $t\in\{0,\dots,299\}$ a generated step, $m_t$ the top-1 minus top-2 logit gap of the unperturbed A1 run, $\delta m_t(u)$ its change under direction $u$ at the A1 radius $r=0.1$, and $\rho$ the free-run radius.</p>
+<table>
+<thead>
+<tr>
+<th>symbol</th>
+<th>explicit expression</th>
+<th>meaning</th>
+<th>why this quantity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$m_t$</td>
+<td>$\ell^{(1)}_t-\ell^{(2)}_t$ (nats)</td>
+<td>gap between the two best tokens of the baseline</td>
+<td>a flip needs this gap closed</td>
+</tr>
+<tr>
+<td>$\delta m_t(u)$</td>
+<td>$m_t(u)-m_t$ (nats), stored <code>dm</code></td>
+<td>first-order change of that gap at $r=0.1$</td>
+<td>response of the decision variable, measured without letting the text diverge</td>
+</tr>
+<tr>
+<td>$r_c^-(t,u)$</td>
+<td>$m_t\,r/\max(-\delta m_t(u),0)$; $+\infty$ if $\delta m_t\ge0$</td>
+<td>radius at which step $t$ would flip</td>
+<td>solve $-\delta m_t\ge m_t$ for the radius; only a <strong>negative</strong> $\delta m$ can close a gap</td>
+</tr>
+<tr>
+<td>$r_*(u)$</td>
+<td>$\min_t r_c^-(t,u)$</td>
+<td>flux-tube radius</td>
+<td>one number per direction: the largest radius that leaves every baseline argmax intact</td>
+</tr>
+<tr>
+<td>$t_*(u)$</td>
+<td>$\arg\min_t r_c^-(t,u)$</td>
+<td>controlling tie</td>
+<td>which near-tie is the global weak point</td>
+</tr>
+<tr>
+<td>$T_{\rm pred}(\rho,u)$</td>
+<td>$\min\{t:\rho\ge r_c^-(t,u)\}$, $-1$ if no $t$</td>
+<td>first predicted flip <strong>in time</strong></td>
+<td>the prediction that the free run tests; $\rho\ge r_*(u)$ is equivalent to $T_{\rm pred}\ge0$</td>
+</tr>
+<tr>
+<td>${\rm obs}(\rho,u)$</td>
+<td>first $t$ with free token $\ne$ baseline token, $-1$ if none</td>
+<td>observed first flip</td>
+<td>the experimental outcome</td>
+</tr>
+<tr>
+<td>$A_{\rm after}(\rho,u)$</td>
+<td>$\frac{1}{T-{\rm obs}}\sum_{t>{\rm obs}}\mathbf 1[g_t=\hat g_t]$</td>
+<td>token agreement strictly after the first flip</td>
+<td>does the run come back to the baseline text?</td>
+</tr>
+<tr>
+<td>$A_{\rm late}(\rho,u)$</td>
+<td>the same sum for $t>{\rm obs}+45$</td>
+<td>agreement past the echoed task sentence</td>
+<td>isolates genuine re-convergence from shared prompt restatement</td>
+</tr>
+<tr>
+<td>$\Delta(u)$</td>
+<td>${\rm obs}(\rho,u)-t_*(u)$</td>
+<td>latency relative to the controlling tie</td>
+<td>"immediate" if 0, "delayed" if $>0$; negative is possible because the first crossing need not be the global minimum</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Signed versus sign-blind.</strong> The npz's stored <code>r_c</code> is built with $|\delta m_t|$, not $-\delta m_t$. Recomputation reproduces it to $1.5\times10^{-8}$, so the stored array is exactly $m_t r/|\delta m_t|$. A direction with $\delta m_t>0$ widens the gap and can never flip a top-1/top-2 decision, yet the sign-blind rule calls it a flip at a finite radius. At $\rho=0.1$ that rule predicts 810 flips against 464 for the signed rule; 360 of the 810 are directions that never mismatch in the free run (44.4% false-alarm rate). The signed rule's false-alarm rate is 3.0%. Every prediction below is the signed one.</p>
+<p><strong>First crossing versus argmin.</strong> $T_{\rm pred}$ is the first time the threshold is crossed, while $t_*$ is the time of the smallest threshold. These differ when an earlier step has a larger-but-still-crossed threshold: at $\rho=0.1$, 31 directions flip at $t=19$ while $t_*=21$. Those runs are exact predictions, not errors; the distinction is why $\Delta$ can be $-2$ without any failure of the rule.</p>
+<h3 id="13-the-result-in-one-table">1.3 The result in one table</h3>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th style="text-align: right;">$\rho=0.05$</th>
+<th style="text-align: right;">$\rho=0.1$</th>
+<th style="text-align: right;">$\rho=0.3$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>observed flips / 1000</td>
+<td style="text-align: right;">321</td>
+<td style="text-align: right;">453</td>
+<td style="text-align: right;">643</td>
+</tr>
+<tr>
+<td>predicted flips, signed / 1000</td>
+<td style="text-align: right;">316</td>
+<td style="text-align: right;">464</td>
+<td style="text-align: right;">671</td>
+</tr>
+<tr>
+<td>predicted flips, sign-blind / 1000</td>
+<td style="text-align: right;">599</td>
+<td style="text-align: right;">810</td>
+<td style="text-align: right;">969</td>
+</tr>
+<tr>
+<td>exact (obs $=T_{\rm pred}$)</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">449</td>
+<td style="text-align: right;">580</td>
+</tr>
+<tr>
+<td>wrong step</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">37</td>
+</tr>
+<tr>
+<td>false alarm (pred flip, obs none)</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">54</td>
+</tr>
+<tr>
+<td>miss (pred none, obs flip)</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">26</td>
+</tr>
+<tr>
+<td>both none</td>
+<td style="text-align: right;">664</td>
+<td style="text-align: right;">533</td>
+<td style="text-align: right;">303</td>
+</tr>
+<tr>
+<td>classification accuracy</td>
+<td style="text-align: right;">96.4%</td>
+<td style="text-align: right;">98.2%</td>
+<td style="text-align: right;">88.3%</td>
+</tr>
+<tr>
+<td>signed false-alarm rate</td>
+<td style="text-align: right;">4.75%</td>
+<td style="text-align: right;">3.02%</td>
+<td style="text-align: right;">8.05%</td>
+</tr>
+<tr>
+<td>observed mean / median flip step</td>
+<td style="text-align: right;">20.9 / 21</td>
+<td style="text-align: right;">20.7 / 21</td>
+<td style="text-align: right;">29.2 / 21</td>
+</tr>
+<tr>
+<td>flips at $t=19$ / $t=21$ / $t=189$ / $t=273$</td>
+<td style="text-align: right;">11 / 310 / 0 / 0</td>
+<td style="text-align: right;">74 / 379 / 0 / 0</td>
+<td style="text-align: right;">267 / 342 / 33 / 1</td>
+</tr>
+<tr>
+<td>post-flip agreement, population</td>
+<td style="text-align: right;">0.0969</td>
+<td style="text-align: right;">0.0972</td>
+<td style="text-align: right;">0.0962</td>
+</tr>
+<tr>
+<td>agreement after $t>{\rm obs}+45$</td>
+<td style="text-align: right;">0.0172</td>
+<td style="text-align: right;">0.0171</td>
+<td style="text-align: right;">0.0171</td>
+</tr>
+</tbody>
+</table>
+<p>The signed rule predicts the flip fraction to 0.5 percentage points at $\rho=0.05$ and 1.1 points at $\rho=0.1$; at three times the calibration radius it over-predicts by 2.8 points. The apparent rise of the mean flip step at $\rho=0.3$ is not a slowdown of the two main gates: the median is still 21, and the mean is pulled up by 34 late flips (33 at $t=189$, one at $t=273$).</p>
+<hr />
+<h2 id="2-figure-ds14free_scorecardpng-the-signed-rule-is-nearly-exact-at-and-below-the-calibrated-radius">2. Figure <code>ds14free_scorecard.png</code> — the signed rule is nearly exact at and below the calibrated radius</h2>
+<p><img alt="scorecard" src="figures/ds14free_scorecard.png" /></p>
+<p><strong>Setup.</strong> All 1000 directions at each of the three radii. Each direction is assigned to exactly one class: <strong>exact</strong> if ${\rm obs}=T_{\rm pred}\ge0$; <strong>wrong step</strong> if both are $\ge0$ but differ; <strong>false alarm</strong> if $T_{\rm pred}\ge0$ and ${\rm obs}=-1$; <strong>miss</strong> if $T_{\rm pred}=-1$ and ${\rm obs}\ge0$; <strong>both none</strong> if $T_{\rm pred}={\rm obs}=-1$. The prediction uses the signed threshold $r_c^-$ recomputed from <code>dm</code>, and $T_{\rm pred}$ is the first crossing in time.</p>
+<p><strong>Axes.</strong> $x$: free-run radius $\rho$; $y$: number of directions, linear 0–1000. Bars are stacked in the order exact, wrong step, false alarm, miss, both none. Above each bar: observed and predicted flip counts. Counts below 30 are written as a callout to the right of the bar rather than inside a sliver.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>class</th>
+<th style="text-align: right;">$\rho=0.05$</th>
+<th style="text-align: right;">$\rho=0.1$</th>
+<th style="text-align: right;">$\rho=0.3$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>exact</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">449</td>
+<td style="text-align: right;">580</td>
+</tr>
+<tr>
+<td>wrong step</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">37</td>
+</tr>
+<tr>
+<td>false alarm</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">14</td>
+<td style="text-align: right;">54</td>
+</tr>
+<tr>
+<td>miss</td>
+<td style="text-align: right;">20</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">26</td>
+</tr>
+<tr>
+<td>both none</td>
+<td style="text-align: right;">664</td>
+<td style="text-align: right;">533</td>
+<td style="text-align: right;">303</td>
+</tr>
+<tr>
+<td>exact / predicted flips</td>
+<td style="text-align: right;">94.9%</td>
+<td style="text-align: right;">96.8%</td>
+<td style="text-align: right;">86.4%</td>
+</tr>
+<tr>
+<td>exact / observed flips</td>
+<td style="text-align: right;">93.5%</td>
+<td style="text-align: right;">99.1%</td>
+<td style="text-align: right;">90.2%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- At $\rho=0.1$ — the radius at which $\delta m$ was measured — the scorecard is almost diagonal: 449 exact, 1 wrong step, 14 false alarms, 3 misses. The rule gets the <strong>event</strong> right for 982/1000 directions and the <strong>step</strong> right for 449/453 observed flips.
+- At $\rho=0.05$, below the calibration radius, the pattern is the same with a slightly larger miss count: 300 exact, 1 wrong step, 15 false alarms, 20 misses. The misses are not exotic third-token flips. Their smallest threshold radius lies in $[0.0509,0.147]$ with median 0.0567 (13% above $\rho$) and 90th percentile 0.0738 (48% above); only the extreme tail reaches 2–3x $\rho$. The false alarms have smallest threshold in $[0.0405,0.0492]$, just below $\rho$. The flip/no-flip boundary is sharp, and the misses are a small threshold-calibration error, not a qualitative failure.
+- At $\rho=0.3$, three times the radius at which the response was measured, linear extrapolation degrades: 580 exact, 37 wrong step, 54 false alarms, 26 misses. The false alarms again sit just below threshold (smallest $r_c$ median 0.159, maximum 0.297), while the misses reach as high as $r_c=13.2$: at this radius some directions flip without their top-1/top-2 gap ever being predicted to close, which is the signature of a genuinely nonlinear response or of a third token overtaking.
+- The sign-blind rule is not a viable alternative at any radius: 599/810/969 predicted flips and 49.7/44.4/34.4% false-alarm rates, against 4.8/3.0/8.1% for the signed rule (numbers in the JSON and §1.2).</p>
+<p><strong>What it shows.</strong> The signed teacher-forced rule is a calibrated predictor of whether a random prompt perturbation destroys the greedy continuation, and at the measurement radius it also predicts the exact step for 99% of the flips. The degradation at $\rho=0.3$ is confined to the step/threshold assignments; even there, 88.3% of directions are classified correctly.</p>
+<p><strong>What it does not show.</strong> It does not validate the rule at radii above 0.3 or below 0.05, nor for a different prompt or a different model. It does not show that a "miss" is a top-1/top-2 flip at all: the free run records only tokens, not the logits after divergence, so the missing third-token hypothesis cannot be tested here. And because the prediction and the free run share the same <code>dm</code> measurement, the agreement is not an independent estimate of the linear response — it is a test of whether that response extrapolates to a different radius and to free generation.</p>
+<hr />
+<h2 id="3-figure-ds14free_survivalpng-survival-curves-agree-to-0035">3. Figure <code>ds14free_survival.png</code> — survival curves agree to 0.035</h2>
+<p><img alt="survival" src="figures/ds14free_survival.png" /></p>
+<p><strong>Setup.</strong> $S(t)=P(\text{first flip}>t)$, with a never-flipped direction treated as first flip $=+\infty$. Observed: from <code>obs</code>; predicted: from the signed $T_{\rm pred}(\rho,u)$. Both are step functions on $t=0,\dots,299$, one panel per radius. Vertical dotted lines mark $t=19$ and $t=21$.</p>
+<p><strong>Axes.</strong> $x$: generated step $t$, linear 0–300; $y$: survival probability, linear 0–1. Black solid: observed; red dashed: predicted signed.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">$\rho=0.05$</th>
+<th style="text-align: right;">$\rho=0.1$</th>
+<th style="text-align: right;">$\rho=0.3$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$S(19)$ observed / predicted</td>
+<td style="text-align: right;">0.989 / 0.988</td>
+<td style="text-align: right;">0.926 / 0.925</td>
+<td style="text-align: right;">0.733 / 0.720</td>
+</tr>
+<tr>
+<td>$S(21)$ observed / predicted</td>
+<td style="text-align: right;">0.679 / 0.684</td>
+<td style="text-align: right;">0.547 / 0.536</td>
+<td style="text-align: right;">0.391 / 0.356</td>
+</tr>
+<tr>
+<td>$S(189)$ observed / predicted</td>
+<td style="text-align: right;">0.679 / 0.684</td>
+<td style="text-align: right;">0.547 / 0.536</td>
+<td style="text-align: right;">0.358 / 0.329</td>
+</tr>
+<tr>
+<td>max $|S_{\rm obs}-S_{\rm pred}|$ (step)</td>
+<td style="text-align: right;">0.005 ($t=21$)</td>
+<td style="text-align: right;">0.011 ($t=21$)</td>
+<td style="text-align: right;">0.035 ($t=21$)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- Up to $t=19$ both curves are at 1.0: no direction flips before the first near-tie. The first drop is a single token at $t=19$, then the much larger drop at $t=21$: at $\rho=0.1$, 7.4% of directions are already gone at 19 and another 37.9% at 21, leaving 54.7% intact.
+- The predicted curve is slightly below the observed one at $\rho=0.3$ after $t=21$ (0.356 vs 0.391 at 21, 0.329 vs 0.358 at 189), which is the same 26 misses seen in the scorecard (the prediction flips more directions than are observed). At $\rho=0.05$ and $0.1$ the two curves are within 0.011 everywhere.
+- The late shoulder at $t=189$ exists only at $\rho=0.3$: 3.3% of directions flip there and one at $t=273$. The prediction puts 2.7% at 189 and none at 273.</p>
+<p><strong>What it shows.</strong> The entire distribution of first-flip times is reproduced, not just its mean: the two near-ties at 19 and 21, the absence of any earlier event, and the small late tail at the largest radius. A rule calibrated from teacher-forced gaps at $r=0.1$ predicts the survival curve of free-running generation.</p>
+<p><strong>What it does not show.</strong> Survival only records the first event; it says nothing about what happens after a flip. A curve that matches at $t\le21$ is compatible with completely different texts afterwards, which is exactly what §5 finds. It also does not resolve the mechanism of the 26 misses at $\rho=0.3$: they could be nonlinear threshold shifts or third-token flips.</p>
+<hr />
+<h2 id="4-figure-ds14free_latencypng-the-flips-are-immediate-and-the-step-is-predicted">4. Figure <code>ds14free_latency.png</code> — the flips are immediate, and the step is predicted</h2>
+<p><img alt="latency" src="figures/ds14free_latency.png" /></p>
+<p><strong>Setup.</strong> Top row: histogram of observed first-flip steps, using only the steps that occur (19, 21, 189, 273); the never-flipped directions are annotated, not plotted on the log axis. Bottom row: bubble matrix of predicted step $T_{\rm pred}$ against observed step, all 1000 directions, including $-1$ ("never"). Bubble area scales as $\sqrt{n}$ and colour as $\log_{10} n$; labels give the count. The diagonal is the perfect prediction.</p>
+<p><strong>Axes.</strong> Top: $x$: observed step (categorical, only observed values); $y$: directions, log. The shaded band marks the two razor-thin ties. Bottom: $x$: predicted step; $y$: observed step; both categorical with ticks $\{-1,19,21,189,273\}$.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">$\rho=0.05$</th>
+<th style="text-align: right;">$\rho=0.1$</th>
+<th style="text-align: right;">$\rho=0.3$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>immediate, ${\rm obs}=t_*$</td>
+<td style="text-align: right;">315</td>
+<td style="text-align: right;">422</td>
+<td style="text-align: right;">496</td>
+</tr>
+<tr>
+<td>earlier than $t_*$, ${\rm obs}<t_*$</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">31</td>
+<td style="text-align: right;">132</td>
+</tr>
+<tr>
+<td>delayed, ${\rm obs}>t_*$</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">15</td>
+</tr>
+<tr>
+<td>${\rm obs}-T_{\rm pred}=0$</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">449</td>
+<td style="text-align: right;">580</td>
+</tr>
+<tr>
+<td>${\rm obs}-T_{\rm pred}=\pm2$</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">24</td>
+</tr>
+<tr>
+<td>larger step errors</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">13</td>
+</tr>
+<tr>
+<td>mean / median observed step</td>
+<td style="text-align: right;">20.9 / 21</td>
+<td style="text-align: right;">20.7 / 21</td>
+<td style="text-align: right;">29.2 / 21</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- At $\rho=0.05$ and $0.1$ every flip is at 19 or 21; there are no delayed flips at all. The six (resp. 31) "early" runs are not early relative to the first crossing: they are directions whose global minimum is at 21 but whose $r_c(19)$ is already below $\rho$, so $T_{\rm pred}=19$. They are counted as exact in the scorecard.
+- At $\rho=0.3$, 119 of the 132 early runs are the same $\pm2$ effect (19 vs 21). The remaining 13 jump between the 21/19 pair and 189/273: 9 flip at 21 although the global minimum is at 189 ($\Delta=-168$), 3 at 21 with $\Delta=-170$, one at 19 with $\Delta=-252$. The 15 delayed runs are the mirror image: 7 flip at 189 although the global minimum is at 21 ($\Delta=+168$), one at 189 with $\Delta=+170$, 5 at 21 with $\Delta=+2$, and one each with $\Delta=+11$ and $\Delta=+21$.
+- The mean 29.2 at $\rho=0.3$ is entirely composition: $(267\cdot19+342\cdot21+33\cdot189+1\cdot273)/643=29.18$, while the median stays 21. The late flips are 5.3% of the outcomes but add $[33(189-21)+1(273-21)]/643=9.0$ points to the mean.
+- The bubble matrix shows that the 580 exact directions are the two large diagonal bubbles at 21 (310) and 19 (248), plus 22 at 189. Off-diagonal mass is concentrated in the 19↔21 block and in the 21↔189 block; there is no diffuse scatter, because only four steps ever occur.</p>
+<p><strong>What it shows.</strong> Latency is not a free parameter: the rule predicts not only that a direction flips but at which of the two ties, and the "delayed" phenomenon is essentially absent at and below the calibration radius. At $\rho=0.3$ the rule still identifies the right pair of gates; the residual error is which member of the pair, or whether the 189 gate fires first.</p>
+<p><strong>What it does not show.</strong> It does not show that a flip at 19 is a different physical event from a flip at 21: both lead to the same alternative continuation (§6). The latency classes use $t_*=\arg\min r_c$, so the negative entries are a definitional artefact of first-crossing versus argmin, not evidence of a failure; measured against $T_{\rm pred}$ the same runs are exact. And the late 189/273 events are observed only at one radius, so their rate is not a calibrated function of $\rho$.</p>
+<hr />
+<h2 id="5-figure-ds14free_resyncpng-the-73-post-flip-agreement-is-an-average-over-non-flipped-runs">5. Figure <code>ds14free_resync.png</code> — the 73% "post-flip agreement" is an average over non-flipped runs</h2>
+<p><img alt="resync" src="figures/ds14free_resync.png" /></p>
+<p><strong>Setup.</strong> The stored <code>summary.json</code> field <code>mean_postflip_agreement</code> is, despite its name, the mean of <code>agreement[ri,u]</code> over <strong>all</strong> 1000 directions and over the <strong>whole</strong> 300-token run. The free-run writer computes <code>agreement</code> as the fraction of the 300 positions where the perturbed generation equals its in-batch $r=0$ reference, so a direction with <code>obs=-1</code> contributes exactly 1.0. The figure decomposes that mean. Top row: ECDF of the directly measured $A_{\rm after}(u)$ for the 11 saved directions, separately for flips at 19 and 21; vertical lines mark the all-direction inference, the 1.5B literature value quoted in the brief (2.7%), and $A_{\rm late}$ ($t>{\rm obs}+45$). Bottom row: the post-flip token positions split into matches inside runs of length $\ge5$, isolated matches, and mismatches. The direct measurement uses 19 flipped rows; the population value is recovered algebraically below.</p>
+<p><strong>Axes.</strong> Top: $x$: $A_{\rm after}(u)$, linear 0–1; $y$: ECDF over flipped directions. Bottom: $x$: fraction of post-flip token positions; $y$: none (single stacked bar).</p>
+<p><strong>The population algebra.</strong> Let $f$ be the observed flip fraction, $\bar A$ the stored whole-run mean over all directions, and $\bar o$ the mean first-flip step among flipped directions. Non-flipped directions have $A=1$ exactly (<code>obs=-1</code> means no mismatch anywhere). Hence the mean whole-run agreement among flipped directions is
+$$\bar A_{\rm flip}=\frac{\bar A-(1-f)}{f},$$
+and, because the prefix $t<{\rm obs}$ matches and the position $t={\rm obs}$ does not, the mean agreement strictly after the flip is
+$$\bar A_{\rm after}=\frac{\bar A_{\rm flip}T-\bar o}{T-\bar o}.$$
+This uses only stored quantities and is exact under the definition of <code>obs</code>; it reproduces the directly measured sample to the third decimal.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">$\rho=0.05$</th>
+<th style="text-align: right;">$\rho=0.1$</th>
+<th style="text-align: right;">$\rho=0.3$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stored <code>mean_postflip_agreement</code> (all dirs, whole run)</td>
+<td style="text-align: right;">0.7303</td>
+<td style="text-align: right;">0.6192</td>
+<td style="text-align: right;">0.4754</td>
+</tr>
+<tr>
+<td>implied mean whole-run, <strong>among flipped</strong></td>
+<td style="text-align: right;">0.1599</td>
+<td style="text-align: right;">0.1595</td>
+<td style="text-align: right;">0.1841</td>
+</tr>
+<tr>
+<td>implied mean <strong>after</strong> the first flip</td>
+<td style="text-align: right;">0.0969</td>
+<td style="text-align: right;">0.0972</td>
+<td style="text-align: right;">0.0962</td>
+</tr>
+<tr>
+<td>directly measured $A_{\rm after}$, saved rows</td>
+<td style="text-align: right;">0.0971</td>
+<td style="text-align: right;">0.0979</td>
+<td style="text-align: right;">0.0986</td>
+</tr>
+<tr>
+<td>directly measured $A_{\rm late}$ ($t>{\rm obs}+45$)</td>
+<td style="text-align: right;">0.0172</td>
+<td style="text-align: right;">0.0171</td>
+<td style="text-align: right;">0.0171</td>
+</tr>
+<tr>
+<td>re-synchronised runs (sustained suffix $\ge20$)</td>
+<td style="text-align: right;">0 / 4</td>
+<td style="text-align: right;">0 / 7</td>
+<td style="text-align: right;">0 / 8</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What is in the figure.</strong>
+- The headline 73.0/61.9/47.5% is a mixture, not a post-flip measurement. It falls with $\rho$ only because the flip fraction rises: 0.7303 = 0.679·1.0 + 0.321·0.1599, and similarly for the other radii. The agreement among flipped directions is remarkably constant, 0.159–0.184, and the strictly post-flip value is constant at 0.096–0.097.
+- The small rise of the whole-run value among flipped directions at $\rho=0.3$ (0.184 vs 0.160) is not better agreement: 34 of the 643 flips happen at 189/273, so those runs have less time to diverge. The post-flip value stays at 0.096.
+- The direct token analysis shows what the matching tokens are. Of the 108 matching post-flip positions across the 4 saved $\rho=0.05$ flips, 92 (85%) lie in just two contiguous runs: <code>", so I need to"</code> (5 tokens immediately after the gate) and an 18-token run at $t=28$–$45$, <code>" a comprehensive technical review of current and proposed propulsion systems for interstellar travel. The user has"</code>. The second is a verbatim restatement of the prompt sentence. Pooled over all 19 flipped rows, 437 of the 519 matching tokens (84.2%) are inside runs of length $\ge5$; outside those runs only 82 of the remaining 4,857 positions match (1.7%).
+- After $t={\rm obs}+45$ the agreement is 1.7%, and it never returns. The longest identical run anywhere after a flip is 18 tokens (the prompt echo); the identical-suffix length is 0 for every flipped row; the last token differs in every case. Under the stated definition — 20 consecutive identical tokens, or an identical suffix of 20 — the re-synchronisation count is 0/19.
+- The flip-19 and flip-21 variants differ at exactly one token (the $t=19$ gate), agreement 0.9967. All rows that flip at the same gate are <strong>bit-identical</strong> over all 300 tokens. Across the 33 saved rows (11 directions × 3 radii) there are only <strong>three</strong> distinct continuations: the baseline, the alternative entered at $t=21$, and the alternative entered at $t=19$ (one token different from the second).</p>
+<p><strong>What it shows.</strong> The apparent 73% is not a cross-scale anomaly; it is a mixture artefact. Once the mixture is removed, the 14B behaves like the 1.5B literature value: token agreement after a flip is ~9.7% if the shared prompt restatement is counted, and ~1.7% if it is not, against 2.7% quoted for the 1.5B with no re-synchronisation. The correct cross-scale statement is therefore <em>no major difference</em>, not a 27-fold one. What does differ is the <strong>ensemble</strong> behaviour: perturbed runs re-converge to one another almost perfectly (pairwise agreement 0.9967–1.0), because they all enter the same alternative basin, while none re-converges to the baseline.</p>
+<p><strong>What it does not show.</strong> The direct ECDF rests on 19 flipped rows, all from the saved final chunk (directions 989–999); the population curve is inferred, not measured token-by-token. It cannot separate "synonym-like gate token" from "same semantic plan" as causes: <code>"Alright"</code>→<code>"Okay"</code> is a discourse-marker substitution, and <code>" reference"</code>→<code>" research"</code> is a plausible noun substitution, but the downstream essays are different outlines, not paraphrases of the same sentences. Token agreement is not semantic agreement — the two texts are both on-topic reviews, so a human would call them similar even though 90% of tokens differ. And the 2.7% 1.5B number is quoted from the brief, not recomputed on the same protocol here; the comparison is order-of-magnitude, not a controlled cross-model contrast.</p>
+<hr />
+<h2 id="6-figure-ds14free_flipwordpng-what-the-two-competing-tokens-are">6. Figure <code>ds14free_flipword.png</code> — what the two competing tokens are</h2>
+<p><img alt="flipword" src="figures/ds14free_flipword.png" /></p>
+<p><strong>Setup.</strong> The unperturbed A1 top-1 and top-2 tokens at the two gates, decoded with <code>assets/tok_ds14/tokenizer.json</code> (the <code>tokenizers</code> library), with their token ids and the logit margin $m_t$. Below each gate: the number of directions whose <strong>first</strong> mismatch is at that step, per radius, and which token the 11-direction saved sample took.</p>
+<p><strong>Axes.</strong> None (text cards); the numbers are counts of directions.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>gate</th>
+<th>top-1 (baseline)</th>
+<th>top-2 (competitor)</th>
+<th style="text-align: right;">$m_t$ (nats)</th>
+<th>observed first flips at the gate, $\rho=0.05/0.1/0.3$</th>
+<th style="text-align: right;">saved flips taking top-2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$t=19$</td>
+<td><code>" reference"</code> (id 5785)</td>
+<td><code>" research"</code> (id 3412)</td>
+<td style="text-align: right;">$1.144\times10^{-3}$</td>
+<td>11 / 74 / 267</td>
+<td style="text-align: right;">6 / 6</td>
+</tr>
+<tr>
+<td>$t=21$</td>
+<td><code>"Alright"</code> (id 71486)</td>
+<td><code>"Okay"</code> (id 32313)</td>
+<td style="text-align: right;">$9.727\times10^{-5}$</td>
+<td>310 / 379 / 342</td>
+<td style="text-align: right;">13 / 13</td>
+</tr>
+</tbody>
+</table>
+<p>(The saved-flips column is six of six and thirteen of thirteen across all radii; no saved flip took top-1.)</p>
+<p><strong>What is in the figure.</strong>
+- The two gates are ordinary words in an ordinary sentence. The baseline reads <code>"...or professional reference.\n\nAlright, so I need to provide a comprehensive technical review..."</code>. A $t=19$ flip gives <code>"...or professional research.\n\nOkay, so I need to write a comprehensive technical review..."</code>; a $t=21$ flip gives <code>"...professional reference.\n\nOkay, so I need to write..."</code>. Both alternatives then continue with the same essay, which is why the flip-19 and flip-21 texts differ by one token.
+- $t=21$ is the thinner tie by a factor 11.8 ($9.7\times10^{-5}$ vs $1.14\times10^{-3}$ nats), and it is the dominant gate at the two smaller radii (310/321 flips at $\rho=0.05$, 379/453 at $\rho=0.1$). At $\rho=0.3$ the 19 gate gains ground (267 vs 342, still behind 21 but far closer than the 74 vs 379 at $\rho=0.1$).
+- Both gate words are near-synonyms in context (<code>Alright</code>/<code>Okay</code>; <code>reference</code>/<code>research</code> after "professional"), so the first few tokens look almost unchanged: the first 5 post-flip tokens match 100% (flip at 21) or 80% (flip at 19), the first 10 match 90%/80%, the first 20 match 95%/90%. That local agreement is the synonym-like part (these window fractions are for the representative saved rows, dir 989 at $\rho=0.05$ and dir 995 at $\rho=0.1$). It does not persist: the first 50 match only 46%/48%, and after $t={\rm obs}+45$ only 1.7% of the remaining 254 positions match.
+- At $\rho=0.3$ two further gates appear: 33 flips at $t=189$ (<code>" by"</code> vs <code>" about"</code>, $m=2.22\times10^{-3}$ nats) and one at $t=273$ (<code>","</code> vs <code>" today"</code>, $m=1.92\times10^{-2}$ nats). They are 5.3% of the flips and do not change the two-gate picture at the calibrated radius.</p>
+<p><strong>What it shows.</strong> The answer to "what are the two competing tokens": at $t=21$, <code>"Alright"</code> (baseline, id 71486) and <code>"Okay"</code> (id 32313, taken by all 13 saved runs whose first flip is at 21); at $t=19$, <code>" reference"</code> (baseline, id 5785) and <code>" research"</code> (id 3412, taken by all 6 saved runs whose first flip is at 19). Both are single-token, locally interchangeable substitutions at the two smallest logit gaps in the run. They are not random vocabulary: they are the two best candidates of a nearly tied decision.</p>
+<p><strong>What it does not show.</strong> The token identity is directly verified only for the 19 saved flips; for the other 1000-direction runs the evidence is that their first mismatch step is 19 or 21 and that the only tracked competitor at those steps is top-2. A third token overtaking top-1 without top-2 winning cannot be excluded from <code>obs</code> alone, but it is not observed in any saved row. And a one-token substitution at the gate does not imply a one-token change in meaning: §5 shows the essays diverge from token 24 onward.</p>
+<hr />
+<h2 id="7-facts-that-qualify-the-whole-validation">7. Facts that qualify the whole validation</h2>
+<ol>
+<li><strong>Full attention, not window 100.</strong> The 14B A1 run and this free run used full attention because the window setting was silently inactive (transformers gates it on a <code>layer_types</code> field that the stock config does not set). Non-flipped saved rows are bit-identical to the full-attention A1 <code>gen_ids</code>, so the validation is internally consistent, but it is not a window-100 validation. A true-window rerun is being generated; the window can change the margin spectrum, so the $t=19/21$ gate structure may move in that run.</li>
+<li><strong>One prompt, one model, 300 tokens.</strong> The gates are properties of this continuation. A different prompt, or a longer horizon, can expose other near-ties; the late 189/273 gates at $\rho=0.3$ already show that the two-gate picture is radius-dependent.</li>
+<li><strong><code>gen_ids</code> contains only the final chunk.</strong> The writer overwrote its dictionary per chunk, so raw tokens exist for directions 989–999 only. The mapping was verified against <code>obs</code>; the direct post-flip ECDF is 19 rows, and the population post-flip value is an algebraic inference from the stored whole-run means, not a token-level census.</li>
+<li><strong>The summary field is misnamed.</strong> <code>mean_postflip_agreement</code> is the whole-run agreement averaged over all directions, with non-flipped directions at exactly 1.0. It must not be quoted as "agreement after the flip". The corrected values are 0.0969/0.0972/0.0962 (post-flip) and 0.0172/0.0171/0.0171 (after the prompt echo).</li>
+<li><strong>Radii 0.05 and 0.3 are extrapolations.</strong> The response was measured at $r=0.1$ only. The rule is nearly exact at 0.05 and 0.1 and degrades at 0.3 (88.3% classification, 37 wrong steps, 13 large step jumps). The degradation is a statement about linear extrapolation, not about the direction of the effect.</li>
+<li><strong>A flip is a token mismatch, not a semantic failure.</strong> All continuations here remain coherent, on-topic technical reviews. "32% of directions flip" means 32% produce a different token stream, not that 32% produce a wrong or degraded answer.</li>
+<li><strong>Latency uses $t_*=\arg\min r_c$, not first crossing.</strong> Negative latencies at 19 vs 21 are definitional; measured against $T_{\rm pred}$ they are exact. Do not read $\Delta<0$ as a rule failure.</li>
+<li><strong>No post-flip logits.</strong> Once the text diverges, the teacher-forced <code>dm</code> no longer describes the state. The analysis can say where and when a run left the baseline and how far it went, but it cannot compute a causal threshold radius for the new text.</li>
+</ol>
+<hr />
+<h2 id="8-what-follows-directly">8. What follows directly</h2>
+<ul>
+<li>The signed rule, not the sign-blind one, is the correct low-order description: it predicts the flip fraction to 0.5–1.1 percentage points at $\rho\le0.1$ and classifies 96.4–98.2% of directions correctly, while the $|\delta m|$ rule predicts 599/810/969 flips and fails on 49.7/44.4/34.4% of them.</li>
+<li>The first failure of a free-running 14B continuation is a <strong>discrete gate choice</strong>, not a gradual degradation: 94.7% of all flips at $\rho=0.3$, and 100% at the smaller radii, occur at just two tokens, <code>"Alright"</code>→<code>"Okay"</code> and <code>" reference"</code>→<code>" research"</code>.</li>
+<li>The correct post-flip agreement is ~9.7% (or ~1.7% after removing the verbatim prompt restatement), not 73/62/48%. This is the same order as the 2.7% quoted for the 1.5B; there is no large cross-scale difference in post-flip re-synchronisation.</li>
+<li>What <em>is</em> different from a naive "chaos" picture is the ensemble: perturbed runs do not fan out into many texts. They collapse into one alternative continuation, bit-identically, and that continuation is not the baseline. The sensitivity is a switch between a small number of discrete basins.</li>
+<li>The remaining open measurement is the true-window 14B free run. If the window moves the $t=19/21$ gates or changes the post-flip basin structure, the numbers in §1.3 and §5 must be recomputed on that run; the method (signed $r_c$, first-crossing $T_{\rm pred}$, and the $A_{\rm after}$ algebra) carries over unchanged.</li>
+</ul>
+<h2 id="9-reproduce">9. Reproduce</h2>
+<pre><code>python scripts_spark/figs_free_full.py
+</code></pre>
+<p>Writes <code>notebook_big/figures/ds14free_{scorecard,survival,latency,resync,flipword}.png</code> (dpi 170) and <code>notebook_big/figures/ds14free_numbers.json</code>, which contains the full scorecard, the sign-blind comparison, the latency distributions, the survival curves, the per-run post-flip records (including the decoded longest shared run), the population inference, and the decoded gate tokens with their ids. The script reads the two npz files and the summary in place; it does not modify them. The tokenizer is <code>assets/tok_ds14/tokenizer.json</code> via the <code>tokenizers</code> package.</p>
+<hr />
+<h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
+<h2 id="summary_4">Summary</h2>
 <blockquote>
 <p>Same correction note as Part 1: the 14B numbers here are full-attention runs (window inactive). Everything except the flush-ratio row is a same-prompt, same-radius comparison and stands as stated; the flush row is explained by the missing window, and the margin comparison is partially confounded by the window regime (on the 1.5B the window is known to change the margin spectrum). The true-window 14B rerun will close both gaps.</p>
 </blockquote>
 <p>Two models of the same family — 28 layers with $d=1536$, and 48 layers with $d=5120$, roughly eight times the parameters — generate 300 greedy tokens from the identical 65-token prompt with an attention window of 100, and then the same kind of prompt-embedding perturbation (a unit direction times $r=0.1$) is applied and the continuation is teacher-forced. The larger model's decisions are far more fragile: its median top-1/top-2 logit gap is 3.10 nats against 4.78 for the small one, and its thinnest gap (9.7e-5 nats at step 21) is 207 times thinner than the small model's thinnest (2.0e-2 nats at step 123). As a consequence the radius at which a random direction first flips a token — a "flux-tube radius", the largest perturbation size along that direction that leaves the greedy continuation intact — is 13 times smaller in the 14B (median 0.116 vs 1.55 in absolute embedding units, 17 times smaller after dividing by the token-embedding scale), and 464 of 1000 directions flip something at the run radius against 0 of 20. The response itself is <em>not</em> stronger in the bigger model: per unit radius its last-state displacement is 2.3 times smaller in absolute units and 4.6 times smaller relative to the state it lives in, so the fragility is a property of how close the decisions are, not of how hard the perturbation pushes. Two shape features do differ: only the 1.5B shows a window-flush surge at $t=35$ (its last state jumps 1.70x across it, the 14B's 1.11x), and the 1.5B's response decays to 19% of its early level by $t=200$ while the 14B's is still at 68% — though that second difference is partly textual, because the small model falls into a repeating four-token loop at $t=143$ and the large one does not.</p>
 <hr />
 <h2 id="1-the-two-runs-and-every-quantity">1. The two runs and every quantity</h2>
-<h3 id="11-setup_1">1.1 Setup</h3>
+<h3 id="11-setup_2">1.1 Setup</h3>
 <table>
 <thead>
 <tr>
@@ -1740,7 +2289,7 @@ The median local sensitivity is $3.80\times10^{-3}$ nats per unit radius, about 
 </table>
 <p>Two things the table makes explicit. (i) The <strong>prompt is identical but the continuation is not</strong>: the two models generate different tokens, so "$t=21$" is the 22nd token of a different text in each run. Comparable across models are the protocol, the <em>distribution</em> of margins over steps, and the flush step $t^*=W-P=35$ (which follows from the mask, not from the tokens). (ii) The <strong>direction sets are not equally rich</strong>: the 1.5B samples one 20-dimensional input subspace, the 14B samples fifty, and cross-block directions in the 14B are exactly orthogonal while within-block pairs have inner product $-1/19$. An ECDF over 20 directions is a 20-step staircase; an ECDF over 1000 is smooth. That is a sampling-precision difference, not a bias, but it is why the 1.5B curves look coarse.</p>
 <p><em>Note on a quoted number.</em> The analysis brief quotes a 14B median margin of 1.68 nats. The <code>margins</code> array in this npz has median <strong>3.096</strong> (mean 4.996, p10 0.435, min $9.727\times10^{-5}$). I could not reproduce 1.68 from the array (median of the 100 smallest margins is 0.686, of the 20 smallest 0.116, of steps $t<100$ is 4.558). Everything below uses 3.096, which is also the value used in <code>section_a1_deep.md</code>. The quoted minima (9.7e-5 at $t=21$, and 2.0e-2 at $t=123$ for the 1.5B) reproduce exactly.</p>
-<h3 id="12-quantities_1">1.2 Quantities</h3>
+<h3 id="12-quantities_2">1.2 Quantities</h3>
 <p>Notation: $u$ indexes a direction, $t\in\{0,\dots,299\}$ a generated step, $\ell^{(1)}_t,\ell^{(2)}_t$ the top two logits of the unperturbed run, $h_t^{\ell}$ the unperturbed state at saved index $\ell$, $\delta h_t^{\ell}$ the same state under the perturbation.</p>
 <table>
 <thead>
@@ -2274,14 +2823,14 @@ The median local sensitivity is $3.80\times10^{-3}$ nats per unit radius, about 
 <li><strong>One radius.</strong> Both runs use $r=0.1$. The 1.5B's usable range is $r\in[10^{-3},0.1]$ and linearity of the response in $r$ was validated there; the 14B's usable range is quoted as $[0.03,0.3]$, but no 14B linearity curve is included in this npz, so reading $r_*$ as a radius at 14B scale rests on that assumption rather than on a 14B measurement.</li>
 <li><strong>Margins are a prefix property.</strong> A near-tie at $t=21$ of the 14B says that one particular prefix leaves two tokens nearly tied; it is not a statement about the model's general calibration.</li>
 </ol>
-<h2 id="8-what-follows-directly">8. What follows directly</h2>
+<h2 id="8-what-follows-directly_1">8. What follows directly</h2>
 <ul>
 <li>Decision fragility scales up with model size <em>here</em> by two orders of magnitude at the worst step (9.7e-5 vs 2.0e-2 nats), and this is what makes the threshold radius 13–17x smaller. The per-direction response is 2.3x <em>weaker</em> in absolute terms and 4.6x weaker relative to the state, so the effect is on the read-out, not on the propagation.</li>
 <li>The window flush is structurally common ($t^*=35$ in both) but its amplitude is not: 1.70 (1.5B, L27) vs 1.11 (14B, L47) in the 5-step means, and 2.06 vs 0.80 in the single step $t=34\to35$.</li>
 <li>Response persistence over 300 steps is the other clear cross-scale difference: late/early 0.19 (1.5B, last) vs 0.68 (14B, last) — but the 1.5B's number is measured inside a degenerate 4-token loop, so the size of that gap is text-dependent and should not be read as a pure model-size effect.</li>
 <li>Anything that wants to claim "the 14B is more chaotic" has to say <em>which</em> quantity: not the response gain ($G$ is smaller), but the distance from the response to the decision threshold ($m_t$ is far smaller), i.e. the fragility is in the read-out geometry.</li>
 </ul>
-<h2 id="9-reproduce">9. Reproduce</h2>
+<h2 id="9-reproduce_1">9. Reproduce</h2>
 <pre><code>python scripts_spark/figs_cross_scale.py
 </code></pre>
 <p>Writes <code>notebook_big/figures/xscale_{margins,rstar,gain,shape,dm}.png</code> (dpi 150) and <code>notebook_big/figures/xscale_numbers.json</code>, which contains every quantile quoted above, the per-layer flush ratios, the per-layer late/early ratios, and the p10/p50/p90 of both $r_*$ normalizations and both gains. The 1.5B npz is read in place from the main checkout and is not modified.</p>
