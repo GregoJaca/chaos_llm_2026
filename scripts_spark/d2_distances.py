@@ -27,7 +27,7 @@ def pairwise_gpu(x, chunk=512):
     out = torch.empty((n, n), device="cuda", dtype=torch.float32)
     for i in range(0, n, chunk):
         j = min(i + chunk, n)
-        d = torch.cdist(xt[i:j, None, :], xt[None, :, :])  # [c, n]
+        d = torch.cdist(xt[i:j], xt)  # [c, N]
         out[i:j] = d
     return out.cpu().numpy()
 
