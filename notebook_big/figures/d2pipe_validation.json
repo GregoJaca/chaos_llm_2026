@@ -1,0 +1,602 @@
+{
+ "tag": "validation",
+ "theiler": [
+  0,
+  50,
+  500
+ ],
+ "n_eps": 90,
+ "eps_range": [
+  0.01,
+  2.5
+ ],
+ "tol": 0.15,
+ "min_decades": 0.4,
+ "reference_json": "C:\\Users\\hjaca\\research\\chaos_llm_2026\\results\\d2\\d2_raw_vs_shuffled.json",
+ "trajectories": [
+  {
+   "name": "great",
+   "n": 4095,
+   "dim": 1536,
+   "d_typ": 96.02578890498025,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.05120611418245809,
+     "eps_saturation": 0.6465218547605591,
+     "n_valid_pairs": 8382465,
+     "d2_admissible": 1.1813872619737404,
+     "decades_admissible": 1.0777258465941741,
+     "slope_at_depletion": 1.3248697122568591,
+     "slope_at_saturation": 5.791750720565201,
+     "slope_admissible_min": 0.5274534076010049,
+     "slope_admissible_max": 7.026553681098516,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.15,
+     "slope_min": 0.0,
+     "slope_max": 7.026553681098516
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.05025414890561658,
+     "eps_saturation": 0.6467238839314777,
+     "n_valid_pairs": 8178990,
+     "d2_admissible": 1.1712354381581407,
+     "decades_admissible": 1.0777258465941741,
+     "slope_at_depletion": 1.337312211968102,
+     "slope_at_saturation": 5.774655420880038,
+     "slope_admissible_min": 0.5288100308783577,
+     "slope_admissible_max": 7.0012123529986,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.15,
+     "slope_min": 0.0,
+     "slope_max": 7.0012123529986
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.08439666889339573,
+     "eps_saturation": 0.6518585472221743,
+     "n_valid_pairs": 6460215,
+     "d2_admissible": 1.367745370094463,
+     "decades_admissible": 0.8621806772753395,
+     "slope_at_depletion": 2.3897048911799894,
+     "slope_at_saturation": 5.625427605605787,
+     "slope_admissible_min": 0.6234954222162656,
+     "slope_admissible_max": 6.935864626828593,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.15,
+     "slope_min": 0.0,
+     "slope_max": 17.708446214868786
+    }
+   },
+   "slope_ceiling_2log10N": 7.224507812192875,
+   "ndep": {
+    "4095": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "2048": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "1024": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 5.443966234004343,
+    "cdf_fit": 6.650259408357897,
+    "log2_bug": 2.615569984796307,
+    "n": 2500,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 3.713743962572831,
+     "n": 2500
+    },
+    "10": {
+     "d2": 3.187208427841436,
+     "n": 2500
+    },
+    "20": {
+     "d2": 3.149524502816249,
+     "n": 2500
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.015750905572268395,
+    "p05": 0.008669048359784444,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 69,
+    "period_prominence": 0.09789164020968129,
+    "period_rel": 0.09518829733133316,
+    "coverage": 0.8961748633879781
+   },
+   "t4_style": {
+    "d2": 2.9776689162058405,
+    "r2": 0.9998177090599254,
+    "fit_range": [
+     90.51888275146484,
+     103.91098014468238
+    ],
+    "n": 2000,
+    "n_eps_used": 22,
+    "n_fit_points": 8,
+    "fit_decades": 0.05992225639856325,
+    "pairs_in_window": 381513,
+    "theiler": 20
+   },
+   "verdict": "period-69 loop (90% of positions return): D2/TwoNN values are spurious",
+   "runtime_s": 3.994288206100464,
+   "source": "C:\\Users\\hjaca\\research\\chaos_llm_2026\\results\\local_data\\pecs\\great\\last.pt",
+   "state": "h_last",
+   "load_s": 2.4864983558654785,
+   "total_s": 6.480792760848999,
+   "t4_reference": {
+    "key": "great_emu_war_hallucination",
+    "d2": 2.977671602690824,
+    "r2": 0.9998177123695812
+   },
+   "gpu_screen": null
+  },
+  {
+   "name": "cyber",
+   "n": 4095,
+   "dim": 1536,
+   "d_typ": 89.7404160162356,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": 1.088643630504335,
+     "d2_flat": 1.0995677357334586,
+     "decades": 0.538862923297087,
+     "valid": true,
+     "eps_lo": 0.07746826391903776,
+     "eps_hi": 0.2679086566515915,
+     "eps_depletion": 0.048811228516178605,
+     "eps_saturation": 0.6693526017292225,
+     "n_valid_pairs": 8382465,
+     "d2_admissible": 1.1486164688372513,
+     "decades_admissible": 1.1046689927590285,
+     "slope_at_depletion": 1.5590816776014493,
+     "slope_at_saturation": 5.641170027561774,
+     "slope_admissible_min": 0.6777197315952961,
+     "slope_admissible_max": 6.098831700452578,
+     "slope_drift_per_decade": -0.18445090230839126,
+     "tol_used": 0.15,
+     "slope_min": 0.0,
+     "slope_max": 6.098831700452578
+    },
+    "50": {
+     "d2": 1.0775546196323778,
+     "d2_flat": 1.085464928413142,
+     "decades": 0.5119197771322326,
+     "valid": true,
+     "eps_lo": 0.08242652095582793,
+     "eps_hi": 0.2679086566515915,
+     "eps_depletion": 0.04804935699754716,
+     "eps_saturation": 0.6692528875732409,
+     "n_valid_pairs": 8178990,
+     "d2_admissible": 1.1401895727177274,
+     "decades_admissible": 1.1046689927590285,
+     "slope_at_depletion": 1.580226882663389,
+     "slope_at_saturation": 5.6216567346719,
+     "slope_admissible_min": 0.6767088616578967,
+     "slope_admissible_max": 6.067759426957377,
+     "slope_drift_per_decade": -0.1506021927211694,
+     "tol_used": 0.15,
+     "slope_min": 0.0,
+     "slope_max": 6.067759426957377
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.08795124011760476,
+     "eps_saturation": 0.6734854104352113,
+     "n_valid_pairs": 6460215,
+     "d2_admissible": 1.4262377887099387,
+     "decades_admissible": 0.8352375311104849,
+     "slope_at_depletion": 2.9318102400324024,
+     "slope_at_saturation": 5.6546142303432765,
+     "slope_admissible_min": 0.7985853755720989,
+     "slope_admissible_max": 6.094949185346877,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.15,
+     "slope_min": 0.0,
+     "slope_max": 54.174958928188005
+    }
+   },
+   "slope_ceiling_2log10N": 7.224507812192875,
+   "ndep": {
+    "4095": {
+     "d2": 1.088643630504335,
+     "decades": 0.538862923297087
+    },
+    "2048": {
+     "d2": 1.0801218455100399,
+     "decades": 0.5119197771322326
+    },
+    "1024": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 6.2133310846863905,
+    "cdf_fit": 7.58988198103532,
+    "log2_bug": 2.9852136461092234,
+    "n": 2500,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 5.126167096385048,
+     "n": 2500
+    },
+    "10": {
+     "d2": 3.1202287059719085,
+     "n": 2500
+    },
+    "20": {
+     "d2": 2.6992772393458853,
+     "n": 2500
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.01688537294980234,
+    "p05": 0.00951063283575984,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 53,
+    "period_prominence": 0.05769751860186263,
+    "period_rel": 0.05488532781600952,
+    "coverage": 0.9386442355269669
+   },
+   "t4_style": {
+    "d2": 3.8943268376657505,
+    "r2": 0.9999685028695023,
+    "fit_range": [
+     79.18448435465494,
+     86.66515350341797
+    ],
+    "n": 2000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.03920441762525668,
+    "pairs_in_window": 274795,
+    "theiler": 20
+   },
+   "verdict": "period-53 loop (94% of positions return): D2/TwoNN values are spurious",
+   "runtime_s": 3.962505578994751,
+   "source": "C:\\Users\\hjaca\\research\\chaos_llm_2026\\results\\local_data\\pecs\\cyber\\last.pt",
+   "state": "h_last",
+   "load_s": 2.564598798751831,
+   "total_s": 6.527107238769531,
+   "t4_reference": {
+    "key": "cybersecurity_threats_defenses",
+    "d2": 3.8943171450515695,
+    "r2": 0.9999684737534402
+   },
+   "gpu_screen": null
+  },
+  {
+   "name": "interstellar",
+   "n": 1026,
+   "dim": 1536,
+   "d_typ": 125.15064992963738,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6134172343288867,
+     "eps_saturation": 0.8138305272375146,
+     "n_valid_pairs": 525825,
+     "d2_admissible": 8.395672435510388,
+     "decades_admissible": 0.08082943849456284,
+     "slope_at_depletion": 6.129250057800394,
+     "slope_at_saturation": 8.901040164417362,
+     "slope_admissible_min": 6.869403708494545,
+     "slope_admissible_max": 9.159667073748807,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.504946208374484,
+     "slope_min": 0.0,
+     "slope_max": 32.55906569802309
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6290788785999702,
+     "eps_saturation": 0.8193669694041805,
+     "n_valid_pairs": 475800,
+     "d2_admissible": 9.025782935186083,
+     "decades_admissible": 0.1077725846594173,
+     "slope_at_depletion": 6.706908476027646,
+     "slope_at_saturation": 9.198329692380652,
+     "slope_admissible_min": 7.034394860997864,
+     "slope_admissible_max": 9.564426081353972,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.552798686463468,
+     "slope_min": 0.0,
+     "slope_max": 32.559065698023076
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6658095736924167,
+     "eps_saturation": 0.8272954591628284,
+     "n_valid_pairs": 138075,
+     "d2_admissible": 10.800346089566077,
+     "decades_admissible": 0.08082943849456292,
+     "slope_at_depletion": 10.60707182970191,
+     "slope_at_saturation": 10.003513921992711,
+     "slope_admissible_min": 10.203230547457487,
+     "slope_admissible_max": 10.878570186405415,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6451172638872127,
+     "slope_min": -11.172785606480318,
+     "slope_max": 14.440615910674381
+    }
+   },
+   "slope_ceiling_2log10N": 6.022294721551595,
+   "ndep": {
+    "1026": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "513": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "256": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 6.226471745396448,
+    "cdf_fit": 6.333623858445577,
+    "log2_bug": 2.991527116152247,
+    "n": 1026,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 8.602209561899283,
+     "n": 1026
+    },
+    "10": {
+     "d2": 7.905276193050591,
+     "n": 1026
+    },
+    "20": {
+     "d2": 8.6483521734519,
+     "n": 1026
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.41859351852924365,
+    "p05": 0.17031591455486822,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 240,
+    "period_prominence": 0.9321628245104576,
+    "period_rel": 0.9273964762687683,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 9.19472930038214,
+    "r2": 0.9998975196268035,
+    "fit_range": [
+     85.0375912475586,
+     107.44445037841797
+    ],
+    "n": 1026,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.10157303865081306,
+    "pairs_in_window": 73310,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.5913243293762207,
+   "source": "C:\\Users\\hjaca\\research\\chaos_llm_2026\\results\\local_data\\pecs\\interstellar\\last.pt",
+   "state": "h_last",
+   "load_s": 0.49014854431152344,
+   "total_s": 1.081474781036377,
+   "t4_reference": {
+    "key": "interstellar_propulsion_review",
+    "d2": 9.194728753345698,
+    "r2": 0.9998975273546129
+   },
+   "gpu_screen": null
+  },
+  {
+   "name": "astronomy_observations",
+   "n": 1000,
+   "dim": 1536,
+   "d_typ": 120.7664727295705,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6647593497288915,
+     "eps_saturation": 0.8240402563538174,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 10.913625827962058,
+     "decades_admissible": 0.08082943849456292,
+     "slope_at_depletion": 9.610021088675882,
+     "slope_at_saturation": 10.381893687847022,
+     "slope_admissible_min": 10.045139461330582,
+     "slope_admissible_max": 11.025590045683355,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6412968738000331,
+     "slope_min": -8.854223107434265,
+     "slope_max": 12.971202398919985
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6823862337718088,
+     "eps_saturation": 0.8306504625517862,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 11.84667052338582,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 11.321418571613895,
+     "slope_at_saturation": 10.785266114205651,
+     "slope_admissible_min": 11.084245312194719,
+     "slope_admissible_max": 11.905703221250999,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7108002314031489,
+     "slope_min": -8.85422310743428,
+     "slope_max": 12.971202398919985
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6808484181508128,
+     "eps_saturation": 0.8209309723277546,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 12.260607187449017,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 12.36308657819196,
+     "slope_at_saturation": 10.93843881272736,
+     "slope_admissible_min": 11.024387652180701,
+     "slope_admissible_max": 12.611738998441357,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7356364312469409,
+     "slope_min": 0.0,
+     "slope_max": 12.971202398919928
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 6.123837429811249,
+    "cdf_fit": 5.591837146136625,
+    "log2_bug": 2.9422161498979076,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 11.277004031810447,
+     "n": 1000
+    },
+    "10": {
+     "d2": 10.133804006757808,
+     "n": 1000
+    },
+    "20": {
+     "d2": 10.785113772520821,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.5381968225777112,
+    "p05": 0.2805200312443507,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 89,
+    "period_prominence": 0.9832258547174608,
+    "period_rel": 0.9886011481285095,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 11.352906757390002,
+    "r2": 0.9995100130741233,
+    "fit_range": [
+     85.91846099853515,
+     104.08970642089844
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.08332129444423966,
+    "pairs_in_window": 68979,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.6584615707397461,
+   "source": "C:\\Users\\hjaca\\research\\chaos_llm_2026\\results\\local_data\\long_last\\astronomy_observations.npz",
+   "state": "",
+   "load_s": 0.5494341850280762,
+   "total_s": 1.2078979015350342,
+   "t4_reference": null,
+   "gpu_screen": null
+  }
+ ]
+}
