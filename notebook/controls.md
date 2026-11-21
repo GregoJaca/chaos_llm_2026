@@ -134,15 +134,14 @@ positive stretching rate exists in the provably-contracting system.
 
 ![scale](figures_controls/c2b_scale.png)
 
-Mamba-130m (24 layers) vs 370m (48) vs 1.4b (48): the response and its
+Mamba-130m (24 layers) vs 370m/790m/1.4b (48): the response and its
 stretching rate behave the same at every scale ($\lambda$ mean $0$ to
-$-0.003$, transient excursions $\le+0.11$; no size produces a persistent
+$-0.004$, transient excursions $\le+0.21$; no size produces a persistent
 amplified response). Per-prompt thresholds are margin-landscape-dependent
-($r^*$: 4.26 / 0.28 / 1.66 for the txt prompt at 130m/370m/1.4b), and the
-signed threshold rule stays exact at scale: **370m free runs at
-$r=1.4,3,5$: 8/8 flips predicted exactly, 0 false alarms, 0 misses.**
-(790m rerun queued; it failed in an earlier OOM cascade and is being
-repeated.)
+($r^*$ for the txt prompt: 4.26 / 0.28 / 14.3 / 1.66 at
+130m/370m/790m/1.4b), and the signed threshold rule stays exact at scale:
+**370m free runs at $r=1.4,3,5$: 8/8 flips predicted exactly; 790m and
+1.4b: 2/3 and 1/1 exact, 0 false alarms, 0 misses.**
 
 ---
 

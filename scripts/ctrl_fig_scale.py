@@ -26,10 +26,16 @@ def signed_rc(zz, r):
 z130 = np.load(os.path.join(MAM130, "a1i_txt.npz"))
 z370 = np.load(os.path.join(MS, "mamba370_a1i_txt.npz"))
 z14 = np.load(os.path.join(MS, "mamba14_a1i_txt.npz"))
+z790 = np.load(os.path.join(MS, "mamba790_a1i_txt.npz")) if os.path.exists(
+    os.path.join(MS, "mamba790_a1i_txt.npz")) else None
 
 fig, axs = plt.subplots(1, 2, figsize=(12.5, 4.6))
-cols = {"130m": "#0072B2", "370m": "#56B4E9", "1.4b": "#009E73"}
-for z, name, ruse in [(z130, "130m", 0.1), (z370, "370m", 0.1), (z14, "1.4b", 0.1)]:
+cols = {"130m": "#0072B2", "370m": "#56B4E9", "790m": "#009E73", "1.4b": "#CC79A7"}
+models = [(z130, "130m", 0.1), (z370, "370m", 0.1)]
+if z790 is not None:
+    models.append((z790, "790m", 0.1))
+models.append((z14, "1.4b", 0.1))
+for z, name, ruse in models:
     ri = int(np.argmin(np.abs(z["radii"] - ruse)))
     a = np.median(z["dh_norm"][ri, :, -1] / z["radii"][ri], axis=0)
     axs[0].plot(np.arange(len(a)), a, lw=1.2, color=cols[name], label=f"Mamba-{name}")
@@ -50,7 +56,8 @@ axs[1].legend(fontsize=8); axs[1].grid(alpha=0.3)
 fig.tight_layout(); fig.savefig(os.path.join(OUT, "c2b_scale.png"), dpi=190); plt.close(fig)
 
 print("model  layers  margins(min/med)  r*(measured)  a/r t=1..t=299  lambda mean/max")
-for z, name in [(z130, "130m"), (z370, "370m"), (z14, "1.4b")]:
+scale_models = [(z130, "130m"), (z370, "370m")] + ([(z790, "790m")] if z790 is not None else []) + [(z14, "1.4b")]
+for z, name in scale_models:
     rc, rmeas = signed_rc(z, 1.0)
     ri = int(np.argmin(np.abs(z["radii"] - 0.1)))
     a = np.median(z["dh_norm"][ri, :, -1] / z["radii"][ri], axis=0)
@@ -60,18 +67,14 @@ for z, name in [(z130, "130m"), (z370, "370m"), (z14, "1.4b")]:
     print(f"{name:5s} {int(z['layers'][-1])+1:3d}    {z['margins'].min():.4g}/{np.median(z['margins']):.3g}    "
           f"{float(np.min(rc)):.3g} (r={rmeas:g})    {a[1]:.2f}->{a[299]:.2f}    {lam.mean():+.4f}/{lam.max():+.4f}")
 
-# obs/pred for 370 and 1.4b where free runs exist
-for z, name, root in [(z370, "370m", os.path.join(MS, "fr")),
-                      (z14, "1.4b", os.path.join(MS, "fr"))]:
-    for f in sorted(glob.glob(os.path.join(root, f"*{name.replace('.', '')}*" if False else "*.npz"))):
-        base = os.path.basename(f)
-        if not base.startswith("mamba" + name.replace(".", "")) and name != "370m":
-            continue
-        try:
-            rr = float(base.split("_r")[-1][:-4])
-        except ValueError:
-            continue
+# obs/pred for 370, 790 and 1.4b where free runs exist
+fr_files = sorted(glob.glob(os.path.join(MS, "fr", "*.npz")))
+for z, name in [(z370, "mamba370"), (z790, "mamba790"), (z14, "mamba14")]:
+    if z is None:
+        continue
+    for f in [x for x in fr_files if os.path.basename(x).startswith(name)]:
         fr = np.load(f, allow_pickle=True)
+        rr = float(np.atleast_1d(fr["radii"])[0])
         obs = fr["obs"][0]
         rc, _ = signed_rc(z, rr)
         hit = rc <= rr
