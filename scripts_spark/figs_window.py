@@ -8,7 +8,8 @@ Reads (all optional except the six fixed-token sweep runs):
   results_big/ds14/a1_inter_w4096/a1.npz               32 dirs, no clipping
   results_big/ds14/a1_inter_w{50..500}_fixed/a1.npz    240 dirs, 500 tokens
   results_big/ds14/a1_inter_w100_posearly_{0-22,22-44,44-65}/a1.npz
-  results_big/ds14/a1_{short,long}_prompt_w{...}_fixed/a1.npz   (pending)
+  results_big/ds14/a1_{short,long}_prompt_w{50,100,200,300,500}_fixed/a1.npz
+  results_big/ds14/a1_{short,long}_prompt_w4096/a1.npz   (fixed-token source)
   results_big/ds14/a1_inter_w100_cascade/a1.npz         (pending)
   1.5B reference: chaos_llm_2026/results/local_data/flush_sweep/w*/a1.npz
 
@@ -408,41 +409,118 @@ def fig_support(sup, path):
     return info
 
 
+def plen_flush(tb):
+    """Surge ratio at t = W-P in the last saved state, if the kink is visible.
+
+    Same definition as fig_shape: ratio of the median response over the ten
+    steps after the kink to the ten steps before, pooled and per direction.
+    """
+    k, T = tb["W"] - tb["P"], tb["T"]
+    if k - 10 < 0 or k + 10 > T - 1:
+        return dict(kink=k, pooled=None, per_direction=None)
+    x = tb["dh"][:, -1, :] / R
+    pooled = float(np.median(x[:, k + 1:k + 11]) /
+                   max(float(np.median(x[:, k - 10:k])), 1e-300))
+    per = (np.median(x[:, k + 1:k + 11], axis=1) /
+           np.maximum(np.median(x[:, k - 10:k], axis=1), 1e-300))
+    return dict(kink=k, pooled=pooled,
+                per_direction=float(np.median(per)))
+
+
 def fig_plen(plen, path):
-    fig, ax = plt.subplots(figsize=(7.6, 6.2))
+    """State-1 death step vs p_last+(W-P) for the two prompt lengths.
+
+    One panel per prompt.  Marker colour is the window.  Cases with no
+    resolved direction (deaths at or beyond the 300-step horizon) are
+    annotated, not plotted.
+    """
+    fig, axes = plt.subplots(1, 2, figsize=(13.8, 6.0))
+    titles = {
+        "short_prompt": "(a) short prompt, $P=8$: $W\\gg P$ in every window",
+        "long_prompt": "(b) long prompt, $P=190$: $W<P$ (50, 100), "
+                       "$W>P$ (200, 300)",
+    }
+    notes = {
+        "short_prompt": "W=300: $t^*=298$-$299$, 1-2 steps before the end\n"
+                        "W=500: $t^*=492$-$499$, beyond the 300-step run",
+        "long_prompt": "W=50: $t^*=p_{last}-140$, W=100: $p_{last}-90$\n"
+                       "  (positions below $P-W$ are never visible)\n"
+                       "W=200: $p_{last}+10$, W=300: $p_{last}+110$\n"
+                       "W=500: $p_{last}+310>299$: no position ever leaves",
+    }
     info = {}
-    lim = 0
-    for (p, W), run in plen.items():
-        tb = death_table(run, W=W)
-        m = tb["resolved"][1] & (tb["death"][1] >= 0)
-        if not m.any():
-            continue
-        x, y = tb["pred"][1][m], tb["death"][1][m]
-        col = C[W]
-        mk = "o" if p == "short_prompt" else "^"
-        ax.scatter(x, y, s=12, alpha=0.75, color=col, marker=mk, lw=0,
-                   label=f"P={tb['P']}, W={W}" if p == "short_prompt" else None)
-        info[f"{p}_w{W}"] = dict(P=tb["P"], dev=dev_stats(tb["death"][1],
-                                                          tb["pred"][1],
-                                                          tb["resolved"][1]))
-        lim = max(lim, int(np.max(x)))
-    if not info:
-        ax.text(0.5, 0.55, "prompt-length scan PENDING",
-                transform=ax.transAxes, ha="center", va="center",
-                fontsize=10, color="#777777")
-        ax.set_xticks([])
-        ax.set_yticks([])
-    else:
-        lim += 15
-        ax.plot([0, lim], [0, lim], "k--", lw=0.9)
+    for ax, p in zip(axes, ("short_prompt", "long_prompt")):
+        ref = load_run(f"a1_{p}_w4096")
+        mr = ref["d"]["margins"] if ref is not None else None
+        lim = 0
+        for W in WS:
+            run = plen.get((p, W))
+            if run is None:
+                continue
+            tb = death_table(run, W=W)
+            m = tb["resolved"][1] & (tb["death"][1] >= 0)
+            d = dev_stats(tb["death"][1], tb["pred"][1], tb["resolved"][1])
+            x1 = tb["dh"][:, 1, :]
+            e = dict(
+                P=tb["P"], W=W, T=tb["T"],
+                regime=("P>W" if tb["P"] > W else "P<W"),
+                n_dir=int(tb["p_last"].size),
+                p_last=[int(tb["p_last"].min()), int(tb["p_last"].max())],
+                p_last_values=[int(v) for v in np.unique(tb["p_last"])],
+                t1=[int(tb["t1"].min()), int(tb["t1"].max())],
+                n_dead=int((tb["death"][1] >= 0).sum()),
+                n_no_death=int((tb["death"][1] < 0).sum()),
+                n_horizon_ok=int((tb["t1"] <= tb["T"] - 1 -
+                                  MIN_TOKENS_RESOLVED).sum()),
+                floor_contaminated=bool(tb["floors"][1] > 1e-4),
+                n_resolved=int(m.sum()), dev=d,
+                floor=float(tb["floors"][1]),
+                literal=dict(
+                    n_exact_zero=int((x1 <= 0.0).any(1).sum()),
+                    n_below_1e6=int((x1 <= 1e-6).any(1).sum()),
+                    min_over_t_median=float(np.median(x1.min(1)))),
+                flush=plen_flush(tb))
+            if mr is not None:
+                mm = run["d"]["margins"]
+                same = np.array_equal(mm, mr)
+                first = int(np.argmax(mm != mr)) if not same else None
+                e["margins"] = dict(
+                    identical_to_4096=bool(same), first_diff=first,
+                    expected_first_diff=int(W - tb["P"] + 1),
+                    gen_ids_identical=bool(np.array_equal(
+                        run["d"]["gen_ids"], ref["d"]["gen_ids"])),
+                    median=float(np.median(mm)), min=float(mm.min()),
+                    argmin=int(mm.argmin()),
+                    n_below_0p1=int((mm < 0.1).sum()),
+                    n_below_0p5=int((mm < 0.5).sum()))
+            info[f"{p}_w{W}"] = e
+            if m.any():
+                xs, ys = tb["pred"][1][m], tb["death"][1][m]
+                ax.scatter(xs, ys, s=14, alpha=0.8, lw=0, color=C[W],
+                           marker="o" if p == "short_prompt" else "^",
+                           label=f"W={W}: {d['n']} of {e['n_dir']} resolved")
+                lim = max(lim, int(xs.max()), int(ys.max()))
+        lim = max(lim, 40) + 15
+        if p == "long_prompt":
+            lim = max(lim, 310)
+        ax.plot([0, lim], [0, lim], "k--", lw=0.9, zorder=0)
+        if 299 < lim:
+            ax.axvline(299, color="#999999", ls=":", lw=1.0)
+            ax.text(0.985, 0.40, "300-step horizon", transform=ax.transAxes,
+                    ha="right", va="bottom", fontsize=7.0, color="#888888")
         ax.set_xlim(0, lim)
         ax.set_ylim(0, lim)
         ax.set_aspect("equal")
         ax.set_xlabel("predicted death step  $p_{last}+(W-P)$")
         ax.set_ylabel("measured death step (state 1)")
-        ax.legend(loc="upper left", fontsize=7.6)
-    ax.set_title("Prompt-length scan (short/long prompt): not yet available "
-                 "locally — PENDING", fontsize=10.4)
+        ax.set_title(titles[p], fontsize=10.4)
+        ax.legend(loc="upper left", fontsize=7.8)
+        ax.text(0.985, 0.02, notes[p], transform=ax.transAxes,
+                ha="right", va="bottom", fontsize=7.3, family="monospace",
+                bbox=dict(facecolor="white", alpha=0.86, edgecolor="none"))
+    fig.suptitle("State 1 dies at $p_{last}+(W-P)$ for a 8-token and a "
+                 "190-token prompt; the only failures are at the horizon",
+                 fontsize=11.5, y=1.0)
     fig.tight_layout()
     fig.savefig(path, dpi=170, bbox_inches="tight")
     plt.close(fig)

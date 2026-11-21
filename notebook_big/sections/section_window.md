@@ -1,4 +1,4 @@
-# Part window program. The 14B death law is exact to the token; the cascade line is only an upper bound
+# Part window program. The 14B death law is exact to the token for prompts of 8 and 190 tokens; the cascade line is only an upper bound
 
 ## Summary
 
@@ -43,9 +43,23 @@ at $W=50$ the prompt does not fit and the $t=21$ tie is destroyed. Every
 window shows a flush surge one step after $t=W-P$: x2.19 at $W=100$ (the
 1000-direction core run gave x2.20), x2.00 at $W=150$, x2.59 at $W=200$,
 x3.95 at $W=300$, x2.41 at $W=500$ (the 1.5B reference was x1.73).
-The prompt-length scan and the 1500-token cascade run are **pending** (not
-yet local); their figures are placeholders and the script processes them
-automatically if the files appear.
+Two further scans close the remaining free parameters. A prompt-length scan
+(the same construction with an 8-token prompt and a 190-token prompt, 120
+directions each, $W=50,100,200,300,500$) gives the same equality:
+$t^*=p_{\rm last}+(W-P)$ predicts the death step with $P$ read from the
+tokenizer, not guessed. With $P=8$, all 240 directions over $W=50,100$ are
+exact, and at $W=200$ 100 of the 112 resolved directions are exact with the
+other 12 one step late. With $P=190$ and $P>W$ ($W=50,100$) the prompt does
+not fit at $t=0$, yet 180 of 240 directions are exact and all 240 are within
+two tokens; for $W=200,300$ ($P<W$) the deaths again sit on the line (all 120
+at $W=300$ exactly on it). The only failures are at the 300-step horizon:
+$W-P=292$ ($P=8,W=300$) and $W-P=310,492$ ($W=500$) put the predicted death
+at or beyond the last step, and then the run, not the model, sets the limit —
+the floor rule degenerates there and its "deaths" are crossings of a
+contaminated floor. Margins of the fixed tokens follow the same onset rule as
+the 65-token prompt (bit-identical through $t=W-P$, first change at $W-P+1$)
+and, for the short prompt, the same monotone approach to the full-attention
+value. The 1500-token cascade run is still pending.
 
 ---
 
@@ -293,35 +307,170 @@ in the early groups are floor-crossing jitter, not a second mechanism.
 
 ---
 
-## 5. Figure `ds14win_plen.png` — prompt-length scan: PENDING
+## 5. Figure `ds14win_plen.png` — prompt length only shifts the death step
 
 ![prompt length](figures/ds14win_plen.png)
 
-**Setup.** The intended figure: for `short_prompt` ($P\approx6$) and
-`long_prompt` ($P\approx250$) at each $W$, measured state-1 death versus
-$p_{\rm last}+(W-P)$, with the $P<W$, $P\approx W$ and $P>W$ regimes
-annotated. The 12 files
-(`results_big/ds14/a1_short_prompt_w{W}_fixed/a1.npz` and
-`a1_long_prompt_w{W}_fixed/a1.npz`, $W=50\ldots500$) are **not yet local**.
-The figure is a placeholder; `figs_window.py` detects and processes them
-automatically when they arrive.
+**Setup.** Two prompt lengths, each with its own no-clipping reference. The
+short prompt is `Explain how tides work.`, **$P=8$ tokens**; the long prompt
+is a review of climate physics, **$P=190$ tokens** (both read from
+`meta.json`; the brief's estimates of $\approx6$ and $\approx250$ were not
+exact). For each prompt, five true sliding-window runs
+$W=50,100,200,300,500$ (no $W=150$), 120 directions at $r=0.1$, 300
+teacher-forced tokens fixed from that prompt's own $W=4096$ run
+(`a1_short_prompt_w4096`, `a1_long_prompt_w4096`), the same 16 saved states
+and the same floor/death rule as §1.3. The five windows of a prompt share
+identical `gen_ids` with their reference (checked), so there is no text
+divergence. A direction's $p_{\rm last}$ is the largest perturbed prompt
+position. Directions are built in blocks of 20 that share their 20 prompt
+positions (only the coordinates inside them differ), so $p_{\rm last}$ takes
+one value per block: 1 block at 6 and 5 blocks at 7 for the short prompt
+(20 directions at 6, 100 at 7), and 164, 168, 173, 174, 182, 186 (20
+directions each) for the long prompt. Panel (a) is the short
+prompt, panel (b) the long one; colour is the window, and circle/triangle
+distinguishes the prompt, but the panels never mix. Only runs with at least
+one resolved direction are plotted.
 
-**What the completed scan would test, and what is already known.** The
-formula predicts three regimes. For $P<W$ every prompt position is visible at
-$t=0$ and dies at $p+(W-P)$, so the deaths spread over $W-P$ steps and are
-late. For $P\approx W$ the spread collapses to a few steps around $W-P\approx0$.
-For $P>W$ the earliest $P-W$ prompt positions are already outside the window
-at $t=0$: their formula value is negative, so they are dead from the first
-generated step, while the remaining positions die at $p+(W-P)\in[0,W-1]$.
-The already-available $W=50$ run is exactly the $P>W$ case ($P=65>50$): its
-deaths span $40$–$49$, and the baseline margin trace differs from the
-no-clipping reference from $t=0$ (not from $W-P$), because the first 16
-prompt tokens are invisible from the start. This is the qualitative
-prediction the pending short/long scan will quantify.
+**Axes.** $x$: predicted death step $p_{\rm last}+(W-P)$, with $P$ from
+`meta.json`. $y$: measured state-1 death (first step at the floor). Dashed
+identity line; equal aspect. Panel (b) marks the 300-step horizon
+($t=299$): a predicted death beyond it cannot be observed in these runs.
 
-**What it does not show.** Everything quantitative: the actual short and long
-$P$, the exact death distribution, and whether the flush survives when the
-prompt is much shorter or much longer than the window.
+**Numbers.**
+
+| prompt | $P$ | $W$ | $W-P$ | $p_{\rm last}$ | $t^*=p_{\rm last}+(W-P)$ | died at $t^*$ | resolved | exact | within ±2 | max dev |
+|---|---:|---:|---:|---|---:|---:|---:|---:|---:|---:|
+| short | 8 | 50 | +42 | 6–7 | 48–49 | 120 / 120 | 120 | 120 | 120 | 0 |
+| short | 8 | 100 | +92 | 6–7 | 98–99 | 120 / 120 | 120 | 120 | 120 | 0 |
+| short | 8 | 200 | +192 | 6–7 | 198–199 | 120 / 120 | 112 | 100 | 112 | +1 |
+| short | 8 | 300 | +292 | 6–7 | 298–299 | at horizon | 0 | — | — | — |
+| short | 8 | 500 | +492 | 6–7 | 498–499 | none | 0 | — | — | — |
+| long | 190 | 50 | −140 | 164–186 | 24–46 | 120 / 120 | 120 | 100 | 120 | +1 |
+| long | 190 | 100 | −90 | 164–186 | 74–96 | 120 / 120 | 120 | 80 | 120 | +2 |
+| long | 190 | 200 | +10 | 164–186 | 174–196 | 120 / 120 | 27 | 26 | 27 | +1 |
+| long | 190 | 300 | +110 | 164–186 | 274–296 | 120 / 120 | 5 | 5 | 5 | 0 |
+| long | 190 | 500 | +310 | 164–186 | 474–496 | none | 0 | — | — | — |
+
+`resolved`, `exact`, `within ±2` and `max dev` use the §1.3 resolution guard
+(pre-death signal at least $10\times$ the floor and 11 steps left); `died at
+$t^*$` counts all 120 directions regardless of the guard. The two rows with
+0 resolved are horizon statements, not measured deaths.
+
+*Short prompt.* With $P=8$, $W=50$ gives $t^*=p_{\rm last}+42=48$–$49$, not
+$p_{\rm last}+44$: the window regime is indeed $W\gg P$, and the predicted
+offset is larger than guessed. Every one of the 120 directions dies exactly
+on the line at $W=50$ and at $W=100$ (240/240 exact, no scatter). At $W=200$
+all 120 die at 199: 100 of the 112 resolved directions exactly and the other
+12 one step late (their $t^*=198$). At $W=300$ the predicted death is
+298–299 — the last
+one or two steps of the run — so the 30-step excursion test cannot be
+applied; the per-state floor estimate is also contaminated ($4.2\times
+10^{-4}$ instead of $3.0\times10^{-5}$, because the response never reaches
+the floor inside the run), and the 120 "deaths" the rule returns are not
+usable. At $W=500$ the prompt would leave the window at $t=492$–$499$,
+beyond the 300-step run: the state-1 response is still $1.1\times10^{-3}$ at
+$t=299$ (literal minimum over $t$: $7.3\times10^{-4}$), so no death occurs;
+the 102 crossings reported by the rule are crossings of the contaminated
+floor ($7.7\times10^{-4}$). In both cases the horizon, not the law, sets the
+limit.
+
+*Long prompt, $P>W$ ($W=50,100$).* The prompt does not fit: at $t=0$ the
+window already excludes prompt positions $0\ldots140$ ($W=50$) or
+$0\ldots90$ ($W=100$), so the model sees only the last $W-1$ prompt
+positions plus generated tokens. The law as stated nevertheless applies
+without correction, because it refers only to $p_{\rm last}$: every
+direction has $p_{\rm last}=164$–$186>P-W$, hence its last perturbed
+position is visible at $t=0$ and $t^*=p_{\rm last}-140=24$–$46$ (or
+$p_{\rm last}-90=74$–$96$) is positive. Measured: 100 of 120 directions
+exact at $W=50$ (the other 20 are one token late) and 80 of 120 exact at
+$W=100$ (20 one step late and 20 two steps late); all 120 are within two
+tokens in both runs. There is **no systematic early, late, or absent death**:
+the deaths sit on the line. What the non-fitting window changes is the amplitude
+— the state-1 response starts at $3.4\times10^{-3}$ ($W=50$) or
+$7.0\times10^{-3}$ ($W=100$) instead of $6.8\times10^{-3}$ ($W=500$) because
+most of each direction's positions are already invisible — and the flush
+kink: $t=W-P=-140$ or $-90$ lies before the first generated token, so the
+flush happens inside the prompt and there is no surge in the generated trace
+(the surge ratios are undefined here).
+
+*Long prompt, $P<W$.* At $W=200$ ($W-P=10$) all 120 directions die at
+175–196; 100 are exact and 20 (the $p_{\rm last}=164$ block, $t^*=174$) one
+token late, and 26 of the 27 resolved are exact. Only 27 pass the resolution
+guard, because the pre-death response
+over $[t^*-10,t^*]$ is $2.3\times10^{-4}$, below the $10\times$floor
+threshold ($3.0\times10^{-4}$): the surviving perturbed token is already
+$\approx200$ positions behind the query. At $W=300$ ($W-P=110$) all 120
+directions die exactly at $274$–$296$ — the death groups are precisely the
+six $p_{\rm last}$ groups shifted by 110 — though only 5 are "resolved":
+the group at 292/296 is within 11 steps of the end, and the pre-death
+response is $1.9\times10^{-4}$ against a $4.3\times10^{-4}$ threshold. The
+drop at $t^*$ itself is $1.6\times10^{-4}\to5.4\times10^{-5}$, so the death
+is real; the strict guard rejects it, it is not a different mechanism.
+$W=500$ is the no-op case: $W\ge P+T=490$, so no prompt position ever leaves
+the window at any of the 300 steps. The state-1 response is still
+$2.2\times10^{-3}$ at $t=299$, the floor estimate ($6.9\times10^{-4}$) is
+signal, 42 directions never cross it and 78 cross only spuriously, and the
+margin trace is bit-identical to the $W=4096$ reference.
+
+**What it shows.** Prompt length only shifts $t^*$. The equality holds with
+$P$ read from the tokenizer: 240/240 short-prompt directions exact at
+$W=50,100$, 180/240 long-prompt directions exact over the same windows and
+240/240 within two tokens. The regime that looked most likely to break the
+law — the prompt not fitting the window — does not break it, because the law
+concerns the last perturbed position, which is still inside the window when
+$p_{\rm last}>P-W$; deaths are neither early nor late. The law fails only
+where it cannot be measured: when $W-P$ puts $t^*$ at or beyond the horizon.
+
+### 5.1 Margins of the fixed tokens
+
+The same fixed-token comparison as §7, each prompt against its own $W=4096$
+reference:
+
+| prompt | $W$ | median margin | minimum (step) | steps $<0.1$ | steps $<0.5$ | first step differing from 4096 |
+|---|---:|---:|---:|---:|---:|---:|
+| short | 50 | 1.542 | 0.0113 (61) | 11 | 72 | 43 |
+| short | 100 | 2.134 | 0.0198 (168) | 10 | 57 | 93 |
+| short | 200 | 2.801 | 0.0060 (297) | 9 | 49 | 193 |
+| short | 300 | 4.474 | 0.0087 (222) | 8 | 32 | 293 |
+| short | 500 | 4.507 | 0.0087 (222) | 8 | 31 | none (identical) |
+| short | 4096 | 4.507 | 0.0087 (222) | 8 | 31 | — |
+| long | 50 | 1.635 | 0.0033 (71) | 12 | 58 | 0 |
+| long | 100 | 1.197 | 0.0367 (94) | 9 | 66 | 0 |
+| long | 200 | 0.722 | 0.0014 (167) | 30 | 114 | 11 |
+| long | 300 | 1.346 | 0.0016 (270) | 17 | 72 | 111 |
+| long | 500 | 2.471 | 0.0020 (165) | 9 | 45 | none (identical) |
+| long | 4096 | 2.471 | 0.0020 (165) | 9 | 45 | — |
+
+For the short prompt the $W$-dependence is the same in kind as for the
+65-token interstellar prompt: the trace is bit-identical to the reference
+through $t=W-P$ and first differs at $t=W-P+1$ (43, 93, 193, 293 for
+$W=50,100,200,300$), the median margin rises monotonically toward the
+full-attention value (1.542 → 2.134 → 2.801 → 4.474 → 4.507, reference
+4.507), and the count below 0.5 nats falls (72 → 57 → 49 → 32 → 31, reference
+31). At $W=500$, $W\ge P+T=308$, so the window is a no-op and the trace is
+bit-identical to full attention. The difference from the interstellar scan is
+only in level — that scan goes 1.135 → 2.463 with reference 2.989 and 120 → 62
+near-ties against 63 — because the prompt and the continuation differ; the
+onset rule and the direction of the change are identical.
+
+The long prompt does **not** follow that pattern. $W=50$ and $W=100$ differ
+from $t=0$ (the prompt does not fit), and the median margin is not monotone
+in $W$: 1.635, 1.197, 0.722, 1.346, 2.471, with the minimum at $W=200$
+(114 of 300 steps below 0.5 nats). So "a narrower window flattens the
+decisions" transfers from the short and interstellar prompts to the long one
+only in the onset rule (first change at $W-P+1$, or at $t=0$ when $P>W$), not
+in the sense of the change. $W=500$ again reproduces the reference
+bit-for-bit.
+
+**What it does not show.** The scan has no window within a few tokens of $P$:
+with $P=8$ and $P=190$ against $W\in\{50,100,200,300,500\}$, the $P\approx W$
+regime is not sampled. It cannot observe the death of prompt positions with
+$p<P-W$ when the prompt does not fit: those are already invisible at $t=0$,
+the law assigns them $t^*<0$, and no measurement here can confirm it. It
+cannot separate the floor crossing from a true zero (the same fp32 residue as
+§1.3; 0 of 1200 plen directions reach exactly 0 or $10^{-6}$), and the
+$W=300$/$W=500$ rows are horizon-limited statements about the floor rule, not
+measurements of the law.
 
 ---
 
@@ -460,20 +609,21 @@ not the law.
 
 ---
 
-## 9. What is pending
+## 9. What remains
 
-Two items from the brief are not yet available locally:
+One item from the brief is not yet available locally:
 
-1. **Prompt-length scan** (`a1_short_prompt_w*_fixed`, `a1_long_prompt_w*_fixed`):
-   figure placeholder `ds14win_plen.png`; the script will populate it and add
-   the numbers to `ds14win_numbers.json` when the files appear. §5 states the
-   three predicted regimes and the already-observed $P>W$ case ($W=50$).
-2. **1500-token cascade** (`a1_inter_w100_cascade`): panel (b) of
+1. **1500-token cascade** (`a1_inter_w100_cascade`): panel (b) of
    `ds14win_cascade.png` is a placeholder; it will show states 0–14 at
    $W=100$ with the same bound line. It is the only way to follow the
    cascade beyond the plotted range without the 500-token horizon; the
    present 14B cascade is plotted to $l=4$ for $W=100$ and $l=2$ for $W=200$.
 
-Everything else in the brief is complete. The script `scripts_spark/figs_window.py`
-detects each file independently, so a partial later arrival produces the
-corresponding figure without touching the rest.
+The prompt-length scan of §5 is complete: all ten runs
+($P=8$ and $P=190$; $W=50,100,200,300,500$) are local and processed. The scan
+does not include $W=150$: with $P=8$ or $P=190$ it would only repeat the
+$P<W$ or $P>W$ regime already sampled and would not reach $P\approx W$.
+
+Everything else in the brief is complete. The script
+`scripts_spark/figs_window.py` detects each file independently, so a partial
+later arrival produces the corresponding figure without touching the rest.
