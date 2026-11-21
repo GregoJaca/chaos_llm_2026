@@ -197,6 +197,46 @@ part: response size and its Jacobian spectrum (Part 4), the window flush
 law (transformer-specific), and the phase-controlled positive control
 (Part 6).
 
+### Part 3b — One teacher-forced pass is an *exact* flip simulator for the control too; and its directions are anisotropic too
+
+Two more LLM findings transferred to the control. A *teacher-forced (TF)
+pass* feeds the model the baseline token sequence with a perturbed prompt
+embedding; the *free run* decodes autoregressively. For DeepSeek it was
+established that one TF pass predicts the free run exactly up to the first
+flip (29/29 exact, 0 false positives). Here: Mamba-130m, txt prompt, 20
+directions, radii $0.3\dots5$, 300 tokens, both passes per direction-run.
+
+![tfp](figures_controls/c3b_tfp.png)
+
+Scorecard over 100 direction-runs: **97 bit-identical (no flip in either
+pass), 3 flips — all 3 predicted exactly, step *and* token, 0 false alarms,
+0 misses.** The three $r=5$ flips are direction 15 at $t=0$, direction 10 at
+$t=3$ (token 1984), direction 17 at $t=21$ (token 310); at $r\le3$ nothing
+flips, consistent with the measured threshold $r^*=4.26$.
+
+**Verdict.** TF-exactness is a property of the argmax decision boundary,
+not of chaos and not of attention: the control reproduces DeepSeek's 29/29
+scorecard at its own radii. TF remains a legitimate cheap simulator for
+response/threshold work — but it carries no information about the dynamics
+*between* flips, which is where the models actually differ (Parts 2 and 4).
+
+![dirs](figures_controls/c3b_dirs.png)
+
+Per-direction response gain $g_u=\mathrm{median}_{t\in[1,50]}\|\delta
+h_L(t,u)\|/r$ at the last measured layer, $r=0.1$ (sorted, log scale).
+The control has a real gain spread — **×6.5** (min 0.27, max 1.78) — so
+direction anisotropy exists without attention and without chaos (it is
+Part 4's non-normality: $\sigma_{\max}\approx1$ while the median direction
+contracts). But the transformer's spread in the same window is ×21 (×11.5
+over the full horizon, consistent with the established ×7–12), and its
+direction ordering is more time-stable (Spearman $\rho = 0.92$ between
+$t\in[1,50]$ and $t\in[150,299]$, vs $\rho = 0.77$ for the control).
+
+**Verdict.** "Directions are not equivalent" is *not* an attention/chaos
+signature by itself — a qualifier for the LLM result. What discriminates is
+the *size* of the spread and its time-stability, both still larger for the
+transformer.
+
 ---
 
 ## Part 4 — The state-level story: measured, not just proved
