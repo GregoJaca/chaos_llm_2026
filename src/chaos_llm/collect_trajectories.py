@@ -20,13 +20,22 @@ def main():
         pids=prompt_ids(tok,text); P=pids.shape[1]
         with torch.inference_mode(): emb=model.get_input_embeddings()(pids)
         past=None; next_ids=None; gen=[]; hs={l:[] for l in layers}; full_hs=[]
+        mamba_cache=False; pos=P
         for step in range(args.max_new_tokens):
             with torch.inference_mode():
                 if past is None:
                     o=model(inputs_embeds=emb,use_cache=True,output_hidden_states=True,return_dict=True)
+                    if 'past_key_values' in o:
+                        past=o.past_key_values
+                    elif getattr(o,'cache_params',None) is not None:
+                        past=o.cache_params; mamba_cache=True
+                elif mamba_cache:
+                    o=model(input_ids=next_ids,cache_params=past,
+                            cache_position=torch.tensor([pos],device=next_ids.device),
+                            use_cache=True,output_hidden_states=True,return_dict=True)
+                    pos+=1
                 else:
                     o=model(input_ids=next_ids,past_key_values=past,use_cache=True,output_hidden_states=True,return_dict=True)
-            past=o.past_key_values
             for l in layers: hs[l].append(o.hidden_states[l][0,-1].detach().float().cpu().numpy().astype(np.float32))
             full_hs.append(o.hidden_states[-1][0,-1].detach().float().cpu().numpy().astype(np.float32))
             nxt=torch.argmax(o.logits[0,-1]).view(1,1)

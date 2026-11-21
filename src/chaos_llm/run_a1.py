@@ -38,6 +38,10 @@ def main():
     ap.add_argument("--fixed-tokens-from", default="",
                     help="npz file (or dir containing a1.npz) whose prompt_ids/gen_ids are reused")
     ap.add_argument("--layers", default="0,7,14,21,27")
+    ap.add_argument("--inbatch-ref", action="store_true",
+                    help="add an r=0 reference row to every perturbed batch and measure all "
+                         "differences in-batch (exact numerical floor); batch shape is kept "
+                         "constant by padding with reference rows")
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
@@ -82,19 +86,28 @@ def main():
 
     Efull = full_embeddings(model, pids, gen_ids)
     am = band_mask4d(Efull.shape[1], args.window, dtype=Efull.dtype) if args.window4d else (hard_window_mask(Efull.shape[1], args.window) if args.hard_window else torch.ones((1, Efull.shape[1]), dtype=torch.long, device="cuda"))
-    with torch.inference_mode():
-        out0 = model(inputs_embeds=Efull, attention_mask=am,
-                     output_hidden_states=True, use_cache=False)
-        logits0 = out0.logits[0]  # [L,V]
-        pos = torch.arange(P - 1, P + T - 1, device="cuda")
-        z0 = logits0[pos]  # [T,V]
-        top2 = torch.topk(z0, k=2, dim=-1)
-        margins = (top2.values[:, 0] - top2.values[:, 1]).detach().float().cpu().numpy().astype(np.float32)
-        top1 = top2.indices[:, 0]
-        top2i = top2.indices[:, 1]
-        h0 = {l: out0.hidden_states[l][0, P:P + T].detach() for l in layers}  # [T,D]
-        norm_h0 = np.stack([h0[l].norm(dim=-1).float().cpu().numpy() for l in layers])  # [n_layers,T]
-        del out0, logits0, z0, top2
+
+    inb = args.inbatch_ref
+    margins = top1 = top2i = None
+    h0 = None
+    norm_h0 = None
+    if not inb:
+        with torch.inference_mode():
+            out0 = model(inputs_embeds=Efull, attention_mask=am,
+                         output_hidden_states=True, use_cache=False)
+            logits0 = out0.logits[0]  # [L,V]
+            pos = torch.arange(P - 1, P + T - 1, device="cuda")
+            z0 = logits0[pos]  # [T,V]
+            top2 = torch.topk(z0, k=2, dim=-1)
+            margins = (top2.values[:, 0] - top2.values[:, 1]).detach().float().cpu().numpy().astype(np.float32)
+            top1 = top2.indices[:, 0]
+            top2i = top2.indices[:, 1]
+            h0 = {l: out0.hidden_states[l][0, P:P + T].detach() for l in layers}  # [T,D]
+            norm_h0 = np.stack([h0[l].norm(dim=-1).float().cpu().numpy() for l in layers])  # [n_layers,T]
+            del out0, logits0, z0, top2
+        top1v = top1.view(1, T, 1)
+        top2v = top2i.view(1, T, 1)
+        m_t = torch.as_tensor(margins, device="cuda")
 
     simplex, sub = make_directions(args.num_directions, P, D, args.seed)
     sub_t = torch.as_tensor(sub, device="cuda", dtype=torch.long)
@@ -105,39 +118,102 @@ def main():
     cos = np.zeros((nr, K, nl, T), dtype=np.float32)
     dh_last = np.zeros((nr, min(3, K), T, D), dtype=np.float32)
 
-    top1v = top1.view(1, T, 1)
-    top2v = top2i.view(1, T, 1)
-    m_t = torch.as_tensor(margins, device="cuda")
+    pos = torch.arange(P - 1, P + T - 1, device="cuda")
+
+    def run_batch(E, B):
+        """One forward of a batch that contains the reference in row 0."""
+        with torch.inference_mode():
+            out = model(inputs_embeds=E,
+                        attention_mask=(am.expand(B, -1, -1, -1) if args.window4d else torch.ones((B, E.shape[1]), dtype=torch.long, device="cuda")),
+                        output_hidden_states=True, use_cache=False)
+        return out
+
+    def ref_row_stats(out, B):
+        """margins/top-1/top-2 and hidden states of the in-batch reference row."""
+        zref = out.logits[0, pos, :]  # [T,V]
+        top2r = torch.topk(zref, k=2, dim=-1)
+        mrg = (top2r.values[:, 0] - top2r.values[:, 1]).detach().float().cpu().numpy().astype(np.float32)
+        hs_ref = {l: out.hidden_states[l][0, P:P + T].detach() for l in layers}
+        return mrg, top2r.indices[:, 0], top2r.indices[:, 1], hs_ref
 
     for ri, r in enumerate(radii):
-        for start in range(0, K, args.batch_dirs):
-            idx = list(range(start, min(start + args.batch_dirs, K)))
-            B = len(idx)
-            E = Efull.expand(B, -1, -1).clone()
-            for j, di in enumerate(idx):
-                delta = torch.zeros(P * D, device="cuda", dtype=torch.float32)
-                delta.index_copy_(0, sub_t, torch.as_tensor(simplex[di], device="cuda") * r)
-                E[j, :P] += delta.view(P, D)
-            with torch.inference_mode():
-                out = model(inputs_embeds=E,
-                            attention_mask=(am.expand(B, -1, -1, -1) if args.window4d else torch.ones((B, E.shape[1]), dtype=torch.long, device="cuda")),
-                            output_hidden_states=True, use_cache=False)
-            zb = out.logits[:, pos, :]  # [B,T,V]
-            z1 = torch.gather(zb, 2, top1v.expand(B, -1, -1)).squeeze(-1)
-            z2 = torch.gather(zb, 2, top2v.expand(B, -1, -1)).squeeze(-1)
-            dm[ri, idx] = ((z1 - z2) - m_t[None, :]).detach().float().cpu().numpy()  # [B,T]
-            del zb, z1, z2, out.logits
-            for li, l in enumerate(layers):
-                h = out.hidden_states[l][:, P:P + T, :]  # [B,T,D]
-                diff = h - h0[l][None]
-                dh_norm[ri, idx, li] = diff.norm(dim=-1).detach().float().cpu().numpy()
-                cos[ri, idx, li] = torch.nn.functional.cosine_similarity(
-                    h, h0[l][None].expand_as(h), dim=-1).detach().float().cpu().numpy()
-            for j, di in enumerate(idx):
-                if di < 3:
-                    dh_last[ri, di] = (out.hidden_states[layers[-1]][j, P:P + T] - h0[layers[-1]]).detach().float().cpu().numpy()
-            del out, E
-            torch.cuda.empty_cache()
+        if inb:
+            chunk = max(2, int(args.batch_dirs))
+            nb = -(-K // chunk)
+            for b in range(nb):
+                idx = [b * chunk + j for j in range(chunk)]
+                B = chunk + 1  # constant batch shape across all batches/radii
+                E = Efull.expand(B, -1, -1).clone()
+                for j, di in enumerate(idx):
+                    if di >= K:
+                        continue  # padding slot stays identical to the reference
+                    delta = torch.zeros(P * D, device="cuda", dtype=torch.float32)
+                    delta.index_copy_(0, sub_t, torch.as_tensor(simplex[di], device="cuda") * r)
+                    E[j + 1, :P] += delta.view(P, D)
+                out = run_batch(E, B)
+                if margins is None:  # first batch of the whole run defines the reference stats
+                    margins, top1, top2i, hs_ref = ref_row_stats(out, B)
+                    h0 = hs_ref
+                    norm_h0 = np.stack([h0[l].norm(dim=-1).float().cpu().numpy() for l in layers])
+                    top1v = top1.view(1, T, 1)
+                    top2v = top2i.view(1, T, 1)
+                    m_t = torch.as_tensor(margins, device="cuda")
+                zref = out.logits[0, pos, :]  # reference row of THIS batch
+                z1r = zref.gather(1, top1.view(T, 1)).squeeze(-1)
+                z2r = zref.gather(1, top2i.view(T, 1)).squeeze(-1)
+                m_in = (z1r - z2r).detach()
+                zb = out.logits[1:, pos, :]  # [chunk,T,V]
+                z1 = torch.gather(zb, 2, top1v.expand(chunk, -1, -1)).squeeze(-1)
+                z2 = torch.gather(zb, 2, top2v.expand(chunk, -1, -1)).squeeze(-1)
+                dmr = ((z1 - z2) - m_in[None]).detach().float().cpu().numpy()  # [chunk,T]
+                for j, di in enumerate(idx):
+                    if di < K:
+                        dm[ri, di] = dmr[j]
+                for li, l in enumerate(layers):
+                    href = out.hidden_states[l][0, P:P + T]  # [T,D]
+                    h = out.hidden_states[l][1:, P:P + T, :]  # [chunk,T,D]
+                    diff = h - href[None]
+                    for j, di in enumerate(idx):
+                        if di < K:
+                            dh_norm[ri, di, li] = diff[j].norm(dim=-1).detach().float().cpu().numpy()
+                            cos[ri, di, li] = torch.nn.functional.cosine_similarity(
+                                h[j], href.expand_as(h[j]), dim=-1).detach().float().cpu().numpy()
+                hlast_ref = out.hidden_states[layers[-1]][0, P:P + T]  # [T,D]
+                for j, di in enumerate(idx):
+                    if di < 3:
+                        dh_last[ri, di] = (out.hidden_states[layers[-1]][j + 1, P:P + T]
+                                           - hlast_ref).detach().float().cpu().numpy()
+                del out, E, zb, z1, z2, zref
+                torch.cuda.empty_cache()
+        else:
+            for start in range(0, K, args.batch_dirs):
+                idx = list(range(start, min(start + args.batch_dirs, K)))
+                B = len(idx)
+                E = Efull.expand(B, -1, -1).clone()
+                for j, di in enumerate(idx):
+                    delta = torch.zeros(P * D, device="cuda", dtype=torch.float32)
+                    delta.index_copy_(0, sub_t, torch.as_tensor(simplex[di], device="cuda") * r)
+                    E[j, :P] += delta.view(P, D)
+                with torch.inference_mode():
+                    out = model(inputs_embeds=E,
+                                attention_mask=(am.expand(B, -1, -1, -1) if args.window4d else torch.ones((B, E.shape[1]), dtype=torch.long, device="cuda")),
+                                output_hidden_states=True, use_cache=False)
+                zb = out.logits[:, pos, :]  # [B,T,V]
+                z1 = torch.gather(zb, 2, top1v.expand(B, -1, -1)).squeeze(-1)
+                z2 = torch.gather(zb, 2, top2v.expand(B, -1, -1)).squeeze(-1)
+                dm[ri, idx] = ((z1 - z2) - m_t[None, :]).detach().float().cpu().numpy()  # [B,T]
+                del zb, z1, z2, out.logits
+                for li, l in enumerate(layers):
+                    h = out.hidden_states[l][:, P:P + T, :]  # [B,T,D]
+                    diff = h - h0[l][None]
+                    dh_norm[ri, idx, li] = diff.norm(dim=-1).detach().float().cpu().numpy()
+                    cos[ri, idx, li] = torch.nn.functional.cosine_similarity(
+                        h, h0[l][None].expand_as(h), dim=-1).detach().float().cpu().numpy()
+                for j, di in enumerate(idx):
+                    if di < 3:
+                        dh_last[ri, di] = (out.hidden_states[layers[-1]][j, P:P + T] - h0[layers[-1]]).detach().float().cpu().numpy()
+                del out, E
+                torch.cuda.empty_cache()
 
     # local thresholds and predicted first flip (linear response at each r)
     eps = 1e-30
@@ -152,6 +228,7 @@ def main():
                 prompt=text, prompt_len=int(P), max_new_tokens=int(T), num_directions=K,
                 radii=radii, layers=layers, seed=args.seed,
                 fixed_tokens_from=args.fixed_tokens_from or None,
+                inbatch_ref=bool(inb),
                 baseline_duplicate_identical=True, torch=torch.__version__,
                 transformers=__import__("transformers").__version__, elapsed_sec=round(time.time() - t0, 1))
     np.savez(os.path.join(args.out, "a1.npz"),

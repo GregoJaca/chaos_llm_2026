@@ -63,10 +63,17 @@ def load_model(model="~/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B",
     info = model_info(model, dtype)
     tok = AutoTokenizer.from_pretrained(path, local_files_only=True)
     td = {"float32": torch.float32, "bfloat16": torch.bfloat16, "float16": torch.float16}[info["dtype"]]
-    m = AutoModelForCausalLM.from_pretrained(
-        path, torch_dtype=td, local_files_only=True,
-        attn_implementation=attn, low_cpu_mem_usage=True,
-    ).cuda().eval()
+    try:
+        m = AutoModelForCausalLM.from_pretrained(
+            path, torch_dtype=td, local_files_only=True,
+            attn_implementation=attn, low_cpu_mem_usage=True,
+        ).cuda().eval()
+    except ValueError:
+        # some architectures (e.g. Mamba) have no sdpa path; fall back to eager
+        m = AutoModelForCausalLM.from_pretrained(
+            path, torch_dtype=td, local_files_only=True,
+            attn_implementation="eager", low_cpu_mem_usage=True,
+        ).cuda().eval()
     m._chaos_info = info
     return m, tok, path
 
@@ -93,7 +100,7 @@ def band_mask4d(L, W, device="cuda", dtype=torch.float32):
 
 def get_layers(model):
     """Return the list of decoder blocks, robust to the wrapper name."""
-    for path in ("model.layers", "transformer.h", "model.decoder.layers"):
+    for path in ("model.layers", "backbone.layers", "transformer.h", "model.decoder.layers"):
         obj = model
         ok = True
         for part in path.split("."):
