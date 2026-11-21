@@ -42,10 +42,10 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  master.md &nbsp;&middot;&nbsp; built 2026-11-21 12:20:44 &nbsp;&middot;&nbsp;
+  master.md &nbsp;&middot;&nbsp; built 2026-11-21 13:03:34 &nbsp;&middot;&nbsp;
   <a href="master.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="master.md">Markdown</a> &nbsp;&middot;&nbsp;
-  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="veto.html">veto</a> &middot; <a href="notebook.html">notebook</a>
+  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="controls.html">controls</a> &middot; <a href="veto.html">veto</a> &middot; <a href="notebook.html">notebook</a>
 </header>
 <h1 id="master-summary-perturbation-dynamics-of-greedy-llm-generation">Master summary — perturbation dynamics of greedy LLM generation</h1>
 <p>Version 2. Only the findings I would defend, with numbers and the plots that back them. The lab
@@ -481,6 +481,20 @@ added at <code>E[0, p]</code>, one prompt position only, and the baseline is unp
   decaying ×27 → ×6 over 300 tokens.
 - <strong>Travelling front</strong>: for later positions the peak is at a generated token that moves with $p$
   (peak $t=21$ at $p=0$, $t=97$ at $p=64$; slope ≈1).</p>
+<h3 id="71b-the-kernel-in-all-five-models">7.1b The kernel in all five models</h3>
+<p><img alt="kernel models" src="figures/transport/kernel_models.png" /></p>
+<p><strong>Parameters.</strong> Same protocol as above for each model: 8 prompts, all prompt positions, 8 directions,
+$r=0.1$ ($r=0.3$ for Phi), $W=100$, teacher-forced, 300 tokens, read at the last block. Curves are the
+median over prompts; <code>P</code> is the prompt length (60–65, so positions are shown as $p/P$).</p>
+<p><strong>Panel (a).</strong> The background $K(p\le5,t)$, i.e. the response to perturbing the first five prompt
+positions, against the generated token. <strong>Panel (b).</strong> The peak over $t$ of $K(p,t)$ for each position.</p>
+<p><strong>What it shows.</strong> The background decays in DeepSeek (14 → 1.3, i.e. −0.74% per token, exponential,
+$R^2=0.81$) and in Qwen2.5 (7 → 3); it is <strong>flat</strong> in Qwen3-4B and Phi; Phi's background even <em>rises</em>
+around $t=40$–60 before decaying. The front amplitude separates the models more sharply than any other
+measurement: <strong>Phi ≈78 for every position</strong>, DeepSeek 5–25, Qwen3-4B and Qwen2.5 15–45, Qwen3.5 ~3.</p>
+<p><strong>Why it matters.</strong> The two components of the kernel have different model signatures. Phi amplifies
+<em>every</em> position equally at a fixed future time; DeepSeek's influence decays with distance. This is the
+mechanism behind the "models differ" table, expressed as two numbers instead of a list.</p>
 <h3 id="72-is-the-kernel-a-valid-superposition-measured">7.2 Is the kernel a valid superposition? (measured)</h3>
 <p><img alt="superposition" src="figures/transport/superposition.png" /></p>
 <p><strong>The test.</strong> Add the <strong>same</strong> unit vector $u$ to every prompt position; call the response $A$. Then,

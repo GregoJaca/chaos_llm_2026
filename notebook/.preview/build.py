@@ -1,4 +1,4 @@
-"""Build markdown docs -> HTML (offline KaTeX) -> PDF (headless browser), serve over HTTP
+﻿"""Build markdown docs -> HTML (offline KaTeX) -> PDF (headless browser), serve over HTTP
 (Tailscale) and rebuild automatically when the sources change.
 
 Documents:
@@ -36,6 +36,7 @@ RETRY_SECONDS = 20.0
 
 # name, source file, short description shown on the index page
 DOCS = [
+    ("controls", "controls.md", "Controls &mdash; Mamba / random-transformer vs the LLM results"),
     ("master", "master.md", "Claims only &mdash; the results I would defend, with definitions"),
     ("veto", "veto.md", "Extra results and whether to include them (verdicts)"),
     ("notebook", "notebook.md", "Lab notebook &mdash; everything, including dead ends"),
