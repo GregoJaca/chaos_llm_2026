@@ -44,11 +44,11 @@ def main():
 
     with torch.inference_mode():
         set_window(model, 0)
-        h_full = model(inputs_embeds=E, attention_mask=mask2d, use_cache=False
-                       ).hidden_states[-1][0, P:P + T].clone()
+        h_full = model(inputs_embeds=E, attention_mask=mask2d, use_cache=False,
+                       output_hidden_states=True).hidden_states[-1][0, P:P + T].clone()
         set_window(model, args.window)
-        h_win = model(inputs_embeds=E, attention_mask=mask2d, use_cache=False
-                      ).hidden_states[-1][0, P:P + T].clone()
+        h_win = model(inputs_embeds=E, attention_mask=mask2d, use_cache=False,
+                      output_hidden_states=True).hidden_states[-1][0, P:P + T].clone()
 
     dh = (h_win - h_full).norm(dim=-1).float().cpu().numpy()
     first = int(np.argmax(dh > 0)) if (dh > 0).any() else -1
