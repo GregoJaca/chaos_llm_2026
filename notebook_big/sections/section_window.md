@@ -1,4 +1,4 @@
-# Part window program. The 14B death law is exact to the token for prompts of 8 and 190 tokens; the cascade line is only an upper bound
+# Part window program. The 14B death law is exact to the token for prompts of 8 and 190 tokens; the cascade's bitwise-zero support is exact over 14 states while its 1e-6 crossing runs early with depth
 
 ## Summary
 
@@ -35,6 +35,20 @@ grows with depth). On the 1.5B, where the exact zero is observable, the
 cascade is an exact equality: state 2 dies at 177, 277, 377 for
 $W=100,150,200$ — exactly $t^*_1+(W-1)$. The 14B's smooth decay simply falls
 below the fp32 floor before the last (already tiny) contribution disappears.
+A 1500-token cascade run (8 directions, $W=100$, 15 saved states) now follows
+the law up the stack and sharpens both statements. The threshold death tracks
+the law **only at $l=1$**: medians run 92, 169, 226, 269.5, … , 454.5 for
+$l=1\ldots14$, a slope of 26 tokens per state against the predicted 99, and
+the median gap grows monotonically from $-22$ at $l=2$ to $-924.5$ at $l=14$;
+all 112 resolved direction-states die at or before their bound, so the
+500-token early-death pattern is confirmed and extended. The same run also
+makes the literal test observable: at `batch_dirs=2` the perturbed row becomes
+bitwise identical to the baseline once the prompt is fully outside the window,
+and the first exact zero lands on $t^*_l$ for all 8 directions at all 14
+states ($92,191,\ldots,1379$; 112 of 112). The last nonzero path therefore
+survives to the combinatorial bound exactly, but its amplitude crosses the
+$10^{-6}$-relative floor hundreds of tokens earlier — the bound is attained
+only by the support, not by the signal.
 Finally, the window changes the decision landscape itself on identical
 tokens: the two early razor ties are preserved bit-for-bit for every
 $W\ge100$, while the number of margins below 0.5 nats nearly doubles from 62
@@ -59,7 +73,8 @@ the floor rule degenerates there and its "deaths" are crossings of a
 contaminated floor. Margins of the fixed tokens follow the same onset rule as
 the 65-token prompt (bit-identical through $t=W-P$, first change at $W-P+1$)
 and, for the short prompt, the same monotone approach to the full-attention
-value. The 1500-token cascade run is still pending.
+value. The 1500-token cascade run is complete and supplies the $l\ge2$
+literal zeros (§3).
 
 ---
 
@@ -209,7 +224,7 @@ because the predicted death then lies beyond the horizon.
 
 ---
 
-## 3. Figure `ds14win_cascade.png` — the cascade bound is an upper bound at 14B precision
+## 3. Figure `ds14win_cascade.png` — the threshold crossing runs early with depth; the bitwise-zero support sits exactly on the bound
 
 ![cascade](figures/ds14win_cascade.png)
 
@@ -217,9 +232,19 @@ because the predicted death then lies beyond the horizon.
 measured death at saved state $l$ (solid, markers) and of the predicted bound
 $t^*_l$ computed from each direction's own $t^*_1$ (dashed, same colour).
 $W=100$ and $W=200$ are drawn bold, the other windows thin for context.
-Panel (b) is reserved for the 1500-token cascade run (8 directions, window
-100, states 0–14), which is **pending**; it will be drawn automatically when
-`results_big/ds14/a1_inter_w100_cascade/a1.npz` appears.
+Panel (b): the 1500-token cascade run
+(`results_big/ds14/a1_inter_w100_cascade`), $W=100$, $P=65$, 8 directions,
+15 saved states (0–14; states 1–14 used), tokens fixed from the 1500-token
+$W=4096$ baseline. The 8 directions share one simplex block and therefore the
+same 20 prompt coordinates: $p_{\rm last}=57$ and $t^*_1=92$ for every
+direction, so the bound is a single line. The death rule is exactly the one of
+§1.3. The run used `batch_dirs=2` rather than 16, and that matters: the last 60
+steps are bitwise zero at every state, so the per-state floor is the rule's
+$10^{-6}\times$median-norm cap ($2.95\times10^{-5}$ at $l=1$ rising to
+$9.95\times10^{-5}$ at $l=14$), not a measured residue. Panel (b) therefore
+shows two observables: the same threshold death as panel (a) (filled, with the
+interquartile range over directions), and the first step at which `dh_norm` is
+**bitwise zero** (open circles), which this run makes observable.
 
 **Axes.** $x$: saved state index $l$ (1 = block-0 output; the saved-state
 spacing in depth is not uniform, but the cascade prediction depends only on
@@ -249,24 +274,71 @@ one direction is one token late ($98.7\%$ at or before). State 1 is the
 equality of §2, so its ±1–3 token jitter puts a minority of points on either
 side of the line.
 
-**What it shows.** The bound is respected everywhere, but it is loose at the
-observable level: the measured slope is 61 tokens per state at $W=100$
-(against 99 for the bound) and 151 at $W=200$ (against 199), and at $W=50$ it
-saturates: states 6 and 8 differ by only 26 tokens while the bound grows by
-another 98. This is consistent with the raw traces: block $\ell$'s response
-is a sum over block-$(\ell-1)$ states that are already decaying inside the
-sliding window, so the last surviving path carries a signal that is far below
-the fp32 floor before it finally disappears. The data establish the early
-floor crossing; they do not by themselves separate "already below the floor"
-from "the last path is weaker than the bound allows".
+The 1500-token run (panel b), state by state. Bound $t^*_l=92+99(l-1)$;
+"death" is the §1.3 threshold crossing; "zero" is the first bitwise-zero step:
 
-**What it does not show.** It does not measure the exact-zero cascade on the
-14B (the floor hides the last contribution); it measures the time to reach
-the floor, which is an observable upper bound on the true death but not a
-physical constant (it depends on the $10^{-6}$-relative residue). The 1.5B
-provides the exact-zero counterpart (§8). The pending 1500-token run is the
-only way to follow states beyond $l=4$ at $W=100$ (or beyond $l=2$ at
-$W=200$) without the horizon cutting the measurement.
+| $l$ | bound | threshold death | deviation (median [min,max]) | first zero |
+|---:|---:|---:|---:|---:|
+| 1 | 92 | 92.0 | 0 [0,0] | 92 |
+| 2 | 191 | 169.0 | −22 [−37,−11] | 191 |
+| 3 | 290 | 226.0 | −64 [−93,−51] | 290 |
+| 4 | 389 | 269.5 | −119.5 [−159,−110] | 389 |
+| 5 | 488 | 282.5 | −205.5 [−238,−185] | 488 |
+| 6 | 587 | 335.5 | −251.5 [−284,−225] | 587 |
+| 7 | 686 | 388.0 | −298 [−337,−253] | 686 |
+| 8 | 785 | 401.0 | −384 [−426,−351] | 785 |
+| 9 | 884 | 415.5 | −468.5 [−516,−425] | 884 |
+| 10 | 983 | 429.5 | −553.5 [−597,−519] | 983 |
+| 11 | 1082 | 447.0 | −635 [−696,−588] | 1082 |
+| 12 | 1181 | 447.0 | −734 [−795,−687] | 1181 |
+| 13 | 1280 | 447.0 | −833 [−894,−786] | 1280 |
+| 14 | 1379 | 454.5 | −924.5 [−970,−874] | 1379 |
+
+All 8 directions are resolved at every state (112 of 112 direction-states),
+and all 112 threshold deaths are at or before the bound.
+
+**What it shows.** The threshold death is an amplitude landmark, not the
+cascade. On the 1500-token run the measured medians move from 92 to 454.5 over
+14 states, a slope of 26 tokens per state, while the bound moves by 99; the
+median gap is already −22 at $l=2$, −64 at $l=3$, −120 at $l=4$, and −924.5 at
+$l=14$. The 500-token early-death finding is therefore confirmed and extended
+rather than revised: for $W=100$, state 2 is −22 here against −27 in the
+500-token run, state 3 −64 against −70, state 4 −120 against −111 (different
+runs and direction sets, same effect). From $l=7$ the threshold medians
+saturate — 388, 401, 415.5, 429.5, 447, 447, 447, 454.5 — moving 67 tokens
+while the bound moves 693, because deeper states start with a larger peak
+($13\times$ the floor at $l=1$, $577\times$ at $l=14$) but their late-time
+decay reaches the $10^{-6}$ cap at nearly the same step. That saturation is a
+property of the threshold, not a physical time.
+
+The literal test behaves the opposite way. At `batch_dirs=2` the perturbed row
+becomes bitwise identical to the baseline once no prompt position is inside
+any window, so `dh_norm` is exactly 0 from $t^*_l$ onward; the first zero is
+$t^*_l$ for all 8 directions at all 14 states. This is partly structural — a
+row with no prompt in its receptive field must compute the same function as
+the baseline — but it is also a measurement: at every step before the bound
+the response is nonzero, so the last path genuinely survives to the
+combinatorial bound. As a statement about the support, the cascade is an
+equality over the whole stack; as a statement about the signal, it is a loose
+upper bound. The last nonzero values are far below the $10^{-6}$ cap (for
+direction 0 at state 2 they run $8.4\times10^{-5}$ at $t=175$ down to
+$1.7\times10^{-6}$ at $t=190$: that direction's support outlives its threshold
+crossing by 12 steps; the median gap at $l=2$ is 22 and at $l=14$ it is 925).
+
+**What it does not show.** The exact-zero equality is support geometry, not an
+amplitude law: it says when the last path is cut, not how strong it is. The
+residue issue is also batch-dependent, not resolved: the 500-token runs
+(`batch_dirs=16`) carry a $\approx10^{-6}$-relative residue at the tail and
+never reach a bitwise zero, while this `batch_dirs=2` run reaches exact zeros
+at every state. The cause is presumably a kernel / reduction-order difference
+between batch shapes, but it was not isolated here, so threshold death times
+should not be compared across batch sizes to better than a token or two. The
+run has one prompt, one window, and one simplex block (all directions share
+$p_{\rm last}=57$), so it does not scan direction geometry. Finally it does
+not follow states beyond $l=14$ (block 14 of 48); extrapolating the 26-token
+slope would put the threshold crossing of the last block near $t\approx1550$,
+beyond even this 1500-token horizon, but the saturation makes that
+extrapolation unsafe.
 
 ---
 
@@ -591,33 +663,37 @@ numerically identical at zero response).
 | quantity | 1.5B | 14B |
 |---|---|---|
 | state corresponding to block 0 | saved state 0 | saved state 1 |
-| exact-zero death, $W=100/150/200/300/500$ | 78 / 128 / 178 / 278 / 478 | not observable (floor $3\times10^{-5}$) |
+| exact-zero death, $W=100/150/200/300/500$ | 78 / 128 / 178 / 278 / 478 | not observable in the 500-token runs (floor $3\times10^{-5}$); 92 at $W=100$ in the 1500-token run |
 | predicted $p_{\rm last}+(W-P)$ | 78 / 128 / 178 / 278 / 478 | matched exactly at $W=50,100$; ±1–3 tokens at $W=150$–$300$ |
-| exact-zero cascade, state 2, $W=100/150/200$ | 177 / 277 / 377 | floor crossing 27–50 tokens early (median) |
-| exact-zero cascade, state 3, $W=100/150$ | 276 / 426 | floor crossing 70–129 tokens early (median) |
+| exact-zero cascade, state 2, $W=100/150/200$ | 177 / 277 / 377 | 191 at $W=100$ (1500-token run; 8/8 directions); threshold crossing 22–50 tokens early (median) |
+| exact-zero cascade, state 3, $W=100/150$ | 276 / 426 | 290 at $W=100$ (1500-token run; 8/8); threshold crossing 64–129 tokens early (median) |
+| exact-zero cascade, state 14, $W=100$ | — | 1379 (8/8 direction-states, exactly $92+13\cdot99$) |
 | flush ratio at $W=100$ | 1.73 | 2.19 (fixed 240 dirs), 2.20 (core 1000 dirs) |
 
 The 1.5B numbers satisfy both formulas *exactly*: 78 = 43+35, 177 = 78+99,
 276 = 78+198, 277 = 128+149, 426 = 128+298, 377 = 178+199, with
 $p_{\rm last}=43$ and $P=65$. On the 14B the first formula is confirmed at
-the floor-crossing level and the second is confirmed as an upper bound. The
-two statements are consistent: the cascade's exact-zero time is the moment
-the last, already tiny contribution vanishes; on the 14B that contribution
-is below the fp32 batch residue, so the observable crossing must be earlier.
-The 14B's *lower* numerical precision therefore costs the exact-zero test,
-not the law.
+the floor-crossing level and the second is confirmed as an upper bound at the
+threshold level. The 1500-token run then produces exact zeros at every state:
+its first zero lands on the bound for all 112 direction-states, from 92 to
+1379, so the cascade is an equality for the *support*. The two statements are
+consistent: the cascade's exact-zero time is the moment the last, already tiny
+contribution vanishes; in the 500-token runs that contribution sits below the
+fp32 batch residue, so only the earlier threshold crossing is observable,
+while in the 1500-token run (`batch_dirs=2`) it is not hidden and the literal
+zero appears at the bound. The 14B's *lower* numerical precision therefore
+costs the exact-zero test only when the batch residue is present, not the law.
 
 ---
 
 ## 9. What remains
 
-One item from the brief is not yet available locally:
-
-1. **1500-token cascade** (`a1_inter_w100_cascade`): panel (b) of
-   `ds14win_cascade.png` is a placeholder; it will show states 0–14 at
-   $W=100$ with the same bound line. It is the only way to follow the
-   cascade beyond the plotted range without the 500-token horizon; the
-   present 14B cascade is plotted to $l=4$ for $W=100$ and $l=2$ for $W=200$.
+Nothing in the brief is now missing locally. The 1500-token cascade
+(`a1_inter_w100_cascade`) is processed and fills panel (b) of
+`ds14win_cascade.png`; it resolves the cascade to $l=14$ and supplies the
+literal zeros that the 500-token runs could not observe (§3). It does not
+change the $W=200$ picture, which still stops at $l=2$ because the run has
+only 500 tokens.
 
 The prompt-length scan of §5 is complete: all ten runs
 ($P=8$ and $P=190$; $W=50,100,200,300,500$) are local and processed. The scan

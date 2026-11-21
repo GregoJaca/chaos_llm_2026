@@ -10,7 +10,7 @@ Reads (all optional except the six fixed-token sweep runs):
   results_big/ds14/a1_inter_w100_posearly_{0-22,22-44,44-65}/a1.npz
   results_big/ds14/a1_{short,long}_prompt_w{50,100,200,300,500}_fixed/a1.npz
   results_big/ds14/a1_{short,long}_prompt_w4096/a1.npz   (fixed-token source)
-  results_big/ds14/a1_inter_w100_cascade/a1.npz         (pending)
+  results_big/ds14/a1_inter_w100_cascade/a1.npz         1500 tokens, 8 dirs, states 0-14
   1.5B reference: chaos_llm_2026/results/local_data/flush_sweep/w*/a1.npz
 
 Writes notebook_big/figures/ds14win_*.png and ds14win_numbers.json.
@@ -332,7 +332,8 @@ def fig_cascade(tabs, path, casc=None):
     ax2 = axes[1]
     if casc is not None:
         tb = death_table(casc)
-        ms, ms_lo, ms_hi, bs = [], [], [], []
+        x = tb["dh"]
+        ms, ms_lo, ms_hi, bs, zs = [], [], [], [], []
         sts = []
         for st in range(1, tb["nl"]):
             m = tb["resolved"][st] & (tb["death"][st] >= 0)
@@ -343,15 +344,56 @@ def fig_cascade(tabs, path, casc=None):
             ms_lo.append(float(np.percentile(tb["death"][st][m], 25)))
             ms_hi.append(float(np.percentile(tb["death"][st][m], 75)))
             bs.append(float(np.median(tb["pred"][st][m])))
-        ax2.plot(sts, bs, ls="--", color=C[100], lw=1.1, label="bound")
+            zs.append([int(np.argmax(tr == 0)) if (tr == 0).any() else -1
+                       for tr in x[:, st]])
+        ax2.plot(sts, bs, ls="--", color=C[100], lw=1.1,
+                 label="bound $t^*_1+(l-1)(W-1)$")
+        ax2.plot(sts, [np.median(z) for z in zs], ls="none", marker="o",
+                 ms=9.0, mfc="none", mec="#333333", mew=0.9,
+                 label="first bitwise zero (all 8 dirs, on the bound)")
         ax2.errorbar(sts, ms, yerr=[np.array(ms) - np.array(ms_lo),
                                     np.array(ms_hi) - np.array(ms)], fmt="o",
-                     ms=4.5, color=C[100], lw=1.1, label="measured (1500 tok)")
-        ax2.legend(loc="upper left")
+                     ms=4.5, color=C[100], lw=1.1,
+                     label="threshold death (1e-6 rel floor)")
+        # median gap of the threshold death, and the measured slope
+        dev = [a - b for a, b in zip(ms, bs)]
+        slope = float(np.polyfit(sts, ms, 1)[0])
+        ax2.text(0.03, 0.97,
+                 "threshold death: slope %.0f vs 99 tokens/state\n"
+                 "median gap %.0f at l=2 to %.0f at l=14\n"
+                 "all %d resolved direction-states at/before bound"
+                 % (slope, dev[1], dev[-1], int(sum(
+                     (tb["resolved"][st] & (tb["death"][st] >= 0)).sum()
+                     for st in sts))),
+                 transform=ax2.transAxes, ha="left", va="top", fontsize=7.8,
+                 family="monospace",
+                 bbox=dict(facecolor="white", alpha=0.86, edgecolor="none"))
+        ax2.text(0.02, 0.35,
+                 "floor rule as in (a); the tail is bitwise zero,\n"
+                 "so the 1e-6 cap sets it: death = 1e-6 crossing",
+                 transform=ax2.transAxes, ha="left", va="bottom", fontsize=7.3,
+                 bbox=dict(facecolor="white", alpha=0.86, edgecolor="none"))
+        ax2.legend(loc="lower right", fontsize=7.6)
         ax2.set_xlabel("saved state index $l$")
         ax2.set_ylabel("death step $t$")
-        ax2.set_title("(b) 1500-token cascade run, W=100")
-        info["cascade1500"] = dict(states=sts, measured=ms, bound=bs)
+        ax2.set_title("(b) 1500-token cascade run, W=100, $P=65$")
+        info["cascade1500"] = dict(
+            states=sts, measured=ms, bound=bs,
+            iqr_lo=ms_lo, iqr_hi=ms_hi,
+            dev_median=dev,
+            first_zero=zs,
+            n_literal_zero_on_bound=int(sum(
+                int(v == b) for z, b in zip(zs, bs) for v in z)),
+            n_literal_zero=int(sum(len(z) for z in zs)),
+            floor=[float(tb["floors"][st]) for st in sts],
+            floor_rel=[float(tb["floors"][st] /
+                           np.median(casc["d"]["norm_h0"].astype(float)[st]))
+                       for st in sts],
+            peak_over_floor=[float(np.median(tb["peak"][st]) /
+                                   tb["floors"][st]) for st in sts],
+            slope_measured=slope, slope_bound=float(tb["W"] - 1),
+            resolved=[int((tb["resolved"][st] &
+                           (tb["death"][st] >= 0)).sum()) for st in sts])
     else:
         ax2.text(0.5, 0.55,
                  "1500-token cascade run\n(window 100, 8 dirs, states 0-14)\n"
@@ -363,8 +405,8 @@ def fig_cascade(tabs, path, casc=None):
         ax2.set_yticks([])
         ax2.set_title("(b) deeper cascade: pending")
         info["cascade1500"] = dict(pending=True)
-    fig.suptitle("The cascade bound is an upper bound, not an equality: the "
-                 "response reaches the numerical floor long before it",
+    fig.suptitle("Threshold death runs early and saturates with depth; the "
+                 "first bitwise zero lands exactly on the cascade bound",
                  fontsize=11.8, y=1.0)
     fig.tight_layout()
     fig.savefig(path, dpi=170, bbox_inches="tight")
