@@ -1,0 +1,10 @@
+{
+  "run": "results/ctrl/mamba130/a1_txt",
+  "free_run": "results/ctrl/mamba130/fr_txt_r0.3",
+  "radii": [
+    0.3
+  ],
+  "chunk": 6,
+  "prompt_len": 67,
+  "T": 300
+}

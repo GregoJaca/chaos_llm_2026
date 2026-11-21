@@ -102,11 +102,11 @@ def main():
     ap.add_argument("--model", default="~/LLM/models--state-spaces--mamba-130m-hf")
     ap.add_argument("--tokens-from", required=True, help="npz with prompt_ids + gen_ids (an a1.npz or traj npz)")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--t0-list", default="30,80,150")  # token index where the state is kicked
+    ap.add_argument("--t0-list", default="80,150,220")  # absolute token index where the state is kicked (prompt included)
     ap.add_argument("--horizon", type=int, default=200)
     ap.add_argument("--dirs", type=int, default=8)
     ap.add_argument("--eps", type=float, default=1e-2)
-    ap.add_argument("--diag-t-list", default="10,50,100,150,200")
+    ap.add_argument("--diag-t-list", default="70,100,150,220,290")
     ap.add_argument("--diag-samples", type=int, default=24, help="(layer, channel) triples per batch row")
     ap.add_argument("--seed", type=int, default=7)
     args = ap.parse_args()
