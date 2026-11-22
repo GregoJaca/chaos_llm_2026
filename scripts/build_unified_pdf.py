@@ -155,7 +155,9 @@ renderMathInElement(document.body, {{
     # Copy PDF and HTML to notebook_big/ for serving
     dest_pdf = os.path.join(NOTEBOOK_BIG_DIR, "unified.pdf")
     shutil.copy2(PDF_OUT, dest_pdf)
-    print(f"Copied to {dest_pdf} for Tailscale HTTP serving.")
+    dest_md = os.path.join(NOTEBOOK_BIG_DIR, "unified.md")
+    shutil.copy2(SRC, dest_md)
+    print(f"Copied to {dest_md} for Tailscale HTTP serving.")
 
     dest_html = os.path.join(NOTEBOOK_BIG_DIR, "unified.html")
     # For HTML in notebook_big, katex is at .preview/katex
