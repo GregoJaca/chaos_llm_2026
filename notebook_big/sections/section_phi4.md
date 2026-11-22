@@ -14,7 +14,7 @@ Free-run validation is a null at $r=0.1$: **0 observed, 0 predicted**. At $r=0.3
 
 The response-vs-state angle is **89.85°** (IQR 85.5-93.5°), consistent with the near-perpendicular picture, but noisier here because the response is only $9.7\times10^{-5}$ of the state norm.
 
-**Pending in this draft.** `state_w0/`, `depth_w0/`, `nonnorm_w0/`, `a1_childhood_w0/` and `a1_cyber_w0/` were still running on the GPU when this was written. Their sections are marked **pending**; `scripts_spark/figs_core_phi4.py` detects them with `Test-Path`-equivalent checks and will render `phi4_state.png`, `phi4_depth.png`, `phi4_nonnorm.png`, `phi4_generality.png` and fill the corresponding JSON blocks on the next run.
+**What the later runs add.** The depth, state-kick and multi-prompt runs have landed. The depth spectrum (8 tokens x 40 blocks, $k=8$) shows the usual split: the tangent volume grows $2.2$-$73\times$ absolutely, but the state-normalized tangent **contracts in 93 of 96 token-intervals** (median $-0.105$ nats/block), a stronger version of the 14B's 61/64. The largest absolute tangent volume is at the **first generated token** ($h_{\rm depth}=0.859$, 2.3x the next), not at either phi-4 tie — and the depth token list does **not** contain 219 or 277, so this run cannot answer the tie-hotspot question (a re-run with the tie tokens is scheduled). The single-position kicks confirm the low responsiveness: immediate responses of 1.56-8.78 per unit radius, half-lives of 1-4.5 steps, and **no flip at $r=0.1$ in any of the 240 (position, direction) kicks**. Only the $s=250$ kick reaches a gate, crossing the $t=277$ tie for 2/24 directions 27 steps later; by the crossing step its response has fallen to 9-12% of the immediate value, which makes the one-token re-synchronisations in the free run plausible. The two extra prompts leave the margin and $r_*$ distributions nearly unchanged ($r_*$ p50 2.98 and 3.16 vs 3.59; 0 flips at $r=0.1$), but the **controlling steps and the vulnerable directions move completely** — the Spearman correlation of $\log r_*$ with the interstellar run on the same 200 directions is 0.09 and $-0.07$. Non-normality is still generating (fused-MLP Jacobian fix) and remains pending.
 
 ---
 
@@ -31,8 +31,11 @@ The response-vs-state angle is **89.85°** (IQR 85.5-93.5°), consistent with th
 | calibration | 8 directions x 7 radii, 400 greedy tokens, prompt perturbation |
 | A1 | 1000 directions, $r=0.1$, $T=300$, teacher-forced on the baseline tokens |
 | free run | same 1000 directions, greedy, own KV cache, $\rho\in\{0.1,0.3\}$ |
-| files used here | `results_big/phi4/calib/calib.npz`, `results_big/phi4/a1_inter_w0/a1.npz`, `results_big/phi4/free_inter_w0/{free_run.npz,summary.json}` |
-| files pending | `state_w0/state2.npz`, `depth_w0/depth.npz`, `nonnorm_w0/nonnorm.npz`, `a1_{childhood,cyber}_w0/a1.npz` |
+| state kicks | 10 positions x 24 directions x $r\in\{0.03,0.1\}$, teacher-forced |
+| depth | 8 tokens x 40 blocks, $k=8$ tangent directions, QR every block |
+| multi-prompt | 200 directions at $r=0.1$ on `childhood` ($P=56$) and `cyber` ($P=61$) |
+| files used here | `results_big/phi4/calib/calib.npz`, `a1_inter_w0/a1.npz`, `free_inter_w0/{free_run.npz,summary.json}`, `state_w0/state2.npz`, `depth_w0/depth.npz`, `a1_{childhood,cyber}_w0/a1.npz` |
+| files pending | `nonnorm_w0/nonnorm.npz`; `traj/` (D2 distance matrices, separate analysis) |
 
 The A1 margins are self-consistent with the baseline tokens: `top1[t] == gen_ids[t]` for all 300 steps. The calibration and A1 runs produce **bit-identical generated tokens** (both greedy from the same prompt) and margins agreeing to $4.96\times10^{-5}$ nats, so they describe one trajectory.
 
@@ -196,31 +199,129 @@ All four observed flips are **top-2 word swaps**, decoded with the phi-4 tokeniz
 
 ---
 
-## 6. Pending: depth, non-normality, state kicks, generality
+## 6. Figure `phi4_state.png` — a one-position kick dies in 1-4.5 steps, and only $s=250$ reaches a gate
 
-These blocks were still running when this draft was written. The analysis script already implements them and will produce the figures when the files appear; no numbers are quoted here.
+![state kicks](figures/phi4_state.png)
 
-**6.1 `phi4_depth.png` — pending.** The run is `depth_w0/depth.npz`: 8 tokens $0,21,50,100,150,200,250,299$, $k=8$ tangent directions, 40 blocks, QR after every block. Planned content: $\lambda_i(l)$ per token, $h_{\rm depth}$, per-block local gain against state-norm growth, the absolute and relative exponents, and the final spectrum. The relative test is better resolved for phi-4 than for the 14B: `norm_h0` has 14 states, giving **12 intervals** (1, 1, 2, 3, then 4s, last 3 blocks) rather than eight 6-block chunks, so "contracts" can be tested at 1-4 block resolution over blocks 0-38.
+**Setup.** `state_w0/state2.npz`: one random unit vector is added to the embedding output (state 0) at a single generated position $s\in\{8,16,32,50,75,100,150,200,250,299\}$, 24 directions per position, at $r=0.03$ and $r=0.1$. The continuation is teacher-forced on the baseline tokens and the response is read at state 39 (output of block 38). The baseline margins are the A1 margins, so the thinnest decision in range is $m_{277}=0.00925$. This is a single-token input change, not a prompt-wide perturbation, and it is the cleanest test of how far one position's state can travel.
 
-**Protocol caveat for the razor-tie question.** The brief asks whether "the razor-tie token" is a tangent hotspot like the 14B's $t=21$. For phi-4 the thin ties are at **277 and 219**, and neither is among the eight depth tokens; token 21 is in the depth set but is not a phi-4 tie ($m_{21}$ is an ordinary margin). The hotspot question can therefore only be answered by proxy (e.g. token 250, the closest to 277) unless the depth run is repeated with 219/277 in the token list. This is a protocol mismatch, not a data problem.
+**Axes.** (a) $x$ kick position $s$; $y$ immediate response $\|\delta h_s^{39}\|/r$ (log); filled circles $r=0.1$, open triangles $r=0.03$. (b) Left $y$: median number of steps until the response first falls below half its value at $s$; right $y$ (red, log): largest later response divided by the immediate response. (c) Left $y$: percentage of the 24 directions whose smallest later threshold is $r_c\le1$; right $y$ (red, log): median and minimum $r_*$ over directions, with $s=299$ omitted because it has no later step. (d) $x$ generated step; $y$ response norm for $s=8,100,250$; dotted verticals mark the kicks, dashed the two late ties at 219 and 277.
 
-**6.2 `phi4_nonnorm.png` — pending.** `nonnorm_w0/nonnorm.npz`: MLP analytic SwiGLU Jacobian at 5 tokens x 9 blocks, full-block power iteration/Arnoldi at 5 tokens x 5 blocks, principal angles 4 blocks apart. Planned: $\sigma_{\max}$, $\rho$ and $\kappa=\sigma_{\max}/\rho$ by block, the $\sigma_{\max}$-$\rho$ plane, and the angle histogram against the 1.5B's 83.6° and the 14B's 86.96°. The reference pattern to test is the U-shape: extreme at block 0, normal in the middle, extreme again at the last block.
+| $s$ | immediate $/r$ | half-life | decaying | late/immediate | flips / 24 | median $r_*$ | min $r_*$ |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 8 | 8.78 | 1 | 24/24 | 0.32 | 0 | 7.38 | 2.84 |
+| 16 | 2.44 | 3 | 24/24 | 0.89 | 0 | 7.27 | 2.40 |
+| 32 | 1.56 | 4.5 | 24/24 | 1.64 | 0 | 3.07 | 1.37 |
+| 50 | 2.40 | 2 | 24/24 | 0.61 | 0 | 5.65 | 1.67 |
+| 75 | 3.64 | 3 | 24/24 | 0.69 | 0 | 7.48 | 3.59 |
+| 100 | 3.40 | 2 | 24/24 | 0.90 | 0 | 9.07 | 2.95 |
+| 150 | 3.02 | 2 | 24/24 | 0.72 | 0 | 9.84 | 3.39 |
+| 200 | 4.45 | 1 | 24/24 | 0.68 | 0 | 11.13 | 1.26 |
+| 250 | 6.65 | 1 | 24/24 | 0.67 | **2** | 3.61 | **0.70** |
+| 299 | 2.74 | — | 0/24 | — | 0 | — | — |
 
-**6.3 `phi4_state.png` — pending.** `state_w0/state2.npz`: single-position kicks at $s=8,16,32,50,75,100,150,200,250,299$, 24 directions, radii 0.03 and 0.1, read at the last saved state. Planned: immediate response, half-life, late/immediate ratio, the fraction of directions whose first crossing is at $r\le1$, the median first-crossing step (the latency question), and response trajectories. Because phi-4 has no near-tie at 219/277 before the late sequence, the late gate at 277 is the natural target for kicks at $s\ge250$.
-
-**6.4 `phi4_generality.png` — pending.** `a1_childhood_w0/` and `a1_cyber_w0/`: 200 directions at $r=0.1$ on two other prompts. Planned: margin spectra and $r_*$ ECDFs against the interstellar run of the same model, plus the flip fraction at 0.1/0.3. The question is whether the **gates move** (the controlling margin and its step) when the text changes, and whether the low sensitivity is a property of the model or of this prompt.
-
-**6.5 Trajectories.** `traj/` is for the separate D2 analysis and is not part of this section.
+- **The immediate response varies 5.6x across positions** (8.78 at $s=8$ to 1.56 at $s=32$) and is linear in the radius: the per-unit values at $r=0.03$ and $r=0.1$ agree within 3.5% at every position (ratios 0.966-1.028). The 14B's two radii agreed to 19% at the worst position, so the small-radius extrapolation is better controlled here.
+- **A kick is absorbed fast.** The response falls below half its immediate value in **1-4.5 steps** at every position, and all 24/24 directions decay at every position except $s=299$ (no later step). The late maximum is only **0.32-1.64x** the immediate value, against **1.8-98x** for the 14B (17-98x at five of its ten positions): there is no global late burst, only a local bump. At $s=250$ the bump is at $t\approx271$ (median 3.31 per unit radius, 50% of the immediate spike) and dies to 0.58 by $t=277$.
+- **Nothing flips at the campaign radius.** At $r=0.1$ **0 of 240** (position, direction) kicks flip any token, and even the extrapolated $r_c\le1$ count is 2/240. The median flux-tube radius of a single-position kick is 3.1-11.1 across positions; only $s=250$ has a minimum below 1 (0.70), and its median (3.61) is the second-lowest after $s=32$ (3.07).
+- **The latency question has one clean answer: $s=250\to t=277$, 27 steps later.** It is the only kick that reaches a gate, and it reaches it for **2 of 24 directions** with thresholds 0.70 and 0.995. At $t=219$ the response is non-positive for all 24 directions ($r_c=+\infty$), so the 219 tie — the step that controls the most prompt-wide directions in A1 — is *widened*, not narrowed, by this kick. The 277 crossing is carried by the secondary bump at 270-271 and then by the decay tail. This is the same first-crossing-versus-argmin distinction seen in the 14B: the reachable gate is not the thinnest one ($m_{277}=0.0093$ vs $m_{219}=0.0170$), because the response at 277 is the one that survives.
+- **The decay makes the free-run re-syncs plausible.** At the 277 crossing the median response is **8.7%** of the immediate value, and the two flipping directions are at 9.2% and 11.9%; by $t=299$ the median has fallen to **6.3%**. A perturbation that is already at a tenth of its initial amplitude when the token changes has little left with which to steer the following tokens, so a one-token substitution that rejoins the baseline is what a decaying local kick should produce. This is a consistency argument, not a mechanism proof: the free-run events were prompt-wide perturbations with a persistent component, and direction 276 did re-diverge at 277 because that component was still there. A one-position kick has no such persistent component.
 
 ---
 
-## 7. Cross-model comparison
+## 7. Figure `phi4_depth.png` — absolute growth in 40 blocks, contraction in 93/96 normalized intervals
+
+![depth spectrum](figures/phi4_depth.png)
+
+**Setup.** `depth_w0/depth.npz`: $k=8$ orthonormal tangent vectors at one generated token, propagated through all **40 blocks** with a JVP and QR-renormalised after every block (Benettin). Tokens are $0,21,50,100,150,200,250,299$. $\lambda_i(l)=(1/(l+1))\sum_{b\le l}\log|R_{ii}(b)|$ is the running mean per-block tangent exponent, and $h_{\rm depth}=\sum_i\max(\lambda_i(39),0)$ is the total positive final exponent. The state normalization uses the baseline `norm_h0` from the A1 run at its 14 saved states, giving **12 intervals** of 1, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4 and 3 blocks. The final block (39) is in the tangent growth but not in the norm growth — state 40 is not saved — so the last interval's contraction is if anything slightly conservative.
+
+**Axes.** (a,b) $x$ block $l$; $y$ running exponent $\lambda_i(l)$ (symlog, linear within $\pm10^{-2}$ so the sign is visible); one line per token, median over the 8 directions. (c) $x$ probe token; $y$ $h_{\rm depth}$ (nats); token 0 in red. (d) $x$ block; $y$ growth per block (log): blue = median local tangent gain with the 25-75% band over tokens, red = state-norm growth per block from the saved baseline states. (e) $x$ block; $y$ log gain per block: grey = absolute exponent $e_l$, blue = relative exponent (tangent minus state-norm growth) at interval centres. (f) $x$ tangent direction; $y$ final $\lambda_i$ per token, token 0 red.
+
+### 7.1 The numbers per token
+
+| token $t$ | $h_{\rm depth}$ | median final $\lambda_i$ | tangent growth | state norm growth | endpoint relative (nats/block) |
+|---:|---:|---:|---:|---:|---:|
+| 0 | **0.859** | **0.107** | **73.2x** | 1621x | −0.077 |
+| 21 | 0.319 | 0.040 | 4.92x | 466x | −0.114 |
+| 50 | 0.154 | 0.018 | 2.16x | 550x | −0.139 |
+| 100 | 0.216 | 0.027 | 2.94x | 574x | −0.132 |
+| 150 | 0.229 | 0.028 | 3.14x | 484x | −0.126 |
+| 200 | 0.284 | 0.033 | 4.13x | 422x | −0.116 |
+| 250 | 0.376 | 0.048 | 6.56x | 413x | −0.104 |
+| 299 | 0.194 | 0.023 | 2.64x | 422x | −0.127 |
+
+The absolute tangent volume grows **2.2-73x** over 40 blocks, while the per-token baseline state norm grows **413-1621x**. The final individual $\lambda_i$ are all positive and nearly flat across the 8 sampled directions: per token the final spectrum spans 0.005-0.031 nats, with the median 0.018-0.107. The local tangent gain has a median of **1.033** over all token-block cells, and 85.9% of cells (85% of block medians) are above 1: the absolute tangent is mildly expansive almost everywhere, not only at block 0. The last column is the endpoint rate $\frac{1}{40}\log(\text{tangent growth}/\text{state norm growth})$; every token is negative, −0.077 to −0.139. The chunk test below uses the same ratio over each saved interval and is the finer-grained version.
+
+The state-norm column is **per token**; §4's 196x is the ratio of the *median over t* at state 0 to the median at state 39. The two aggregations differ because the per-token norm growth is heavy-tailed (the median per-token growth is 475x). The verdict does not depend on which is used: every per-token endpoint rate and 93/96 chunk cells are negative.
+
+**The absolute hotspot is the first generated token, not a tie.** Token 0 has $h_{\rm depth}=0.859$, **2.3x** the next largest (token 250, 0.376) and **2.7x** the median of the other seven (0.244). Its final $\lambda_i$ are 0.104-0.113, the only values inside the 1.5B's 0.08-0.18 band; its first-block exponent is 0.674 against −0.008 to 0.269 for the others; its block-0 local gain is 2.05 against 1.00-1.31; and its tangent grows 73x against 2.2-6.6x. But its state norm also grows the most (1621x), so normalized it is the **least** contracting token (−0.077). The two thinnest tokens in the depth set are not hotspots: token 50 ($m_{50}=0.098$, 11th thinnest of 300 steps) has the **smallest** $h_{\rm depth}$ (0.154) and token 100 ($m=0.204$, 18th thinnest) has 0.216. Token 250 has the second-largest $h_{\rm depth}$ (0.376) but an ordinary margin ($m_{250}=10.73$, 238th of 300). Raw margin and absolute tangent volume are not aligned in this run.
+
+### 7.2 The normalized verdict
+
+The 12 chunk medians are:
+
+| chunk | 0→1 | 1→2 | 2→4 | 4→7 | 7→11 | 11→15 | 15→19 | 19→23 | 23→27 | 27→31 | 31→35 | 35→38 |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| relative | −0.360 | −0.261 | −0.227 | −0.168 | −0.128 | −0.092 | −0.103 | −0.084 | −0.071 | −0.045 | **−0.033** | −0.117 |
+
+**93 of 96 token-intervals contract** (96.9%), with an overall median of **−0.105 nats/block**. The three positive cells are token 0 in 0→1 (+0.153) and 31→35 (+0.0054), and token 200 in 23→27 (+0.0204). The first is a real first-block effect: the tangent grows 1.79x while the *median* baseline norm grows 1.54x across that one interval, a 1.17x relative expansion. The other two are at the resolution floor, exactly like the 14B's three exceptions.
+
+The shape is **an early contraction that weakens toward zero and then re-accelerates at the very end**: −0.360 in the first block, a monotone approach to −0.033 in blocks 31-35 (the 1.5B's least-negative value is −0.034, so this is the saturation regime), and then −0.117 in the last three blocks. phi-4 therefore does **not** saturate flatly like Qwen3.5 over its last third; its final three blocks are the second-strongest late contraction after the first block. But the verdict is unambiguous: at 40 blocks, the absolute growth is radial/state-scale growth, and the state-normalized tangent contracts for every token; the only positive cells are the single first-block token-0 cell and two resolution-floor cells.
+
+### 7.3 Comparison and the protocol caveat
+
+| | 1.5B | DS-R1-14B | Qwen3.5-9B | **phi-4** |
+|---|---:|---:|---:|---:|
+| blocks | 28 | 48 | 32 | **40** |
+| $h_{\rm depth}$ | 0.6-1.4 | 0.16-0.64 | — | **0.15-0.86** |
+| final median $\lambda_i$ | 0.08-0.18 | 0.020-0.079 | — | **0.018-0.107** |
+| normalized verdict | every block contracts, worst −0.034 | 61/64 chunks negative, −0.061 to −0.120 | contracts, saturates | **93/96 negative, median −0.105** |
+
+The 14B's 61/64 = 95.3% is slightly weaker than phi-4's 93/96 = 96.9%, and both have three near-zero exceptions. The difference is in the range: phi-4's first-block chunk reaches −0.360, close to the 14B's first 6-block chunk (−0.408) but at 1-block instead of 6-block resolution; its late contraction is −0.033 to −0.117 rather than the 14B's −0.034 to −0.100. The 1.5B's "every block contracts" is not literally reproduced, but the three violations are +0.5%, +2% and +17% per block (the last is the single first-block token-0 cell); the other 93 cells contract.
+
+**The tie-hotspot question cannot be answered by this run, and the text must say so.** The eight depth tokens are **0, 21, 50, 100, 150, 200, 250, 299**. phi-4's thin ties are at **219 and 277**, and **neither is in the list**. Token 21 is in the list but is not a phi-4 tie: $m_{21}=2.89$ nats, an ordinary margin (it is the 14B's razor tie, not phi-4's). Token 250 is the closest probe (27 steps before 277) and happens to have the second-largest $h_{\rm depth}$, but its margin is 10.73 nats, so it says nothing about the tie. The scheduled re-run with 219 and 277 in the token list is required before any claim that "the tie token is/is not a tangent hotspot" can be made.
+
+---
+
+## 8. Figure `phi4_generality.png` — the distributions generalise, the gates do not
+
+![multi-prompt generality](figures/phi4_generality.png)
+
+**Setup.** `a1_childhood_w0/a1.npz` and `a1_cyber_w0/a1.npz`: 200 directions at $r=0.1$, 300 teacher-forced tokens, 14 saved states, on the `childhood` ($P=56$) and `cyber` ($P=61$) prompts. Both use the same seed-69 direction generator as the interstellar A1 run, so their 200 directions are the first 200 of the 1000-direction run and are directly comparable direction-by-direction. The interstellar curve is the full $K=1000$ run.
+
+**Axes.** (a) $x$ baseline margin $m_t$ (log); $y$ fraction of steps at or below it. (b) $x$ $r_*$ (log); $y$ fraction of directions with $r_*\le r$; dashed line is the run radius. (c) $r_*$ quantiles per prompt; thick bar = 25-75%, thin = 10-90%, circle = median. (d) percentage of directions that flip at $r=0.1$ (dark) and $r=0.3$ (light).
+
+| prompt | $K$ | margin min (step) | margin p50 | $r_*$ p10 / p50 / p90 | flips at 0.1 / 0.3 | top controlling steps (directions) | median $m_{t_*}$ | median $s$ |
+|---|---:|---:|---:|---|---:|---|---:|---:|
+| interstellar | 1000 | 9.25e-3 (277) | 3.47 | 1.20 / **3.59** / 10.66 | 0 / 0.2% | 219 (273), 277 (253), 34 (95) | 0.0170 | 7.67e-3 |
+| childhood | 200 | 8.89e-3 (52) | 3.67 | 0.79 / **2.98** / 11.18 | 0 / 1.0% | 32 (52), 52 (51), 183 (39) | 0.0116 | 5.89e-3 |
+| cyber | 200 | 4.87e-3 (224) | 2.89 | 0.76 / **3.16** / 9.34 | 0 / 1.0% | 224 (60), 27 (38), 25 (36) | 0.0348 | 7.09e-3 |
+
+- **The margin spectrum barely moves.** The median margin is 2.89-3.67 and the 10th percentile 0.35-0.58 across the three prompts. Every prompt has one sub-0.01 nat step (277, 52, 224), and the cyber minimum (4.87e-3) is actually **1.9x thinner** than interstellar's (9.25e-3). The ECDFs in panel (a) are almost on top of each other.
+- **The $r_*$ distribution is equally stable.** Median 2.98-3.59, p10 0.76-1.20, p90 9.34-11.18. **All three prompts have 0 flips at $r=0.1$**; at $r=0.3$ the two 200-direction prompts have 1.0% (2/200 each) against 0.2% (2/1000) for interstellar. The model-level "hard to move" property generalises; the two new prompts are not more fragile at the campaign radius despite their thin minima.
+- **The gates themselves move completely.** The controlling steps are prompt-specific: 219/277/34/186/53 for interstellar, 32/52/183/148 for childhood, 224/27/25/45 for cyber. The number of distinct controlling steps drops from 27 to 12 and 11, and the five thinnest steps carry 79.9%, 86.5% and 72.5% of the directions. Nothing about *which* step is the weak point transfers.
+- **The vulnerable directions move with the prompt.** On the same 200 directions, the Spearman correlation of $\log r_*$ is **0.092** (p=0.20) for childhood vs interstellar and **−0.074** (p=0.30) for cyber vs interstellar; between the two new prompts it is 0.121 (p=0.09). The shared-flip counts at $r\le1$ are 3 of (15, 32) and 0 of (15, 27). Direction vulnerability is a direction $\times$ prompt property, not a fixed property of the random direction.
+- **What stays is the low response.** The median local sensitivity at the controlling step is 5.9e-3 (childhood) and 7.1e-3 (cyber) against 7.7e-3 (interstellar), and the median controlling margin is 0.012-0.035. The ratio that sets $r_*$ is therefore stable within a factor of 1.3. The "uncertain where it is hard to move" reading is a property of phi-4, not of the interstellar prompt.
+
+---
+
+## 9. Still pending: non-normality and trajectories
+
+**9.1 `phi4_nonnorm.png` — pending.** `nonnorm_w0/nonnorm.npz` is still generating; the fused-MLP Jacobian path is being fixed. Planned: MLP analytic SwiGLU Jacobian at 5 tokens x 9 blocks, full-block power iteration/Arnoldi at 5 tokens x 5 blocks, principal angles 4 blocks apart; $\sigma_{\max}$, $\rho$ and $\kappa=\sigma_{\max}/\rho$ by block, the $\sigma_{\max}$-$\rho$ plane, and the angle histogram against the 1.5B's 83.6° and the 14B's 86.96°. The reference pattern to test is the U-shape: extreme at block 0, normal in the middle, extreme again at the last block. No numbers are quoted and no figure is drawn until the file exists.
+
+**9.2 Trajectories.** `traj/` is for the separate D2 analysis; the distance matrices will arrive later under `results_big/phi4/d2/`. Nothing in this section depends on them.
+
+---
+
+## 10. Cross-model comparison
 
 All rows use the same prompt, greedy decoding, FP32 and $r=0.1$ unless stated. 1.5B and 14B values are from the published sections; Qwen3.5-9B from its section; phi-4 from this one.
 
 | quantity | 1.5B | DS-R1-14B | Qwen3.5-9B | **phi-4** |
 |---|---:|---:|---:|---:|
 | blocks / width | 28 / 1536 | 48 / 5120 | 32 / 4096 | **40 / 5120** |
+| depth $h_{\rm depth}$ | 0.6-1.4 | 0.16-0.64 | — | **0.15-0.86** |
+| depth, normalized | every block contracts (worst −0.034) | 61/64 chunks negative | contracts, saturates | **93/96 negative** |
+| single-position kick flips at $r\le1$ | — | 22/24† | — | **2/24** |
 | attention | full | full | 3 linear : 1 full | **full** |
 | sliding window | 100 | 100 / full* | none | **none (null)** |
 | $K$ directions | 20 | 1000 | 1000 | **1000** |
@@ -237,17 +338,21 @@ All rows use the same prompt, greedy decoding, FP32 and $r=0.1$ unless stated. 1
 
 \* the 14B's window-100 setting was silently inactive in the runs analysed before the fix; see the correction note in `section_a1_deep.md`. phi-4 and Qwen3.5 have no window at all, so no window comparison is meaningful.
 
+† the 14B's kick row is the maximum over its 10 positions ($s=8$ and $s=150$, 22/24 at $r\le1$) from `section_state_depth.md`; the 1.5B and Qwen3.5 have no state-kick run in this campaign.
+
 Reading the table:
 
 - **Margin thickness.** phi-4's median margin (3.47) is 12% thicker than the 14B's and 40% thicker than Qwen3.5's, but 27% thinner than the 1.5B's. Its minimum is 95x the 14B's yet only 1.3x Qwen3.5's. So by margins it is "mid-pack": it has neither the 14B knife edge nor the 1.5B's very thick minimum.
 - **Threshold radius.** It has the **widest** flux tube: p50 31x the 14B, 5.1x Qwen3.5 and 2.3x the 1.5B. At the campaign radius this is the difference between 45% (14B), 1.2% (Qwen3.5), 0/20 (1.5B) and **0/1000**.
 - **Gain.** It has the **lowest** response gain of the four: 1.5x below the 14B, 2.1x below Qwen3.5, 3.5x below the 1.5B. Its 20.3x spread is the widest, so direction choice matters more than in any other model.
+- **Depth.** phi-4 has the widest absolute $h_{\rm depth}$ range (0.15-0.86, driven by token 0) but the most consistently negative normalized tangent (93/96 intervals). The absolute/radial split is the same story as in the other three models, not a phi-4 exception.
+- **State kicks.** The 14B's kicks reach its early razor pair at 22/24 directions; phi-4's strongest kick reaches its late tie at 2/24, and only after 27 steps. The kick result is the dynamical counterpart of the static flux-tube result: one-position changes do not travel far enough to threaten phi-4's decisions.
 - **Floor.** Its floor (1.51e-3) sits between Qwen3.5's (6.1e-4) and the 14B's (2.7e-3); signal-to-floor at $r=0.1$ is 24.9x (14B 17.5x, Qwen3.5 82x).
 - **Angle.** The near-perpendicular response is reproduced (89.85°), but with an 8° IQR rather than Qwen3.5's 1.4°.
 
 ---
 
-## 8. Where phi-4 sits in the fragility hierarchy, and why
+## 11. Where phi-4 sits in the fragility hierarchy, and why
 
 **Ordering (most fragile first):** DS-R1-14B $\gg$ Qwen3.5-9B $>$ 1.5B $>$ **phi-4**. In one number per pair: flips at $r=0.1$ are 45.3%, 1.2%, 0/20 and **0/1000**; $r_*$ medians are 0.116, 0.707, 1.56 and **3.59**.
 
@@ -267,7 +372,7 @@ This is a clean confirmation of the cross-scale lesson: **raw margin is a weak p
 
 ---
 
-## 9. Prediction scorecard
+## 12. Prediction scorecard
 
 | | $r=0.1$ | $r=0.3$ |
 |---|---:|---:|
@@ -285,7 +390,7 @@ The honest one-line verdict: **phi-4 is so far outside the linear rule's danger 
 
 ---
 
-## 10. Caveats and what this does not show
+## 13. Caveats and what this does not show
 
 1. **The layer profile is sparse.** Only 14 states are saved, covering blocks 0,1,2,4,7,11,15,19,23,27,31,35,38. The 131x growth and the "12/12 positive intervals" are statements about those 12 intervals, not about every block. A block between two saved states could contract without being seen. The last block (39) is absent.
 2. **The state-normalized response uses the median baseline norm per saved state**, not per step. This is the same compromise as the 14B, but at finer resolution (12 intervals instead of 8).
@@ -295,5 +400,9 @@ The honest one-line verdict: **phi-4 is so far outside the linear rule's danger 
 6. **The 2/4 re-sync result contradicts the "0 re-sync expected" prior.** It is reported as measured. With four events it cannot distinguish "phi-4 sometimes produces transient substitutions" from "these two directions happened to be near a one-token boundary".
 7. **The decomposition uses each model's own A1 file.** The 14B point is computed from `results_big/ds14/a1_inter_w100/a1.npz` with the same signed rule; it gives a median $r_*$ of 0.103 where the published cross-scale value is 0.116 (a run-version difference), so the ordering, not the third digit, is the claim.
 8. **phi-4 has no sliding window.** Window experiments are undefined (null by construction); nothing here says how a window would change the margins.
-9. **Depth, non-normality, state kicks and multi-prompt generality are pending**, as described in §6. The conclusions about the fragility hierarchy rest on the calibration, A1 and free runs and do not depend on those blocks.
-10. **The 40-block count and $d=5120$ are metadata facts**, not measured in the npz here; the npz confirms $d=5120$ through `dh_last` and the vocabulary 100352 through the tokenizer. The depth run, when it lands, will give an independent count of the blocks.
+9. **Non-normality is still pending.** `nonnorm_w0/nonnorm.npz` is still generating (fused-MLP Jacobian fix); §9 quotes no numbers for it. The D2 trajectory distance matrices are also still to arrive under `results_big/phi4/d2/`. The conclusions about the fragility hierarchy rest on the calibration, A1, free, depth, state-kick and multi-prompt runs and do not depend on those two blocks.
+10. **The 40-block count and $d=5120$ are metadata facts**, and the depth npz independently confirms 40 block entries; the npz also confirms $d=5120$ through `dh_last` and the vocabulary 100352 through the tokenizer.
+11. **The depth run cannot answer the tie-hotspot question.** Its tokens are $0,21,50,100,150,200,250,299$; the phi-4 ties at 219 and 277 are absent. Token 21 is present but is an ordinary-margin token in phi-4 ($m_{21}=2.89$), and token 250 is 27 steps before 277 with a large margin ($m=10.73$). No proxy in this run is a tie. A re-run with 219/277 is scheduled.
+12. **The depth spectrum is top-8, not full-rank.** $h_{\rm depth}$ sums the 8 sampled tangent directions; a 5120-dimensional Jacobian can have larger directions outside the sampled subspace. The final spectrum is flat across the 8 directions, which is consistent with, but not proof of, a flat full spectrum. The state normalization uses the A1 `norm_h0` at 14 saved states (12 intervals), not per-block norms.
+13. **The state kicks are a single-position, embedding-level injection.** They are not the prompt-wide perturbation of the A1/free runs, and the readout is state 39. The flip count uses $r_c\le1$ recomputed from the baseline $m$ and the $r=0.1$ response; at the actual $r=0.1$ no kick flips anything. The half-life is measured from the immediate response at $s$, not from a global maximum. The re-sync argument is a consistency argument, not a mechanism proof.
+14. **The multi-prompt runs have 200 directions and one prompt each.** The same seed-69 generator makes the 200 directions comparable to the first 200 interstellar directions, but the Spearman correlations have $n=200$ and $p=0.09$-0.30, so they establish "no strong shared ordering", not a precise zero. The 1% flip rate at $r=0.3$ is 2/200 per prompt and cannot be compared as a rate with the 2/1000 interstellar value.

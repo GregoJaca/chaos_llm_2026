@@ -8,11 +8,11 @@ Reads (local copies pulled from the Spark; every path is optional except a1):
     results_big/phi4/a1_inter_w0/a1.npz           1000 dirs, r=0.1, T=300,
                                                   14 saved states
     results_big/phi4/free_inter_w0/{free_run.npz,summary.json}
-    results_big/phi4/state_w0/state2.npz          pending
-    results_big/phi4/depth_w0/depth.npz           pending
-    results_big/phi4/nonnorm_w0/nonnorm.npz       pending
-    results_big/phi4/a1_childhood_w0/a1.npz       pending
-    results_big/phi4/a1_cyber_w0/a1.npz           pending
+    results_big/phi4/state_w0/state2.npz          kicks at 10 positions x 24 dirs
+    results_big/phi4/depth_w0/depth.npz           8 tokens x 40 blocks x k=8
+    results_big/phi4/nonnorm_w0/nonnorm.npz       pending (fused-MLP Jacobian fix)
+    results_big/phi4/a1_childhood_w0/a1.npz       200-dir multiprompt run
+    results_big/phi4/a1_cyber_w0/a1.npz           200-dir multiprompt run
     assets/tok_phi4/tokenizer.json                tie/flip words
 
 Writes
@@ -578,6 +578,8 @@ def compute_depth(D):
         nrate = np.log(nb[i + 1] / nb[i]) / d
         rel[f"{bl[i]}->{bl[i + 1]}"] = (tang - nrate).tolist()
     rel_arr = np.array(list(rel.values()))           # (ninterval, ntok)
+    nh_tok = np.asarray(D["norm_h0"][-1, tokens]
+                        / D["norm_h0"][0, tokens], float)
     return {
         "tokens": tokens.tolist(), "layers": layers.tolist(), "k": int(k),
         "h_depth": hd.tolist(),
@@ -586,6 +588,9 @@ def compute_depth(D):
         "final_lambda_max": lam[:, -1, :].max(axis=1).tolist(),
         "final_spectrum": lam[:, -1, :].tolist(),
         "tangent_volume_growth": vol_growth.tolist(),
+        "state_norm_growth_by_token": nh_tok.tolist(),
+        "relative_endpoint_by_token": (
+            np.log(vol_growth) - np.log(nh_tok)) / n,
         "block0_exponent_median": np.median(ex[:, 0, :], axis=1).tolist(),
         "late_exponent_median": np.median(ex[:, -5:, :].mean(axis=2), axis=1).tolist(),
         "local_gain_median_tokens": np.median(lg, axis=0).tolist(),
@@ -672,7 +677,12 @@ def compute_state(D):
            "readout_state": int(layers[-1]),
            "immediate": [], "halflife": [], "late_ratio": [],
            "frac_decaying": [], "flip_frac": [], "earliest_median": [],
+           "rstar_median": [], "rstar_min": [], "immediate_by_radius": {},
            "trajectories": {}}
+    for ri_, rv in enumerate(radii):
+        res["immediate_by_radius"][f"{rv:g}"] = [
+            float(np.median(dh[ri_, si, :, -1, s] / rv))
+            for si, s in enumerate(steps)]
     for si, s in enumerate(steps):
         v = dh[rip, si, :, -1, :] / r_used
         imm = np.median(v[:, s])
@@ -702,6 +712,13 @@ def compute_state(D):
                 first.append(int(hit[0]))
         res["flip_frac"].append(nflip / nd)
         res["earliest_median"].append(float(np.median(first)) if first else None)
+        if s < T - 1:
+            rs = rc.min(axis=1)
+            res["rstar_median"].append(float(np.median(rs)))
+            res["rstar_min"].append(float(rs.min()))
+        else:
+            res["rstar_median"].append(None)
+            res["rstar_min"].append(None)
         res["trajectories"][str(int(s))] = np.median(v, axis=0).tolist()
     return res
 
@@ -712,10 +729,30 @@ def _rstar_block(path, D):
     dm = a["dm"][0].astype(float)
     r = float(a["radii"][0]) if a["radii"].size else R_RUN
     rc = np.where(dm < 0, m[None, :] * r / np.maximum(-dm, 1e-300), np.inf)
+    ts = rc.argmin(axis=1)
     rs = rc.min(axis=1)
+    ss = -dm[np.arange(rc.shape[0]), ts] / r
+    mst = m[ts]
+    ok = np.isfinite(rs) & np.isfinite(ss) & (ss > 0)
+    allc = np.bincount(ts, minlength=m.size)
+    order = np.argsort(allc)[::-1]
     return {"m": m, "rstar": rs, "K": int(rc.shape[0]),
             "margins": qsummary(m), "rstar_q": qsummary(rs),
-            "flip_frac_at_0p1": float((rs <= 0.1).mean())}
+            "flip_frac_at_0p1": float((rs <= 0.1).mean()),
+            "flip_frac_at_0p3": float((rs <= 0.3).mean()),
+            "flip_frac_at_1": float((rs <= 1.0).mean()),
+            "median_mstar": float(np.median(mst[ok])),
+            "median_sensitivity": float(np.median(ss[ok])),
+            "n_distinct_controlling_steps": int((allc > 0).sum()),
+            "share_5_thinnest": float(np.isin(ts, np.argsort(m)[:5]).mean()),
+            "ladder": [{"t": int(t), "n": int(allc[t]), "m": float(m[t])}
+                       for t in order[:6] if allc[t] > 0]}
+
+
+def _spearman(a, b):
+    ra = np.argsort(np.argsort(np.asarray(a, float)))
+    rb = np.argsort(np.argsort(np.asarray(b, float)))
+    return float(np.corrcoef(ra, rb)[0, 1])
 
 
 def compute_generality(D):
@@ -726,6 +763,19 @@ def compute_generality(D):
                 out[name] = "pending"
                 continue
         b = _rstar_block(path, D)
+        if "interstellar" in out and isinstance(out["interstellar"], dict):
+            ref = out["interstellar"]
+            n = min(ref["K"], b["K"])
+            b["vs_interstellar"] = {
+                "n": int(n),
+                "spearman_log_rstar": _spearman(np.log(ref["rstar"][:n]),
+                                               np.log(b["rstar"])),
+                "shared_flip_le1": int(np.sum((ref["rstar"][:n] <= 1)
+                                              & (b["rstar"] <= 1))),
+                "ref_flip_le1": int(np.sum(ref["rstar"][:n] <= 1)),
+                "flip_le1": int(np.sum(b["rstar"] <= 1)),
+                "note": "same seed-69 direction generator; the first n directions "
+                        "coincide"},
         out[name] = b
     return out
 
@@ -1191,9 +1241,11 @@ def fig_depth(D, Q):
     for j, toks in enumerate((q["tokens"][:4], q["tokens"][4:])):
         ax = fig.add_subplot(gs[0, j])
         for i, t in enumerate(toks):
-            ax.semilogy(layers, lam[i], lw=1.1, label=f"t={t}")
+            ax.plot(layers, lam[i], lw=1.1, label=f"t={t}")
+        ax.set_yscale("symlog", linthresh=1e-2)
+        ax.axhline(0, color="k", lw=0.7)
         ax.set_xlabel("block index $l$")
-        ax.set_ylabel("$\\lambda_i(l)$  (nats/block, log scale)")
+        ax.set_ylabel("$\\lambda_i(l)$  (nats/block, symlog)")
         ax.legend(ncol=2, fontsize=7.2)
         ax.set_title(f"({'ab'[j]}) Running tangent exponent, tokens {toks[0]}-{toks[-1]}")
 
@@ -1250,9 +1302,11 @@ def fig_depth(D, Q):
 
     verdict = ("contracts" if q["relative_n_negative"] >= 0.75 * q["relative_n_cells"]
                else "mostly expands")
-    fig.suptitle(f"phi-4 depth spectrum: absolute growth, but the state-normalized tangent "
-                 f"{verdict} in {q['relative_n_negative']}/{q['relative_n_cells']} intervals",
-                 fontsize=11.3, y=0.997)
+    vg = np.array(q["tangent_volume_growth"])
+    fig.suptitle(f"phi-4 depth: the tangent volume grows {vg.min():.1f}-{vg.max():.0f}x over "
+                 f"40 blocks, but the state-normalized tangent {verdict} in "
+                 f"{q['relative_n_negative']}/{q['relative_n_cells']} intervals",
+                 fontsize=11.2, y=0.997)
     fig.tight_layout(rect=(0, 0, 1, 0.955))
     fig.savefig(os.path.join(FIGDIR, "phi4_depth.png"), dpi=165)
     plt.close(fig)
@@ -1316,9 +1370,18 @@ def fig_state(D, Q):
     steps = np.array(q["steps"])
     fig, axes = plt.subplots(2, 2, figsize=(13.0, 8.4))
     ax = axes[0, 0]
-    ax.semilogy(steps, q["immediate"], "o-", color=C_ROB, lw=1.3, ms=4.5)
+    cols = {0.1: C_ROB, 0.03: C_PRED}
+    for rv, vals in q["immediate_by_radius"].items():
+        rvf = float(rv)
+        if rvf == 0.1:
+            ax.semilogy(steps, vals, "o-", color=C_ROB, lw=1.3, ms=4.5,
+                        label=f"$r={rvf:g}$")
+        else:
+            ax.semilogy(steps, vals, "^", color=C_PRED, ms=6.5, mfc="none",
+                        mew=1.2, label=f"$r={rvf:g}$")
     ax.set_xlabel("kick position $s$")
     ax.set_ylabel("$\\|\\delta h^{\\mathrm{last}}_s\\|/r$  (log scale)")
+    ax.legend(loc="upper right")
     ax.set_title("(a) Immediate response at the kick position")
 
     ax = axes[0, 1]
@@ -1332,36 +1395,57 @@ def fig_state(D, Q):
     ax2 = ax.twinx()
     lr = np.array([np.nan if v is None else v for v in q["late_ratio"]], float)
     ax2.semilogy(np.arange(len(steps)), lr, "^--", color=C_HOT, ms=5)
+    ax2.axhline(1.0, color=C_HOT, ls=":", lw=0.9)
     ax2.set_ylabel("late / immediate", color=C_HOT)
     ax2.tick_params(axis="y", colors=C_HOT)
     ax2.grid(False)
-    ax.set_title("(b) Initial decay and late re-amplification")
+    ax.set_title("(b) Initial half-life and late/immediate ratio")
 
     ax = axes[1, 0]
-    ax.bar(np.arange(len(steps)), 100 * np.array(q["flip_frac"]), color=C_ABS, alpha=0.85)
+    ax.bar(np.arange(len(steps)), 100 * np.array(q["flip_frac"]), color=C_ABS, alpha=0.85,
+           label="directions that flip at $r\\leq1$")
     ax.set_xticks(np.arange(len(steps)))
     ax.set_xticklabels([str(s) for s in steps], fontsize=7.5)
     ax.set_xlabel("kick position $s$")
     ax.set_ylabel("% of 24 directions that flip at $r\\leq1$")
+    ax.set_ylim(0, max(10, 110 * max(q["flip_frac"])))
+    ax.set_ylim(0, 9.5)
     ax2 = ax.twinx()
-    em = np.array([np.nan if v is None else v for v in q["earliest_median"]], float)
-    ax2.plot(np.arange(len(steps)), em, "o--", color=C_HOT, ms=4.5, lw=1.1)
-    ax2.set_ylabel("median first-crossing step (red)", color=C_HOT)
+    rsmed = np.array([np.nan if s >= 299 else v for s, v in
+                      zip(steps, q["rstar_median"])], float)
+    rsmin = np.array([np.nan if s >= 299 else v for s, v in
+                      zip(steps, q["rstar_min"])], float)
+    ax2.semilogy(np.arange(len(steps)), rsmed, "o--", color=C_HOT, ms=4.5, lw=1.1,
+                 label="median $r_*$")
+    ax2.plot(np.arange(len(steps)), rsmin, "x", color=C_HOT, ms=6.5,
+             label="min $r_*$")
+    ax2.set_ylim(0.5, 20)
+    ax2.set_ylabel("median / min $r_*$ (red)", color=C_HOT)
     ax2.tick_params(axis="y", colors=C_HOT)
     ax2.grid(False)
-    ax.set_title("(c) Flip fraction and the gate that is reached")
+    h1, l1 = ax.get_legend_handles_labels()
+    h2, l2 = ax2.get_legend_handles_labels()
+    ax.legend(h1 + h2, l1 + l2, loc="upper left", fontsize=7.2)
+    ax.set_title("(c) Only $s=250$ reaches a gate: 2/24 flip at $t=277$")
 
     ax = axes[1, 1]
-    for s in (steps[0], steps[len(steps) // 2], steps[-1]):
+    for s in (8, 100, 250):
         tr = np.array(q["trajectories"][str(int(s))])
         ax.semilogy(np.arange(len(tr)), tr, lw=1.2, label=f"s={int(s)}")
         ax.axvline(s, color=C_GREY, ls=":", lw=0.8)
+    for tt, lab in ((219, "t=219"), (277, "t=277")):
+        ax.axvline(tt, color=C_ABS, ls="--", lw=0.9)
+        ax.text(tt + 2, 0.012, lab, fontsize=7.0, color=C_ABS, rotation=90,
+                va="bottom")
     ax.set_xlabel("generated step $t$")
     ax.set_ylabel("$\\|\\delta h^{\\mathrm{last}}_t\\|$  (log scale)")
+    ax.set_ylim(7e-3, 1.5e1)
     ax.legend()
     ax.set_title("(d) Response trajectories")
 
-    fig.suptitle("phi-4 state kicks (pending run)", fontsize=11.5, y=0.995)
+    fig.suptitle("phi-4 state kicks: a one-position kick decays with a 1-4.5-step half-life; "
+                 "only the s=250 kick survives to the t=277 tie (2/24 directions)",
+                 fontsize=11.2, y=0.995)
     fig.tight_layout(rect=(0, 0, 1, 0.955))
     fig.savefig(os.path.join(FIGDIR, "phi4_state.png"), dpi=165)
     plt.close(fig)
@@ -1428,11 +1512,17 @@ def fig_generality(D, Q):
     ax.set_xticks(x)
     ax.set_xticklabels([f"{n}\n(n={g[n]['K']})" for n in names], fontsize=8)
     ax.set_ylabel("directions that flip (%)")
+    ax.set_ylim(0, 1.35)
+    for xi, n in zip(x, names):
+        ax.text(xi - 0.18, 0.03, "0", ha="center", fontsize=7.4)
+        ax.text(xi + 0.18, 100 * (g[n]["rstar"] <= 0.3).mean() + 0.03,
+                f"{100 * (g[n]['rstar'] <= 0.3).mean():.1f}", ha="center", fontsize=7.4)
     ax.legend(fontsize=7.4)
-    ax.set_title("(d) Flip fraction at the two validation radii")
+    ax.set_title("(d) 0 flips at $r=0.1$; 0.2% and 1% at $r=0.3$")
 
-    fig.suptitle("phi-4 multi-prompt generality: do the margin spectrum and the gates "
-                 "move with the prompt?", fontsize=11.4, y=0.995)
+    fig.suptitle("phi-4 multi-prompt generality: the margin spectrum barely moves, but the "
+                 "steps and directions that control the gates are entirely prompt-specific",
+                 fontsize=11.2, y=0.995)
     fig.tight_layout(rect=(0, 0, 1, 0.955))
     fig.savefig(os.path.join(FIGDIR, "phi4_generality.png"), dpi=165)
     plt.close(fig)
@@ -1482,7 +1572,13 @@ def main():
             "final_norm_state": "state 40 (block 39); only dh_last/h0_last, 24 dirs",
             "files": {"calib": "results_big/phi4/calib/calib.npz",
                       "a1": "results_big/phi4/a1_inter_w0/a1.npz",
-                      "free": "results_big/phi4/free_inter_w0/free_run.npz"},
+                      "free": "results_big/phi4/free_inter_w0/free_run.npz",
+                      "state": "results_big/phi4/state_w0/state2.npz",
+                      "depth": "results_big/phi4/depth_w0/depth.npz",
+                      "childhood": "results_big/phi4/a1_childhood_w0/a1.npz",
+                      "cyber": "results_big/phi4/a1_cyber_w0/a1.npz"},
+            "depth_tokens": [0, 21, 50, 100, 150, 200, 250, 299],
+            "depth_tokens_include_ties": False,
             "present": D["present"],
         },
         "pending": Q["pending"],
@@ -1570,6 +1666,15 @@ def main():
             "is noisier here (IQR ~8 deg) because ||dh||/||h0|| is only ~1e-4.",
             "phi-4 has no sliding window: window experiments are undefined (null by "
             "construction), so no window comparison is made.",
+            "the depth tokens are 0,21,50,100,150,200,250,299; neither phi-4 tie "
+            "(t=219, t=277) is in the list, so the 'is the tie token a tangent hotspot' "
+            "question is unanswered by this run and needs a re-run with the tie tokens.",
+            "the state-kick flip count uses r_c<=1 recomputed from the baseline m and "
+            "the r=0.1 kick response; at the run radius r=0.1 itself no direction in "
+            "any of the 10x24 kicks flips anything.",
+            "the multiprompt runs use the same seed-69 direction generator as the "
+            "1000-direction interstellar run, so their 200 directions are the first "
+            "200 of that generator and are directly comparable.",
         ],
     }
     json.dump(jf(out), open(OUTJSON, "w", encoding="utf-8"), indent=2)
