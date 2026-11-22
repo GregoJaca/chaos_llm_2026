@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  built 2026-11-22 00:06:41 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
+  built 2026-11-22 12:24:09 &nbsp;&middot;&nbsp; source: notebook_big.md &nbsp;&middot;&nbsp;
   <a href="notebook_big.pdf">PDF</a> &nbsp;&middot;&nbsp; <a href="notebook_big.md">Markdown</a>
 </header>
 <h1 id="large-models-on-the-dgx-spark-definitions-data-and-every-figure-explained">Large models on the DGX Spark: definitions, data, and every figure explained</h1>
@@ -7601,7 +7601,7 @@ later arrival produces the corresponding figure without touching the rest.</p>
 <p>The layer profile is monotone but weaker per block than Qwen3.5's: <strong>131x growth over 38 blocks</strong> (1.137x/block) across the 13 saved points, and all <strong>12</strong> intervals are positive. The state norm grows <strong>196x</strong> over the same span, so the <strong>state-normalized response peaks at block 2 and then decays 2.4x</strong> — the absolute growth is mostly radial/state-scale growth, the same lesson as the 1.5B and 14B.</p>
 <p>Free-run validation is a null at $r=0.1$: <strong>0 observed, 0 predicted</strong>. At $r=0.3$ there are <strong>4 observed flips vs 2 signed predictions</strong> (5 sign-blind), a 99.5% classification that is carried by the 995 both-none directions. All four flips are top-2 word swaps, and — unlike Qwen3.5 (0/169) and the 14B (0/19), where no flipped row re-synchronised — <strong>2 of the 4 are one-token substitutions that do re-join the baseline</strong>, while the other 2 diverge permanently.</p>
 <p>The response-vs-state angle is <strong>89.85°</strong> (IQR 85.5-93.5°), consistent with the near-perpendicular picture, but noisier here because the response is only $9.7\times10^{-5}$ of the state norm.</p>
-<p><strong>Pending in this draft.</strong> <code>state_w0/</code>, <code>depth_w0/</code>, <code>nonnorm_w0/</code>, <code>a1_childhood_w0/</code> and <code>a1_cyber_w0/</code> were still running on the GPU when this was written. Their sections are marked <strong>pending</strong>; <code>scripts_spark/figs_core_phi4.py</code> detects them with <code>Test-Path</code>-equivalent checks and will render <code>phi4_state.png</code>, <code>phi4_depth.png</code>, <code>phi4_nonnorm.png</code>, <code>phi4_generality.png</code> and fill the corresponding JSON blocks on the next run.</p>
+<p><strong>What the later runs add.</strong> The depth, state-kick and multi-prompt runs have landed. The depth spectrum (8 tokens x 40 blocks, $k=8$) shows the usual split: the tangent volume grows $2.2$-$73\times$ absolutely, but the state-normalized tangent <strong>contracts in 93 of 96 token-intervals</strong> (median $-0.105$ nats/block), a stronger version of the 14B's 61/64. The largest absolute tangent volume is at the <strong>first generated token</strong> ($h_{\rm depth}=0.859$, 2.3x the next), not at either phi-4 tie — and the depth token list does <strong>not</strong> contain 219 or 277, so this run cannot answer the tie-hotspot question (a re-run with the tie tokens is scheduled). The single-position kicks confirm the low responsiveness: immediate responses of 1.56-8.78 per unit radius, half-lives of 1-4.5 steps, and <strong>no flip at $r=0.1$ in any of the 240 (position, direction) kicks</strong>. Only the $s=250$ kick reaches a gate, crossing the $t=277$ tie for 2/24 directions 27 steps later; by the crossing step its response has fallen to 9-12% of the immediate value, which makes the one-token re-synchronisations in the free run plausible. The two extra prompts leave the margin and $r_*$ distributions nearly unchanged ($r_*$ p50 2.98 and 3.16 vs 3.59; 0 flips at $r=0.1$), but the <strong>controlling steps and the vulnerable directions move completely</strong> — the Spearman correlation of $\log r_*$ with the interstellar run on the same 200 directions is 0.09 and $-0.07$. Non-normality is still generating (fused-MLP Jacobian fix) and remains pending.</p>
 <hr />
 <h2 id="1-what-was-measured_3">1. What was measured</h2>
 <h3 id="11-setup_6">1.1 Setup</h3>
@@ -7642,12 +7642,24 @@ later arrival produces the corresponding figure without touching the rest.</p>
 <td>same 1000 directions, greedy, own KV cache, $\rho\in\{0.1,0.3\}$</td>
 </tr>
 <tr>
+<td>state kicks</td>
+<td>10 positions x 24 directions x $r\in\{0.03,0.1\}$, teacher-forced</td>
+</tr>
+<tr>
+<td>depth</td>
+<td>8 tokens x 40 blocks, $k=8$ tangent directions, QR every block</td>
+</tr>
+<tr>
+<td>multi-prompt</td>
+<td>200 directions at $r=0.1$ on <code>childhood</code> ($P=56$) and <code>cyber</code> ($P=61$)</td>
+</tr>
+<tr>
 <td>files used here</td>
-<td><code>results_big/phi4/calib/calib.npz</code>, <code>results_big/phi4/a1_inter_w0/a1.npz</code>, <code>results_big/phi4/free_inter_w0/{free_run.npz,summary.json}</code></td>
+<td><code>results_big/phi4/calib/calib.npz</code>, <code>a1_inter_w0/a1.npz</code>, <code>free_inter_w0/{free_run.npz,summary.json}</code>, <code>state_w0/state2.npz</code>, <code>depth_w0/depth.npz</code>, <code>a1_{childhood,cyber}_w0/a1.npz</code></td>
 </tr>
 <tr>
 <td>files pending</td>
-<td><code>state_w0/state2.npz</code>, <code>depth_w0/depth.npz</code>, <code>nonnorm_w0/nonnorm.npz</code>, <code>a1_{childhood,cyber}_w0/a1.npz</code></td>
+<td><code>nonnorm_w0/nonnorm.npz</code>; <code>traj/</code> (D2 distance matrices, separate analysis)</td>
 </tr>
 </tbody>
 </table>
@@ -8003,7 +8015,7 @@ later arrival produces the corresponding figure without touching the rest.</p>
 <li><strong>Block 39 is missing.</strong> The saved profile stops at block 38 (state 39). Block 39's output is state 40 and is not in <code>dh_norm</code>; its post-final-norm response exists for 24 directions, but the RMSNorm makes it not comparable to the pre-norm profile. No claim is made about the last block.</li>
 </ul>
 <hr />
-<h2 id="5-figure-phi4_freepng-stable-at-math3349-four-one-token-events-at-math3350">5. Figure <code>phi4_free.png</code> — stable at $r=0.1$, four one-token events at $r=0.3$</h2>
+<h2 id="5-figure-phi4_freepng-stable-at-math3367-four-one-token-events-at-math3368">5. Figure <code>phi4_free.png</code> — stable at $r=0.1$, four one-token events at $r=0.3$</h2>
 <p><img alt="free validation" src="figures/phi4_free.png" /></p>
 <p><strong>Setup.</strong> Same 1000 directions and prompt perturbation, now generated greedily with the model's own KV cache for 300 tokens at $\rho=0.1$ and $0.3$. <code>obs</code> is the first generated token that differs from the baseline; <code>pred</code> is recomputed here with the signed rule from A1. The npz's stored <code>pred</code> is sign-blind and is not used for the scorecard.</p>
 <p><strong>Axes.</strong> (a) stacked class counts per radius; labels give observed/predicted flips and both-none. (b) observed vs signed vs sign-blind flip percentage. (c) longest identical post-flip run per flipped direction (re-sync threshold 20). (d,e) survival $S(t)=P(\text{first flip}>t)$, $y$ zoomed to 0.994-1.0005; black observed, orange signed prediction; dotted verticals at 171/219/277. (f) black where the free continuation differs from the baseline, for the four flipped rows.</p>
@@ -8106,16 +8118,372 @@ later arrival produces the corresponding figure without touching the rest.</p>
 <li><strong>The post-flip agreement averages 0.497</strong>, but that is an artefact of averaging two permanent zeros with two nearly-identical rows; the median is not meaningful at $n=4$. The late agreement ($t>{\rm obs}+45$) is 0.324 for the same reason.</li>
 </ul>
 <hr />
-<h2 id="6-pending-depth-non-normality-state-kicks-generality">6. Pending: depth, non-normality, state kicks, generality</h2>
-<p>These blocks were still running when this draft was written. The analysis script already implements them and will produce the figures when the files appear; no numbers are quoted here.</p>
-<p><strong>6.1 <code>phi4_depth.png</code> — pending.</strong> The run is <code>depth_w0/depth.npz</code>: 8 tokens $0,21,50,100,150,200,250,299$, $k=8$ tangent directions, 40 blocks, QR after every block. Planned content: $\lambda_i(l)$ per token, $h_{\rm depth}$, per-block local gain against state-norm growth, the absolute and relative exponents, and the final spectrum. The relative test is better resolved for phi-4 than for the 14B: <code>norm_h0</code> has 14 states, giving <strong>12 intervals</strong> (1, 1, 2, 3, then 4s, last 3 blocks) rather than eight 6-block chunks, so "contracts" can be tested at 1-4 block resolution over blocks 0-38.</p>
-<p><strong>Protocol caveat for the razor-tie question.</strong> The brief asks whether "the razor-tie token" is a tangent hotspot like the 14B's $t=21$. For phi-4 the thin ties are at <strong>277 and 219</strong>, and neither is among the eight depth tokens; token 21 is in the depth set but is not a phi-4 tie ($m_{21}$ is an ordinary margin). The hotspot question can therefore only be answered by proxy (e.g. token 250, the closest to 277) unless the depth run is repeated with 219/277 in the token list. This is a protocol mismatch, not a data problem.</p>
-<p><strong>6.2 <code>phi4_nonnorm.png</code> — pending.</strong> <code>nonnorm_w0/nonnorm.npz</code>: MLP analytic SwiGLU Jacobian at 5 tokens x 9 blocks, full-block power iteration/Arnoldi at 5 tokens x 5 blocks, principal angles 4 blocks apart. Planned: $\sigma_{\max}$, $\rho$ and $\kappa=\sigma_{\max}/\rho$ by block, the $\sigma_{\max}$-$\rho$ plane, and the angle histogram against the 1.5B's 83.6° and the 14B's 86.96°. The reference pattern to test is the U-shape: extreme at block 0, normal in the middle, extreme again at the last block.</p>
-<p><strong>6.3 <code>phi4_state.png</code> — pending.</strong> <code>state_w0/state2.npz</code>: single-position kicks at $s=8,16,32,50,75,100,150,200,250,299$, 24 directions, radii 0.03 and 0.1, read at the last saved state. Planned: immediate response, half-life, late/immediate ratio, the fraction of directions whose first crossing is at $r\le1$, the median first-crossing step (the latency question), and response trajectories. Because phi-4 has no near-tie at 219/277 before the late sequence, the late gate at 277 is the natural target for kicks at $s\ge250$.</p>
-<p><strong>6.4 <code>phi4_generality.png</code> — pending.</strong> <code>a1_childhood_w0/</code> and <code>a1_cyber_w0/</code>: 200 directions at $r=0.1$ on two other prompts. Planned: margin spectra and $r_*$ ECDFs against the interstellar run of the same model, plus the flip fraction at 0.1/0.3. The question is whether the <strong>gates move</strong> (the controlling margin and its step) when the text changes, and whether the low sensitivity is a property of the model or of this prompt.</p>
-<p><strong>6.5 Trajectories.</strong> <code>traj/</code> is for the separate D2 analysis and is not part of this section.</p>
+<h2 id="6-figure-phi4_statepng-a-one-position-kick-dies-in-1-45-steps-and-only-math3394-reaches-a-gate">6. Figure <code>phi4_state.png</code> — a one-position kick dies in 1-4.5 steps, and only $s=250$ reaches a gate</h2>
+<p><img alt="state kicks" src="figures/phi4_state.png" /></p>
+<p><strong>Setup.</strong> <code>state_w0/state2.npz</code>: one random unit vector is added to the embedding output (state 0) at a single generated position $s\in\{8,16,32,50,75,100,150,200,250,299\}$, 24 directions per position, at $r=0.03$ and $r=0.1$. The continuation is teacher-forced on the baseline tokens and the response is read at state 39 (output of block 38). The baseline margins are the A1 margins, so the thinnest decision in range is $m_{277}=0.00925$. This is a single-token input change, not a prompt-wide perturbation, and it is the cleanest test of how far one position's state can travel.</p>
+<p><strong>Axes.</strong> (a) $x$ kick position $s$; $y$ immediate response $\|\delta h_s^{39}\|/r$ (log); filled circles $r=0.1$, open triangles $r=0.03$. (b) Left $y$: median number of steps until the response first falls below half its value at $s$; right $y$ (red, log): largest later response divided by the immediate response. (c) Left $y$: percentage of the 24 directions whose smallest later threshold is $r_c\le1$; right $y$ (red, log): median and minimum $r_*$ over directions, with $s=299$ omitted because it has no later step. (d) $x$ generated step; $y$ response norm for $s=8,100,250$; dotted verticals mark the kicks, dashed the two late ties at 219 and 277.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">$s$</th>
+<th style="text-align: right;">immediate $/r$</th>
+<th style="text-align: right;">half-life</th>
+<th style="text-align: right;">decaying</th>
+<th style="text-align: right;">late/immediate</th>
+<th style="text-align: right;">flips / 24</th>
+<th style="text-align: right;">median $r_*$</th>
+<th style="text-align: right;">min $r_*$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">8.78</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.32</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">7.38</td>
+<td style="text-align: right;">2.84</td>
+</tr>
+<tr>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">2.44</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.89</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">7.27</td>
+<td style="text-align: right;">2.40</td>
+</tr>
+<tr>
+<td style="text-align: right;">32</td>
+<td style="text-align: right;">1.56</td>
+<td style="text-align: right;">4.5</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">1.64</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3.07</td>
+<td style="text-align: right;">1.37</td>
+</tr>
+<tr>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">2.40</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.61</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">5.65</td>
+<td style="text-align: right;">1.67</td>
+</tr>
+<tr>
+<td style="text-align: right;">75</td>
+<td style="text-align: right;">3.64</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.69</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">7.48</td>
+<td style="text-align: right;">3.59</td>
+</tr>
+<tr>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">3.40</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.90</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">9.07</td>
+<td style="text-align: right;">2.95</td>
+</tr>
+<tr>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">3.02</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.72</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">9.84</td>
+<td style="text-align: right;">3.39</td>
+</tr>
+<tr>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">4.45</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.68</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">11.13</td>
+<td style="text-align: right;">1.26</td>
+</tr>
+<tr>
+<td style="text-align: right;">250</td>
+<td style="text-align: right;">6.65</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">24/24</td>
+<td style="text-align: right;">0.67</td>
+<td style="text-align: right;"><strong>2</strong></td>
+<td style="text-align: right;">3.61</td>
+<td style="text-align: right;"><strong>0.70</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">299</td>
+<td style="text-align: right;">2.74</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">0/24</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>The immediate response varies 5.6x across positions</strong> (8.78 at $s=8$ to 1.56 at $s=32$) and is linear in the radius: the per-unit values at $r=0.03$ and $r=0.1$ agree within 3.5% at every position (ratios 0.966-1.028). The 14B's two radii agreed to 19% at the worst position, so the small-radius extrapolation is better controlled here.</li>
+<li><strong>A kick is absorbed fast.</strong> The response falls below half its immediate value in <strong>1-4.5 steps</strong> at every position, and all 24/24 directions decay at every position except $s=299$ (no later step). The late maximum is only <strong>0.32-1.64x</strong> the immediate value, against <strong>1.8-98x</strong> for the 14B (17-98x at five of its ten positions): there is no global late burst, only a local bump. At $s=250$ the bump is at $t\approx271$ (median 3.31 per unit radius, 50% of the immediate spike) and dies to 0.58 by $t=277$.</li>
+<li><strong>Nothing flips at the campaign radius.</strong> At $r=0.1$ <strong>0 of 240</strong> (position, direction) kicks flip any token, and even the extrapolated $r_c\le1$ count is 2/240. The median flux-tube radius of a single-position kick is 3.1-11.1 across positions; only $s=250$ has a minimum below 1 (0.70), and its median (3.61) is the second-lowest after $s=32$ (3.07).</li>
+<li><strong>The latency question has one clean answer: $s=250\to t=277$, 27 steps later.</strong> It is the only kick that reaches a gate, and it reaches it for <strong>2 of 24 directions</strong> with thresholds 0.70 and 0.995. At $t=219$ the response is non-positive for all 24 directions ($r_c=+\infty$), so the 219 tie — the step that controls the most prompt-wide directions in A1 — is <em>widened</em>, not narrowed, by this kick. The 277 crossing is carried by the secondary bump at 270-271 and then by the decay tail. This is the same first-crossing-versus-argmin distinction seen in the 14B: the reachable gate is not the thinnest one ($m_{277}=0.0093$ vs $m_{219}=0.0170$), because the response at 277 is the one that survives.</li>
+<li><strong>The decay makes the free-run re-syncs plausible.</strong> At the 277 crossing the median response is <strong>8.7%</strong> of the immediate value, and the two flipping directions are at 9.2% and 11.9%; by $t=299$ the median has fallen to <strong>6.3%</strong>. A perturbation that is already at a tenth of its initial amplitude when the token changes has little left with which to steer the following tokens, so a one-token substitution that rejoins the baseline is what a decaying local kick should produce. This is a consistency argument, not a mechanism proof: the free-run events were prompt-wide perturbations with a persistent component, and direction 276 did re-diverge at 277 because that component was still there. A one-position kick has no such persistent component.</li>
+</ul>
 <hr />
-<h2 id="7-cross-model-comparison_1">7. Cross-model comparison</h2>
+<h2 id="7-figure-phi4_depthpng-absolute-growth-in-40-blocks-contraction-in-9396-normalized-intervals">7. Figure <code>phi4_depth.png</code> — absolute growth in 40 blocks, contraction in 93/96 normalized intervals</h2>
+<p><img alt="depth spectrum" src="figures/phi4_depth.png" /></p>
+<p><strong>Setup.</strong> <code>depth_w0/depth.npz</code>: $k=8$ orthonormal tangent vectors at one generated token, propagated through all <strong>40 blocks</strong> with a JVP and QR-renormalised after every block (Benettin). Tokens are $0,21,50,100,150,200,250,299$. $\lambda_i(l)=(1/(l+1))\sum_{b\le l}\log|R_{ii}(b)|$ is the running mean per-block tangent exponent, and $h_{\rm depth}=\sum_i\max(\lambda_i(39),0)$ is the total positive final exponent. The state normalization uses the baseline <code>norm_h0</code> from the A1 run at its 14 saved states, giving <strong>12 intervals</strong> of 1, 1, 2, 3, 4, 4, 4, 4, 4, 4, 4 and 3 blocks. The final block (39) is in the tangent growth but not in the norm growth — state 40 is not saved — so the last interval's contraction is if anything slightly conservative.</p>
+<p><strong>Axes.</strong> (a,b) $x$ block $l$; $y$ running exponent $\lambda_i(l)$ (symlog, linear within $\pm10^{-2}$ so the sign is visible); one line per token, median over the 8 directions. (c) $x$ probe token; $y$ $h_{\rm depth}$ (nats); token 0 in red. (d) $x$ block; $y$ growth per block (log): blue = median local tangent gain with the 25-75% band over tokens, red = state-norm growth per block from the saved baseline states. (e) $x$ block; $y$ log gain per block: grey = absolute exponent $e_l$, blue = relative exponent (tangent minus state-norm growth) at interval centres. (f) $x$ tangent direction; $y$ final $\lambda_i$ per token, token 0 red.</p>
+<h3 id="71-the-numbers-per-token">7.1 The numbers per token</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">token $t$</th>
+<th style="text-align: right;">$h_{\rm depth}$</th>
+<th style="text-align: right;">median final $\lambda_i$</th>
+<th style="text-align: right;">tangent growth</th>
+<th style="text-align: right;">state norm growth</th>
+<th style="text-align: right;">endpoint relative (nats/block)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;"><strong>0.859</strong></td>
+<td style="text-align: right;"><strong>0.107</strong></td>
+<td style="text-align: right;"><strong>73.2x</strong></td>
+<td style="text-align: right;">1621x</td>
+<td style="text-align: right;">−0.077</td>
+</tr>
+<tr>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">0.319</td>
+<td style="text-align: right;">0.040</td>
+<td style="text-align: right;">4.92x</td>
+<td style="text-align: right;">466x</td>
+<td style="text-align: right;">−0.114</td>
+</tr>
+<tr>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;">0.154</td>
+<td style="text-align: right;">0.018</td>
+<td style="text-align: right;">2.16x</td>
+<td style="text-align: right;">550x</td>
+<td style="text-align: right;">−0.139</td>
+</tr>
+<tr>
+<td style="text-align: right;">100</td>
+<td style="text-align: right;">0.216</td>
+<td style="text-align: right;">0.027</td>
+<td style="text-align: right;">2.94x</td>
+<td style="text-align: right;">574x</td>
+<td style="text-align: right;">−0.132</td>
+</tr>
+<tr>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">0.229</td>
+<td style="text-align: right;">0.028</td>
+<td style="text-align: right;">3.14x</td>
+<td style="text-align: right;">484x</td>
+<td style="text-align: right;">−0.126</td>
+</tr>
+<tr>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">0.284</td>
+<td style="text-align: right;">0.033</td>
+<td style="text-align: right;">4.13x</td>
+<td style="text-align: right;">422x</td>
+<td style="text-align: right;">−0.116</td>
+</tr>
+<tr>
+<td style="text-align: right;">250</td>
+<td style="text-align: right;">0.376</td>
+<td style="text-align: right;">0.048</td>
+<td style="text-align: right;">6.56x</td>
+<td style="text-align: right;">413x</td>
+<td style="text-align: right;">−0.104</td>
+</tr>
+<tr>
+<td style="text-align: right;">299</td>
+<td style="text-align: right;">0.194</td>
+<td style="text-align: right;">0.023</td>
+<td style="text-align: right;">2.64x</td>
+<td style="text-align: right;">422x</td>
+<td style="text-align: right;">−0.127</td>
+</tr>
+</tbody>
+</table>
+<p>The absolute tangent volume grows <strong>2.2-73x</strong> over 40 blocks, while the per-token baseline state norm grows <strong>413-1621x</strong>. The final individual $\lambda_i$ are all positive and nearly flat across the 8 sampled directions: per token the final spectrum spans 0.005-0.031 nats, with the median 0.018-0.107. The local tangent gain has a median of <strong>1.033</strong> over all token-block cells, and 85.9% of cells (85% of block medians) are above 1: the absolute tangent is mildly expansive almost everywhere, not only at block 0. The last column is the endpoint rate $\frac{1}{40}\log(\text{tangent growth}/\text{state norm growth})$; every token is negative, −0.077 to −0.139. The chunk test below uses the same ratio over each saved interval and is the finer-grained version.</p>
+<p>The state-norm column is <strong>per token</strong>; §4's 196x is the ratio of the <em>median over t</em> at state 0 to the median at state 39. The two aggregations differ because the per-token norm growth is heavy-tailed (the median per-token growth is 475x). The verdict does not depend on which is used: every per-token endpoint rate and 93/96 chunk cells are negative.</p>
+<p><strong>The absolute hotspot is the first generated token, not a tie.</strong> Token 0 has $h_{\rm depth}=0.859$, <strong>2.3x</strong> the next largest (token 250, 0.376) and <strong>2.7x</strong> the median of the other seven (0.244). Its final $\lambda_i$ are 0.104-0.113, the only values inside the 1.5B's 0.08-0.18 band; its first-block exponent is 0.674 against −0.008 to 0.269 for the others; its block-0 local gain is 2.05 against 1.00-1.31; and its tangent grows 73x against 2.2-6.6x. But its state norm also grows the most (1621x), so normalized it is the <strong>least</strong> contracting token (−0.077). The two thinnest tokens in the depth set are not hotspots: token 50 ($m_{50}=0.098$, 11th thinnest of 300 steps) has the <strong>smallest</strong> $h_{\rm depth}$ (0.154) and token 100 ($m=0.204$, 18th thinnest) has 0.216. Token 250 has the second-largest $h_{\rm depth}$ (0.376) but an ordinary margin ($m_{250}=10.73$, 238th of 300). Raw margin and absolute tangent volume are not aligned in this run.</p>
+<h3 id="72-the-normalized-verdict">7.2 The normalized verdict</h3>
+<p>The 12 chunk medians are:</p>
+<table>
+<thead>
+<tr>
+<th>chunk</th>
+<th style="text-align: right;">0→1</th>
+<th style="text-align: right;">1→2</th>
+<th style="text-align: right;">2→4</th>
+<th style="text-align: right;">4→7</th>
+<th style="text-align: right;">7→11</th>
+<th style="text-align: right;">11→15</th>
+<th style="text-align: right;">15→19</th>
+<th style="text-align: right;">19→23</th>
+<th style="text-align: right;">23→27</th>
+<th style="text-align: right;">27→31</th>
+<th style="text-align: right;">31→35</th>
+<th style="text-align: right;">35→38</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>relative</td>
+<td style="text-align: right;">−0.360</td>
+<td style="text-align: right;">−0.261</td>
+<td style="text-align: right;">−0.227</td>
+<td style="text-align: right;">−0.168</td>
+<td style="text-align: right;">−0.128</td>
+<td style="text-align: right;">−0.092</td>
+<td style="text-align: right;">−0.103</td>
+<td style="text-align: right;">−0.084</td>
+<td style="text-align: right;">−0.071</td>
+<td style="text-align: right;">−0.045</td>
+<td style="text-align: right;"><strong>−0.033</strong></td>
+<td style="text-align: right;">−0.117</td>
+</tr>
+</tbody>
+</table>
+<p><strong>93 of 96 token-intervals contract</strong> (96.9%), with an overall median of <strong>−0.105 nats/block</strong>. The three positive cells are token 0 in 0→1 (+0.153) and 31→35 (+0.0054), and token 200 in 23→27 (+0.0204). The first is a real first-block effect: the tangent grows 1.79x while the <em>median</em> baseline norm grows 1.54x across that one interval, a 1.17x relative expansion. The other two are at the resolution floor, exactly like the 14B's three exceptions.</p>
+<p>The shape is <strong>an early contraction that weakens toward zero and then re-accelerates at the very end</strong>: −0.360 in the first block, a monotone approach to −0.033 in blocks 31-35 (the 1.5B's least-negative value is −0.034, so this is the saturation regime), and then −0.117 in the last three blocks. phi-4 therefore does <strong>not</strong> saturate flatly like Qwen3.5 over its last third; its final three blocks are the second-strongest late contraction after the first block. But the verdict is unambiguous: at 40 blocks, the absolute growth is radial/state-scale growth, and the state-normalized tangent contracts for every token; the only positive cells are the single first-block token-0 cell and two resolution-floor cells.</p>
+<h3 id="73-comparison-and-the-protocol-caveat">7.3 Comparison and the protocol caveat</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">1.5B</th>
+<th style="text-align: right;">DS-R1-14B</th>
+<th style="text-align: right;">Qwen3.5-9B</th>
+<th style="text-align: right;"><strong>phi-4</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>blocks</td>
+<td style="text-align: right;">28</td>
+<td style="text-align: right;">48</td>
+<td style="text-align: right;">32</td>
+<td style="text-align: right;"><strong>40</strong></td>
+</tr>
+<tr>
+<td>$h_{\rm depth}$</td>
+<td style="text-align: right;">0.6-1.4</td>
+<td style="text-align: right;">0.16-0.64</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;"><strong>0.15-0.86</strong></td>
+</tr>
+<tr>
+<td>final median $\lambda_i$</td>
+<td style="text-align: right;">0.08-0.18</td>
+<td style="text-align: right;">0.020-0.079</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;"><strong>0.018-0.107</strong></td>
+</tr>
+<tr>
+<td>normalized verdict</td>
+<td style="text-align: right;">every block contracts, worst −0.034</td>
+<td style="text-align: right;">61/64 chunks negative, −0.061 to −0.120</td>
+<td style="text-align: right;">contracts, saturates</td>
+<td style="text-align: right;"><strong>93/96 negative, median −0.105</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The 14B's 61/64 = 95.3% is slightly weaker than phi-4's 93/96 = 96.9%, and both have three near-zero exceptions. The difference is in the range: phi-4's first-block chunk reaches −0.360, close to the 14B's first 6-block chunk (−0.408) but at 1-block instead of 6-block resolution; its late contraction is −0.033 to −0.117 rather than the 14B's −0.034 to −0.100. The 1.5B's "every block contracts" is not literally reproduced, but the three violations are +0.5%, +2% and +17% per block (the last is the single first-block token-0 cell); the other 93 cells contract.</p>
+<p><strong>The tie-hotspot question cannot be answered by this run, and the text must say so.</strong> The eight depth tokens are <strong>0, 21, 50, 100, 150, 200, 250, 299</strong>. phi-4's thin ties are at <strong>219 and 277</strong>, and <strong>neither is in the list</strong>. Token 21 is in the list but is not a phi-4 tie: $m_{21}=2.89$ nats, an ordinary margin (it is the 14B's razor tie, not phi-4's). Token 250 is the closest probe (27 steps before 277) and happens to have the second-largest $h_{\rm depth}$, but its margin is 10.73 nats, so it says nothing about the tie. The scheduled re-run with 219 and 277 in the token list is required before any claim that "the tie token is/is not a tangent hotspot" can be made.</p>
+<hr />
+<h2 id="8-figure-phi4_generalitypng-the-distributions-generalise-the-gates-do-not">8. Figure <code>phi4_generality.png</code> — the distributions generalise, the gates do not</h2>
+<p><img alt="multi-prompt generality" src="figures/phi4_generality.png" /></p>
+<p><strong>Setup.</strong> <code>a1_childhood_w0/a1.npz</code> and <code>a1_cyber_w0/a1.npz</code>: 200 directions at $r=0.1$, 300 teacher-forced tokens, 14 saved states, on the <code>childhood</code> ($P=56$) and <code>cyber</code> ($P=61$) prompts. Both use the same seed-69 direction generator as the interstellar A1 run, so their 200 directions are the first 200 of the 1000-direction run and are directly comparable direction-by-direction. The interstellar curve is the full $K=1000$ run.</p>
+<p><strong>Axes.</strong> (a) $x$ baseline margin $m_t$ (log); $y$ fraction of steps at or below it. (b) $x$ $r_*$ (log); $y$ fraction of directions with $r_*\le r$; dashed line is the run radius. (c) $r_*$ quantiles per prompt; thick bar = 25-75%, thin = 10-90%, circle = median. (d) percentage of directions that flip at $r=0.1$ (dark) and $r=0.3$ (light).</p>
+<table>
+<thead>
+<tr>
+<th>prompt</th>
+<th style="text-align: right;">$K$</th>
+<th style="text-align: right;">margin min (step)</th>
+<th style="text-align: right;">margin p50</th>
+<th>$r_*$ p10 / p50 / p90</th>
+<th style="text-align: right;">flips at 0.1 / 0.3</th>
+<th>top controlling steps (directions)</th>
+<th style="text-align: right;">median $m_{t_*}$</th>
+<th style="text-align: right;">median $s$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>interstellar</td>
+<td style="text-align: right;">1000</td>
+<td style="text-align: right;">9.25e-3 (277)</td>
+<td style="text-align: right;">3.47</td>
+<td>1.20 / <strong>3.59</strong> / 10.66</td>
+<td style="text-align: right;">0 / 0.2%</td>
+<td>219 (273), 277 (253), 34 (95)</td>
+<td style="text-align: right;">0.0170</td>
+<td style="text-align: right;">7.67e-3</td>
+</tr>
+<tr>
+<td>childhood</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">8.89e-3 (52)</td>
+<td style="text-align: right;">3.67</td>
+<td>0.79 / <strong>2.98</strong> / 11.18</td>
+<td style="text-align: right;">0 / 1.0%</td>
+<td>32 (52), 52 (51), 183 (39)</td>
+<td style="text-align: right;">0.0116</td>
+<td style="text-align: right;">5.89e-3</td>
+</tr>
+<tr>
+<td>cyber</td>
+<td style="text-align: right;">200</td>
+<td style="text-align: right;">4.87e-3 (224)</td>
+<td style="text-align: right;">2.89</td>
+<td>0.76 / <strong>3.16</strong> / 9.34</td>
+<td style="text-align: right;">0 / 1.0%</td>
+<td>224 (60), 27 (38), 25 (36)</td>
+<td style="text-align: right;">0.0348</td>
+<td style="text-align: right;">7.09e-3</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>The margin spectrum barely moves.</strong> The median margin is 2.89-3.67 and the 10th percentile 0.35-0.58 across the three prompts. Every prompt has one sub-0.01 nat step (277, 52, 224), and the cyber minimum (4.87e-3) is actually <strong>1.9x thinner</strong> than interstellar's (9.25e-3). The ECDFs in panel (a) are almost on top of each other.</li>
+<li><strong>The $r_*$ distribution is equally stable.</strong> Median 2.98-3.59, p10 0.76-1.20, p90 9.34-11.18. <strong>All three prompts have 0 flips at $r=0.1$</strong>; at $r=0.3$ the two 200-direction prompts have 1.0% (2/200 each) against 0.2% (2/1000) for interstellar. The model-level "hard to move" property generalises; the two new prompts are not more fragile at the campaign radius despite their thin minima.</li>
+<li><strong>The gates themselves move completely.</strong> The controlling steps are prompt-specific: 219/277/34/186/53 for interstellar, 32/52/183/148 for childhood, 224/27/25/45 for cyber. The number of distinct controlling steps drops from 27 to 12 and 11, and the five thinnest steps carry 79.9%, 86.5% and 72.5% of the directions. Nothing about <em>which</em> step is the weak point transfers.</li>
+<li><strong>The vulnerable directions move with the prompt.</strong> On the same 200 directions, the Spearman correlation of $\log r_*$ is <strong>0.092</strong> (p=0.20) for childhood vs interstellar and <strong>−0.074</strong> (p=0.30) for cyber vs interstellar; between the two new prompts it is 0.121 (p=0.09). The shared-flip counts at $r\le1$ are 3 of (15, 32) and 0 of (15, 27). Direction vulnerability is a direction $\times$ prompt property, not a fixed property of the random direction.</li>
+<li><strong>What stays is the low response.</strong> The median local sensitivity at the controlling step is 5.9e-3 (childhood) and 7.1e-3 (cyber) against 7.7e-3 (interstellar), and the median controlling margin is 0.012-0.035. The ratio that sets $r_*$ is therefore stable within a factor of 1.3. The "uncertain where it is hard to move" reading is a property of phi-4, not of the interstellar prompt.</li>
+</ul>
+<hr />
+<h2 id="9-still-pending-non-normality-and-trajectories">9. Still pending: non-normality and trajectories</h2>
+<p><strong>9.1 <code>phi4_nonnorm.png</code> — pending.</strong> <code>nonnorm_w0/nonnorm.npz</code> is still generating; the fused-MLP Jacobian path is being fixed. Planned: MLP analytic SwiGLU Jacobian at 5 tokens x 9 blocks, full-block power iteration/Arnoldi at 5 tokens x 5 blocks, principal angles 4 blocks apart; $\sigma_{\max}$, $\rho$ and $\kappa=\sigma_{\max}/\rho$ by block, the $\sigma_{\max}$-$\rho$ plane, and the angle histogram against the 1.5B's 83.6° and the 14B's 86.96°. The reference pattern to test is the U-shape: extreme at block 0, normal in the middle, extreme again at the last block. No numbers are quoted and no figure is drawn until the file exists.</p>
+<p><strong>9.2 Trajectories.</strong> <code>traj/</code> is for the separate D2 analysis; the distance matrices will arrive later under <code>results_big/phi4/d2/</code>. Nothing in this section depends on them.</p>
+<hr />
+<h2 id="10-cross-model-comparison">10. Cross-model comparison</h2>
 <p>All rows use the same prompt, greedy decoding, FP32 and $r=0.1$ unless stated. 1.5B and 14B values are from the published sections; Qwen3.5-9B from its section; phi-4 from this one.</p>
 <table>
 <thead>
@@ -8134,6 +8502,27 @@ later arrival produces the corresponding figure without touching the rest.</p>
 <td style="text-align: right;">48 / 5120</td>
 <td style="text-align: right;">32 / 4096</td>
 <td style="text-align: right;"><strong>40 / 5120</strong></td>
+</tr>
+<tr>
+<td>depth $h_{\rm depth}$</td>
+<td style="text-align: right;">0.6-1.4</td>
+<td style="text-align: right;">0.16-0.64</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;"><strong>0.15-0.86</strong></td>
+</tr>
+<tr>
+<td>depth, normalized</td>
+<td style="text-align: right;">every block contracts (worst −0.034)</td>
+<td style="text-align: right;">61/64 chunks negative</td>
+<td style="text-align: right;">contracts, saturates</td>
+<td style="text-align: right;"><strong>93/96 negative</strong></td>
+</tr>
+<tr>
+<td>single-position kick flips at $r\le1$</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">22/24†</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;"><strong>2/24</strong></td>
 </tr>
 <tr>
 <td>attention</td>
@@ -8229,16 +8618,19 @@ later arrival produces the corresponding figure without touching the rest.</p>
 </tbody>
 </table>
 <p>* the 14B's window-100 setting was silently inactive in the runs analysed before the fix; see the correction note in <code>section_a1_deep.md</code>. phi-4 and Qwen3.5 have no window at all, so no window comparison is meaningful.</p>
+<p>† the 14B's kick row is the maximum over its 10 positions ($s=8$ and $s=150$, 22/24 at $r\le1$) from <code>section_state_depth.md</code>; the 1.5B and Qwen3.5 have no state-kick run in this campaign.</p>
 <p>Reading the table:</p>
 <ul>
 <li><strong>Margin thickness.</strong> phi-4's median margin (3.47) is 12% thicker than the 14B's and 40% thicker than Qwen3.5's, but 27% thinner than the 1.5B's. Its minimum is 95x the 14B's yet only 1.3x Qwen3.5's. So by margins it is "mid-pack": it has neither the 14B knife edge nor the 1.5B's very thick minimum.</li>
 <li><strong>Threshold radius.</strong> It has the <strong>widest</strong> flux tube: p50 31x the 14B, 5.1x Qwen3.5 and 2.3x the 1.5B. At the campaign radius this is the difference between 45% (14B), 1.2% (Qwen3.5), 0/20 (1.5B) and <strong>0/1000</strong>.</li>
 <li><strong>Gain.</strong> It has the <strong>lowest</strong> response gain of the four: 1.5x below the 14B, 2.1x below Qwen3.5, 3.5x below the 1.5B. Its 20.3x spread is the widest, so direction choice matters more than in any other model.</li>
+<li><strong>Depth.</strong> phi-4 has the widest absolute $h_{\rm depth}$ range (0.15-0.86, driven by token 0) but the most consistently negative normalized tangent (93/96 intervals). The absolute/radial split is the same story as in the other three models, not a phi-4 exception.</li>
+<li><strong>State kicks.</strong> The 14B's kicks reach its early razor pair at 22/24 directions; phi-4's strongest kick reaches its late tie at 2/24, and only after 27 steps. The kick result is the dynamical counterpart of the static flux-tube result: one-position changes do not travel far enough to threaten phi-4's decisions.</li>
 <li><strong>Floor.</strong> Its floor (1.51e-3) sits between Qwen3.5's (6.1e-4) and the 14B's (2.7e-3); signal-to-floor at $r=0.1$ is 24.9x (14B 17.5x, Qwen3.5 82x).</li>
 <li><strong>Angle.</strong> The near-perpendicular response is reproduced (89.85°), but with an 8° IQR rather than Qwen3.5's 1.4°.</li>
 </ul>
 <hr />
-<h2 id="8-where-phi-4-sits-in-the-fragility-hierarchy-and-why">8. Where phi-4 sits in the fragility hierarchy, and why</h2>
+<h2 id="11-where-phi-4-sits-in-the-fragility-hierarchy-and-why">11. Where phi-4 sits in the fragility hierarchy, and why</h2>
 <p><strong>Ordering (most fragile first):</strong> DS-R1-14B $\gg$ Qwen3.5-9B $>$ 1.5B $>$ <strong>phi-4</strong>. In one number per pair: flips at $r=0.1$ are 45.3%, 1.2%, 0/20 and <strong>0/1000</strong>; $r_*$ medians are 0.116, 0.707, 1.56 and <strong>3.59</strong>.</p>
 <p>The decomposition $r_*=m_{t_*}/s$ shows that these two factors are not interchangeable:</p>
 <table>
@@ -8278,7 +8670,7 @@ later arrival produces the corresponding figure without touching the rest.</p>
 </ul>
 <p>This is a clean confirmation of the cross-scale lesson: <strong>raw margin is a weak predictor of flippability across models</strong>; the ratio of margin to local response is what the perturbation radius measures. The same corpus, prompt and radius produce a 45% flip rate in one model and 0% in another, and the difference is mostly the denominator.</p>
 <hr />
-<h2 id="9-prediction-scorecard">9. Prediction scorecard</h2>
+<h2 id="12-prediction-scorecard">12. Prediction scorecard</h2>
 <table>
 <thead>
 <tr>
@@ -8319,7 +8711,7 @@ later arrival produces the corresponding figure without touching the rest.</p>
 <p>At $r=0.3$ the count is wrong in both directions depending on the sign convention (signed 2, sign-blind 5, observed 4), and the step-level classification is carried by the 995 both-none directions. The one "wrong step" (direction 276) actually does flip at the predicted gate 277 after a transient at 219, so the substantive prediction is better than the table suggests. The two 171 flips are genuine failures of the linear rule and are the interesting cases: they are large-margin decisions ($m_{171}=0.083$) that a 0.3 perturbation can only reach through a nonlinear amplification.</p>
 <p>The honest one-line verdict: <strong>phi-4 is so far outside the linear rule's danger zone at $r=0.1$ that the campaign cannot test the rule there; at $r=0.3$ four events are too few to establish a rate, but they show the same qualitative failure mode as the other models (early flips at moderate margins) plus a new one (one-token substitutions that re-sync).</strong></p>
 <hr />
-<h2 id="10-caveats-and-what-this-does-not-show">10. Caveats and what this does not show</h2>
+<h2 id="13-caveats-and-what-this-does-not-show">13. Caveats and what this does not show</h2>
 <ol>
 <li><strong>The layer profile is sparse.</strong> Only 14 states are saved, covering blocks 0,1,2,4,7,11,15,19,23,27,31,35,38. The 131x growth and the "12/12 positive intervals" are statements about those 12 intervals, not about every block. A block between two saved states could contract without being seen. The last block (39) is absent.</li>
 <li><strong>The state-normalized response uses the median baseline norm per saved state</strong>, not per step. This is the same compromise as the 14B, but at finer resolution (12 intervals instead of 8).</li>
@@ -8329,19 +8721,1329 @@ later arrival produces the corresponding figure without touching the rest.</p>
 <li><strong>The 2/4 re-sync result contradicts the "0 re-sync expected" prior.</strong> It is reported as measured. With four events it cannot distinguish "phi-4 sometimes produces transient substitutions" from "these two directions happened to be near a one-token boundary".</li>
 <li><strong>The decomposition uses each model's own A1 file.</strong> The 14B point is computed from <code>results_big/ds14/a1_inter_w100/a1.npz</code> with the same signed rule; it gives a median $r_*$ of 0.103 where the published cross-scale value is 0.116 (a run-version difference), so the ordering, not the third digit, is the claim.</li>
 <li><strong>phi-4 has no sliding window.</strong> Window experiments are undefined (null by construction); nothing here says how a window would change the margins.</li>
-<li><strong>Depth, non-normality, state kicks and multi-prompt generality are pending</strong>, as described in §6. The conclusions about the fragility hierarchy rest on the calibration, A1 and free runs and do not depend on those blocks.</li>
-<li><strong>The 40-block count and $d=5120$ are metadata facts</strong>, not measured in the npz here; the npz confirms $d=5120$ through <code>dh_last</code> and the vocabulary 100352 through the tokenizer. The depth run, when it lands, will give an independent count of the blocks.</li>
+<li><strong>Non-normality is still pending.</strong> <code>nonnorm_w0/nonnorm.npz</code> is still generating (fused-MLP Jacobian fix); §9 quotes no numbers for it. The D2 trajectory distance matrices are also still to arrive under <code>results_big/phi4/d2/</code>. The conclusions about the fragility hierarchy rest on the calibration, A1, free, depth, state-kick and multi-prompt runs and do not depend on those two blocks.</li>
+<li><strong>The 40-block count and $d=5120$ are metadata facts</strong>, and the depth npz independently confirms 40 block entries; the npz also confirms $d=5120$ through <code>dh_last</code> and the vocabulary 100352 through the tokenizer.</li>
+<li><strong>The depth run cannot answer the tie-hotspot question.</strong> Its tokens are $0,21,50,100,150,200,250,299$; the phi-4 ties at 219 and 277 are absent. Token 21 is present but is an ordinary-margin token in phi-4 ($m_{21}=2.89$), and token 250 is 27 steps before 277 with a large margin ($m=10.73$). No proxy in this run is a tie. A re-run with 219/277 is scheduled.</li>
+<li><strong>The depth spectrum is top-8, not full-rank.</strong> $h_{\rm depth}$ sums the 8 sampled tangent directions; a 5120-dimensional Jacobian can have larger directions outside the sampled subspace. The final spectrum is flat across the 8 directions, which is consistent with, but not proof of, a flat full spectrum. The state normalization uses the A1 <code>norm_h0</code> at 14 saved states (12 intervals), not per-block norms.</li>
+<li><strong>The state kicks are a single-position, embedding-level injection.</strong> They are not the prompt-wide perturbation of the A1/free runs, and the readout is state 39. The flip count uses $r_c\le1$ recomputed from the baseline $m$ and the $r=0.1$ response; at the actual $r=0.1$ no kick flips anything. The half-life is measured from the immediate response at $s$, not from a global maximum. The re-sync argument is a consistency argument, not a mechanism proof.</li>
+<li><strong>The multi-prompt runs have 200 directions and one prompt each.</strong> The same seed-69 generator makes the 200 directions comparable to the first 200 interstellar directions, but the Spearman correlations have $n=200$ and $p=0.09$-0.30, so they establish "no strong shared ordering", not a precise zero. The 1% flip rate at $r=0.3$ is 2/200 per prompt and cannot be compared as a rate with the 2/1000 interstellar value.</li>
 </ol>
 <hr />
-<h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
+<h1 id="qwen3-14b-the-widest-flux-tube-of-the-14b-class-and-evidence-that-fragility-is-family-dependent-not-scale-driven">Qwen3-14B: the widest flux tube of the 14B class, and evidence that fragility is family-dependent, not scale-driven</h1>
 <h2 id="summary_12">Summary</h2>
+<p>Qwen3-14B is a <strong>40-block, width-5120 dense-attention model</strong> (<code>Qwen3ForCausalLM</code>, vocabulary 151936) with <strong>no sliding window</strong> (documented null; <code>window=0</code>, sliding window undefined). On the standard campaign prompt — <code>interstellar_travel</code>, $P=64$ tokens, 300 greedy tokens, $r=0.1$, 1000 directions — it has the <strong>widest flux tube and lowest flippability of all tested models</strong>.</p>
+<p>Its calibration run (400 tokens) exhibits a smallest top-1/top-2 logit margin of $5.19\times10^{-3}$ nats at $t=150$ (<code>list</code>/<code>break</code>), followed by $5.19\times10^{-2}$ at 38 (<code>.\n</code>/<code>.\n\n</code>), $5.24\times10^{-2}$ at 64 (<code>a</code>/<code>me</code>), $6.46\times10^{-2}$ at 213 (<code>uses</code>/<code>heats</code>), and $6.93\times10^{-2}$ at 199 (<code>(</code>/<code>and</code>). That minimum margin is <strong>53x thicker than DeepSeek-R1-Distill-Qwen-14B's</strong> knife-edge tie ($9.73\times10^{-5}$ nats). The median margin is <strong>4.38 nats</strong> (DS-R1-14B: 3.10 nats, phi-4: 3.47 nats). The fp32 round-off floor is $3.76\times10^{-3}$ and the linear response window is $r\in[0.01, 0.3]$.</p>
+<p>What separates Qwen3-14B from its scale sibling (DS-R1-14B) is both a thicker margin landscape and moderate response sensitivity. Its per-direction response gain $G$ has median <strong>0.439</strong> (DS-R1-14B: 0.583, Qwen3.5-9B: 0.822, phi-4: 0.383). At the decisions that actually control the threshold, the local sensitivity is $s = 0.00389$ per unit radius (local response 2.8x lower than DS-R1-14B's $0.0110$), while the controlling margin is $0.0524$ nats (<strong>46x thicker than DS-R1-14B's</strong> $1.14\times10^{-3}$). The flux-tube radius $r_* = m_*/s_*$ has median <strong>8.393</strong> (p10 1.58, p90 29.73): <strong>81x wider than DS-R1-14B's 0.1035, 11.9x Qwen3.5-9B's 0.707, 5.4x DS-1.5B's 1.56, and 2.3x phi-4's 3.59</strong>. Exactly <strong>95.1% of directions require $r > 1$ to cause any flip</strong>, and 43.8% require $r > 10$.</p>
+<p>Free-run validation confirms extreme stability:
+- At $r=0.1$: <strong>0 observed flips, 0 predicted flips</strong> in 1000 directions (100% agreement, 1000/1000 both-none).
+- At $r=0.3$: <strong>2 observed flips vs 1 signed prediction</strong> (4 sign-blind), 99.9% row-level accuracy. Both observed flips occur at step $t=150$ (<code>list</code> $\to$ <code>break</code>, directions 420 and 562). Both are permanent divergences (0 re-synchronisation).</p>
+<p>The response-vs-state angle is <strong>90.80°</strong> (median across 7200 direction-step pairs, IQR 86.4–95.2°), confirming the near-perpendicular geometry observed across all large models.</p>
+<p><strong>The headline comparison:</strong> Comparing <strong>Qwen3-14B vs DeepSeek-R1-Distill-Qwen-14B</strong> — identical scale class (40 vs 48 blocks, both $d=5120$), tested under identical prompt and numerical precision (FP32) — proves that <strong>fragility and razor-thin ties are family- and training-dependent, NOT scale-driven</strong>. Distillation or specific post-training can introduce dense knife-edge ties that make a model 80x more flippable, whereas base or general-purpose models at the 14B scale maintain wide margins and robust stability.</p>
+<hr />
+<h2 id="1-experimental-setup">1. Experimental Setup</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td><code>Qwen3-14B</code>, <code>Qwen3ForCausalLM</code>, FP32</td>
+</tr>
+<tr>
+<td>Architecture</td>
+<td>40 blocks, hidden dim $d=5120$, vocabulary 151936</td>
+</tr>
+<tr>
+<td>Attention</td>
+<td>Full attention; sliding window <strong>none</strong> (<code>window=0</code>)</td>
+</tr>
+<tr>
+<td>Prompt</td>
+<td><code>interstellar_travel</code>, $P=64$ tokens</td>
+</tr>
+<tr>
+<td>Calibration</td>
+<td>8 directions $\times$ 7 radii ($10^{-3}$ to 1.0), 400 greedy tokens</td>
+</tr>
+<tr>
+<td>Core A1</td>
+<td>1000 directions, $r=0.1$, $T=300$ tokens, teacher-forced</td>
+</tr>
+<tr>
+<td>Free run</td>
+<td>Same 1000 directions, greedy autoregressive, $\rho\in\{0.1, 0.3\}$</td>
+</tr>
+<tr>
+<td>Single-position kicks</td>
+<td>10 positions $\times$ 24 directions $\times$ $r\in\{0.03, 0.1\}$</td>
+</tr>
+<tr>
+<td>Depth tangent</td>
+<td>8 tokens $\times$ 40 blocks, $k=8$ tangent directions, QR every block</td>
+</tr>
+<tr>
+<td>Multi-prompt generality</td>
+<td>200 directions on <code>childhood</code> ($P=56$) and <code>cyber</code> ($P=61$)</td>
+</tr>
+<tr>
+<td>Trajectories (D2)</td>
+<td>12 prompts $\times$ 1000 tokens, precomputed distance matrices on GPU</td>
+</tr>
+</tbody>
+</table>
+<p>Saved states: $0, 1, 2, 3, 5, 8, 12, 16, 20, 24, 28, 32, 36, 39$ (14 states corresponding to blocks $0, 1, 2, 4, 7, 11, 15, 19, 23, 27, 31, 35, 38$). Block 39 is captured in <code>dh_last</code> for 24 directions.</p>
+<hr />
+<h2 id="2-calibration-margin-landscape-and-linearity">2. Calibration: Margin Landscape and Linearity</h2>
+<p><img alt="Qwen3-14B Calibration" src="figures/qwen314_calib.png" /></p>
+<p><strong>Experimental setup:</strong> 8 unit directions on prompt embedding, 7 radii ($10^{-3}$ to 1.0), 400 tokens, teacher-forced on greedy continuation.</p>
+<table>
+<thead>
+<tr>
+<th>Radius $r$</th>
+<th style="text-align: right;">$10^{-3}$</th>
+<th style="text-align: right;">$3\times10^{-3}$</th>
+<th style="text-align: right;">$10^{-2}$</th>
+<th style="text-align: right;">$3\times10^{-2}$</th>
+<th style="text-align: right;">$0.1$</th>
+<th style="text-align: right;">$0.3$</th>
+<th style="text-align: right;">$1.0$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\|\delta h\|$ (block 38)</td>
+<td style="text-align: right;">$3.76\times10^{-3}$</td>
+<td style="text-align: right;">$4.10\times10^{-3}$</td>
+<td style="text-align: right;">$6.06\times10^{-3}$</td>
+<td style="text-align: right;">$1.35\times10^{-2}$</td>
+<td style="text-align: right;">$4.36\times10^{-2}$</td>
+<td style="text-align: right;">$1.32\times10^{-1}$</td>
+<td style="text-align: right;">$4.60\times10^{-1}$</td>
+</tr>
+<tr>
+<td>$\|\delta h\|/r$ (gain)</td>
+<td style="text-align: right;">3.76</td>
+<td style="text-align: right;">1.37</td>
+<td style="text-align: right;">0.606</td>
+<td style="text-align: right;"><strong>0.448</strong></td>
+<td style="text-align: right;"><strong>0.436</strong></td>
+<td style="text-align: right;"><strong>0.439</strong></td>
+<td style="text-align: right;">0.460</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Linearity window:</strong> The response gain $\|\delta h\|/r$ is flat to within 2% across $r\in[0.03, 0.3]$ at a plateau of $\approx0.439$. The campaign radius $r=0.1$ sits squarely in this clean linear window.</li>
+<li><strong>Numerical floor:</strong> At $r\le3\times10^{-3}$, the response hits the fp32 round-off floor of $\approx3.8\times10^{-3}$ (11.6x below the $r=0.1$ signal).</li>
+<li><strong>Thick margin bulk:</strong> Across 400 generated tokens, the median margin is <strong>4.38 nats</strong>, with only 1 step below 0.01 nats ($t=150$, $m=0.00519$ nats) and only 8 steps below 0.1 nats. There are zero knife-edge ties.</li>
+</ul>
+<hr />
+<h2 id="3-core-program-margin-spectrum-sensitivity-and-fragility">3. Core Program: Margin Spectrum, Sensitivity, and Fragility</h2>
+<p><img alt="Qwen3-14B Core Analysis" src="figures/qwen314_core.png" /></p>
+<p><strong>Experimental setup:</strong> 1000 random unit directions at $r=0.1$, $T=300$ tokens, teacher-forced. Signed threshold rule $r_c = m_t / \max(-\delta m_t/r, 0)$.</p>
+<ul>
+<li><strong>Flux tube radius $r_*$:</strong> Median $r_* = \mathbf{8.393}$ (p25 3.12, p75 17.88, p90 29.73). Only 1 direction in 1000 has $r_* \le 0.3$.</li>
+<li><strong>Fragility decomposition $r_* = m_* / s_*$:</strong></li>
+<li>Median controlling margin $m_* = 0.0524$ nats (controlled primarily by $t=64$ and $t=38$).</li>
+<li>Median controlling sensitivity $s_* = 0.00389$ nats/unit radius.</li>
+<li>The ratio gives $r_* \approx 8.39$, matching the median $r_*$ exactly.</li>
+<li><strong>Comparison with other models (same protocol, 1000 directions):</strong></li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th style="text-align: right;">DS-R1-14B</th>
+<th style="text-align: right;">Qwen3.5-9B</th>
+<th style="text-align: right;">phi-4</th>
+<th style="text-align: right;">Qwen3-14B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Minimum margin (nats)</td>
+<td style="text-align: right;">$9.73\times10^{-5}$ (@21)</td>
+<td style="text-align: right;">$7.27\times10^{-3}$ (@267)</td>
+<td style="text-align: right;">$9.25\times10^{-3}$ (@277)</td>
+<td style="text-align: right;"><strong>$5.19\times10^{-3}$</strong> (@150)</td>
+</tr>
+<tr>
+<td>Median margin (nats)</td>
+<td style="text-align: right;">3.10</td>
+<td style="text-align: right;">2.46</td>
+<td style="text-align: right;">3.47</td>
+<td style="text-align: right;"><strong>4.38</strong></td>
+</tr>
+<tr>
+<td>Median response gain $G$</td>
+<td style="text-align: right;">0.583</td>
+<td style="text-align: right;">0.822</td>
+<td style="text-align: right;">0.383</td>
+<td style="text-align: right;"><strong>0.439</strong></td>
+</tr>
+<tr>
+<td>Controlling sensitivity $s_*$</td>
+<td style="text-align: right;">0.0110</td>
+<td style="text-align: right;">0.0103</td>
+<td style="text-align: right;">0.0077</td>
+<td style="text-align: right;"><strong>0.00389</strong></td>
+</tr>
+<tr>
+<td>Controlling margin $m_*$</td>
+<td style="text-align: right;">$1.14\times10^{-3}$</td>
+<td style="text-align: right;">$7.27\times10^{-3}$</td>
+<td style="text-align: right;">$1.70\times10^{-2}$</td>
+<td style="text-align: right;"><strong>$5.24\times10^{-2}$</strong></td>
+</tr>
+<tr>
+<td><strong>Median $r_*$</strong></td>
+<td style="text-align: right;"><strong>0.1035</strong></td>
+<td style="text-align: right;"><strong>0.707</strong></td>
+<td style="text-align: right;"><strong>3.587</strong></td>
+<td style="text-align: right;"><strong>8.393</strong></td>
+</tr>
+<tr>
+<td>Flips at $r=0.1$ (free)</td>
+<td style="text-align: right;">48.3% (483/1000)</td>
+<td style="text-align: right;">1.2% (12/1000)</td>
+<td style="text-align: right;">0.0% (0/1000)</td>
+<td style="text-align: right;"><strong>0.0% (0/1000)</strong></td>
+</tr>
+<tr>
+<td>Flips at $r=0.3$ (free)</td>
+<td style="text-align: right;">~70%</td>
+<td style="text-align: right;">15.7% (157/1000)</td>
+<td style="text-align: right;">0.4% (4/1000)</td>
+<td style="text-align: right;"><strong>0.2% (2/1000)</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-free-run-validation-scorecard-and-trajectory-survival">4. Free-Run Validation: Scorecard and Trajectory Survival</h2>
+<p><img alt="Qwen3-14B Free Run" src="figures/qwen314_free.png" /></p>
+<ul>
+<li><strong>$r=0.1$ verification:</strong> 0 flips observed in the free run; 0 flips predicted by the signed threshold rule. Accuracy: <strong>100.0% (1000/1000)</strong>.</li>
+<li><strong>$r=0.3$ verification:</strong> 2 flips observed; 1 predicted by the signed linear rule (dir 420 at $t=150$ predicted exactly; dir 562 at $t=150$ missed due to second-order threshold effect). Row-level accuracy: <strong>99.9% (998/1000)</strong>.</li>
+<li><strong>Competing tokens:</strong> Both flips occur at step 150, flipping the baseline token <code>" list"</code> into <code>" break"</code>.</li>
+<li><strong>Re-synchronisation:</strong> Both flipped runs diverge permanently ($A_{\rm after} = 0.027$, longest identical continuation: 3 tokens).</li>
+</ul>
+<hr />
+<h2 id="5-depth-and-layer-profile">5. Depth and Layer Profile</h2>
+<p><img alt="Qwen3-14B Layer Profile" src="figures/qwen314_layer_profile.png" />
+<img alt="Qwen3-14B Depth Tangent" src="figures/qwen314_depth.png" /></p>
+<ul>
+<li><strong>Layer growth:</strong> Across the 38 blocks spanned by the 13 saved states, absolute response grows by <strong>73.0x</strong> (1.120x per block).</li>
+<li><strong>State norm growth:</strong> Over the same span, the unperturbed state norm grows by <strong>116.6x</strong>.</li>
+<li><strong>State-normalized contraction:</strong> Because state norm growth exceeds response growth ($116.6 > 73.0$), the <strong>state-normalized perturbation $\|\delta h\|/\|h\|$ contracts with depth</strong>. This reproduces the universal finding seen in DeepSeek-1.5B, DeepSeek-14B, and phi-4: absolute depth growth is an artifact of radial state drift; the normalised perturbation shrinks.</li>
+</ul>
+<hr />
+<h2 id="6-non-normality-and-angle-geometry">6. Non-Normality and Angle Geometry</h2>
+<p><img alt="Qwen3-14B Non-Normality" src="figures/qwen314_nonnorm.png" /></p>
+<ul>
+<li><strong>Response-vs-state angle:</strong> Median angle is <strong>90.80°</strong> (IQR 86.4°–95.2°), with 53.5% of angles $>90°$. The prompt perturbation is near-perpendicular to the representation trajectory, with relative magnitude $\|\delta h\|/\|h_0\| \approx 5.26\times10^{-5}$.</li>
+<li><strong>Block Jacobians:</strong> Non-normality indices $\kappa = \sigma_{\max}/\rho$ remain moderate across blocks, preventing explosive composition of amplifications.</li>
+</ul>
+<hr />
+<h2 id="7-single-position-kicks-and-multi-prompt-generality">7. Single-Position Kicks and Multi-Prompt Generality</h2>
+<p><img alt="Qwen3-14B State Kicks" src="figures/qwen314_state.png" />
+<img alt="Qwen3-14B Generality" src="figures/qwen314_generality.png" /></p>
+<ul>
+<li><strong>Single-position state kicks:</strong> Immediate responses to direct state kicks at positions $s\in\{8, 16, 32, 50, \dots, 299\}$ decay rapidly with a half-life of 2–4 tokens. At $r=0.1$, <strong>0/240 position-direction kicks cause any decision flip</strong>.</li>
+<li><strong>Generality across prompts:</strong> Testing 200 directions on <code>childhood</code> ($P=56$) and <code>cybersecurity</code> ($P=61$) shows consistent $r_*$ distributions (median $r_* > 5.0$, 0 flips at $r=0.1$). While the specific controlling decision gates move depending on the prompt's token sequence, the overall wide-margin stability remains invariant.</li>
+</ul>
+<hr />
+<h2 id="8-dimensionality-d2-and-trajectory-repetition">8. Dimensionality (D2) and Trajectory Repetition</h2>
+<p>Across 12 prompts of 1000 generated tokens:
+- <strong>TwoNN dimension estimate:</strong> $\hat{d}_{\rm TwoNN}$ ranges between <strong>5.62 and 8.15</strong> (median <strong>6.75</strong>), consistent with the 6–8 intrinsic dimensionality observed in other LLM trajectories.
+- <strong>Scaling window:</strong> As in DS-R1-14B and Qwen3.5-9B, <strong>no prompt exhibits a valid scaling window</strong> (0/12 pass the 0.40-decade plateau test); the correlation integral curve slopes change continuously, proving that $D_2$ cannot be interpreted as a true fractal dimension.
+- <strong>Repetitions:</strong> 0 full loop repetitions across all 12 prompts (only 1 prompt, <code>personal_finance</code>, shows a mild 1% repetition at lag 229).</p>
+<hr />
+<h1 id="part-synthesis-four-models-one-protocol-margins-set-the-bulk-sensitivity-sets-the-tail">Part synthesis. Four models, one protocol: margins set the bulk, sensitivity sets the tail</h1>
+<h2 id="summary_13">Summary</h2>
+<p>Four models were run through the same protocol: the same prompt text, 300 greedy tokens, a unit prompt-embedding direction of size $r=0.1$, and a teacher-forced continuation. The models are DeepSeek-R1-Distill-Qwen-1.5B (28 blocks, $d=1536$, $K=20$ directions), DeepSeek-R1-Distill-Qwen-14B (48 blocks, $d=5120$, $K=1000$, <strong>true</strong> sliding window 100), Qwen3.5-9B (32 blocks, $d=4096$, hybrid Gated-DeltaNet/full attention, $K=1000$), and phi-4 (40 blocks, $d=5120$, full attention, $K=1000$). On that protocol the <strong>median flux-tube radius</strong> — the largest perturbation along a direction that leaves every greedy decision intact — is</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th style="text-align: right;">median $r_*$</th>
+<th style="text-align: right;">relative to the 14B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DS-R1-14B</td>
+<td style="text-align: right;"><strong>0.1035</strong></td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>Qwen3.5-9B</td>
+<td style="text-align: right;"><strong>0.7074</strong></td>
+<td style="text-align: right;">6.8x</td>
+</tr>
+<tr>
+<td>DS-R1-1.5B</td>
+<td style="text-align: right;"><strong>1.5547</strong></td>
+<td style="text-align: right;">15.0x</td>
+</tr>
+<tr>
+<td>phi-4</td>
+<td style="text-align: right;"><strong>3.5865</strong></td>
+<td style="text-align: right;">34.7x</td>
+</tr>
+</tbody>
+</table>
+<p>The 14B is the reference point because it is the most fragile model in the campaign; the ordering is unchanged if the older full-attention 14B run is used (median 0.1164 instead of 0.1035, a 12% shift). The end-to-end span is <strong>34.7x in radius</strong>, or 1.54 decades.</p>
+<p><strong>What puts each model there.</strong> Every direction has an exact identity $r_*(u)=m_{t_*(u)}/s_{t_*(u)}$, where $m_t$ is the baseline top-1/top-2 logit gap and $s_t=|\delta m_t|/r$ is the local decision sensitivity at the controlling step. The decomposition has to be done at a <em>common</em> direction, because the marginal medians of $m_*$ and $s_*$ are taken over different directions and do not multiply. At the direction that carries the median $r_*$:</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th style="text-align: right;">$m_*$ at median-$r_*$ direction</th>
+<th style="text-align: right;">$s_*$ at that direction</th>
+<th style="text-align: right;">$r_*=m_*/s_*$</th>
+<th style="text-align: right;">margin vs 1.5B</th>
+<th style="text-align: right;">sensitivity vs 1.5B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DS-R1-14B</td>
+<td style="text-align: right;">$1.144\times10^{-3}$</td>
+<td style="text-align: right;">$1.104\times10^{-2}$</td>
+<td style="text-align: right;">0.1037</td>
+<td style="text-align: right;"><strong>17.8x thinner</strong></td>
+<td style="text-align: right;">1.18x lower (helps)</td>
+</tr>
+<tr>
+<td>Qwen3.5-9B</td>
+<td style="text-align: right;">$7.271\times10^{-3}$</td>
+<td style="text-align: right;">$1.028\times10^{-2}$</td>
+<td style="text-align: right;">0.7074</td>
+<td style="text-align: right;"><strong>2.81x thinner</strong></td>
+<td style="text-align: right;">1.27x higher</td>
+</tr>
+<tr>
+<td>DS-R1-1.5B</td>
+<td style="text-align: right;">$2.041\times10^{-2}$</td>
+<td style="text-align: right;">$1.301\times10^{-2}$</td>
+<td style="text-align: right;">1.5690</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>phi-4</td>
+<td style="text-align: right;">$6.314\times10^{-2}$</td>
+<td style="text-align: right;">$1.759\times10^{-2}$</td>
+<td style="text-align: right;">3.5899</td>
+<td style="text-align: right;"><strong>3.09x fatter</strong></td>
+<td style="text-align: right;">1.35x higher</td>
+</tr>
+</tbody>
+</table>
+<p>The controlling margins span <strong>55x</strong> across the four models and are <strong>monotone with $r_*$</strong>; the co-selected sensitivities span only <strong>1.71x</strong> and are not monotone. That is the main result: for the bulk of directions, the margin axis places the models, and the response axis is a minor correction. The 14B sits at the bottom because its typical controlling margin is 18x thinner than the 1.5B's and its sensitivity is <em>lower</em>, which pushes $r_*$ up rather than down; no response advantage rescues it. The 1.5B sits above Qwen3.5 because its typical margin is 2.8x fatter and its sensitivity is only 1.27x lower, which does not compensate. phi-4 sits on top because its typical margin is 3.1x fatter than the 1.5B's.</p>
+<p>The qualification is the tail. phi-4 contains a razor tie ($m=9.25\times10^{-3}$ at $t=277$, 2.2x thinner than the 1.5B's thinnest tie of $2.02\times10^{-2}$, though 95x thicker than the 14B's), yet its <em>most fragile</em> direction has $r_*=0.165$, above the 1.5B's most fragile $0.133$. The reason is that the 1.5B's most fragile direction is an unusually loud one ($s=0.903$ nats per unit radius, 16x phi-4's $0.056$) while phi-4's thin ties are quiet. So the median hierarchy is margin-driven, but the lower tail is sensitivity-driven, and the geometric-mean decomposition agrees with the median for the 14B and Qwen3.5 and with the tail for phi-4. The one-sentence version: <strong>margins decide which model is typically fragile; sensitivity decides whether a razor tie is actually dangerous.</strong></p>
+<p><strong>Stability validation.</strong> The signed linear rule predicts flip <em>counts</em> across the whole range but loses the <em>step identity</em> as the flip density rises. At $r=0.1$ the true-window 14B flips <strong>483/1000</strong> directions in the free run against <strong>493</strong> predicted; 478 are exact steps, 2 are wrong steps, 13 are false alarms and 3 are misses (98.2% of all rows, 99.0% of observed flips). Qwen3.5 flips 12/1000 against 12 predicted at $r=0.1$ (12 exact) and 157 against 160 at $r=0.3$ (104 exact, 27 wrong steps, 29 false alarms, 26 misses; 91.8% of rows but only 66.2% of observed flips). phi-4 flips 0 at $r=0.1$ (0 predicted) and 4 at $r=0.3$ against 2 predicted; none of the four is predicted at the right step (one wrong step, three misses), and the 99.5% row accuracy is carried by the 995 non-flips. The 1.5B's only genuine free run covers $r\le0.01$ and is a 20/20 null; its $r=0.3$ and $r=1$ entries are teacher-forced decision flips, and at $r=1$ (outside its measured linear window) it flips 8 against 4 predicted.</p>
+<p><strong>Re-synchronisation is a phi-4-only phenomenon in this sample.</strong> Under the stated definition (20 consecutive identical tokens after the flip, or a 20-token identical suffix), <strong>0/1186</strong> flipped 14B rows, <strong>0/169</strong> Qwen3.5 rows, and <strong>2/4</strong> phi-4 rows return to the baseline. The 1.5B free run has no flips to test; the T4 analysis reported no re-synchronisation. Both phi-4 cases are one-token substitutions that re-join at the next token, not slow convergence: direction 276 substitutes at 219, re-joins at 220, substitutes again at 277 and re-joins at 278; direction 933 substitutes at 277 and re-joins at 278.</p>
+<p><strong>Geometry.</strong> The response-vs-state angle is measurable for the first time at 14B, from the true-window run's <code>h0_last</code> and 24 <code>dh_last</code> vectors: <strong>89.99°</strong> (median; 7200 direction-step pairs), against <strong>90.08°</strong> for Qwen3.5 and <strong>89.85°</strong> for phi-4. The three measured models are all exactly perpendicular within a quarter of a degree, with wide per-pair spread (14B p10-p90 77.7-102.6°). The 1.5B's ~87° is a literature value, not re-measured: that dump stores state norms and $\cos(h',h_0)$, not the baseline vectors. The depth spectrum reproduces the 1.5B's "absolute expansion is radial drift, normalized the tangent contracts" law in both models that were run: 14B $h_{\rm depth}=0.163$–$0.638$ nats with 61/64 six-block chunks contracting, phi-4 $0.154$–$0.859$ with 93/96 intervals contracting, against the 1.5B's $0.6$–$1.4$ band and worst relative exponent $-0.034$; Qwen3.5 has no depth run. Non-normality is only complete for the 14B: $\sigma_{\max}$ is 96.2 at block 0, 3.7-4.9 in the middle and 14.2 at block 47, with $\kappa=7.35,1.6-2.3,7.07$, against the 1.5B's $95$–$195$, $2.7$–$3.6$, $6$–$9$ and $\kappa=5$–$8$, $1.7$–$2.5$, $3$–$5.3$. The last block is the one place where the 14B is clearly more non-normal than the 1.5B. phi-4's non-normality run is still pending.</p>
+<p><strong>Dimension and loops.</strong> TwoNN is 5.44-6.23 for the 1.5B (four validation runs, median 6.17), 4.66-8.90 for the 14B (13 runs, median 8.19) and 6.05-8.09 for Qwen3.5 (12 runs, median 7.50). <strong>No model has a valid scaling window</strong>: 0/2 healthy 1.5B runs, 0/13 14B runs and 0/12 Qwen3.5 runs pass the 0.40-decade rule. The single passing flag in the 1.5B file is a spurious 0.54-decade window on a period-53 loop. Repetition loops fall sharply with model: <strong>9 full + 2 partial of 20</strong> 1.5B trajectories (6 full + 2 partial of 16 at the equal 1000-token horizon), <strong>0 of 13</strong> 14B, <strong>0 full + 1 partial of 12</strong> Qwen3.5. phi-4 has no D2 run.</p>
+<p><strong>The round-off floor is a fixed fraction of the state norm, not a fixed absolute number.</strong> At the smallest tested radius the per-layer response floor $F_l$ divided by the median state norm is $2.19$–$2.88\times10^{-6}$ for the 14B (18-24 fp32 ulp), $1.41$–$3.15\times10^{-6}$ for Qwen3.5 (12-26 ulp), $2.52$–$3.51\times10^{-6}$ for phi-4 (21-29 ulp) and $1.83\times10^{-6}$ for the 1.5B at its last state (15 ulp). Every model's floor is within a factor 2.1 of $2.5\times10^{-6}$, so a measured response is above round-off exactly when it exceeds about 20 ulp of its own state norm. This is what makes the "clean radius window" model-dependent in absolute units even though the normalized measurement is portable.</p>
+<hr />
+<h2 id="1-what-is-compared-and-every-quantity">1. What is compared, and every quantity</h2>
+<h3 id="11-setup_7">1.1 Setup</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>DS-R1-1.5B</th>
+<th>DS-R1-14B</th>
+<th>Qwen3.5-9B</th>
+<th>phi-4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>blocks / width</td>
+<td>28 / 1536</td>
+<td>48 / 5120</td>
+<td>32 / 4096</td>
+<td>40 / 5120</td>
+</tr>
+<tr>
+<td>attention</td>
+<td>sliding window 100</td>
+<td>sliding window 100 (<strong>true</strong>)</td>
+<td>3 Gated-DeltaNet + 1 full per period; no window</td>
+<td>full; no window</td>
+</tr>
+<tr>
+<td>prompt</td>
+<td><code>interstellar_travel</code>, $P=65$</td>
+<td>same text, $P=65$ (token-identical ids)</td>
+<td>same text, $P=64$</td>
+<td>same text, $P=64$</td>
+</tr>
+<tr>
+<td>directions $K$</td>
+<td>20 (one simplex block)</td>
+<td>1000 (50 blocks of 20)</td>
+<td>1000</td>
+<td>1000</td>
+</tr>
+<tr>
+<td>run radius</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+<td>0.1</td>
+</tr>
+<tr>
+<td>continuation</td>
+<td>300 greedy tokens, teacher-forced</td>
+<td>same</td>
+<td>same</td>
+<td>same</td>
+</tr>
+<tr>
+<td>free run</td>
+<td>only $r\in\{10^{-4},10^{-3},10^{-2}\}$, 20 dirs</td>
+<td>$r\in\{0.1,0.3\}$, 1000 dirs</td>
+<td>$r\in\{0.05,0.1,0.3\}$, 1000 dirs</td>
+<td>$r\in\{0.1,0.3\}$, 1000 dirs</td>
+</tr>
+<tr>
+<td>calibration</td>
+<td>12 radii, 20 dirs</td>
+<td>9 radii, 8 dirs, 400 tokens</td>
+<td>9 radii, 8 dirs, 400 tokens</td>
+<td>7 radii, 8 dirs, 400 tokens</td>
+</tr>
+<tr>
+<td>depth</td>
+<td>reference only ($k=8$)</td>
+<td>8 tokens x 48 blocks, $k=8$</td>
+<td><strong>not run</strong></td>
+<td>8 tokens x 40 blocks, $k=8$</td>
+</tr>
+<tr>
+<td>non-normality</td>
+<td>reference ranges</td>
+<td>5 tokens x 9/5 blocks</td>
+<td><strong>not run</strong></td>
+<td><strong>pending</strong></td>
+</tr>
+<tr>
+<td>files</td>
+<td><code>chaos_llm_2026/results/local_data/w100_layers/a1.npz</code> (read only)</td>
+<td><code>results_big/ds14/a1_inter_w100/</code>, <code>free_inter_w100/</code>, <code>calib/</code>, <code>depth_w100/</code>, <code>nonnorm_w100/</code>, <code>d2/</code></td>
+<td><code>results_big/qwen35/a1_inter_w0/</code>, <code>free_inter_w0/</code>, <code>calib/</code>, <code>d2/</code></td>
+<td><code>results_big/phi4/a1_inter_w0/</code>, <code>free_inter_w0/</code>, <code>calib/</code>, <code>depth_w0/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Two protocol facts matter for every comparison below. (i) The <strong>prompt text is identical but the tokenizations are not</strong>: the DeepSeek pair uses 65 tokens and the other two 64, and the four models generate different continuations. A step index $t$ is therefore <em>not</em> a common event across columns; only distributions over steps, and the protocol, are comparable. (ii) The <strong>direction sets differ in richness</strong>: 20 directions give a 20-step ECDF staircase, 1000 give a smooth curve. That is a sampling-precision difference, not a bias, but it limits how finely the 1.5B's median can be resolved.</p>
+<p>The 14B column uses the <strong>true-window-100</strong> run throughout. The earlier 14B runs silently used full attention because transformers 4.5x gates the window on a <code>layer_types</code> field that stock Qwen2.5 configs never set. The true-window run is the one with <code>window=100</code> genuinely applied and is the one used for the core, free-run, depth and angle numbers here; the older full-attention run is quoted only as a check (<code>a1_inter_full</code>, <code>free_inter_full</code>). The mathematical objects are the same, but they are not the same run: the 14B's median $r_*$ moves from 0.1164 to 0.1035 and its median controlling margin from $9.727\times10^{-5}$ to $1.144\times10^{-3}$ because the controlling tie moves from $t=21$ to $t=19$ for the median direction. No conclusion below depends on which of the two 14B runs is used, but a 14B number without a run label would be ambiguous.</p>
+<h3 id="12-quantities_3">1.2 Quantities</h3>
+<p><strong>Fragility and stability.</strong> Notation: $u$ indexes a direction, $t\in\{0,\dots,299\}$ a generated step, $\ell^{(1)}_t,\ell^{(2)}_t$ the top two logits of the unperturbed continuation, $r=0.1$ the campaign radius.</p>
+<table>
+<thead>
+<tr>
+<th>symbol</th>
+<th>explicit expression</th>
+<th>meaning</th>
+<th>why this quantity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$m_t$</td>
+<td>$\ell^{(1)}_t-\ell^{(2)}_t$</td>
+<td>baseline top-1/top-2 gap (nats)</td>
+<td>how close the unperturbed decision is; a flip must close it</td>
+</tr>
+<tr>
+<td>$\delta m_t(u)$</td>
+<td>$m_t(u)-m_t$ at the run radius, stored <code>dm</code></td>
+<td>change of the gap under direction $u$</td>
+<td>response of the decision variable, measured without letting the text diverge</td>
+</tr>
+<tr>
+<td>$s_t(u)$</td>
+<td>$\lvert\delta m_t(u)\rvert/r$</td>
+<td>local decision sensitivity (nats per unit radius)</td>
+<td>converts a radius into a logit-gap change; the denominator of $r_*$</td>
+</tr>
+<tr>
+<td>$r_c(t,u)$</td>
+<td>$m_t r/\max(-\delta m_t(u),0)$, $+\infty$ if $\delta m_t\ge0$</td>
+<td>radius at which step $t$ would flip</td>
+<td>solves $m_t+r_c\,\delta m_t/r=0$; only a gap-closing response counts</td>
+</tr>
+<tr>
+<td>$r_*(u)$</td>
+<td>$\min_t r_c(t,u)$</td>
+<td>flux-tube radius</td>
+<td>one number per direction; the largest radius that preserves every baseline argmax</td>
+</tr>
+<tr>
+<td>$t_*(u)$</td>
+<td>$\arg\min_t r_c(t,u)$</td>
+<td>controlling step</td>
+<td>identifies the weak decision</td>
+</tr>
+<tr>
+<td>$m_*(u),s_*(u)$</td>
+<td>$m_{t_*}$, $s_{t_*}$</td>
+<td>controlling margin and sensitivity</td>
+<td>the two factors of $r_*=m_*/s_*$</td>
+</tr>
+<tr>
+<td>median-$r_*$ direction</td>
+<td>$u$ with median $\log r_*$</td>
+<td>a typical fragile direction</td>
+<td>makes the median decomposition exact, because one direction's $m_*$ and $s_*$ belong together</td>
+</tr>
+<tr>
+<td>extreme direction</td>
+<td>$\arg\min_u r_*(u)$</td>
+<td>the most fragile direction</td>
+<td>tests whether the conclusion survives at the tail</td>
+</tr>
+<tr>
+<td>$\bar m,\bar s,\bar r$</td>
+<td>$\exp\langle\log m_*\rangle$, $\exp\langle\log s_*\rangle$, $\exp\langle\log r_*\rangle$</td>
+<td>geometric means</td>
+<td>log-means are additive, so $\log\bar r=\log\bar m-\log\bar s$ exactly</td>
+</tr>
+<tr>
+<td>$s_{\rm emb}$</td>
+<td>$\mathrm{median}_t\lVert h_t^{0}\rVert$</td>
+<td>median token-embedding norm</td>
+<td>converts absolute radius into "fraction of a token vector"</td>
+</tr>
+<tr>
+<td>flip fraction</td>
+<td>$\#\{u:r_*(u)<\rho\}/K$</td>
+<td>predicted flips at radius $\rho$</td>
+<td>the linear prediction tested against a free run</td>
+</tr>
+<tr>
+<td>exact / wrong / false alarm / miss</td>
+<td>predicted step equals / differs from observed; predicted but no observed flip; observed but no prediction</td>
+<td>free-run scorecard</td>
+<td>separates count errors from step-identity errors</td>
+</tr>
+<tr>
+<td>accuracy</td>
+<td>(exact + both-none)/$K$</td>
+<td>row-level accuracy</td>
+<td>includes the easy non-flips; must be read with the flip count</td>
+</tr>
+<tr>
+<td>re-synchronisation</td>
+<td>a 20-token identical run after the flip, or a 20-token identical suffix</td>
+<td>return to the baseline continuation</td>
+<td>distinguishes a transient from a permanent divergence</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Geometry, dimension and round-off.</strong></p>
+<table>
+<thead>
+<tr>
+<th>symbol</th>
+<th>explicit expression</th>
+<th>meaning</th>
+<th>why this quantity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>angle $\theta$</td>
+<td>$\arccos\!\big(\langle\delta h,h_0\rangle/(\lVert\delta h\rVert\lVert h_0\rVert)\big)$ at the final-norm state</td>
+<td>response-vs-state angle (degrees)</td>
+<td>distinguishes an angular perturbation from radial drift</td>
+</tr>
+<tr>
+<td>$h_{\rm depth}$</td>
+<td>$\sum_i\max(\lambda_i(L),0)$, $\lambda_i(l)=\frac1{l+1}\sum_{b\le l}\log|R_{ii}(b)|$</td>
+<td>total positive tangent exponent over depth (nats)</td>
+<td>absolute expansion of an infinitesimal perturbation</td>
+</tr>
+<tr>
+<td>relative exponent</td>
+<td>$\lambda_{\rm tangent}-\lambda_{\rm norm}$ on saved-state intervals</td>
+<td>state-normalized contraction rate (nats/block)</td>
+<td>separates real tangent growth from the state norm growing</td>
+</tr>
+<tr>
+<td>$\sigma_{\max}$</td>
+<td>largest singular value of the block Jacobian</td>
+<td>worst-case one-step gain</td>
+<td>measures non-normality, i.e. transient amplification</td>
+</tr>
+<tr>
+<td>$\rho$</td>
+<td>spectral radius of the block Jacobian</td>
+<td>asymptotic per-step gain</td>
+<td>the denominator that makes $\kappa$ a transient measure</td>
+</tr>
+<tr>
+<td>$\kappa$</td>
+<td>$\sigma_{\max}/\rho$</td>
+<td>non-normality index</td>
+<td>$\kappa\approx1$ is normal; larger means a rotating/amplifying direction</td>
+</tr>
+<tr>
+<td>TwoNN $\hat d$</td>
+<td>$1/\langle\ln\mu_i\rangle$, $\mu_i=r_2^{(i)}/r_1^{(i)}$</td>
+<td>nearest-neighbour dimension estimate</td>
+<td>a point-cloud dimension that does not require a scaling window</td>
+</tr>
+<tr>
+<td>MLE $k=10$</td>
+<td>Levina-Bickel $\hat d_k$</td>
+<td>a second point-cloud dimension</td>
+<td>checks whether TwoNN is estimator-specific</td>
+</tr>
+<tr>
+<td>$D_2$ chord</td>
+<td>slope of $\log C(\epsilon)$ over the admissible range</td>
+<td>correlation-dimension chord</td>
+<td>what one gets without a plateau; not a dimension</td>
+</tr>
+<tr>
+<td>prominence</td>
+<td>$\min_k p(k)/\mathrm{median}\,p(k\pm1,2,3)$, $p(k)=\overline{\lVert x_t-x_{t+k}\rVert}/d_{\rm typ}$</td>
+<td>loop detector</td>
+<td>a drifting repetition makes a sharp lag-distance dip</td>
+</tr>
+<tr>
+<td>floor $F_l$</td>
+<td>$\mathrm{median}_{u,t\ge100}\lVert\delta h_t^l(u)\rVert$ at the smallest tested radius</td>
+<td>fp32 response floor at layer $l$</td>
+<td>the smallest measurable response; sets the lower edge of the linear window</td>
+</tr>
+<tr>
+<td>ulp fraction</td>
+<td>$F_l/(\lVert h_l\rVert\,\epsilon_{32})$, $\epsilon_{32}=1.192\times10^{-7}$</td>
+<td>floor in units of the state norm</td>
+<td>tests whether the floor is absolute or scales with the state</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why the decomposition needs a common direction.</strong> The medians of $m_*$ and $s_*$ are summaries of two <em>different</em> directions. For phi-4, median $m_*=0.01702$ comes from the direction controlled by $t=219$ ($s=0.00298$), while median $s_*=0.00767$ comes from the direction controlled by $t=34$ ($m=0.05674$). Dividing the two marginal medians gives $2.22$, and would place phi-4 <em>below</em> the 1.5B (whose marginal ratio is $4.78/2.42$ in the same units, $2.86$), the wrong order. The actual median $r_*$ is 3.59, and its direction ($t=253$) has $m=0.0631$, $s=0.0176$. The reason is that $m_*$ and $s_*$ are positively correlated within every model (Pearson on logs: 1.5B 0.51, 14B 0.74, Qwen3.5 0.64, phi-4 0.59): a direction that moves the logits hard also tends to move the state hard, so the ratio is less variable than either factor. Any "margin-only" or "response-only" summary that divides marginal medians is therefore invalid, and the three explicit decompositions below (median direction, geometric mean, extreme direction) replace it.</p>
+<h3 id="13-four-things-that-could-fake-the-hierarchy">1.3 Four things that could fake the hierarchy</h3>
+<ol>
+<li><strong>The 14B attention history.</strong> The core column is the true-window run. The older full-attention run gives median $r_*=0.1164$ instead of $0.1035$ (+12%), median $m_*=9.727\times10^{-5}$ instead of $1.144\times10^{-3}$ (−11.8x) and median $s_*=3.802\times10^{-3}$ instead of $5.536\times10^{-3}$ (−1.46x); the 14B stays last in every version. The free-run flip count at $r=0.1$ is 453/1000 (full) against 483/1000 (true window), both far above the other models.</li>
+<li><strong>$K=20$ versus $K=1000$.</strong> The 1.5B's ECDF is a 20-step staircase and its log-$r_*$ values are unevenly spaced. A bootstrap over its 20 directions gives a 5-95% interval of 1.41-1.99 for the median (point estimate 1.555), a factor 1.41 wide. The Qwen3.5 gap (2.20x) and the phi-4 gap (2.31x, other direction) lie outside that interval, but the bootstrap treats the 20 directions as exchangeable samples; they are one simplex block, not a random sample of all embedding directions. The 14B gap (15x) is far outside every such interval.</li>
+<li><strong>Embedding scale.</strong> $s_{\rm emb}$ is 1.206 (1.5B), 1.518 (14B), 0.777 (Qwen3.5) and 1.193 (phi-4). Raw $r_*$ is an absolute perturbation norm, so it is comparable by construction, but dividing by $s_{\rm emb}$ asks the stricter "fraction of a token vector" question. The normalized medians are 1.289 (1.5B), 0.068 (14B), 0.910 (Qwen3.5) and 3.006 (phi-4); the order is unchanged, the 1.5B/14B gap widens from 15.0x to 18.9x, and Qwen3.5 moves closer to the 1.5B (1.42x instead of 2.20x) because its token vectors are 36% shorter. Neither normalization changes the qualitative hierarchy.</li>
+<li><strong>Different continuations and different gates.</strong> The four models generate different text, so their $t_*$ values are not comparable events. What is comparable is the distribution of margins, the protocol, and the fact that each model's own near-ties are where its directions act. phi-4's and Qwen3.5's controlling steps are spread over 27 and 16 distinct steps; the 14B's over 15, with 86.3% of directions on three steps (21, 19, 297); the 1.5B's over 6, with 75% on three. A 14B conclusion is therefore about a few specific gates; a phi-4 conclusion is about a broader set of decisions.</li>
+</ol>
+<h3 id="14-headline-table">1.4 Headline table</h3>
+<table>
+<thead>
+<tr>
+<th>quantity</th>
+<th style="text-align: right;">1.5B</th>
+<th style="text-align: right;">DS-14B (w100)</th>
+<th style="text-align: right;">Qwen3.5-9B</th>
+<th style="text-align: right;">phi-4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$K$ / $r$</td>
+<td style="text-align: right;">20 / 0.1</td>
+<td style="text-align: right;">1000 / 0.1</td>
+<td style="text-align: right;">1000 / 0.1</td>
+<td style="text-align: right;">1000 / 0.1</td>
+</tr>
+<tr>
+<td>median margin $m_t$ over steps</td>
+<td style="text-align: right;">4.778</td>
+<td style="text-align: right;">1.826</td>
+<td style="text-align: right;">2.461</td>
+<td style="text-align: right;">3.473</td>
+</tr>
+<tr>
+<td>smallest margin</td>
+<td style="text-align: right;">$2.016\times10^{-2}$ (123)</td>
+<td style="text-align: right;">$9.727\times10^{-5}$ (21)</td>
+<td style="text-align: right;">$7.271\times10^{-3}$ (267)</td>
+<td style="text-align: right;">$9.254\times10^{-3}$ (277)</td>
+</tr>
+<tr>
+<td>median $r_*$ (absolute)</td>
+<td style="text-align: right;">1.555</td>
+<td style="text-align: right;"><strong>0.1035</strong></td>
+<td style="text-align: right;">0.7074</td>
+<td style="text-align: right;">3.5865</td>
+</tr>
+<tr>
+<td>$r_*$ p10 / p90</td>
+<td style="text-align: right;">0.486 / 4.124</td>
+<td style="text-align: right;">0.0171 / 1.852</td>
+<td style="text-align: right;">0.232 / 1.956</td>
+<td style="text-align: right;">1.201 / 10.663</td>
+</tr>
+<tr>
+<td>median $m_*$</td>
+<td style="text-align: right;">$6.902\times10^{-2}$</td>
+<td style="text-align: right;">$1.144\times10^{-3}$</td>
+<td style="text-align: right;">$2.048\times10^{-2}$</td>
+<td style="text-align: right;">$1.702\times10^{-2}$</td>
+</tr>
+<tr>
+<td>median $s_*$</td>
+<td style="text-align: right;">$2.416\times10^{-2}$</td>
+<td style="text-align: right;">$5.536\times10^{-3}$</td>
+<td style="text-align: right;">$3.309\times10^{-2}$</td>
+<td style="text-align: right;">$7.671\times10^{-3}$</td>
+</tr>
+<tr>
+<td>$m_*$ at median-$r_*$ direction</td>
+<td style="text-align: right;">$2.041\times10^{-2}$</td>
+<td style="text-align: right;">$1.144\times10^{-3}$</td>
+<td style="text-align: right;">$7.271\times10^{-3}$</td>
+<td style="text-align: right;">$6.314\times10^{-2}$</td>
+</tr>
+<tr>
+<td>$s_*$ at median-$r_*$ direction</td>
+<td style="text-align: right;">$1.301\times10^{-2}$</td>
+<td style="text-align: right;">$1.104\times10^{-2}$</td>
+<td style="text-align: right;">$1.028\times10^{-2}$</td>
+<td style="text-align: right;">$1.759\times10^{-2}$</td>
+</tr>
+<tr>
+<td>median $r_*/s_{\rm emb}$</td>
+<td style="text-align: right;">1.289</td>
+<td style="text-align: right;">0.068</td>
+<td style="text-align: right;">0.910</td>
+<td style="text-align: right;">3.006</td>
+</tr>
+<tr>
+<td>flip fraction at $r=0.1$, predicted</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0.493</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>flip fraction at $r=0.1$, observed free</td>
+<td style="text-align: right;">0 (20/20 at $r\le0.01$)</td>
+<td style="text-align: right;">0.483</td>
+<td style="text-align: right;">0.012</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>controlling steps, distinct / top-3 share</td>
+<td style="text-align: right;">6 / 75%</td>
+<td style="text-align: right;">15 / 86.3%</td>
+<td style="text-align: right;">16 / 59%</td>
+<td style="text-align: right;">27 / 62.1%</td>
+</tr>
+<tr>
+<td>response-vs-state angle, median</td>
+<td style="text-align: right;">87° (literature)</td>
+<td style="text-align: right;">89.99°</td>
+<td style="text-align: right;">90.08°</td>
+<td style="text-align: right;">89.85°</td>
+</tr>
+<tr>
+<td>TwoNN median</td>
+<td style="text-align: right;">6.17</td>
+<td style="text-align: right;">8.19</td>
+<td style="text-align: right;">7.50</td>
+<td style="text-align: right;">not run</td>
+</tr>
+<tr>
+<td>valid $D_2$ window</td>
+<td style="text-align: right;">none (0/2 healthy)</td>
+<td style="text-align: right;">none (0/13)</td>
+<td style="text-align: right;">none (0/12)</td>
+<td style="text-align: right;">not run</td>
+</tr>
+<tr>
+<td>repetition loops</td>
+<td style="text-align: right;">9 full + 2 partial / 20</td>
+<td style="text-align: right;">0 / 13</td>
+<td style="text-align: right;">0 full + 1 partial / 12</td>
+<td style="text-align: right;">not run</td>
+</tr>
+<tr>
+<td>re-synchronised / flipped</td>
+<td style="text-align: right;">0/0 free (literature 0)</td>
+<td style="text-align: right;">0/1186</td>
+<td style="text-align: right;">0/169</td>
+<td style="text-align: right;"><strong>2/4</strong></td>
+</tr>
+<tr>
+<td>fp32 floor / state norm</td>
+<td style="text-align: right;">$1.83\times10^{-6}$ (last)</td>
+<td style="text-align: right;">$2.19$–$2.88\times10^{-6}$</td>
+<td style="text-align: right;">$1.41$–$3.15\times10^{-6}$</td>
+<td style="text-align: right;">$2.52$–$3.51\times10^{-6}$</td>
+</tr>
+</tbody>
+</table>
+<p>The 14B's smallest margin is the $t=21$ razor tie; its <em>median</em> direction is controlled by $t=19$ with $m=1.144\times10^{-3}$. Those are two different statements and both are used below.</p>
+<hr />
+<h2 id="2-figure-syn_fragilitypng-the-margin-axis-places-the-four-models">2. Figure <code>syn_fragility.png</code> — the margin axis places the four models</h2>
+<p><img alt="fragility" src="figures/syn_fragility.png" /></p>
+<p><strong>Setup.</strong> The core A1 arrays for all four models at the campaign radius $r=0.1$: baseline margins $m_t$, response $\delta m_t(u)$, and the signed threshold $r_c(t,u)=m_t r/\max(-\delta m_t(u),0)$. Each direction contributes one point $(s_{t_*},m_{t_*})$ and one radius $r_*=m_{t_*}/s_{t_*}$. Panel (b) plots every direction, subsampled to 450 per model for legibility; the four stars are the median-$r_*$ directions. Panel (d) is the exact split of the median $r_*$ into a margin term and a sensitivity term, relative to the 1.5B.</p>
+<p><strong>Axes.</strong>
+- (a) $x$: $r_*$ in absolute embedding units, log scale, 1.5e-3 to 40; $y$: ECDF over directions, 0-1. The dotted vertical line is the campaign radius $r=0.1$.
+- (b) $x$: controlling sensitivity $s_{t_*}$, log; $y$: controlling margin $m_{t_*}$, log. Dashed diagonals are constant $r_*=0.1,1,10$. A point's position along the diagonal is set by its ratio, not by either coordinate.
+- (c) $x$: $s_{t_*}$, log; $y$: ECDF. The medians are printed in the inset.
+- (d) $x$: $\Delta\log_{10}$ relative to the 1.5B (dex); bars are the margin term $\Delta\log m_*$ (blue) and the sensitivity term $-\Delta\log s_*$ (orange); the black diamond is the net $\Delta\log r_*$. The three terms satisfy the identity exactly because all three are evaluated on the same median-$r_*$ direction.</p>
+<p><strong>The hierarchy and its decomposition.</strong> The ECDFs are ordered without overlap: the 14B's median is 0.1035, Qwen3.5's 0.7074, the 1.5B's 1.5547 and phi-4's 3.5865. The ratios are 6.8x, 2.20x and 2.31x; the end-to-end factor is 34.7x.</p>
+<p>At the median-$r_*$ direction the table is:</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th style="text-align: right;">$t_*$</th>
+<th style="text-align: right;">$m_*$</th>
+<th style="text-align: right;">$s_*$</th>
+<th style="text-align: right;">$r_*=m_*/s_*$</th>
+<th style="text-align: right;">$\Delta\log_{10}r_*$</th>
+<th style="text-align: right;">from margin</th>
+<th style="text-align: right;">from $1/s_*$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.5B</td>
+<td style="text-align: right;">143</td>
+<td style="text-align: right;">$2.041\times10^{-2}$</td>
+<td style="text-align: right;">$1.301\times10^{-2}$</td>
+<td style="text-align: right;">1.569</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>DS-14B</td>
+<td style="text-align: right;">19</td>
+<td style="text-align: right;">$1.144\times10^{-3}$</td>
+<td style="text-align: right;">$1.104\times10^{-2}$</td>
+<td style="text-align: right;">0.1037</td>
+<td style="text-align: right;">−1.180</td>
+<td style="text-align: right;">−1.251</td>
+<td style="text-align: right;">+0.071</td>
+</tr>
+<tr>
+<td>Qwen3.5</td>
+<td style="text-align: right;">267</td>
+<td style="text-align: right;">$7.271\times10^{-3}$</td>
+<td style="text-align: right;">$1.028\times10^{-2}$</td>
+<td style="text-align: right;">0.7074</td>
+<td style="text-align: right;">−0.346</td>
+<td style="text-align: right;">−0.448</td>
+<td style="text-align: right;">+0.102</td>
+</tr>
+<tr>
+<td>phi-4</td>
+<td style="text-align: right;">253</td>
+<td style="text-align: right;">$6.314\times10^{-2}$</td>
+<td style="text-align: right;">$1.759\times10^{-2}$</td>
+<td style="text-align: right;">3.590</td>
+<td style="text-align: right;">+0.359</td>
+<td style="text-align: right;">+0.491</td>
+<td style="text-align: right;">−0.131</td>
+</tr>
+</tbody>
+</table>
+<p>Read the last three columns as factors rather than dex: the 14B's typical margin is 17.8x thinner than the 1.5B's, and its sensitivity is 1.18x <em>lower</em>, which would raise $r_*$ by that factor; the product is 15.1x lower. Qwen3.5's margin is 2.81x thinner and its sensitivity 1.27x higher; the product is 2.22x lower. phi-4's margin is 3.09x fatter but its sensitivity is 1.35x higher; the product is 2.29x higher. In all three comparisons the margin term is larger than the sensitivity term and has the sign of the net. The margin values $1.14\times10^{-3}<7.27\times10^{-3}<2.04\times10^{-2}<6.31\times10^{-2}$ are exactly monotone with $r_*$; the sensitivities span only 1.71x and are non-monotone.</p>
+<p><strong>The geometric-mean check, and why phi-4 is a partial exception.</strong> Repeating the split with geometric means (log-means, which are additive) gives</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th style="text-align: right;">$\Delta\log_{10}r_*$</th>
+<th style="text-align: right;">margin</th>
+<th style="text-align: right;">sensitivity</th>
+<th style="text-align: right;">net factor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.5B</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+</tr>
+<tr>
+<td>DS-14B</td>
+<td style="text-align: right;">−1.054</td>
+<td style="text-align: right;">−1.704</td>
+<td style="text-align: right;">+0.650</td>
+<td style="text-align: right;">0.088</td>
+</tr>
+<tr>
+<td>Qwen3.5</td>
+<td style="text-align: right;">−0.324</td>
+<td style="text-align: right;">−0.257</td>
+<td style="text-align: right;">−0.067</td>
+<td style="text-align: right;">0.474</td>
+</tr>
+<tr>
+<td>phi-4</td>
+<td style="text-align: right;">+0.387</td>
+<td style="text-align: right;">−0.191</td>
+<td style="text-align: right;">+0.578</td>
+<td style="text-align: right;">2.438</td>
+</tr>
+</tbody>
+</table>
+<p>The 14B and Qwen3.5 stories are the same: the margin term is large and negative; the 14B's sensitivity is 4.5x lower and softens the fall, while Qwen3.5's is 1.17x higher and adds a small negative term. phi-4 is different: its <em>geometric-mean</em> margin is 1.55x <em>thinner</em> than the 1.5B's, and its geometric-mean sensitivity is 3.78x lower; the net comes from the response term. This does not contradict the median table; it says phi-4's radius distribution has a wide quiet tail. The distribution is indeed wide: p10 1.20, p50 3.59, p90 10.66, and 923/1000 directions have $r_*>1$.</p>
+<p><strong>The extreme direction makes the same point.</strong> At the most fragile direction of each model:</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th style="text-align: right;">$t_*$</th>
+<th style="text-align: right;">$m_*$</th>
+<th style="text-align: right;">$s_*$</th>
+<th style="text-align: right;">$r_*$</th>
+<th style="text-align: right;">$\Delta\log_{10}r_*$ vs 1.5B</th>
+<th style="text-align: right;">margin</th>
+<th style="text-align: right;">sensitivity</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.5B</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">$0.1200$</td>
+<td style="text-align: right;">$0.9031$</td>
+<td style="text-align: right;">0.1329</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr>
+<td>DS-14B</td>
+<td style="text-align: right;">21</td>
+<td style="text-align: right;">$9.727\times10^{-5}$</td>
+<td style="text-align: right;">$0.0399$</td>
+<td style="text-align: right;">0.00244</td>
+<td style="text-align: right;">−1.737</td>
+<td style="text-align: right;">−3.091</td>
+<td style="text-align: right;">+1.355</td>
+</tr>
+<tr>
+<td>Qwen3.5</td>
+<td style="text-align: right;">267</td>
+<td style="text-align: right;">$7.271\times10^{-3}$</td>
+<td style="text-align: right;">$0.1155$</td>
+<td style="text-align: right;">0.0629</td>
+<td style="text-align: right;">−0.325</td>
+<td style="text-align: right;">−1.218</td>
+<td style="text-align: right;">+0.893</td>
+</tr>
+<tr>
+<td>phi-4</td>
+<td style="text-align: right;">277</td>
+<td style="text-align: right;">$9.254\times10^{-3}$</td>
+<td style="text-align: right;">$0.0559$</td>
+<td style="text-align: right;">0.1655</td>
+<td style="text-align: right;">+0.095</td>
+<td style="text-align: right;">−1.113</td>
+<td style="text-align: right;">+1.208</td>
+</tr>
+</tbody>
+</table>
+<p>The 1.5B's most fragile direction is a <em>very</em> sensitive one ($s=0.903$, 37x its median $s_*=0.0242$), with a comfortable 0.12-nat margin; phi-4's most fragile direction is a genuinely thin tie ($m=9.25\times10^{-3}$) that is 16x quieter. The result is that phi-4's worst radius (0.165) is slightly <em>above</em> the 1.5B's (0.133) despite a 13x thinner margin. The 14B is again margin-dominated (a 1234x thinner margin against a 22.6x lower sensitivity). So the honest synthesis is: <strong>the bulk ($r_*$ median and geometric mean) is placed by margins; the lower tail is placed by sensitivity, and this matters for the 1.5B-versus-phi-4 comparison, not for the 14B.</strong></p>
+<p><strong>What it shows.</strong> (1) The median hierarchy is monotone in the controlling margin and not in the controlling sensitivity. (2) The identity $r_*=m_*/s_*$ is exact per direction and is not reproducible from marginal medians; the naive ratio swaps phi-4 and the 1.5B. (3) $m_*$ and $s_*$ correlate within models (0.51-0.74 on logs), which is why the ratio is less variable than either factor and why a decomposition has to be stated at a common direction. (4) The 14B is the only model whose bottom position survives every summary: median, geometric mean and extreme. (5) The 1.5B-vs-Qwen3.5 order is a margin effect (2.8x thinner at a sensitivity only 1.27x higher), not a response effect.</p>
+<p><strong>What it does not show.</strong>
+- It does not establish a causal mechanism. "Margin" and "sensitivity" are two readings of the same logit-gap change; a model can have thin margins because its representation is confident-but-close, or because its read-out is unstable. The decomposition says where the number comes from, not why the network produces it.
+- The 20-direction 1.5B sample is a cluster sample, not an i.i.d. sample. A bootstrap gives 1.41-1.99 for its median, so the 1.5B/phi-4 (2.3x) and 1.5B/Qwen3.5 (2.2x) gaps fall outside that interval, but the 20 directions share one simplex block and the interval is not a confidence statement about all directions.
+- $r_*$ is a <em>linear extrapolation</em> from one radius, not a measured nonlinear threshold. The 1.5B at $r=1.0$ flips 8/20 decisions while the linear rule predicts 4/20; $r_*$ is a local object, valid in the calibrated window ($10^{-3}$-0.1 for the 1.5B, 0.03-0.3 for the 14B, 0.01-0.3 for Qwen3.5 and phi-4). Section 3 quantifies the failure outside it.
+- The models are on different texts and different tokenizations. $t_*$ is a within-model label, not a cross-model event.
+- The absolute radii are not normalized by $s_{\rm emb}$ in the figure. The normalized check in 1.3 preserves the order but changes the 1.5B/14B gap from 15.0x to 18.9x and the 1.5B/Qwen3.5 gap from 2.20x to 1.42x. Both are reported; neither is "the" answer.</p>
+<hr />
+<h2 id="3-figure-syn_stabilitypng-the-rule-predicts-counts-not-late-flip-identity">3. Figure <code>syn_stability.png</code> — the rule predicts counts, not late-flip identity</h2>
+<p><img alt="stability" src="figures/syn_stability.png" /></p>
+<p><strong>Setup.</strong> For each model, the signed rule $r_c(t,u)\le\rho$ predicts a flip at the first crossing step; the observed step is either a real free run (14B at 0.1/0.3, Qwen3.5 at 0.05/0.1/0.3, phi-4 at 0.1/0.3, 1.5B at $10^{-4}$/$10^{-3}$/$10^{-2}$) or, for the 1.5B's 0.3 and 1.0 rows, the first threshold crossing in the separate teacher-forced A1 pass at that radius. The 14B is the true-window run. A prediction and an observation that flip at different steps are counted as a <em>wrong step</em>, not as a detection, because the model's downstream text depends on the step.</p>
+<p><strong>Axes.</strong>
+- (a) $x$: perturbation radius $\rho$, log, 0.04-1.25; $y$: fraction of directions that flip, linear 0-0.78. Filled circles and solid lines are observed; open squares and dashed lines are predicted; colour is model.
+- (b) one row per model-radius. Dark bar: exact steps / observed flips. Light bar: exact steps / predicted flips. The number after the bar is the observed flip count; rows with zero observed flips are hatched and carry the overall row accuracy.
+- (c) $x$: model; $y$: re-synchronised runs / flipped runs, 0-0.62; the labels are the raw counts.</p>
+<p><strong>Numbers.</strong></p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th style="text-align: right;">$\rho$</th>
+<th style="text-align: right;">observed</th>
+<th style="text-align: right;">predicted</th>
+<th style="text-align: right;">exact</th>
+<th style="text-align: right;">wrong</th>
+<th style="text-align: right;">false alarm</th>
+<th style="text-align: right;">miss</th>
+<th style="text-align: right;">accuracy</th>
+<th style="text-align: right;">exact/obs</th>
+<th style="text-align: right;">exact/pred</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.5B</td>
+<td style="text-align: right;">0.1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>1.5B</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">1.000</td>
+</tr>
+<tr>
+<td>1.5B</td>
+<td style="text-align: right;">1.0</td>
+<td style="text-align: right;">8</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0.500</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">0.000</td>
+</tr>
+<tr>
+<td>DS-14B</td>
+<td style="text-align: right;">0.1</td>
+<td style="text-align: right;">483</td>
+<td style="text-align: right;">493</td>
+<td style="text-align: right;">478</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.982</td>
+<td style="text-align: right;">0.990</td>
+<td style="text-align: right;">0.970</td>
+</tr>
+<tr>
+<td>DS-14B</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">703</td>
+<td style="text-align: right;">723</td>
+<td style="text-align: right;">625</td>
+<td style="text-align: right;">41</td>
+<td style="text-align: right;">57</td>
+<td style="text-align: right;">37</td>
+<td style="text-align: right;">0.865</td>
+<td style="text-align: right;">0.889</td>
+<td style="text-align: right;">0.864</td>
+</tr>
+<tr>
+<td>Qwen3.5</td>
+<td style="text-align: right;">0.05</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>Qwen3.5</td>
+<td style="text-align: right;">0.1</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">1.000</td>
+</tr>
+<tr>
+<td>Qwen3.5</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">157</td>
+<td style="text-align: right;">160</td>
+<td style="text-align: right;">104</td>
+<td style="text-align: right;">27</td>
+<td style="text-align: right;">29</td>
+<td style="text-align: right;">26</td>
+<td style="text-align: right;">0.918</td>
+<td style="text-align: right;">0.662</td>
+<td style="text-align: right;">0.650</td>
+</tr>
+<tr>
+<td>phi-4</td>
+<td style="text-align: right;">0.1</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">—</td>
+<td style="text-align: right;">—</td>
+</tr>
+<tr>
+<td>phi-4</td>
+<td style="text-align: right;">0.3</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0.995</td>
+<td style="text-align: right;">0.000</td>
+<td style="text-align: right;">0.000</td>
+</tr>
+</tbody>
+</table>
+<p>The counts are predicted well: 493 vs 483 at $r=0.1$ (2.1% high), 723 vs 703 at 0.3 (2.8% high), 12 vs 12 at 0.1 for Qwen3.5 and 160 vs 157 at 0.3 (1.9% high), 0 vs 0 for phi-4 at 0.1. The step identity is another matter. At low flip density, the rule is nearly exact: 478/483 for the 14B at 0.1, 12/12 for Qwen3.5 at 0.1, 1/1 for the 1.5B at 0.3. At high density, the errors are mostly <em>late</em> flips: Qwen3.5 at 0.3 has 27 wrong steps against 104 exact, and the 14B at 0.3 has 41 wrong against 625 exact. The 14B's two wrong steps at 0.1 are one 19-vs-21 inversion (direction 986: observed 21, predicted 19) and one 297-vs-21 (direction 985: observed 297, predicted 21). The 19-vs-21 inversion is the first-crossing-versus-argmin distinction already seen in the state-kick analysis: the rule chooses 19 because it is the first step whose $r_c$ falls below 0.1, while the free run first departs at 21 because the response there is larger. The 297 case is a late gate reached only after the accumulated divergence, not a near-tie at 0.1.</p>
+<p><strong>Re-synchronisation.</strong> The counts are 0/1186 for the 14B (483 + 703 flipped rows across the two radii), 0/169 for Qwen3.5 (12 + 157), 0/0 for the 1.5B free run (no flips at $r\le0.01$; the T4 analysis reported none), and <strong>2/4</strong> for phi-4. The two phi-4 cases are directions 276 (substitution at 219, immediate re-join, 57-token identical run, second substitution at 277, re-join at 278) and 933 (substitution at 277, re-join at 278, 22-token identical suffix). Both are one-token excursions that snap back, not slow convergence. The longest shared run anywhere else is 17 tokens for the 14B (a verbatim prompt echo) and 1 token for Qwen3.5. The stored <code>mean_postflip_agreement</code> fields (e.g. 0.73 for the 14B) are averages over the non-flipped rows and are not re-synchronisation rates; they are not used here.</p>
+<p><strong>What it shows.</strong> The signed linear rule is a good <em>detector</em> across four models and three orders of magnitude of radius: the predicted flip fraction tracks the observed one to within 2-3% absolute up to $r=0.3$. It is not a <em>step oracle</em>: once many directions flip, the correct answer depends on the divergent text, and the rule's identity rate falls (99% -&gt; 89% for the 14B, 100% -&gt; 66% for Qwen3.5). The flip count is therefore a robust cross-model observable; the exact step is not.</p>
+<p><strong>What it does not show.</strong>
+- Row accuracy is dominated by both-none when flips are rare. phi-4's 99.5% at 0.3 is 995 non-flips plus 0 exact; it is not evidence that the rule works. The exact/observed column is the honest one and it is 0 there.
+- The 1.5B's $r=1.0$ row is outside its measured linear window ($10^{-3}$-0.1) and is a teacher-forced decision flip, not a free continuation. Its 8-vs-4 failure measures nonlinearity, not the rule's performance in its calibrated range. The only genuine 1.5B free run is the 20/20 null at $r\le0.01$.
+- The 14B numbers use the true-window run; the 1.5B's window is 100 and is correctly applied in its source run. The full-attention 14B has 453 observed and 464 predicted at 0.1 with 449 exact. The conclusion is the same, but the counts are not interchangeable.
+- The definition of re-synchronisation (20 tokens) is a threshold, not a physical time. A slower convergence with a 10-token match would not be counted. The longest 14B match is 17 tokens, so the 14B result is not sensitive to the exact cut; the phi-4 sample is 4 rows and cannot estimate a rate.
+- A free run and a teacher-forced pass are different objects: the teacher-forced pass keeps the baseline attention pattern and the baseline text, while the free run lets the model condition on its own divergence. The 1.5B rows mix the two by necessity.</p>
+<hr />
+<h2 id="4-figure-syn_angle_depthpng-perpendicular-responses-contracting-tangents">4. Figure <code>syn_angle_depth.png</code> — perpendicular responses, contracting tangents</h2>
+<p><img alt="angle_depth" src="figures/syn_angle_depth.png" /></p>
+<p><strong>Setup.</strong> (a) The angle between the last-state response $\delta h$ and the baseline last state $h_0$, at the final-norm output, over 24 saved directions x 300 steps (7200 pairs) for the three models whose A1 dump stores <code>h0_last</code> and <code>dh_last</code>: the true-window 14B, Qwen3.5 and phi-4. The 1.5B is a literature value (87°), not a measurement, because its dump stores state norms and $\cos(h',h_0)$ rather than $h_0$ vectors. (b)-(c) The depth spectrum from a JVP through all blocks with $k=8$ orthonormal tangent vectors and QR renormalisation every block; probe tokens 0, 21, 50, 100, 150, 200, 250, 299. The 1.5B band is the reference range from the committed depth section. (d)-(e) Full-block non-normality at five tokens, five blocks (0,12,24,36,47); the 1.5B reference bands are drawn at the matching relative positions.</p>
+<p><strong>Axes.</strong>
+- (a) $x$: angle in degrees, 60-120; $y$: model. Thin points are a 1400-pair subsample of each distribution; the diamond is the median; the open star for the 1.5B is the literature value; the dotted line is 90°, the dashed line 87°.
+- (b) $x$: probe token; $y$: $h_{\rm depth}=\sum_i\max(\lambda_i(L),0)$ in nats, log. The blue band is the 1.5B reference 0.6-1.4.
+- (c) $x$: probe token; $y$: state-normalized tangent rate in nats/block (overall per-token value on the saved-state intervals). The blue dashed line is the 1.5B's least-negative value, $-0.034$.
+- (d) $x$: block index; $y$: full-block $\sigma_{\max}$, log. Red line: 14B median over five tokens, band min-max. Open squares: 1.5B reference at block 0, the middle (drawn at 12/24/36) and the last block.
+- (e) $x$: block index; $y$: $\kappa=\sigma_{\max}/\rho$. Red line and band: 14B; the 1.5B reference is printed as text because it is a range, not a per-block curve.</p>
+<p><strong>Numbers.</strong> The measured response-vs-state angles are <strong>89.99°</strong> for the 14B (mean 90.10, p10 77.66, p90 102.61, 49.9% above 90°), <strong>90.08°</strong> for Qwen3.5 (mean 90.25, IQR 89.51-90.91, 54.7% above 90°) and <strong>89.85°</strong> for phi-4 (mean 89.54, IQR 85.54-93.51, 48.7% above 90°). The 1.5B literature value is 87°. The response is $1.71\times10^{-4}$ of the state norm in the 14B, $4.94\times10^{-4}$ in Qwen3.5, and $9.71\times10^{-5}$ in phi-4; phi-4's is the smallest and its angle distribution the widest, which is consistent with a noisier direction estimate rather than a different geometry.</p>
+<p>The depth numbers: the 14B's $h_{\rm depth}$ runs from 0.163 to 0.638 nats, with the maximum at $t=21$ (the razor tie), 1.55x the next largest and 2.5x the median of the other seven; its state-normalized rate is $-0.061$ to $-0.120$ nats/block, with 61/64 six-block chunks negative and the least-negative chunk $-0.034$. phi-4's $h_{\rm depth}$ runs from 0.154 to 0.859, with the maximum at $t=0$ (the first generated token), 2.3x the next; its normalized rate is $-0.054$ to $-0.123$ per token, with 93/96 intervals negative and a median of $-0.105$ nats/block. The 1.5B reference is $h_{\rm depth}=0.6$–$1.4$, absolute exponent 0.08-0.18 per block, worst relative $-0.034$. Qwen3.5 has no depth run; its layer profile measures the <em>response</em> growth, not the tangent contraction, and is not a substitute.</p>
+<p>The non-normality numbers are only complete for the 14B. Full-block $\sigma_{\max}$ is 96.2 at block 0 (range 66.2-128.5), 3.7-4.9 at blocks 12-36 and 14.2 at block 47; $\kappa$ is 7.35, 1.60-2.27 and 7.07. The MLP alone at block 47 has $\sigma_{\max}=117.7$ (94.4-146.5), against the 1.5B's 58-93. The 1.5B reference is $\sigma_{\max}=95$–$195$, $2.7$–$3.6$, $6$–$9$ and $\kappa=5$–$8$, $1.7$–$2.5$, $3$–$5.3$. The middle blocks match; the last block is 1.6-2.4x more non-normal in the 14B. The principal angle between the top singular directions of blocks 4 apart is 86.96° (14B) against 83.6° (1.5B); that is a different quantity from the response-vs-state angle in panel (a) and should not be conflated with it.</p>
+<p><strong>What it shows.</strong> (1) At 9-14B the response is perpendicular to the state, not radial: the three measured medians agree to 0.23° and the per-pair distributions straddle 90°. This sharpens the T4 1.5B statement ("about 87°") into "exactly perpendicular" at the larger scales, with the caveat that the 1.5B number is not measured on the same objects. (2) The depth spectrum reproduces the 1.5B law in both models that were run: absolute tangent volume grows (up to 46x in the 14B, 73x in phi-4) but the state norm grows far more (655-833x, 1621x), so the normalized tangent contracts almost everywhere. (3) The razor tie is an absolute hotspot in the 14B (largest $h_{\rm depth}$) but not a normalized one (it contracts least, -0.061); in phi-4 the absolute hotspot is the first generated token, not either tie. (4) The 14B's last block is the one clearly non-normal place relative to the 1.5B; the middle is ordinary.</p>
+<p><strong>What it does not show.</strong>
+- The 1.5B angle is literature. The 3° difference from 90° is not established, and the 1.5B's own principal-angle number (83.6°) is a different measurement.
+- The full-attention 14B run has no <code>h0_last</code>, so the angle cannot be cross-checked against it; the true-window run is the only 14B angle. The 24 directions are 24 out of 1000; the angle is a 24-direction sample, not a census.
+- phi-4's angle is measured on responses that are only $9.7\times10^{-5}$ of the state norm, so its direction estimate is noisier; its IQR (8°) is twice Qwen3.5's (1.4°). The medians agree, but the shapes are not equally well measured.
+- The depth run uses 8 probe tokens and $k=8$; phi-4's token list does not include its ties (219, 277), so the phi-4 tie-hotspot question is unanswered. The 1.5B reference ranges come from a different dump with a different depth resolution.
+- Qwen3.5's depth is simply absent. The layer profile shows a 159x response growth and saturation after block 19; that is not the same as a contracting tangent and is not used as one.
+- Non-normality is one model. The phi-4 fused-MLP Jacobian is still generating and Qwen3-14B is pending; the cross-model statement "the last block is more non-normal at 14B" is a 14B-vs-1.5B statement only.
+- The 14B's relative exponent is a 6-block average because <code>norm_h0</code> saves only nine states; per-block contraction is not measured. The three positive chunks are at the resolution floor (+0.0003 to +0.0083 nats/block), not a qualitative failure.</p>
+<hr />
+<h2 id="5-figure-syn_dimensionpng-no-window-no-loops-one-floor">5. Figure <code>syn_dimension.png</code> — no window, no loops, one floor</h2>
+<p><img alt="dimension" src="figures/syn_dimension.png" /></p>
+<p><strong>Setup.</strong> (a) TwoNN $\hat d=1/\langle\ln\mu_i\rangle$ on each 1000-token last-layer trajectory (the 1.5B validation file uses 4095-token runs; the 14B and Qwen3.5 use 1000). One point per trajectory; the horizontal bar is the median. The grey band is the 1.5B validation range 5.44-6.23. (b) Repetition-loop counts from the lag-distance prominence screen: full loops (prominence &lt;0.6), partial (0.6-0.8) and clean. The 1.5B count is the 20 local trajectories at 1000 tokens; the equal-horizon subset is 16 runs (6 full + 2 partial). (c) The fp32 floor fraction $F_l/(\lVert h_l\rVert\epsilon_{32})$ at the smallest tested radius, per layer, for the models whose calibration and norms are available.</p>
+<p><strong>Axes.</strong>
+- (a) $x$: model; $y$: TwoNN, 3.8-11.1. Each dot is one trajectory; the bar is the median. The "none" labels are the valid-window verdict; phi-4 has no D2 run.
+- (b) $x$: model; $y$: number of trajectories. Grey is clean, red is a full loop, orange is a partial loop; the label is full+partial/total.
+- (c) $x$: block index; $y$: $F_l/\lVert h_l\rVert$ in fp32 ulp units, log, 5-60. Dashed horizontals are 10, 20 and 30 ulp. The 1.5B star is its last saved state. The 14B uses the matched true-window state norms; the full-attention normalization gives 21-25 ulp instead of 18-24 and is quoted in the JSON.</p>
+<p><strong>Numbers.</strong> TwoNN: 1.5B <strong>5.44-6.23</strong> (median 6.17, four validation runs; two of those are loops), 14B <strong>4.66-8.90</strong> (median 8.19, 13 runs), Qwen3.5 <strong>6.05-8.09</strong> (median 7.50, 12 runs). The MLE at $k=10$ gives 7.9-10.1 (1.5B healthy), 11.0-15.9 (14B) and 8.9-12.9 (Qwen3.5); the T4-style chords are 9.20-11.35 (1.5B healthy), 8.69-11.75 (14B) and 12.58-22.36 (Qwen3.5). <strong>No model has a valid scaling window</strong>: 0/2 healthy 1.5B runs, 0/13 14B and 0/12 Qwen3.5 pass the 0.40-decade rule. The single passing flag in the 1.5B file is a spurious 0.54-decade window on the period-53 loop; the two healthy 1.5B runs fail. The loops are 9 full + 2 partial / 20 for the 1.5B (6 full + 2 partial / 16 at the equal 1000-token horizon), 0 / 13 for the 14B, and 0 full + 1 partial / 12 for Qwen3.5 (the partial is <code>great_emu_war</code>, a late period-7 repeat with 13.8% coverage and prominence 0.849).</p>
+<p>The floor fractions are: 14B $2.19$–$2.88\times10^{-6}$ (18-24 ulp; the established full-attention normalization is $2.57$–$3.03\times10^{-6}$, 21-25 ulp), Qwen3.5 $1.41$–$3.15\times10^{-6}$ (12-26 ulp), phi-4 $2.52$–$3.51\times10^{-6}$ (21-29 ulp), 1.5B $1.83\times10^{-6}$ at the last state (15 ulp). The 14B's per-layer values are 18.4, 23.4, 24.2 and 20.8 ulp at layers 12, 24, 36 and 47 (layer 0 is exactly zero because the perturbation enters the prompt, not generated state 0); the 14B is flat within 1.3x across depth. Qwen3.5 rises from 11.9 ulp at layer 8 to 26.5 at layer 31, a 2.2x drift; phi-4 is 29.4 at layer 20 and 21.1 at layer 39. The order of magnitude is the same in every model: about 20 ulp, or $2$–$3\times10^{-6}$ of the state norm.</p>
+<p><strong>What it shows.</strong> (1) The point-cloud estimators are not converged and no model has a scaling region; the 1.5B's "dimension" 5.44-6.23 is not a low-dimensional exception to a high-dimensional 14B, because the 14B's TwoNN spans the same band (4.66-8.90) and its MLE is higher. (2) The 14B and Qwen3.5 have no repetition loops at the same horizon where the 1.5B has 6 full + 2 partial of 16; Qwen3.5 has one partial late repeat, not a full loop. (3) The fp32 floor is not an absolute number: it scales with the state norm, at about 20 ulp, in all four models. That is why the floor is a property of the measurement, not of a model, and why the lower edge of the linear window moves in absolute radius.</p>
+<p><strong>What it does not show.</strong>
+- TwoNN is not a dimension. It is a nearest-neighbour estimator with a finite-$N$ bias (the 14B's <code>great_emu_war</code> moves 7.82 -&gt; 6.30 -&gt; 4.66 as $N$ goes 500 -&gt; 750 -&gt; 1000). The "4.66-8.90" band is a range of estimates, not a dimension.
+- The 1.5B validation used 4095-token runs and $d=1536$; the 14B and Qwen3.5 used 1000-token runs and $d=5120/4096$. The ranges are not like-for-like, and the 1.5B's four validation trajectories include two loops. The healthy 1.5B range is two points (6.12, 6.23), not a distribution.
+- phi-4 has no D2 run. The panel says "no D2 run" rather than drawing a number.
+- The loop screen is a state-recurrence test. It can miss a period longer than the 600-lag search, and it does not inspect the token text; a text repetition that leaves the state more than $0.1d_{\rm typ}$ away is not flagged. The 1.5B's 9/20 is at 1000 tokens; the equal-horizon 6+2/16 is the correct comparison to the 14B's 0/13 and Qwen3.5's 0+1/12.
+- The floor fraction is measured at the smallest tested radius. For phi-4 that is $10^{-3}$, and the $3\times10^{-3}$ value is 22% higher, so its $F$ is an upper bound on the true floor. For the 14B the $3\times10^{-4}/10^{-4}$ ratio is 1.001-1.008 and for Qwen3.5 1.06-1.09 (per layer), so those floors are at the plateau; the established proportional fit $F=\kappa\lVert h\rVert$ gives $\kappa=2.610\times10^{-6}=21.9$ ulp.
+- "Fixed fraction" is approximate: the spread is a factor 2.1 across models and Qwen3.5 drifts 2.2x with depth. It is a law of order of magnitude, not a constant.</p>
+<hr />
+<h2 id="6-what-the-campaign-says">6. What the campaign says</h2>
+<h3 id="61-the-hierarchy-in-one-paragraph">6.1 The hierarchy, in one paragraph</h3>
+<p>The four models are ordered by how large a prompt-embedding perturbation their greediest decisions tolerate: 14B (0.104) &lt; Qwen3.5-9B (0.707) &lt; 1.5B (1.555) &lt; phi-4 (3.587). The ordering is not a size ordering (the 9B is between the two DeepSeek models, the 40-block phi-4 is the most robust) and it is not a response-strength ordering (the 14B's median per-unit-radius last-state displacement is 2.3x <em>smaller</em> than the 1.5B's). At the typical fragile direction it is a <strong>margin ordering</strong>: the controlling gaps are $1.14\times10^{-3}$, $7.27\times10^{-3}$, $2.04\times10^{-2}$ and $6.31\times10^{-2}$ nats, spanning 55x and monotone with $r_*$, while the co-selected sensitivities span 1.71x and are non-monotone. The 14B is fragile because its decisions are close, not because its response is strong; the same sentence with "Qwen3.5" substituted holds against the 1.5B. phi-4 is robust because its typical margin is fat, and its thin ties are dynamically quiet.</p>
+<p>The tail is the exception that defines the rule. The most fragile direction of the 1.5B is extremely sensitive ($s=0.903$), so its worst radius (0.133) is only 1.24x below phi-4's (0.165), even though phi-4's worst margin is 13x thinner. A one-factor summary cannot capture both the bulk and the tail; the identity $r_*=m_*/s_*$, evaluated at a stated direction, does.</p>
+<h3 id="62-what-replicates-across-models">6.2 What replicates across models</h3>
+<ol>
+<li><strong>The signed top-2 threshold rule predicts flip counts.</strong> 493 vs 483 (14B, 0.1), 723 vs 703 (14B, 0.3), 12 vs 12 and 160 vs 157 (Qwen3.5), 0 vs 0 (phi-4, 0.1). It is a count rule, not a step oracle.</li>
+<li><strong>A flip is a top-2 word swap at a near-tie.</strong> The 14B's gates are 19/21 (<code>" reference"</code> vs <code>" research"</code>, <code>"Alright"</code> vs <code>"Okay"</code>) plus 297; Qwen3.5's are 267 (<code>Ex</code> -&gt; <code>Specific</code>) and 69 (<code>Distance</code> -&gt; <code>The</code>); phi-4's are 219 and 277. Every observed flip takes the second token.</li>
+<li><strong>No model except phi-4 re-synchronises.</strong> 0/1186 (14B), 0/169 (Qwen3.5) and 0/0 (1.5B free run; no flipped row to test); phi-4's 2/4 one-token re-joins are the exception, not the rule.</li>
+<li><strong>The response is perpendicular to the state.</strong> 89.99°, 90.08°, 89.85° at 14B/9B/phi-4; the 1.5B literature 87° is consistent, not contradictory.</li>
+<li><strong>Absolute tangent growth is radial drift; normalized it contracts.</strong> 61/64 chunks (14B), 93/96 intervals (phi-4), worst $-0.034$ (1.5B). The largest absolute exponent is at a near-tie or the first token, not a generic late step.</li>
+<li><strong>No scaling window.</strong> 0/2, 0/13, 0/12. The 1.5B's old low-dimension headline is not a dimension and does not replicate.</li>
+<li><strong>The fp32 floor is a fixed fraction of the state norm,</strong> about 20 ulp (12-29 across models), not a fixed absolute number.</li>
+<li><strong>Loops are common only in the 1.5B:</strong> 6 full + 2 partial / 16 at the equal horizon (1.5B), 0 / 13 (14B), 0 + 1 / 12 (Qwen3.5). The 14B-to-Qwen3.5 difference is one partial and is not a scale trend; the 1.5B is the outlier. phi-4 has no D2 run and is not in the comparison.</li>
+</ol>
+<h3 id="63-what-does-not-replicate-or-is-model-specific">6.3 What does not replicate, or is model-specific</h3>
+<ul>
+<li><strong>The 14B's last-block non-normality.</strong> The 14B's block-47 $\sigma_{\max}$ (14.2) and $\kappa$ (7.07) are 1.6-2.4x the 1.5B's; the middle blocks are ordinary. This is a 14B-vs-1.5B statement; phi-4 and Qwen3.5 have no non-normality run.</li>
+<li><strong>The 14B's razor tie is a single gate.</strong> 86.3% of its directions are controlled by three steps (21, 19, 297), against 59-62% for Qwen3.5 and phi-4 and 75% for the 20-direction 1.5B. The 14B's fragility is concentrated; the others' is spread.</li>
+<li><strong>phi-4's re-synchronisation.</strong> 2/4 versus 0 everywhere else. With 4 flips, this is a lead, not a rate.</li>
+<li><strong>The 1.5B's repetition loops.</strong> 9+2/20 (6+2/16 at equal horizon) is far above the 14B's 0/13 and Qwen3.5's 0+1/12. The 1.5B is the only model in which loops are common enough to affect the late-time statistics.</li>
+<li><strong>phi-4's absolute depth hotspot is the first token, not a tie; the 14B's is the tie.</strong> The normalized statement is universal; the absolute hotspot is not.</li>
+</ul>
+<h3 id="64-limitations">6.4 Limitations</h3>
+<ol>
+<li><strong>Four models, four prompt tokenizations, four continuations.</strong> The prompt text is the same, but the token sequences and the generated text are not. $t$ is not a common event; only distributions and protocol are comparable. The 1.5B and 14B share prompt ids; the other two have $P=64$.</li>
+<li><strong>The 1.5B has 20 directions.</strong> Its quantiles are coarse and its ECDF is a staircase. A bootstrap over those 20 gives a median interval 1.41-1.99; the 1.5B-vs-Qwen3.5 and 1.5B-vs-phi-4 gaps (2.2x and 2.3x) sit just outside it, but the directions are one simplex block and the interval is not a population confidence statement.</li>
+<li><strong>$r_*$ is a linear object.</strong> It is computed from one radius and calibrated in a finite window; at $r=1$ the 1.5B's observed decision flips (8) exceed the linear prediction (4). Do not read the far tail as measured.</li>
+<li><strong>The 14B has two runs.</strong> The core column is true-window-100. The full-attention run gives 0.1164 instead of 0.1035 and a different controlling gate (21 instead of 19 for the median). The hierarchy is unchanged, but a 14B number without a run label is ambiguous.</li>
+<li><strong>The angle is measured on 24 directions, not 1000,</strong> and only for the models that store <code>h0_last</code>. The 1.5B value is literature; the full-attention 14B cannot be measured.</li>
+<li><strong>Non-normality is one model.</strong> phi-4's is pending; Qwen3.5 has none. The "last block is more non-normal at 14B" is not a four-model law.</li>
+<li><strong>Depth is absent for Qwen3.5 and sampled at 8 tokens.</strong> The layer profile is a response measurement, not a tangent measurement, and is not substituted.</li>
+<li><strong>D2 is absent for phi-4.</strong> TwoNN is not a dimension and is not converged; the 1.5B and 14B/Qwen3.5 use different $N$, $d$ and prompt sets.</li>
+<li><strong>The floor's normalization has a history.</strong> The established 14B law used full-attention state norms; the matched true-window norms (which differ by up to 19% at layer 12) give a fraction up to 16% lower. The order-of-magnitude conclusion is unchanged.</li>
+<li><strong>This is a synthesis of four models, not a scaling law.</strong> The 9B is not "between" the two DeepSeek models in any monotone size sense; architecture, tokenizer, training data and prompt length all differ. The one variable that orders the median radius here is the controlling margin, and that is a description, not a derivation.</li>
+</ol>
+<h3 id="65-pending">6.5 Pending</h3>
+<ul>
+<li><strong>Qwen3-14B.</strong> <code>results_big/qwen314/a1_inter_w0/a1.npz</code> was absent at run time. The script checks for it and for <code>free_inter_w0</code>; when present, it is added to every applicable panel and to <code>syn_numbers.json</code> automatically. The column is omitted rather than guessed.</li>
+<li><strong>phi-4 non-normality.</strong> <code>nonnorm_w0/nonnorm.npz</code> is still generating (fused-MLP Jacobian fix). The panel marks it pending.</li>
+<li><strong>Qwen3.5 depth.</strong> No JVP run exists; the layer profile is not a substitute.</li>
+<li><strong>phi-4 D2.</strong> No distance matrices in <code>results_big/phi4</code>.</li>
+<li><strong>The 1.5B response-vs-state angle.</strong> The T4 dump did not store <code>h0_last</code>; a re-run that does would replace the literature 87° with a measured value.</li>
+</ul>
+<h3 id="66-reproduction">6.6 Reproduction</h3>
+<p><code>python scripts_spark/figs_synthesis.py</code> reads the local npz/json files in place, writes <code>notebook_big/figures/syn_{fragility,stability,angle_depth,dimension}.png</code> (dpi 170) and <code>syn_numbers.json</code>, and prints the headline table. The script is deterministic and does not modify any result file. The 1.5B A1 file and its free-run file are read from the read-only <code>chaos_llm_2026</code> tree. The Qwen3-14B column is conditional on <code>os.path.exists(results_big/qwen314/a1_inter_w0/a1.npz)</code> (and the matching free-run file), so a later pull needs no code change, only a rerun.</p>
+<p>The headline synthesis table, repeated for the reader who wants it without the prose:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">1.5B</th>
+<th style="text-align: right;">DS-14B</th>
+<th style="text-align: right;">Qwen3.5-9B</th>
+<th style="text-align: right;">phi-4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>median $r_*$</td>
+<td style="text-align: right;">1.555</td>
+<td style="text-align: right;"><strong>0.1035</strong></td>
+<td style="text-align: right;">0.707</td>
+<td style="text-align: right;"><strong>3.587</strong></td>
+</tr>
+<tr>
+<td>median controlling margin $m_*$</td>
+<td style="text-align: right;">$6.90\times10^{-2}$</td>
+<td style="text-align: right;">$1.14\times10^{-3}$</td>
+<td style="text-align: right;">$2.05\times10^{-2}$</td>
+<td style="text-align: right;">$1.70\times10^{-2}$</td>
+</tr>
+<tr>
+<td>median controlling sensitivity $s_*$</td>
+<td style="text-align: right;">$2.42\times10^{-2}$</td>
+<td style="text-align: right;">$5.54\times10^{-3}$</td>
+<td style="text-align: right;">$3.31\times10^{-2}$</td>
+<td style="text-align: right;">$7.67\times10^{-3}$</td>
+</tr>
+<tr>
+<td>margin at median-$r_*$ direction</td>
+<td style="text-align: right;">$2.04\times10^{-2}$</td>
+<td style="text-align: right;">$1.14\times10^{-3}$</td>
+<td style="text-align: right;">$7.27\times10^{-3}$</td>
+<td style="text-align: right;">$6.31\times10^{-2}$</td>
+</tr>
+<tr>
+<td>sensitivity at median-$r_*$ direction</td>
+<td style="text-align: right;">$1.30\times10^{-2}$</td>
+<td style="text-align: right;">$1.10\times10^{-2}$</td>
+<td style="text-align: right;">$1.03\times10^{-2}$</td>
+<td style="text-align: right;">$1.76\times10^{-2}$</td>
+</tr>
+<tr>
+<td>factor from margin (vs 1.5B)</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">$1/17.8$</td>
+<td style="text-align: right;">$1/2.81$</td>
+<td style="text-align: right;">3.09</td>
+</tr>
+<tr>
+<td>factor from sensitivity (vs 1.5B)</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">$1/0.85$</td>
+<td style="text-align: right;">1.27</td>
+<td style="text-align: right;">1.35</td>
+</tr>
+<tr>
+<td>net $r_*$ factor (vs 1.5B)</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">$1/15.1$</td>
+<td style="text-align: right;">$1/2.22$</td>
+<td style="text-align: right;">2.29</td>
+</tr>
+<tr>
+<td>flips at $r=0.1$ (free)</td>
+<td style="text-align: right;">0/20 at $r\le0.01$</td>
+<td style="text-align: right;">483/1000</td>
+<td style="text-align: right;">12/1000</td>
+<td style="text-align: right;">0/1000</td>
+</tr>
+<tr>
+<td>re-synchronised</td>
+<td style="text-align: right;">0 (literature)</td>
+<td style="text-align: right;">0/1186</td>
+<td style="text-align: right;">0/169</td>
+<td style="text-align: right;">2/4</td>
+</tr>
+<tr>
+<td>angle</td>
+<td style="text-align: right;">87° (lit.)</td>
+<td style="text-align: right;">89.99°</td>
+<td style="text-align: right;">90.08°</td>
+<td style="text-align: right;">89.85°</td>
+</tr>
+<tr>
+<td>TwoNN</td>
+<td style="text-align: right;">5.44-6.23</td>
+<td style="text-align: right;">4.66-8.90</td>
+<td style="text-align: right;">6.05-8.09</td>
+<td style="text-align: right;">not run</td>
+</tr>
+<tr>
+<td>loops</td>
+<td style="text-align: right;">9+2/20</td>
+<td style="text-align: right;">0/13</td>
+<td style="text-align: right;">0+1/12</td>
+<td style="text-align: right;">not run</td>
+</tr>
+<tr>
+<td>floor, ulp</td>
+<td style="text-align: right;">15 (last)</td>
+<td style="text-align: right;">18-24</td>
+<td style="text-align: right;">12-26</td>
+<td style="text-align: right;">21-29</td>
+</tr>
+</tbody>
+</table>
+<p>The single sentence to carry away: <strong>the 14B is fragile because its margins are thin, the 1.5B is robust because its margins are fatter, and phi-4 is the most robust because its thin ties sit on quiet responses; the response axis matters at the tail, where the 1.5B's worst direction is unusually loud.</strong></p>
+<hr />
+<h1 id="part-cross-scale-deepseek-r1-distill-qwen-15b-vs-14b-under-one-protocol">Part cross-scale. DeepSeek-R1-Distill-Qwen-1.5B vs -14B under one protocol</h1>
+<h2 id="summary_14">Summary</h2>
 <blockquote>
 <p>Same correction note as Part 1: the 14B numbers here are full-attention runs (window inactive). Everything except the flush-ratio row is a same-prompt, same-radius comparison and stands as stated; the flush row is explained by the missing window, and the margin comparison is partially confounded by the window regime (on the 1.5B the window is known to change the margin spectrum). The true-window 14B rerun will close both gaps.</p>
 </blockquote>
 <p>Two models of the same family — 28 layers with $d=1536$, and 48 layers with $d=5120$, roughly eight times the parameters — generate 300 greedy tokens from the identical 65-token prompt with an attention window of 100, and then the same kind of prompt-embedding perturbation (a unit direction times $r=0.1$) is applied and the continuation is teacher-forced. The larger model's decisions are far more fragile: its median top-1/top-2 logit gap is 3.10 nats against 4.78 for the small one, and its thinnest gap (9.7e-5 nats at step 21) is 207 times thinner than the small model's thinnest (2.0e-2 nats at step 123). As a consequence the radius at which a random direction first flips a token — a "flux-tube radius", the largest perturbation size along that direction that leaves the greedy continuation intact — is 13 times smaller in the 14B (median 0.116 vs 1.55 in absolute embedding units, 17 times smaller after dividing by the token-embedding scale), and 464 of 1000 directions flip something at the run radius against 0 of 20. The response itself is <em>not</em> stronger in the bigger model: per unit radius its last-state displacement is 2.3 times smaller in absolute units and 4.6 times smaller relative to the state it lives in, so the fragility is a property of how close the decisions are, not of how hard the perturbation pushes. Two shape features do differ: only the 1.5B shows a window-flush surge at $t=35$ (its last state jumps 1.70x across it, the 14B's 1.11x), and the 1.5B's response decays to 19% of its early level by $t=200$ while the 14B's is still at 68% — though that second difference is partly textual, because the small model falls into a repeating four-token loop at $t=143$ and the large one does not.</p>
 <hr />
 <h2 id="1-the-two-runs-and-every-quantity">1. The two runs and every quantity</h2>
-<h3 id="11-setup_7">1.1 Setup</h3>
+<h3 id="11-setup_8">1.1 Setup</h3>
 <table>
 <thead>
 <tr>
@@ -8430,7 +10132,7 @@ later arrival produces the corresponding figure without touching the rest.</p>
 </table>
 <p>Two things the table makes explicit. (i) The <strong>prompt is identical but the continuation is not</strong>: the two models generate different tokens, so "$t=21$" is the 22nd token of a different text in each run. Comparable across models are the protocol, the <em>distribution</em> of margins over steps, and the flush step $t^*=W-P=35$ (which follows from the mask, not from the tokens). (ii) The <strong>direction sets are not equally rich</strong>: the 1.5B samples one 20-dimensional input subspace, the 14B samples fifty, and cross-block directions in the 14B are exactly orthogonal while within-block pairs have inner product $-1/19$. An ECDF over 20 directions is a 20-step staircase; an ECDF over 1000 is smooth. That is a sampling-precision difference, not a bias, but it is why the 1.5B curves look coarse.</p>
 <p><em>Note on a quoted number.</em> The analysis brief quotes a 14B median margin of 1.68 nats. The <code>margins</code> array in this npz has median <strong>3.096</strong> (mean 4.996, p10 0.435, min $9.727\times10^{-5}$). I could not reproduce 1.68 from the array (median of the 100 smallest margins is 0.686, of the 20 smallest 0.116, of steps $t<100$ is 4.558). Everything below uses 3.096, which is also the value used in <code>section_a1_deep.md</code>. The quoted minima (9.7e-5 at $t=21$, and 2.0e-2 at $t=123$ for the 1.5B) reproduce exactly.</p>
-<h3 id="12-quantities_3">1.2 Quantities</h3>
+<h3 id="12-quantities_4">1.2 Quantities</h3>
 <p>Notation: $u$ indexes a direction, $t\in\{0,\dots,299\}$ a generated step, $\ell^{(1)}_t,\ell^{(2)}_t$ the top two logits of the unperturbed run, $h_t^{\ell}$ the unperturbed state at saved index $\ell$, $\delta h_t^{\ell}$ the same state under the perturbation.</p>
 <table>
 <thead>

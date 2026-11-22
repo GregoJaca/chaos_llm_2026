@@ -1,0 +1,35 @@
+{
+  "run": "results_big/qwen314/a1_inter_w0",
+  "steps": [
+    8,
+    16,
+    32,
+    50,
+    75,
+    100,
+    150,
+    200,
+    250,
+    299
+  ],
+  "radii": [
+    0.03,
+    0.1
+  ],
+  "dirs": 24,
+  "layers": [
+    0,
+    10,
+    20,
+    30,
+    39
+  ],
+  "inject_layer": 0,
+  "seed": 1000,
+  "prompt_len": 64,
+  "T": 300,
+  "window": 0,
+  "model": "/home/grego/LLM/models/Qwen3-14B",
+  "dtype": "float32",
+  "engine": "run_state2_big"
+}

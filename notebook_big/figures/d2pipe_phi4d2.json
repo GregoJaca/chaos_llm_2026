@@ -1,0 +1,1870 @@
+{
+ "tag": "phi4d2",
+ "theiler": [
+  0,
+  50,
+  500
+ ],
+ "n_eps": 90,
+ "eps_range": [
+  0.01,
+  2.5
+ ],
+ "tol": 0.15,
+ "min_decades": 0.4,
+ "reference_json": "C:\\Users\\hjaca\\research\\chaos_llm_2026\\results\\d2\\d2_raw_vs_shuffled.json",
+ "trajectories": [
+  {
+   "name": "childhood",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 180.55926641447098,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7252604138824919,
+     "eps_saturation": 0.8922845780249741,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 11.354961278953322,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 9.377456322172039,
+     "slope_at_saturation": 13.119640461842712,
+     "slope_admissible_min": 10.201997893587222,
+     "slope_admissible_max": 12.659847858645064,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6812976767371995,
+     "slope_min": -8.854223107434095,
+     "slope_max": 13.828897543556549
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7548636355461875,
+     "eps_saturation": 0.9024316476223997,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 12.706693150184499,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 11.38120042743472,
+     "slope_at_saturation": 14.40814882659051,
+     "slope_admissible_min": 11.758636459188995,
+     "slope_admissible_max": 13.79839728090134,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7624015890110699,
+     "slope_min": -8.854223107434137,
+     "slope_max": 14.857775914949105
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7468010555704693,
+     "eps_saturation": 0.895598414767266,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 12.634091861253491,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 12.028415794278393,
+     "slope_at_saturation": 13.199682871813037,
+     "slope_admissible_min": 12.250771197425486,
+     "slope_admissible_max": 13.156618742047334,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7580455116752088,
+     "slope_min": 0.0,
+     "slope_max": 13.491348105526342
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 6.827353737495792,
+    "cdf_fit": 6.190171810890651,
+    "log2_bug": 3.28022268026555,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 12.714259677096694,
+     "n": 1000
+    },
+    "10": {
+     "d2": 11.861658332965229,
+     "n": 1000
+    },
+    "20": {
+     "d2": 13.008695537137562,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6582530047732673,
+    "p05": 0.3934748735204592,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 494,
+    "period_prominence": 0.9901816613824554,
+    "period_rel": 0.9993102550506592,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 15.18897366822777,
+    "r2": 0.9999883638056919,
+    "fit_range": [
+     166.77255249023438,
+     175.2455072312128
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 7,
+    "fit_decades": 0.021522316993767845,
+    "pairs_in_window": 82774,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 1.2670726776123047,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_childhood_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.013517141342163086,
+   "total_s": 1.2805941104888916,
+   "t4_reference": {
+    "key": "childhood_personality_development",
+    "d2": 10.175913574167598,
+    "r2": 0.9997407002218548
+   },
+   "gpu_screen": {
+    "name": "childhood",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 140.34959411621094,
+    "norm_growth": 1.003562331199646,
+    "rel_nearest": 1.0303963422775269,
+    "rel_nearest_p05": 0.6126508712768555
+   }
+  },
+  {
+   "name": "cybersecurity",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 179.9807662842348,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6353824205586838,
+     "eps_saturation": 0.8683427377323402,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 6.9857997393856754,
+     "decades_admissible": 0.1077725846594173,
+     "slope_at_depletion": 8.542092709584832,
+     "slope_at_saturation": 9.29008252465008,
+     "slope_admissible_min": 6.622635001013943,
+     "slope_admissible_max": 8.480464856338223,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.43022867059099323,
+     "slope_min": -1.4210854715202004e-14,
+     "slope_max": 10.842155501735718
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.672757819591974,
+     "eps_saturation": 0.8797129267413446,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 8.415973044197354,
+     "decades_admissible": 0.1077725846594173,
+     "slope_at_depletion": 8.717254776195572,
+     "slope_at_saturation": 10.458417725249662,
+     "slope_admissible_min": 8.095064330542431,
+     "slope_admissible_max": 10.231545292786603,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.5130166212851557,
+     "slope_min": -2.842170943040401e-14,
+     "slope_max": 14.440615910674381
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7393600225393019,
+     "eps_saturation": 0.8823159681368435,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 12.8044384252836,
+     "decades_admissible": 0.0538862923297087,
+     "slope_at_depletion": 12.985581895702227,
+     "slope_at_saturation": 13.148643274267084,
+     "slope_admissible_min": 12.804438425283585,
+     "slope_admissible_max": 13.22756176046998,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7889804112685598,
+     "slope_min": 0.0,
+     "slope_max": 13.491348105526342
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 6.730625915602395,
+    "cdf_fit": 6.166135423451828,
+    "log2_bug": 3.2337495067071242,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 14.041938176400068,
+     "n": 1000
+    },
+    "10": {
+     "d2": 13.75938773114666,
+     "n": 1000
+    },
+    "20": {
+     "d2": 14.52058642903736,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6800315797888772,
+    "p05": 0.30667216496006966,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 117,
+    "period_prominence": 0.9904855856719865,
+    "period_rel": 0.974467933177948,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 12.008290451642623,
+    "r2": 0.9999921618031629,
+    "fit_range": [
+     171.67913818359375,
+     177.95383544921873
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.01558982831300838,
+    "pairs_in_window": 68978,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.9132595062255859,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_cybersecurity_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.04120039939880371,
+   "total_s": 0.9544634819030762,
+   "t4_reference": {
+    "key": "cybersecurity_threats_defenses",
+    "d2": 3.8943171450515695,
+    "r2": 0.9999684737534402
+   },
+   "gpu_screen": {
+    "name": "cybersecurity",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 140.08346557617188,
+    "norm_growth": 1.04164719581604,
+    "rel_nearest": 1.057338833808899,
+    "rel_nearest_p05": 0.6175989508628845
+   }
+  },
+  {
+   "name": "future_of_work",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 181.8952981118909,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6852591197547533,
+     "eps_saturation": 0.8549610091919279,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 10.594303411936052,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 9.560323675688764,
+     "slope_at_saturation": 10.932442004594375,
+     "slope_admissible_min": 10.191272113062865,
+     "slope_admissible_max": 10.614935407688243,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6356582047161639,
+     "slope_min": -11.17278560648036,
+     "slope_max": 12.971202398919914
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7127710287101277,
+     "eps_saturation": 0.8667605578041073,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 11.916497921513745,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 11.140952362324427,
+     "slope_at_saturation": 11.949206478801162,
+     "slope_admissible_min": 11.385221267200496,
+     "slope_admissible_max": 11.916497921513756,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7084366971740433,
+     "slope_min": -11.172785606480375,
+     "slope_max": 12.971202398919914
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.753028542040385,
+     "eps_saturation": 0.8982436712005671,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 12.58421059168223,
+     "decades_admissible": 0.053886292329708874,
+     "slope_at_depletion": 13.740988904521878,
+     "slope_at_saturation": 13.522574787235971,
+     "slope_admissible_min": 12.584210591682236,
+     "slope_admissible_max": 13.434268657406845,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7953300332062097,
+     "slope_min": 0.0,
+     "slope_max": 21.103199790911532
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 7.156366185907547,
+    "cdf_fit": 6.848429172425006,
+    "log2_bug": 3.438297702721585,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 12.03333217977144,
+     "n": 1000
+    },
+    "10": {
+     "d2": 11.618310423022875,
+     "n": 1000
+    },
+    "20": {
+     "d2": 12.596167396025791,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6358880514918228,
+    "p05": 0.30250630393353595,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 10,
+    "period_prominence": 0.9889642427810442,
+    "period_rel": 0.9134053587913513,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 11.966816126934201,
+    "r2": 0.999990481823145,
+    "fit_range": [
+     159.39862060546875,
+     169.72377014160156
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.027258111553788954,
+    "pairs_in_window": 68978,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.5661404132843018,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_future_of_work_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.022507667541503906,
+   "total_s": 0.5886504650115967,
+   "t4_reference": {
+    "key": "future_of_work_ai_impact",
+    "d2": 5.094167359749749,
+    "r2": 0.9999852013223511
+   },
+   "gpu_screen": {
+    "name": "future_of_work",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 138.89468383789062,
+    "norm_growth": 1.033835768699646,
+    "rel_nearest": 0.9590892791748047,
+    "rel_nearest_p05": 0.43508630990982056
+   }
+  },
+  {
+   "name": "great_emu_war",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 182.87378263418856,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": 0.2902590829418443,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": 0.7030362448577594,
+     "eps_hi": 0.3033004391074251,
+     "eps_depletion": 0.7030362448577594,
+     "eps_saturation": 0.862179511173519,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 11.32787484638608,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 10.27827009880503,
+     "slope_at_saturation": 11.659192257950448,
+     "slope_admissible_min": 10.715981284326904,
+     "slope_admissible_max": 11.643545958216851,
+     "slope_drift_per_decade": -0.09115132964951009,
+     "tol_used": 0.6796724907831644,
+     "slope_min": -5.586392803240173,
+     "slope_max": 11.66217079580216
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": 0.27635145706869935,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": 0.7293506462970257,
+     "eps_hi": 0.3227127953471055,
+     "eps_depletion": 0.7293506462970257,
+     "eps_saturation": 0.8730973799112366,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 12.818901159783742,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 12.339890050464787,
+     "slope_at_saturation": 12.492475978362439,
+     "slope_admissible_min": 12.53750413999622,
+     "slope_admissible_max": 12.872054903911067,
+     "slope_drift_per_decade": -0.19620719242312573,
+     "tol_used": 0.7691340695870241,
+     "slope_min": -5.5863928032402015,
+     "slope_max": 12.872054903911067
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7342698529537589,
+     "eps_saturation": 0.8891877880271728,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 11.242906867242707,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 14.665500838031917,
+     "slope_at_saturation": 10.319190911618955,
+     "slope_admissible_min": 10.318153848861936,
+     "slope_admissible_max": 13.545155881542826,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6745744120345613,
+     "slope_min": 0.0,
+     "slope_max": 26.56266932230254
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 1.901650732962767,
+    "cdf_fit": 1.0621211351520523,
+    "log2_bug": 0.9136538260717183,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 10.617233316417527,
+     "n": 1000
+    },
+    "10": {
+     "d2": 10.595978164061382,
+     "n": 1000
+    },
+    "20": {
+     "d2": 12.16325747839579,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6247417451682296,
+    "p05": 0.04018550148878889,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 289,
+    "period_prominence": 0.9249676688821178,
+    "period_rel": 0.9010710120201111,
+    "coverage": 0.08860759493670886
+   },
+   "t4_style": {
+    "d2": 12.564685511997878,
+    "r2": 0.9999573473049119,
+    "fit_range": [
+     137.18834197998046,
+     163.93472290039062
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.07735374355779712,
+    "pairs_in_window": 68979,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.7639849185943604,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_great_emu_war_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.01407623291015625,
+   "total_s": 0.7780630588531494,
+   "t4_reference": {
+    "key": "great_emu_war_hallucination",
+    "d2": 2.977671602690824,
+    "r2": 0.9998177123695812
+   },
+   "gpu_screen": {
+    "name": "great_emu_war",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 140.80650329589844,
+    "norm_growth": 0.9937247037887573,
+    "rel_nearest": 0.8797000050544739,
+    "rel_nearest_p05": 0.052970852702856064
+   }
+  },
+  {
+   "name": "healthy_habits",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 180.76636128639575,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6640971892072156,
+     "eps_saturation": 0.8576254327151619,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 8.864172270203841,
+     "decades_admissible": 0.08082943849456292,
+     "slope_at_depletion": 8.380522011382531,
+     "slope_at_saturation": 10.108242661869587,
+     "slope_admissible_min": 8.408962999369145,
+     "slope_admissible_max": 9.549029860038484,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.5323878276565096,
+     "slope_min": 0.0,
+     "slope_max": 45.023503116025964
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6925409578897262,
+     "eps_saturation": 0.86735904136831,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 10.172854354867141,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 9.631399296425585,
+     "slope_at_saturation": 11.025547670281815,
+     "slope_admissible_min": 9.900964670006157,
+     "slope_admissible_max": 10.487760716954732,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6103712612920289,
+     "slope_min": 0.0,
+     "slope_max": 45.02350311602602
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7040393292090767,
+     "eps_saturation": 0.855142059167695,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 11.82406573846411,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 11.971542499021869,
+     "slope_at_saturation": 11.684629486154869,
+     "slope_admissible_min": 11.686026707417376,
+     "slope_admissible_max": 12.001982678550508,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7094439443078472,
+     "slope_min": -3.2678303041941064,
+     "slope_max": 12.21110913757068
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 7.953546241509471,
+    "cdf_fit": 7.312982740949263,
+    "log2_bug": 3.8213052630710087,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 13.030812099770548,
+     "n": 1000
+    },
+    "10": {
+     "d2": 12.478383218426389,
+     "n": 1000
+    },
+    "20": {
+     "d2": 13.648376089836653,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6536913840712741,
+    "p05": 0.3009262585851593,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 398,
+    "period_prominence": 0.9798326648232996,
+    "period_rel": 0.9852429628372192,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 11.19554403541882,
+    "r2": 0.9999892355348148,
+    "fit_range": [
+     159.13650265648252,
+     175.63919067382812
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 10,
+    "fit_decades": 0.042851617917032715,
+    "pairs_in_window": 124162,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.5530967712402344,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_healthy_habits_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.01258540153503418,
+   "total_s": 0.5656838417053223,
+   "t4_reference": null,
+   "gpu_screen": {
+    "name": "healthy_habits",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 139.63214111328125,
+    "norm_growth": 1.0353695154190063,
+    "rel_nearest": 0.9998050332069397,
+    "rel_nearest_p05": 0.3811076581478119
+   }
+  },
+  {
+   "name": "interstellar",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 179.11640959408135,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6999538156679102,
+     "eps_saturation": 0.8663322054131881,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 10.698509810197304,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 9.948352006963969,
+     "slope_at_saturation": 11.30986417089327,
+     "slope_admissible_min": 10.281227870388463,
+     "slope_admissible_max": 11.156215953449834,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6419105886118385,
+     "slope_min": -2.842170943040401e-14,
+     "slope_max": 11.323674903649142
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7223068980133802,
+     "eps_saturation": 0.8732632226371324,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 12.139426332199251,
+     "decades_admissible": 0.08082943849456316,
+     "slope_at_depletion": 11.483600815869545,
+     "slope_at_saturation": 12.10339496351797,
+     "slope_admissible_min": 11.495848147849976,
+     "slope_admissible_max": 12.2833404725156,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7238115146880642,
+     "slope_min": -2.842170943040401e-14,
+     "slope_max": 12.2833404725156
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7150650536734805,
+     "eps_saturation": 0.8502541676150218,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 13.632105865642567,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 14.148490097795435,
+     "slope_at_saturation": 11.737921657269794,
+     "slope_admissible_min": 12.606204811316761,
+     "slope_admissible_max": 14.141872014421072,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.8179263519385551,
+     "slope_min": 0.0,
+     "slope_max": 26.562669322302625
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 6.62981234566205,
+    "cdf_fit": 6.371762968792653,
+    "log2_bug": 3.1853133231854325,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 12.489981300468298,
+     "n": 1000
+    },
+    "10": {
+     "d2": 11.984442975685619,
+     "n": 1000
+    },
+    "20": {
+     "d2": 13.337408522620914,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6284713003837796,
+    "p05": 0.3146436863724531,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 146,
+    "period_prominence": 0.9822528209300306,
+    "period_rel": 0.9740656614303589,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 11.483852876769456,
+    "r2": 0.9999730011145078,
+    "fit_range": [
+     158.8552182588123,
+     169.531494140625
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.028248904022444062,
+    "pairs_in_window": 68979,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.576887845993042,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_interstellar_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.014390945434570312,
+   "total_s": 0.5912806987762451,
+   "t4_reference": {
+    "key": "interstellar_propulsion_review",
+    "d2": 9.194728753345698,
+    "r2": 0.9998975273546129
+   },
+   "gpu_screen": {
+    "name": "interstellar",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 141.20950317382812,
+    "norm_growth": 1.0064289569854736,
+    "rel_nearest": 0.9425184726715088,
+    "rel_nearest_p05": 0.4031100571155548
+   }
+  },
+  {
+   "name": "personal_finance",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 184.4104266773365,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6962094697796294,
+     "eps_saturation": 0.8750545413661884,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 10.286344788418692,
+     "decades_admissible": 0.08082943849456324,
+     "slope_at_depletion": 8.276113367003948,
+     "slope_at_saturation": 11.898514247185366,
+     "slope_admissible_min": 9.05996314831292,
+     "slope_admissible_max": 11.855825992105059,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6155472702643557,
+     "slope_min": -8.854223107434265,
+     "slope_max": 12.396160642940416
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7177410744815989,
+     "eps_saturation": 0.8833223920319861,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 10.998370469404955,
+     "decades_admissible": 0.08082943849456324,
+     "slope_at_depletion": 9.480799817850336,
+     "slope_at_saturation": 12.668728953696592,
+     "slope_admissible_min": 9.646126752030366,
+     "slope_admissible_max": 12.541807645354709,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6583978979918307,
+     "slope_min": -8.85422310743428,
+     "slope_max": 13.092236696678658
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7187219300601658,
+     "eps_saturation": 0.8718318156648188,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 11.899341111609248,
+     "decades_admissible": 0.08082943849456324,
+     "slope_at_depletion": 11.725476792348893,
+     "slope_at_saturation": 12.401518179381071,
+     "slope_admissible_min": 11.81509989047786,
+     "slope_admissible_max": 12.40609322762449,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7121343411388097,
+     "slope_min": 0.0,
+     "slope_max": 12.40609322762449
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 7.567861160311573,
+    "cdf_fit": 7.654864269262514,
+    "log2_bug": 3.6360017033861913,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 12.998744746045858,
+     "n": 1000
+    },
+    "10": {
+     "d2": 12.922320335779789,
+     "n": 1000
+    },
+    "20": {
+     "d2": 14.13365590668292,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.7095635750564672,
+    "p05": 0.32222100144648536,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 339,
+    "period_prominence": 0.9777991162503338,
+    "period_rel": 0.9791339635848999,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 13.199147356490846,
+    "r2": 0.9999964438507367,
+    "fit_range": [
+     164.95241039457775,
+     177.19689011346725
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 8,
+    "fit_decades": 0.03109742942276195,
+    "pairs_in_window": 96570,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.5436971187591553,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_personal_finance_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.014433145523071289,
+   "total_s": 0.5581324100494385,
+   "t4_reference": {
+    "key": "personal_finance_beginners_guide",
+    "d2": 10.451349218980742,
+    "r2": 0.9998521424339788
+   },
+   "gpu_screen": {
+    "name": "personal_finance",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 140.1488800048828,
+    "norm_growth": 1.0088967084884644,
+    "rel_nearest": 1.0519357919692993,
+    "rel_nearest_p05": 0.4563699960708618
+   }
+  },
+  {
+   "name": "quantum_consciousness",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 184.05724836417585,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7102192230451525,
+     "eps_saturation": 0.8738939175668768,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 11.20816747326214,
+     "decades_admissible": 0.08082943849456316,
+     "slope_at_depletion": 9.81541211230451,
+     "slope_at_saturation": 12.298821467187626,
+     "slope_admissible_min": 10.124868409362222,
+     "slope_admissible_max": 12.324818574250452,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6727770579981887,
+     "slope_min": 0.0,
+     "slope_max": 12.324818574250452
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7365747204295068,
+     "eps_saturation": 0.8825091871050906,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 12.735284475616591,
+     "decades_admissible": 0.0538862923297087,
+     "slope_at_depletion": 12.13815828686137,
+     "slope_at_saturation": 13.005854719515447,
+     "slope_admissible_min": 12.57693996658784,
+     "slope_admissible_max": 13.156882634734819,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7641170685369952,
+     "slope_min": 0.0,
+     "slope_max": 13.156882634734819
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7552329212779442,
+     "eps_saturation": 0.8981795858460192,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 12.967146303618572,
+     "decades_admissible": 0.0538862923297087,
+     "slope_at_depletion": 13.045389570605302,
+     "slope_at_saturation": 13.453667485111762,
+     "slope_admissible_min": 12.868947194322516,
+     "slope_admissible_max": 14.011941458216409,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7780287782171144,
+     "slope_min": 0.0,
+     "slope_max": 17.588153516156503
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 5.8542744397249535,
+    "cdf_fit": 5.395457805686407,
+    "log2_bug": 2.8127037988701438,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 12.378064572489116,
+     "n": 1000
+    },
+    "10": {
+     "d2": 12.301884137844505,
+     "n": 1000
+    },
+    "20": {
+     "d2": 13.23609773684146,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6373841363528701,
+    "p05": 0.33458708568553214,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 62,
+    "period_prominence": 0.986374694184122,
+    "period_rel": 0.9538628458976746,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 13.330182938326768,
+    "r2": 0.9999350291968258,
+    "fit_range": [
+     157.19558715820312,
+     170.62880289713542
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.03561199362133165,
+    "pairs_in_window": 68978,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.5686452388763428,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_quantum_consciousness_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.01701807975769043,
+   "total_s": 0.5856649875640869,
+   "t4_reference": {
+    "key": "quantum_consciousness_hallucination",
+    "d2": 9.624631680137718,
+    "r2": 0.9999534932757007
+   },
+   "gpu_screen": {
+    "name": "quantum_consciousness",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 140.56387329101562,
+    "norm_growth": 1.0089021921157837,
+    "rel_nearest": 0.9419847726821899,
+    "rel_nearest_p05": 0.5318089723587036
+   }
+  },
+  {
+   "name": "remote_work",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 181.26419352846403,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": 0.196581969911918,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": 0.6906662082026516,
+     "eps_hi": 0.2517929700175334,
+     "eps_depletion": 0.6906662082026516,
+     "eps_saturation": 0.8699134130258289,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 9.726746958457552,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 9.64556913510814,
+     "slope_at_saturation": 11.222893811033828,
+     "slope_admissible_min": 9.71112876270984,
+     "slope_admissible_max": 10.21844606901038,
+     "slope_drift_per_decade": -0.06715961818075418,
+     "tol_used": 0.5836048175074534,
+     "slope_min": 0.0,
+     "slope_max": 13.491348105526455
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": 0.3705432778275366,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": 0.7198928719330346,
+     "eps_hi": 0.3653444190930001,
+     "eps_depletion": 0.7198928719330346,
+     "eps_saturation": 0.8808952727997034,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 11.293615844961623,
+     "decades_admissible": 0.08082943849456316,
+     "slope_at_depletion": 11.29524395680507,
+     "slope_at_saturation": 12.177004315745627,
+     "slope_admissible_min": 11.172359078407762,
+     "slope_admissible_max": 12.163699092074935,
+     "slope_drift_per_decade": 0.07485725094999658,
+     "tol_used": 0.6787186271037342,
+     "slope_min": 0.0,
+     "slope_max": 13.491348105526512
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7222055357009938,
+     "eps_saturation": 0.8895986401736012,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 10.88172513565678,
+     "decades_admissible": 0.08082943849456316,
+     "slope_at_depletion": 13.443212669524627,
+     "slope_at_saturation": 10.989401874031227,
+     "slope_admissible_min": 9.871094640654505,
+     "slope_admissible_max": 13.429546427209143,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6679158728474079,
+     "slope_min": 0.0,
+     "slope_max": 23.921131561695866
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 1.9582712064610102,
+    "cdf_fit": 1.0579872026089736,
+    "log2_bug": 0.9408573032134246,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 10.834848035189568,
+     "n": 1000
+    },
+    "10": {
+     "d2": 10.70677069096144,
+     "n": 1000
+    },
+    "20": {
+     "d2": 12.18580610074511,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6436859132272885,
+    "p05": 0.0414753609886442,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 289,
+    "period_prominence": 0.9226490821846025,
+    "period_rel": 0.8987138867378235,
+    "coverage": 0.08860759493670886
+   },
+   "t4_style": {
+    "d2": 12.370540853575122,
+    "r2": 0.9999988801981057,
+    "fit_range": [
+     158.09628295898438,
+     169.8849639892578
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.031233283215844197,
+    "pairs_in_window": 68979,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.6910126209259033,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_remote_work_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.014261960983276367,
+   "total_s": 0.7052764892578125,
+   "t4_reference": {
+    "key": "remote_work_pros_cons",
+    "d2": 7.122853612988011,
+    "r2": 0.9999131292350008
+   },
+   "gpu_screen": {
+    "name": "remote_work",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 139.99365234375,
+    "norm_growth": 1.0090982913970947,
+    "rel_nearest": 0.9384309649467468,
+    "rel_nearest_p05": 0.05373862013220787
+   }
+  },
+  {
+   "name": "robot_friendship",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 138.10974140037652,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.676031276034193,
+     "eps_saturation": 0.8143207659246093,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 12.7525310097907,
+     "decades_admissible": 0.053886292329708534,
+     "slope_at_depletion": 11.998940751295107,
+     "slope_at_saturation": 10.720446062545404,
+     "slope_admissible_min": 12.124816813401925,
+     "slope_admissible_max": 12.752531009790644,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7312398678791303,
+     "slope_min": -8.854223107434265,
+     "slope_max": 12.752531009790644
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6979748894802782,
+     "eps_saturation": 0.8229671178727422,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 13.873706409857693,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 14.532849227078929,
+     "slope_at_saturation": 11.412868851019423,
+     "slope_admissible_min": 11.635363346477893,
+     "slope_admissible_max": 14.872569040586797,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.8324223845914613,
+     "slope_min": -2.842170943040401e-14,
+     "slope_max": 14.872569040586797
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7047301624593447,
+     "eps_saturation": 0.8211117966139844,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 14.67915109040439,
+     "decades_admissible": 0.05388629232970878,
+     "slope_at_depletion": 17.22680984873185,
+     "slope_at_saturation": 11.373373832745658,
+     "slope_admissible_min": 11.521428760288128,
+     "slope_admissible_max": 16.94316806298739,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.8807490654242625,
+     "slope_min": -8.854223107434308,
+     "slope_max": 17.634505685295473
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 7.565864557660287,
+    "cdf_fit": 6.902632645001847,
+    "log2_bug": 3.6350424296247845,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 13.4546016364783,
+     "n": 1000
+    },
+    "10": {
+     "d2": 13.597442526281892,
+     "n": 1000
+    },
+    "20": {
+     "d2": 14.628811122117568,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6338040364032096,
+    "p05": 0.3749474924037359,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 38,
+    "period_prominence": 0.988569947101649,
+    "period_rel": 0.990021288394928,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 4.89801706774549,
+    "r2": 0.9988165799476961,
+    "fit_range": [
+     134.22068786621094,
+     142.65948486328125
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.026481191273198573,
+    "pairs_in_window": 68978,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.6612563133239746,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_robot_friendship_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.014577865600585938,
+   "total_s": 0.6758368015289307,
+   "t4_reference": {
+    "key": "robot_friendship_fable",
+    "d2": 10.258242661060322,
+    "r2": 0.9999849255987906
+   },
+   "gpu_screen": {
+    "name": "robot_friendship",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 123.62451171875,
+    "norm_growth": 0.9820870757102966,
+    "rel_nearest": 0.9792619347572327,
+    "rel_nearest_p05": 0.6473942995071411
+   }
+  },
+  {
+   "name": "smartphones",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 183.55955890855358,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.6884832378049821,
+     "eps_saturation": 0.8595316273869982,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 10.294704988466801,
+     "decades_admissible": 0.053886292329708874,
+     "slope_at_depletion": 9.530412112515902,
+     "slope_at_saturation": 11.365992899444636,
+     "slope_admissible_min": 9.906589212528473,
+     "slope_admissible_max": 10.867121224197888,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.6176822993080044,
+     "slope_min": 0.0,
+     "slope_max": 18.366452776238674
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7145466696582042,
+     "eps_saturation": 0.8686829632036455,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 11.615389072819841,
+     "decades_admissible": 0.053886292329708874,
+     "slope_at_depletion": 10.88743396451264,
+     "slope_at_saturation": 12.41773126710507,
+     "slope_admissible_min": 11.08635623991394,
+     "slope_admissible_max": 12.06877552942915,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.696923344369186,
+     "slope_min": 0.0,
+     "slope_max": 18.366452776238603
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.725451516921765,
+     "eps_saturation": 0.8689696318555784,
+     "n_valid_pairs": 124750,
+     "d2_admissible": NaN,
+     "decades_admissible": NaN,
+     "slope_at_depletion": 13.1738026244027,
+     "slope_at_saturation": 12.42787064278232,
+     "slope_admissible_min": 12.567254825481367,
+     "slope_admissible_max": 12.910068392568373,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.3207476403131156,
+     "slope_min": 0.0,
+     "slope_max": 13.189695149546743
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 7.273248853568379,
+    "cdf_fit": 6.297942602149177,
+    "log2_bug": 3.4944543326740303,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 13.413926201697196,
+     "n": 1000
+    },
+    "10": {
+     "d2": 12.536580263245757,
+     "n": 1000
+    },
+    "20": {
+     "d2": 13.30869914091149,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6422999901939126,
+    "p05": 0.3115748699775731,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 225,
+    "period_prominence": 0.9869470667778342,
+    "period_rel": 0.9772377610206604,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 12.31934205469921,
+    "r2": 0.9999666848767889,
+    "fit_range": [
+     158.22767639160156,
+     170.11534883045016
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.0314610496231798,
+    "pairs_in_window": 68978,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.709693193435669,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_smartphones_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.017564773559570312,
+   "total_s": 0.7272598743438721,
+   "t4_reference": {
+    "key": "smartphones_society_impact",
+    "d2": 10.45669883884733,
+    "r2": 0.9999445353065821
+   },
+   "gpu_screen": {
+    "name": "smartphones",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 139.8050537109375,
+    "norm_growth": 1.0098116397857666,
+    "rel_nearest": 0.9738367199897766,
+    "rel_nearest_p05": 0.44981974363327026
+   }
+  },
+  {
+   "name": "transformers",
+   "n": 1000,
+   "dim": null,
+   "d_typ": 180.3194113261224,
+   "theiler_default": 0,
+   "theiler": {
+    "0": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7344968649858714,
+     "eps_saturation": 0.8811835837502431,
+     "n_valid_pairs": 499500,
+     "d2_admissible": 12.974230279558052,
+     "decades_admissible": 0.0538862923297087,
+     "slope_at_depletion": 10.98605611772276,
+     "slope_at_saturation": 13.282118064001553,
+     "slope_admissible_min": 12.024698195034983,
+     "slope_admissible_max": 13.435638961663145,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.7784538167734824,
+     "slope_min": 0.0,
+     "slope_max": 13.435638961663145
+    },
+    "50": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7599882307891704,
+     "eps_saturation": 0.8904325919563333,
+     "n_valid_pairs": 450775,
+     "d2_admissible": 14.679092330241156,
+     "decades_admissible": 0.0538862923297087,
+     "slope_at_depletion": 13.064064826613363,
+     "slope_at_saturation": 14.507525876259221,
+     "slope_admissible_min": 13.404823219985943,
+     "slope_admissible_max": 14.988199381124844,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.880745539814469,
+     "slope_min": 0.0,
+     "slope_max": 14.988199381124844
+    },
+    "500": {
+     "d2": NaN,
+     "d2_flat": NaN,
+     "decades": 0.0,
+     "valid": false,
+     "eps_lo": NaN,
+     "eps_hi": NaN,
+     "eps_depletion": 0.7553836614384514,
+     "eps_saturation": 0.8815216716125346,
+     "n_valid_pairs": 124750,
+     "d2_admissible": 15.235270661741351,
+     "decades_admissible": 0.0538862923297087,
+     "slope_at_depletion": 13.46820903034581,
+     "slope_at_saturation": 14.830976212050583,
+     "slope_admissible_min": 13.770250025019518,
+     "slope_admissible_max": 15.235270661741346,
+     "slope_drift_per_decade": NaN,
+     "tol_used": 0.9137951815717801,
+     "slope_min": 0.0,
+     "slope_max": 15.235270661741346
+    }
+   },
+   "slope_ceiling_2log10N": 6.0,
+   "ndep": {
+    "1000": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "500": {
+     "d2": NaN,
+     "decades": 0.0
+    },
+    "250": {
+     "d2": NaN,
+     "decades": 0.0
+    }
+   },
+   "twonn": {
+    "mle": 7.195528331262257,
+    "cdf_fit": 7.11251061942746,
+    "log2_bug": 3.4571132734887575,
+    "n": 1000,
+    "n_dropped": 0
+   },
+   "mle": {
+    "5": {
+     "d2": 13.3022575874168,
+     "n": 1000
+    },
+    "10": {
+     "d2": 12.416122269670934,
+     "n": 1000
+    },
+    "20": {
+     "d2": 13.506334439845848,
+     "n": 1000
+    }
+   },
+   "rep_screen": {
+    "frac_below_thresh": 0.0,
+    "median": 0.6851331624484819,
+    "p05": 0.366535661971619,
+    "thresh": 0.001,
+    "theiler": 50
+   },
+   "period": {
+    "period_lag": 493,
+    "period_prominence": 0.9872107177445767,
+    "period_rel": 1.0052299499511719,
+    "coverage": 0.0
+   },
+   "t4_style": {
+    "d2": 14.52499380774154,
+    "r2": 0.9998779799994494,
+    "fit_range": [
+     150.41182381766183,
+     166.36691284179688
+    ],
+    "n": 1000,
+    "n_eps_used": 22,
+    "n_fit_points": 6,
+    "fit_decades": 0.04378498045209326,
+    "pairs_in_window": 68979,
+    "theiler": 20
+   },
+   "verdict": "no scaling region (window empty)",
+   "runtime_s": 0.5978116989135742,
+   "source": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\phi4\\d2\\dist_transformers_h_last.npy",
+   "state": "h_last",
+   "load_s": 0.016585111618041992,
+   "total_s": 0.614398717880249,
+   "t4_reference": null,
+   "gpu_screen": {
+    "name": "transformers",
+    "n": 1000,
+    "dim": 5120,
+    "norm_median": 141.20797729492188,
+    "norm_growth": 1.0156276226043701,
+    "rel_nearest": 1.0186337232589722,
+    "rel_nearest_p05": 0.4914376735687256
+   }
+  }
+ ]
+}
