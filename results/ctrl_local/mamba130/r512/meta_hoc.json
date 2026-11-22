@@ -1,0 +1,23 @@
+{
+  "model": "/u0/grego/LLM/models--state-spaces--mamba-130m-hf",
+  "model_path": "/u0/grego/LLM/models--state-spaces--mamba-130m-hf",
+  "dtype": "float32",
+  "window": 4096,
+  "prompt": "Provide a comprehensive history of computing from mechanical calculators to modern artificial intelligence. Cover key inventions, the evolution of programming languages, operating systems, networking, and the major figures and companies involved. Explain the technical ideas behind each era in accessible language and discuss how these developments shaped society.",
+  "prompt_len": 58,
+  "max_new_tokens": 300,
+  "num_directions": 512,
+  "radii": [
+    0.1
+  ],
+  "layers": [
+    23
+  ],
+  "seed": 69,
+  "fixed_tokens_from": null,
+  "inbatch_ref": true,
+  "baseline_duplicate_identical": true,
+  "torch": "2.5.1+cu121",
+  "transformers": "4.57.6",
+  "elapsed_sec": 172.2
+}
