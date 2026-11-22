@@ -1,0 +1,33 @@
+{
+  "run": "results/ctrl/randqwen_g0.35/a1i_txt",
+  "steps": [
+    20,
+    80
+  ],
+  "radii": [
+    0.05
+  ],
+  "dirs": 8,
+  "layers": [
+    0,
+    2,
+    4,
+    6,
+    8,
+    10,
+    12,
+    14,
+    16,
+    18,
+    20,
+    22,
+    24,
+    26,
+    28
+  ],
+  "inject_layer": 0,
+  "seed": 1000,
+  "prompt_len": 65,
+  "T": 300,
+  "window": 4096
+}

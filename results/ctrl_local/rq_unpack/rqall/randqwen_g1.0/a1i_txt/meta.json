@@ -1,0 +1,36 @@
+{
+  "model": "/u0/grego/LLM/models--randqwen-g1.0",
+  "model_path": "/u0/grego/LLM/models--randqwen-g1.0",
+  "dtype": "float32",
+  "window": 4096,
+  "prompt": "Provide a comprehensive technical review of current and proposed propulsion systems for interstellar travel. Compare chemical rockets, nuclear propulsion, laser sails, antimatter drives, and other theoretical concepts in terms of energy requirements, achievable speeds, technological feasibility, and projected timelines for development. Include discussion of major projects in the history of the field.",
+  "prompt_len": 65,
+  "max_new_tokens": 300,
+  "num_directions": 20,
+  "radii": [
+    3e-05,
+    0.0001,
+    0.0003,
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    0.3,
+    1.0
+  ],
+  "layers": [
+    0,
+    7,
+    14,
+    21,
+    27
+  ],
+  "seed": 69,
+  "fixed_tokens_from": null,
+  "inbatch_ref": true,
+  "baseline_duplicate_identical": true,
+  "torch": "2.5.1+cu121",
+  "transformers": "4.57.6",
+  "elapsed_sec": 118.4
+}
