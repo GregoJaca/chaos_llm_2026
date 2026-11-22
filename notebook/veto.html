@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  veto.md &nbsp;&middot;&nbsp; built 2026-11-21 21:15:24 &nbsp;&middot;&nbsp;
+  veto.md &nbsp;&middot;&nbsp; built 2026-11-21 21:26:51 &nbsp;&middot;&nbsp;
   <a href="veto.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="veto.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="notebook.html">notebook</a>
@@ -355,6 +355,11 @@ windows and a fit it is a result about the effective memory of the continuation.
 <p><img alt="layer temporal" src="figures/fits/layer_probe_temporal.png" /></p>
 <p>At the perturbed position all models are ×1–3; 20 tokens later DeepSeek is ×0.05–0.7 while Qwen3-4B and
 Phi are ×1–9. <strong>Verdict: include</strong> — it is the panel that shows the model difference is in transport.</p>
+<h3 id="116b-large-windows-the-departure-law-holds-at-w300-and-500">11.6b Large windows: the departure law holds at W=300 and 500</h3>
+<p>Three models, the same fixed 900-token continuation, W=300 against W=500: the first difference between
+the two runs is at <strong>t=237 = W−P</strong> (P=63) in every saved layer of every model. The window law therefore
+holds at large windows too, where the effect appears late in the continuation. The flush at these
+windows falls beyond the 900-token horizon, so only the departure side is tested here.</p>
 <h3 id="117-bottom-line-updated">11.7 Bottom line (updated)</h3>
 <table>
 <thead>

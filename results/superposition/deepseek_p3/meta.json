@@ -1,0 +1,20 @@
+{
+  "model": "/u0/grego/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B",
+  "run": "results/sens/deepseek_p3/geom",
+  "trials": 3,
+  "r": 0.03,
+  "layers": [
+    1,
+    7,
+    14,
+    27
+  ],
+  "prompt_len": 63,
+  "T": 300,
+  "err_median": {
+    "1": 0.0,
+    "7": 0.06860344856977463,
+    "14": 0.05912138521671295,
+    "27": 0.054554348811507225
+  }
+}

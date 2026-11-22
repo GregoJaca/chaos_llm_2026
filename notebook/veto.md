@@ -332,6 +332,13 @@ windows and a fit it is a result about the effective memory of the continuation.
 At the perturbed position all models are ×1–3; 20 tokens later DeepSeek is ×0.05–0.7 while Qwen3-4B and
 Phi are ×1–9. **Verdict: include** — it is the panel that shows the model difference is in transport.
 
+### 11.6b Large windows: the departure law holds at W=300 and 500
+
+Three models, the same fixed 900-token continuation, W=300 against W=500: the first difference between
+the two runs is at **t=237 = W−P** (P=63) in every saved layer of every model. The window law therefore
+holds at large windows too, where the effect appears late in the continuation. The flush at these
+windows falls beyond the 900-token horizon, so only the departure side is tested here.
+
 ### 11.7 Bottom line (updated)
 
 | item | verdict |

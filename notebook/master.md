@@ -297,6 +297,18 @@ round-off of the difference of two ~500-magnitude states, not physics. This is t
 support for using $K$ as a decomposition: **it is valid at total norms ≲0.3, which is exactly the
 range in which the rest of the analysis is done.**
 
+**Replication at $r=0.03$ (total norm 0.24):**
+
+| run | $\|A-S\|/\|A\|$ (median) | $\cos(A,S)$ |
+|---|---|---|
+| DeepSeek, prompt 1 | 6.2% | 0.999 |
+| DeepSeek, prompt 2 | 5.1% | 0.999 |
+| DeepSeek, prompt 3 | 5.5% | 0.999 |
+| Qwen3.5-2B, **fp32**, prompt 1 | 7.7% | 0.997 |
+
+So the decomposition holds to 5–8% across three prompts and on a second model when the arithmetic is
+fp32.
+
 **A limit of the measurement, found while checking the other models.** The same test is meaningless
 for the fp16 models at these amplitudes: a hidden state is ~500 and fp16 resolves ~0.3 in absolute
 value, while the single-position response at $r=0.03$ is ~0.05. The difference of two fp16 forward
@@ -397,8 +409,7 @@ measured time at which the response becomes exactly zero against the prediction.
 **What is exact, and on what evidence.**
 - **DeepSeek**: 240 (window, layer, radius) combinations, prompt length 63, residual 0.
 - **Qwen3-4B and Phi-4-mini**: 18 points each (3 windows × 6 layers, one prompt), residual 0.00.
-- **First departure** from the unwindowed run occurs at $t=W-P$: measured 36/136/0 for $W=100/200/60$
-  with $P=64$, all layers.
+- **First departure** from the unwindowed run occurs at $t=W-P$: measured 36/136/0 for $W=100/200/60$ with $P=64$, all layers; and 237 = 300−63 for $W=300$ in three models (DeepSeek, Qwen3-4B, Phi, all seven saved layers) on a 900-token continuation.
 - **Not tested**: Qwen2.5-3B (running), and Qwen3.5-2B, which has no window mechanism at all (its
   first block is linear attention; a mask leaves it bit-identical).
 
