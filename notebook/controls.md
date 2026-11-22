@@ -1,7 +1,8 @@
 # Controls: what a provably non-chaotic system does in our pipeline
 
-Status: **in progress** (Parts 2–5 and 7 measured and final; Part 6 gain
-sweep running on the GPU, first point g=1 done).
+Status: **in progress** (Parts 2–7 final; Part 8 master-comparison
+experiments running: transport kernel + superposition, flip fractions,
+512-direction thresholds, KV-cache kicks, random-model trajectories).
 
 This document is the control leg of the project. The reviewers' alternative
 explanation for our LLM results is: *"the threshold alone causes divergence"*
@@ -358,31 +359,69 @@ project's existing conclusion that these diagnostics are descriptive at
 best; the control removes any remaining doubt that they could be cited as
 positive evidence.
 
-## Part 6 — Random transformer: ordered vs chaotic phase — *sweep running*
+## Part 6 — Random transformer: a gain sweep, not a phase flip
 
-8 gains $g\in\{0.35\dots4\}$ (update-matrix init std $0.02\,g$), exact
-DeepSeek-1.5B architecture, random init, through the full A1 + free-run +
-depth-probe pipeline. **First results (g=1, the standard Qwen2 init):**
+**Data.** 8 random initialisations of the exact DeepSeek-1.5B architecture
+(Qwen2, 28 blocks, d=1536, vocab 151936, seed 1234) differing only in the
+init std of the two matrices that write into the residual stream
+(attn `out_proj`, mlp `down_proj`): std $=0.02\,g$, $g\in\{0.35, 0.5,
+0.71, 1.0, 1.41, 2.0, 2.83, 4.0\}$. Each model runs the full pipeline:
+in-batch A1 (10 radii, 20 directions), free runs at $\{0.5, 1, 3\}\times
+r^*$, and a depth probe (kick at $s=20$, read 15 depths, $r=0.05$).
 
-- **Depth-wise growth rate $\lambda_\text{depth}\approx+0.99$ per layer**
-  (kick at token 20, measured at $t=10$): a *random* 28-layer transformer
-  at standard init already amplifies exponentially along depth — as does
-  DeepSeek itself and (more weakly) even the Mamba control (Part 2's depth
-  panel). Depth amplification alone therefore calibrates to nothing; the
-  *phase* of this axis will come from the $g$-sweep (small $g$ must
-  contract).
-- Along tokens, the same model is neutral: $\lambda_{10}$ mean $-0.001$,
-  max $+0.014$; the response $a/r$ runs $55\to42$ and decays.
-- **Greedy argmax on top: flips occur — 2/20 directions at
-  $r=2.4\times10^{-4}$, both predicted exactly by the signed rule
-  (step and token), 0 false alarms.** In the time-neutral phase, the
-  threshold alone produces divergence. The remaining gains map the
-  boundary: at large $g$ the teacher-forced response must *grow* along
-  tokens at the measured rate — the positive control cell of the design
-  table.
+![phase](figures_controls/c6_phase.png)
 
-Sweep status: g=1.0 done; 0.5, 2.0, 0.35, 4.0, 0.71, 1.41, 2.83 queued
-(each ~15 min on the T4, memory-gated around the other agent's jobs).
+**(a) The depth axis.** $\lambda_\text{depth} = d\log\|\delta h_\ell\|/d\ell$
+rises smoothly with the gain: $+0.72$ (g=0.35) $\to$ $+0.99$ (standard
+init) $\to$ $+1.15$ (g=2), saturating there. **Even the smallest gain
+tested keeps depth amplification positive**, because attention mixing
+(unscaled by our knob) coherently sums the tangent across positions. Two
+calibration consequences: (i) a *random* transformer at standard init
+already amplifies $\times e$ per layer in depth — DeepSeek-like depth
+growth is not a trained or chaos-specific property; (ii) the depth
+amplification is nevertheless a smooth function of the update scale, so
+the per-block $\sigma_{\max}$ measurements of the LLM work sit on a
+measurable axis, and the control's contrast (Mamba one-step full-state
+$\sigma_{\max}\approx1$, all exponents negative) remains the
+architecture-level distinction.
+
+**(b) The token axis.** Along generated tokens, teacher-forced, **every
+gain is neutral-to-decaying**: $\lambda_{10}$ mean between $-0.0003$ and
+$-0.0021$, max $\le+0.017$; the response $a(t)/r$ at $r=0.1$ runs from
+$9.4\to8.8$ (g=0.35) to $359\to176$ (g=4) and never grows. **Weight scale
+alone cannot make the teacher-forced token axis expand.** The "chaotic
+phase" of mean-field intuition lives on the depth axis of these
+architectures, not on the token axis, because teacher forcing removes the
+argmax feedback that could compound growth.
+
+![response](figures_controls/c6_response.png)
+
+The same response curves across gains: sizes grow with $g$ (the depth
+amplification feeds the last layer), but the *shape* stays
+"start high, decay slowly" at every gain — never the exponential ramp of
+a chaotic map.
+
+![obspred](figures_controls/c6_obspred.png)
+
+**Greedy argmax on top, across the whole sweep: 27/28 flips predicted
+exactly (step and token), 0 false alarms, 1 miss** (g=1.41). In every
+regime we can build with weight scale — including strongly depth-amplifying
+ones — the threshold rule, not dynamics, decides divergence. Together
+with the step0 checkpoint (2/2 exact delayed flips, Part 7) this closes
+R1.2: the argmax layer produces the entire flip phenomenology with *no*
+help from the smooth dynamics, whether those dynamics contract (Mamba),
+are neutral (small attention models), or amplify in depth (random
+transformers at any gain).
+
+**Part 6 verdict.** The positive-control cell of the design table
+("smooth part chaotic → perturbation must grow at a known rate") is **not
+reachable through the token axis of any model we can build** — and, per
+the LLM results, not through the real models either. The honest
+conclusion for the paper: for greedy autoregressive generation, the
+token-axis smooth dynamics is neutral-to-contracting in *every* system
+tested (7 pretrained, 9 random-init), and divergence is always
+threshold-driven; what the models differ in is the *size and structure*
+of the carried response (Parts 2, 4, and the kernel comparison of Part 8).
 
 ## Part 7 — Pythia (attention, same Pile data) and the step0 random-init checkpoint
 

@@ -22,6 +22,8 @@ import torch
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from chaos_llm.protocol import resolve_model_path
+
 
 @torch.inference_mode()
 def prefill_and_step(model, pids, ids_full, P, t0):
@@ -58,7 +60,7 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     t0all = time.time()
 
-    path = os.path.expanduser(args.model)
+    path = resolve_model_path(args.model)
     tok = AutoTokenizer.from_pretrained(path, local_files_only=True)
     model = AutoModelForCausalLM.from_pretrained(
         path, torch_dtype=torch.float32, local_files_only=True,
@@ -98,14 +100,17 @@ def main():
     t_check = min(80, P + T - 2)
     cache, tcur, o = prefill_and_step(model, pids, ids_full, P, t_check)
     with torch.inference_mode():
-        o = model(input_ids=ids_full[t_check - 1:t_check][None],
-                  past_key_values=cache, use_cache=False, output_hidden_states=True,
+        o = model(input_ids=ids_full[t_check - 1:t_check][None].expand(2, -1).contiguous(),
+                  past_key_values=cache, use_cache=True, output_hidden_states=True,
                   cache_position=torch.tensor([tcur], device="cuda"),
-                  attention_mask=torch.ones((1, tcur + 1), dtype=torch.long, device="cuda"))
+                  attention_mask=torch.ones((2, tcur + 1), dtype=torch.long, device="cuda"))
         nxt = int(o.logits[0, -1].argmax())
     ok = nxt == int(ids_full[t_check])
-    print("cache-stepped argmax reproduces baseline token:", ok, flush=True)
-    assert ok, "cache stepping is not an exact simulator; aborting"
+    # the two rows must also be bit-identical (no perturbation yet)
+    ok_rows = bool(torch.equal(o.hidden_states[-1][0, -1], o.hidden_states[-1][1, -1]))
+    print("cache-stepped argmax reproduces baseline token:", ok,
+          "; duplicate rows identical:", ok_rows, flush=True)
+    assert ok and ok_rows, "cache stepping is not an exact simulator; aborting"
     del cache, o
     torch.cuda.empty_cache()
 
