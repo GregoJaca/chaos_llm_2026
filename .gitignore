@@ -34,5 +34,9 @@ notebook/notebook.pdf
 notebook/.preview/shot.png
 
 *.tgz
+
+# softloop experiment data / outputs
+results/softloop*/
+results/figures/softloop/
 notebook/.preview/build.log*
 notebook/.preview/*.tmp*
