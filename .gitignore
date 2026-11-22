@@ -40,3 +40,4 @@ results/softloop*/
 results/figures/softloop/
 notebook/.preview/build.log*
 notebook/.preview/*.tmp*
+assets/

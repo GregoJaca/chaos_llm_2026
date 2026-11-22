@@ -1,0 +1,41 @@
+{
+  "model": "/home/grego/LLM/models/phi-4",
+  "model_path": "/home/grego/LLM/models/phi-4",
+  "dtype": "float32",
+  "window": 0,
+  "prompt": "Provide a comprehensive technical review of current and proposed propulsion systems for interstellar travel. Compare chemical rockets, nuclear propulsion, laser sails, antimatter drives, and other theoretical concepts in terms of energy requirements, achievable speeds, technological feasibility, and projected timelines for development. Include discussion of major projects in the history of the field.",
+  "prompt_len": 64,
+  "max_new_tokens": 300,
+  "num_directions": 1000,
+  "dirs_per_block": 20,
+  "radii": [
+    0.1
+  ],
+  "layers": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    39
+  ],
+  "seed": 69,
+  "positions": null,
+  "fixed_tokens_from": null,
+  "baseline_duplicate_identical": true,
+  "batch_dirs": 16,
+  "engine": "run_a1_big",
+  "arch": "Phi3ForCausalLM",
+  "torch": "2.14.1+cu130",
+  "host": "spark-d5eb",
+  "transformers": "4.57.6",
+  "elapsed_sec": 1613.2
+}

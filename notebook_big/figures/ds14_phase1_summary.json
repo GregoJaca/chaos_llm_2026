@@ -1,0 +1,64 @@
+{
+  "run_dir": "C:\\Users\\hjaca\\research\\chaos_spark_wt\\results_big\\ds14\\a1_inter_w100",
+  "model": "/home/grego/LLM/models/DeepSeek-R1-Distill-Qwen-14B",
+  "window": 100,
+  "meta_json_present": true,
+  "n_steps": 300,
+  "n_directions": 1000,
+  "n_layers": 9,
+  "layers": [
+    0,
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    42,
+    47
+  ],
+  "radii": [
+    0.1
+  ],
+  "run_radius": 0.1,
+  "gain_reference_radius": 0.1,
+  "min_margin": {
+    "step": 21,
+    "value": 9.72747802734375e-05
+  },
+  "smallest_margins": [
+    {
+      "step": 21,
+      "value": 9.72747802734375e-05
+    },
+    {
+      "step": 19,
+      "value": 0.0011444091796875
+    },
+    {
+      "step": 189,
+      "value": 0.002223968505859375
+    },
+    {
+      "step": 273,
+      "value": 0.019161224365234375
+    },
+    {
+      "step": 255,
+      "value": 0.05151176452636719
+    },
+    {
+      "step": 171,
+      "value": 0.05393409729003906
+    }
+  ],
+  "n_steps_below_0.1": 8,
+  "r_star_quantiles": {
+    "p10": 0.017127770922785203,
+    "p50": 0.1164002685180539,
+    "p90": 2.59249108734549
+  },
+  "n_directions_infinite_threshold": 0,
+  "predicted_flip_fraction_at_run_radius": 0.464,
+  "predicted_flip_directions_at_run_radius": 464
+}

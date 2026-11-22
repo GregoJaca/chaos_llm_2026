@@ -1,0 +1,35 @@
+{
+  "run": "results_big/ds14/a1_inter_w100",
+  "steps": [
+    8,
+    16,
+    32,
+    50,
+    75,
+    100,
+    150,
+    200,
+    250,
+    299
+  ],
+  "radii": [
+    0.03,
+    0.1
+  ],
+  "dirs": 24,
+  "layers": [
+    0,
+    12,
+    24,
+    36,
+    47
+  ],
+  "inject_layer": 0,
+  "seed": 1000,
+  "prompt_len": 65,
+  "T": 300,
+  "window": 100,
+  "model": "/home/grego/LLM/models/DeepSeek-R1-Distill-Qwen-14B",
+  "dtype": "float32",
+  "engine": "run_state2_big"
+}

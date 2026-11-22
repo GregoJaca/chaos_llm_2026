@@ -1,0 +1,32 @@
+{
+  "run": "results_big/qwen314/a1_inter_w0",
+  "tokens": [
+    21,
+    50,
+    100,
+    189,
+    273
+  ],
+  "layers": [
+    0,
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    39
+  ],
+  "full_layers": [
+    0,
+    10,
+    20,
+    30,
+    39
+  ],
+  "n_layers": 40,
+  "model": "/home/grego/LLM/models/Qwen3-14B",
+  "dtype": "float32",
+  "window": 0,
+  "elapsed_sec": 178.3
+}

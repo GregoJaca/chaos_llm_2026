@@ -1,0 +1,110 @@
+[
+  {
+    "name": "childhood",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.62673950195312,
+    "norm_growth": 0.998154878616333,
+    "rel_nearest": 1.0563095808029175,
+    "rel_nearest_p05": 0.6407856345176697
+  },
+  {
+    "name": "cybersecurity",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.4114990234375,
+    "norm_growth": 0.9944689869880676,
+    "rel_nearest": 1.0938963890075684,
+    "rel_nearest_p05": 0.7535770535469055
+  },
+  {
+    "name": "future_of_work",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.38381958007812,
+    "norm_growth": 1.0028982162475586,
+    "rel_nearest": 1.0624310970306396,
+    "rel_nearest_p05": 0.7269959449768066
+  },
+  {
+    "name": "great_emu_war",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 134.87997436523438,
+    "norm_growth": 0.9726065397262573,
+    "rel_nearest": 0.6822215914726257,
+    "rel_nearest_p05": 0.11280541867017746
+  },
+  {
+    "name": "healthy_habits",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.51962280273438,
+    "norm_growth": 1.001220464706421,
+    "rel_nearest": 1.0857043266296387,
+    "rel_nearest_p05": 0.6969907879829407
+  },
+  {
+    "name": "interstellar",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.2803955078125,
+    "norm_growth": 0.9932036995887756,
+    "rel_nearest": 0.9322436451911926,
+    "rel_nearest_p05": 0.5170356631278992
+  },
+  {
+    "name": "personal_finance",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.39434814453125,
+    "norm_growth": 0.998384416103363,
+    "rel_nearest": 1.0736520290374756,
+    "rel_nearest_p05": 0.6633769273757935
+  },
+  {
+    "name": "quantum_consciousness",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.6088409423828,
+    "norm_growth": 1.001387119293213,
+    "rel_nearest": 1.0441536903381348,
+    "rel_nearest_p05": 0.6189814805984497
+  },
+  {
+    "name": "remote_work",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.50294494628906,
+    "norm_growth": 1.0008362531661987,
+    "rel_nearest": 1.0800172090530396,
+    "rel_nearest_p05": 0.7385489344596863
+  },
+  {
+    "name": "robot_friendship",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.512451171875,
+    "norm_growth": 1.0018526315689087,
+    "rel_nearest": 1.0502182245254517,
+    "rel_nearest_p05": 0.761910617351532
+  },
+  {
+    "name": "smartphones",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 135.60647583007812,
+    "norm_growth": 0.999030351638794,
+    "rel_nearest": 1.1204240322113037,
+    "rel_nearest_p05": 0.6891553401947021
+  },
+  {
+    "name": "transformers",
+    "n": 1000,
+    "dim": 4096,
+    "norm_median": 133.47183227539062,
+    "norm_growth": 0.9937259554862976,
+    "rel_nearest": 0.9947124123573303,
+    "rel_nearest_p05": 0.6777247786521912
+  }
+]
