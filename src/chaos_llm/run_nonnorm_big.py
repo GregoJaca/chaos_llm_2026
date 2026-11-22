@@ -82,13 +82,22 @@ def main():
         mlp = model.model.layers[l].mlp
         x = captured[l][0, P + t].clone()
         with torch.no_grad():
-            gate = mlp.gate_proj(x)
-            up = mlp.up_proj(x)
-            s = mlp.act_fn(gate)
+            if hasattr(mlp, "gate_proj"):
+                gate = mlp.gate_proj(x)
+                up = mlp.up_proj(x)
+                Wg, Wu = mlp.gate_proj.weight, mlp.up_proj.weight
+            else:
+                # fused gate_up_proj layout (Phi3MLP and similar)
+                gu = mlp.gate_up_proj(x)
+                gate, up = gu.chunk(2, dim=-1)
+                W = mlp.gate_up_proj.weight
+                Fh = W.shape[0] // 2
+                Wg, Wu = W[:Fh], W[Fh:]
+            act = getattr(mlp, "act_fn", None) or getattr(mlp, "activation_fn")
+            s = act(gate)
             sig = torch.sigmoid(gate)
             ds = sig * (1 + gate * (1 - sig))
-            J = (mlp.down_proj.weight @ (s[:, None] * mlp.up_proj.weight +
-                                         (up * ds)[:, None] * mlp.gate_proj.weight)).detach()
+            J = (mlp.down_proj.weight @ (s[:, None] * Wu + (up * ds)[:, None] * Wg)).detach()
             v = torch.randn(D, device=J.device)
             v /= v.norm()
             for _ in range(20):

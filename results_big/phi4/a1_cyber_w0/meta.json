@@ -1,0 +1,41 @@
+{
+  "model": "/home/grego/LLM/models/phi-4",
+  "model_path": "/home/grego/LLM/models/phi-4",
+  "dtype": "float32",
+  "window": 0,
+  "prompt": "Write an exhaustive review of current cybersecurity threats and defense strategies. Cover state-sponsored hacking, ransomware, IoT vulnerabilities, and AI-powered attacks. Explain cryptographic foundations, network security architectures, zero-trust models, and emerging quantum-resistant algorithms. Discuss the human factors in security and the challenges of creating secure systems.",
+  "prompt_len": 61,
+  "max_new_tokens": 300,
+  "num_directions": 200,
+  "dirs_per_block": 20,
+  "radii": [
+    0.1
+  ],
+  "layers": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    8,
+    12,
+    16,
+    20,
+    24,
+    28,
+    32,
+    36,
+    39
+  ],
+  "seed": 69,
+  "positions": null,
+  "fixed_tokens_from": null,
+  "baseline_duplicate_identical": true,
+  "batch_dirs": 16,
+  "engine": "run_a1_big",
+  "arch": "Phi3ForCausalLM",
+  "torch": "2.14.1+cu130",
+  "host": "spark-d5eb",
+  "transformers": "4.57.6",
+  "elapsed_sec": 545.6
+}
