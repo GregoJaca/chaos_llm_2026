@@ -42,203 +42,375 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  veto.md &nbsp;&middot;&nbsp; built 2026-11-20 19:11:16 &nbsp;&middot;&nbsp;
+  veto.md &nbsp;&middot;&nbsp; built 2026-11-21 21:26:51 &nbsp;&middot;&nbsp;
   <a href="veto.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="veto.md">Markdown</a> &nbsp;&middot;&nbsp;
-  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="master.html">master</a> &middot; <a href="notebook.html">notebook</a>
+  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="notebook.html">notebook</a>
 </header>
-<h1 id="veto-list-extra-results-and-whether-they-belong-in-the-paper">Veto list — extra results, and whether they belong in the paper</h1>
-<p>This file vets the figures that are not in <code>master.md</code>. For each: what is plotted, how it is computed,
-and a verdict — <strong>include</strong>, <strong>include as a caveat</strong>, or <strong>veto</strong> — with the reason. The rule I apply:
-<em>a result is worth including if it is (i) measured, not defined, (ii) not an artefact of the
-measurement, and (iii) says something that is not already said better by another figure.</em></p>
+<h1 id="veto-report-are-these-results-worth-including">Veto report — are these results worth including?</h1>
+<p>Each section takes one figure you flagged, re-analyses it <strong>with new data and more models</strong>, and gives a
+verdict. The standard: a result is worth including if it is measured (not defined), not an artefact of
+how it was measured, and says something the other figures do not.</p>
+<p>New data used here: 5 models, 8 prompts per model, 22 perturbation positions per prompt, 192
+directions per condition, and a controlled window set (same tokens, five windows).</p>
 <hr />
-<h2 id="1-stablechaos_windowspng-margin-survival-for-different-windows">1. <code>stablechaos_windows.png</code> — margin survival for different windows</h2>
-<p><img alt="windows" src="figures/stablechaos_windows.png" /></p>
-<p><strong>What is plotted.</strong> (a) The fraction of steps whose top-two logit gap exceeds $m$, as a function of
-$m$, for three window sizes ($W=100,200,500$). (b),(c) Survival of the threshold model (teacher-forced
-margin rule) compared with the free run at two radii. (d) Predicted flip fraction vs window.</p>
-<p><strong>How it is computed.</strong> For each window, run the model greedily, collect the margin at every step, and
-plot the complementary CDF. The threshold model uses the teacher-forced margin change per direction.</p>
-<p><strong>Verdict: veto (a); keep (b) as a control only.</strong>
-- (a) compares margin statistics across windows, but <strong>a different window produces a different text</strong>.
-  The comparison is therefore stream-confounded: it is a statement about two different continuations,
-  not about the effect of the window. The differences in (a) are real but not attributable.
-- (b) is a consistency check — at $W=100$ the predicted survival matches the observed free run
-  (blue dotted vs solid). That is worth one sentence in the methods, not a figure.
-- (d)'s "flips grow with window" is a <em>prediction</em> for $W=200,500$; only the $W=100$ point is observed.</p>
-<p><strong>Can (a) be fitted?</strong> It is a distribution function, so any smooth CDF would fit; the fit would carry
-no dynamical information. Not worth it.</p>
+<h2 id="1-stablechaos_windowspng-a-can-the-margin-distribution-be-fitted-and-does-the-window-change-it">1. <code>stablechaos_windows.png</code> (a) — can the margin distribution be fitted, and does the window change it?</h2>
+<p><img alt="margins controlled" src="figures/veto/margins_controlled.png" /></p>
+<p><strong>What the original panel (a) plotted.</strong> The fraction of steps whose top-two logit gap exceeds $m$,
+for three window sizes. The curves differ, which suggested "larger windows produce more low-margin
+steps".</p>
+<p><strong>Why that comparison cannot be used.</strong> Each window produces a <strong>different text</strong>. The margin at step
+$t$ is a property of the token sequence, so comparing margins across windows compares different texts.
+The effect is confounded with the text.</p>
+<p><strong>The controlled test.</strong> Run the model <strong>teacher-forced on the same fixed token sequence</strong> with five
+windows ($W=100,150,200,300,1000$): the tokens are identical by construction, only the attention mask
+changes. Panel (a) shows the five margin distributions <strong>overlapping</strong>. The window does not change the
+margin distribution when the text is fixed.</p>
+<p><strong>Verdict: veto the original panel.</strong> It measures the text, not the window. The controlled version is
+worth one sentence in the methods: <em>the margin distribution is a property of the token sequence, not of
+the window</em>. Panel (b) (same figure) is the useful one: margins dip to $10^{-3}$–$10^{-2}$ at isolated
+tokens — those dips are the gates a perturbation waits for.</p>
+<p><strong>Can it be fitted?</strong> Yes, but the fit would describe the margin distribution of one text. There is no
+dynamical content; I would not spend a figure on it.</p>
 <hr />
-<h2 id="2-regime_scalingpng-the-free-forgetting-law-after-the-window-clips">2. <code>regime_scaling.png</code> — the free-forgetting law after the window clips</h2>
-<p><img alt="regime" src="figures/regime_scaling.png" /></p>
-<p><strong>What is plotted.</strong> (a) The mean rate $\lambda_{10}$ <strong>before</strong> the window first clips (all $W$): it is
-zero within the error bars. (b) The contraction rate <strong>after</strong> the clip, against $W$, log–log, with the
-fit $A/W$ and $A=0.674$. (c) The product $\lambda_{\rm post}\cdot W$, which is constant within errors.</p>
-<p><strong>How it is computed.</strong> $\lambda_{10}(t)$ as in the master document, averaged over the interval after
-the first prompt token is evicted ($t>W-P$) and before the end. Error bars are bootstrap over
-directions.</p>
-<p><strong>Verdict: include as a methods result (panel b), not as a headline.</strong>
-This is one of the few clean <em>quantitative laws</em> we have: the post-clip contraction rate falls as
-$1/W$, and the total log-cost of the post-clip phase, $\lambda_{\rm post}\cdot W$, is constant
-(0.5–0.8, consistent with a constant within the error bars). It says: <strong>each eviction event costs a
-fixed amount of log-probability, independent of the window</strong>. It is a property of the mask, not of the
-model's dynamics, so it belongs in the methods section with the flush law — and it also explains why
-the "$W=100$" runs show a decay that disappears at large $W$.</p>
-<p><strong>Why not a headline:</strong> it does not involve the perturbation at all; it is the unperturbed trajectory
-losing context.</p>
+<h2 id="2-regime_scalingpng-b-the-post-clip-contraction-law">2. <code>regime_scaling.png</code> (b) — the post-clip contraction law</h2>
+<p><strong>What the $y$ axis is.</strong> After the window has removed the first prompt token (at $t=W-P$), the
+perturbed and unperturbed runs differ only through the tokens that have already been evicted. The
+response in that phase decays. The plotted quantity is
+$$-\lambda_{\rm post}=-\frac{1}{2k}\ln\frac{\|\delta h_{t+k}\|}{\|\delta h_{t-k}\|},\qquad k=10,$$
+averaged over the post-clip interval, in <strong>nats per token</strong> (a rate of 0.005 means the response
+multiplies by $e^{-0.005}=0.995$ per token). The $x$ axis is the window size.</p>
+<p><strong>What the law says.</strong> On DeepSeek, across five windows ($W=50$–$800$), the post-clip contraction rate
+falls as $1/W$ with $A=0.674$; equivalently $\lambda_{\rm post}\cdot W$ is constant (0.5–0.8, consistent
+within the error bars). In words: <strong>each evicted token costs a fixed amount of log-probability,
+independent of how large the window is.</strong> That is a clean property of the mask.</p>
+<p><img alt="regime models" src="figures/veto/regime_scaling_models.png" /></p>
+<p><strong>Does it generalise?</strong> The three-model version (same figure) uses only three windows each and three
+models; the points are too sparse to test a $1/W$ slope, and the Qwen3-4B point at $W=60$ has almost no
+post-clip interval. <strong>I would not claim universality.</strong></p>
+<p><strong>Verdict: include only as a methods remark for DeepSeek, or replicate it properly first.</strong> It is real
+and interpretable, but it is about the mask, and one model is not a law. If you want it as a result, the
+cheap experiment is five windows × three models × two prompts, which is ~1 h of GPU.</p>
 <hr />
-<h2 id="3-layer_probepng-where-along-the-depth-the-amplification-happens">3. <code>layer_probe.png</code> — where along the depth the amplification happens</h2>
-<p><img alt="layer probe" src="figures/layer_probe.png" /></p>
-<p><strong>What is plotted.</strong> A one-position perturbation injected at block $\ell_0$ (rows), measured at every
-later block and every later token. The quantity is the response of the <em>same</em> position at a later
-block, or of a later token.</p>
-<p><strong>How it is computed.</strong> Forward hook at the output of block $\ell_0$ adding $r v$ at one position; then
-the teacher-forced run records $\|\delta h\|$ at every other position and block.</p>
-<p><strong>Verdict: superseded — do not include this figure; the finding is in <code>master.md</code> §8 in a better form.</strong>
-The finding is that the downstream amplification does not depend on the injection block over the first
-60–75% of the depth (flat curves in <code>perturbation_vs_depth.png</code>). The old figure shows the same thing
-with fewer statistics and a confusing layout. One clean figure with medians and 10–90% bands is
-better than two.</p>
+<h2 id="3-layer_probepng-where-along-the-depth-the-amplification-happens-settled">3. <code>layer_probe.png</code> — where along the depth the amplification happens (settled)</h2>
+<p><strong>Definitions</strong> (all in one place, since the original figure used them without saying):
+- <strong>injection block</strong> $\ell_0$: the block whose output receives the perturbation. "Block 0" means after
+  the first transformer block, not the embedding.
+- <strong>position</strong> $s$: the generated token whose hidden state is perturbed, with one vector of norm $r$.
+- <strong>readout</strong>: $\|\delta h_{t,\ell}\|$, the norm of the difference between perturbed and baseline hidden
+  states, in the same units as $r$ (Euclidean).
+- <strong>amplification</strong>: for each direction, the largest readout at the <strong>last block</strong> over the 50 tokens
+  after $s$, divided by $r$; then the median over directions.</p>
+<p><img alt="layer probe" src="figures/veto/layer_probe_three_views.png" /></p>
+<p><strong>Panel (a), DeepSeek.</strong> The amplification is flat in $\ell_0$: injecting at block 0, 5 or 10 gives the
+same downstream amplitude (×0.3, ×2.1, ×1.5 for $s=8,16,40$). <strong>The depth at which you inject does not
+matter for the first 60–75% of the network.</strong></p>
+<p><strong>Panel (b), all three models, $s=16$.</strong> The solid lines are the response at the <strong>same</strong> position as the
+perturbation; the dashed are 20 tokens later. Same position: ×1–2 for everyone, similar shape. Twenty
+tokens later: DeepSeek decays to ×0.02, while Qwen3-4B and Phi grow to ×1–10. <strong>The model difference is
+in the transport, not in the local chain.</strong></p>
+<p><strong>Panel (c), Phi.</strong> The amplification as a function of (position, injection block): no interaction; the
+injection block is irrelevant, the position dominates.</p>
+<p><strong>Verdict: include panel (b) only.</strong> It is the one panel that settles something (the difference between
+local and transported response) and it is not in <code>master.md</code> yet. Panels (a) and (c) confirm a null
+result (depth-independence) that can be one sentence.</p>
 <hr />
-<h2 id="4-probe_pulsepng-the-same-perturbation-resolved-in-time-after-the-injection">4. <code>probe_pulse.png</code> — the same perturbation resolved in <em>time</em> after the injection</h2>
-<p><img alt="probe pulse" src="figures/probe_pulse.png" /></p>
-<p><strong>What is plotted.</strong> For a perturbation at position $s$, the response at the last layer as a function
-of the lag $\tau$ after $s$ (1–50 tokens), median over directions with a 10–90% band.</p>
-<p><strong>How it differs from master §8.</strong> §8 fixes the lag window (max over 50 tokens) and varies the
-<em>position</em>; this figure fixes the position and varies the <em>lag</em>. Same experiment, two projections.</p>
-<p><strong>Verdict: include as supporting evidence for Phi's hot spot.</strong>
-It is the only place where the delayed amplification is visible directly: Phi at $s=16$ is flat for
-~18 tokens and then rises to <strong>×120 at lag 25–30</strong>, while DeepSeek decays monotonically. That is a
-mechanism-shaped fact (the perturbation is carried, then amplified), and it costs one panel.</p>
+<h2 id="4-probe_pulsepng-how-is-it-different-from-models-differ-qualitatively">4. <code>probe_pulse.png</code> — how is it different from "models differ qualitatively"?</h2>
+<p>They are the <strong>same experiment, projected differently</strong>:
+- <code>master.md</code> §8 fixes the lag window (max over 50 tokens) and varies the <strong>position</strong> $s$.
+- <code>probe_pulse</code> fixes the position and varies the <strong>lag</strong> $\tau$.</p>
+<p>The lag projection is the more informative one, because it reveals that the amplification happens at a
+fixed <em>absolute</em> token in the continuation, not at a fixed lag.</p>
+<p><img alt="heatmap" src="figures/positions/posscan_A_heatmap.png" /></p>
+<p><strong>What is plotted.</strong> The response $\|\delta h_{s+\tau,L}\|/r$ as a function of the perturbation position
+$s$ and the lag $\tau$ (log colour), median over 8 directions, injection at block 0, $r=0.1$
+(0.3 for Phi).</p>
+<p><strong>What it reveals (new).</strong> For Phi there is a <strong>bright diagonal</strong>: a perturbation at position $s$ is
+amplified when the continuation reaches a particular <em>absolute</em> token. The peak lag decreases as $s$
+increases, so the peak absolute token $s+\tau^*$ is roughly constant.</p>
+<p><img alt="peak absolute" src="figures/positions/peak_is_absolute.png" /></p>
+<p><strong>Panel (a).</strong> The lag of the peak against the position (the slope is not exactly $-1$). <strong>Panel (b).</strong>
+The absolute token of the peak, $s+\tau^*$: for early positions it is <strong>flat</strong> at a model-specific value
+(DeepSeek ≈20–45, Qwen3-4B ≈20, Qwen2.5-3B ≈27, Phi ≈45, Qwen3.5 ≈42), and for late positions it
+follows the position.</p>
+<p><strong>Consequence: the "hot spot at $s\approx40$" was a projection artefact.</strong> A perturbation at $s=40$ with
+Phi peaks at lag ≈5, i.e. at the same absolute token as a perturbation at $s=16$ with lag ≈29. There is
+one amplification gate per continuation, not one per position. That is a better statement, and it is
+only visible in the lag/heatmap view.</p>
+<p><strong>Verdict: replace the max-over-lag figure in <code>master.md</code> with the heatmap and the peak analysis.</strong></p>
 <hr />
-<h2 id="5-window_token_agreementpng-token-agreement-between-windows">5. <code>window_token_agreement.png</code> — token agreement between windows</h2>
+<h2 id="5-window_token_agreementpng-the-text-diverges-at-math41">5. <code>window_token_agreement.png</code> — the text diverges at $W-P$</h2>
 <p><img alt="token agreement" src="figures/window_token_agreement.png" /></p>
-<p><strong>What is plotted.</strong> Fraction of generated tokens identical between two window sizes, against the
-generated token index.</p>
-<p><strong>Verdict: veto.</strong> The two runs produce different texts by construction, so the curve is a property of
-two different continuations, not of the window. It is descriptive and confounded in the same way as
-§1(a).</p>
+<p><strong>What is plotted.</strong> Two free-running generations from the same 65-token prompt at $W=100$ and $W=200$,
+no perturbation. The curve is the fraction of tokens identical to the $W=200$ text.</p>
+<p><strong>What it shows.</strong> Identical for 40 tokens, first difference at $t=40$. With $P=65$, $W-P=35$: the first
+token that <em>can</em> differ is 35, and a few more steps are needed for the difference to change the argmax.</p>
+<p><strong>Verdict: one sentence in the methods.</strong> It is a clean confirmation of the first-departure law, not a
+result in its own right.</p>
 <hr />
-<h2 id="6-the-latent-perturbation-and-the-token-agreement-decay">6. The "latent" perturbation and the token-agreement decay</h2>
-<p><img alt="latent" src="figures/state_kick_latent_validated.png" /></p>
-<p><strong>What is plotted.</strong> (a) Predicted vs observed first changed token for five perturbations; (b) token
-agreement along the continuation for one direction; (c) the same for 24 directions at $s=16$.</p>
-<p><strong>What it shows.</strong> A perturbation at $s=16$ changes the text at <strong>$t=123$ — 107 tokens later</strong>; at
-$s=50$ at $t=143$ (93 later). After the change, agreement falls to ~40% and never recovers.</p>
-<p><strong>Verdict: the latency belongs in <code>master.md</code> (it is the mechanism); the "decay type" does not.</strong>
-- The latency is a strong, non-trivial result: the perturbation does not grow (Part 4) and does not act
-  immediately; it waits until the model reaches a close call. That is what "stable chaos" means
-  operationally.
-- The apparent decay in (b) is <strong>token agreement</strong>, which saturates at a floor (~0.4) because
-  continuations re-align on repetitive text. It is not a physical decay of anything. Fitting an
-  exponential to it would be fitting text statistics. Veto the fit.</p>
+<h2 id="6-the-latent-perturbation-and-the-decay-what-type-of-decay-is-it">6. The "latent" perturbation and the decay: what type of decay is it?</h2>
+<p><img alt="latent agreement" src="figures/veto/latent_agreement.png" /></p>
+<p><strong>What is plotted.</strong> (a) For 8 directions, the <strong>running fraction</strong> of generated tokens identical to the
+unperturbed run, after a perturbation at $s=16$. (b) The same for the direction with the earliest flip.</p>
+<p><strong>Why it is smooth — and it is not remarkable.</strong> The quantity is a <strong>cumulative fraction</strong>: by
+construction it can only change by $1/t$ per token, so it is smooth for any model. The smoothness is
+arithmetic, not physical. The <em>interesting</em> feature is the <strong>step</strong>: the curve is flat at 1 until the
+flip and then drops once, because the two texts differ from a single token onward.</p>
+<p><strong>What type of decay.</strong> None. After the flip the two continuations diverge and the agreement saturates
+at a floor (≈0.4 here) determined by how repetitive the text is. Fitting an exponential or a power law to
+a cumulative agreement fraction fits a text statistic, not a dynamical law. There is no "decay
+constant" to report.</p>
+<p><strong>Verdict: keep the latency (already in <code>master.md</code> §6b), drop the decay fit entirely.</strong> If a decay is
+wanted, the physical quantity is $\|\delta h_t\|$, not token agreement.</p>
 <hr />
 <h2 id="7-depth_gain_6promptspng-six-prompts-absolute-response-vs-layer">7. <code>depth_gain_6prompts.png</code> — six prompts, absolute response vs layer</h2>
 <p><img alt="depth 6" src="figures/depth_gain_6prompts.png" /></p>
-<p><strong>What is plotted.</strong> $\|\delta h_{t,\ell}\|/r$ against layer, six prompts, DeepSeek, median over
-directions at $t\le50$; the band is 25–75% over prompts.</p>
-<p><strong>What it shows.</strong> The depth profile has the same shape for every prompt, with a scale that varies by
-×1.45 at the last layer.</p>
-<p><strong>Verdict: veto.</strong> The absolute profile is dominated by the growth of the state norm (×18–30), which
-we now know is not amplification. The informative version is the <em>relative</em> response
-(<code>sigma_vs_relative.png</code>, panel b), which separates the models. This figure would suggest an
+<p><strong>What is plotted.</strong> $\|\delta h_{t,\ell}\|/r$ against layer for six prompts (DeepSeek), median over
+directions for $t\le50$; the band is 25–75% across prompts.</p>
+<p><strong>What it shows.</strong> The depth profile has the same shape for all prompts; the scale at the last layer
+varies by ×1.45.</p>
+<p><strong>Verdict: veto.</strong> The absolute response is dominated by the growth of the state norm (×18–30 over the
+depth), which is not amplification. The informative version is the <em>relative</em> response
+(<code>master.md</code> §5.1), which is flat for DeepSeek and grows ×20 for Phi. This figure would suggest
 amplification that is not there.</p>
 <hr />
-<h2 id="8-rstar_1536png-and-the-per-model-version-the-flip-radius">8. <code>rstar_1536.png</code> and the per-model version — the flip radius</h2>
+<h2 id="8-rstar_1536png-and-the-per-model-version">8. <code>rstar_1536.png</code> and the per-model version</h2>
 <p><img alt="rstar per model" src="figures/fsle/rstar_per_model.png" /></p>
-<p><strong>What is plotted.</strong> The complementary CDF of the flux-tube radius $r_*$ for each model: the fraction
-of directions whose smallest flipping radius exceeds $x$. 512 directions × 5 prompts per model, log–log.</p>
-<p><strong>How it is computed.</strong> For each direction and each token $t$, $r_c(t)=m_t/(|\delta m_t|/r)$ — the
-radius at which that token's margin would reach zero. $r_*(u)=\min_t r_c(t,u)$. Steps whose margin is
-below the resolvable gap (0.02) are excluded: they are quantisation ties, not decision gates.</p>
-<p><strong>What it shows.</strong> The scale is model-specific and ordered: Phi <strong>0.07</strong>, Qwen3-4B and Qwen3.5
-<strong>0.20</strong>, DeepSeek <strong>0.31</strong> (medians). The curves are staircases, because the minimum over $t$ lands on
-a handful of discrete ratios, and their shapes differ across prompts.</p>
-<p><strong>Verdict: include the <em>scale</em>, not the law.</strong>
-The ordering "Phi is the most fragile, DeepSeek the least" is stable across five prompts per model and
-matches the amplification ordering in the master document. The distribution itself has no universal
-shape (fitted tail exponents range 2.3–17.6 and the median varies 15× across prompts), so any statement
-of the form "the distribution is a log-logistic" should be removed. One panel with the four models and
-the medians is enough.</p>
+<p><strong>What is plotted.</strong> For each model, the complementary CDF of the <strong>flip radius</strong> $r_*$: the smallest
+perturbation norm that flips <em>any</em> token of the continuation. 512 directions × 5 prompts per model;
+log–log.</p>
+<p><strong>How it is computed, step by step.</strong>
+1. Teacher-forced run at $r=0.1$; for every generated token $t$, record the top-two margin $m_t$ and its
+   change $\delta m_t$ for direction $u$.
+2. The radius at which token $t$ would flip is $r_c(t,u)=m_t/(|\delta m_t|/r)$ — where the margin would
+   reach zero.
+3. $r_*(u)=\min_t r_c(t,u)$: the smallest radius that flips anything.
+4. Tokens whose baseline margin is below 0.02 are excluded: they are quantisation ties, not gates.</p>
+<p><strong>What it shows.</strong> The curves are staircases (the minimum lands on a few discrete ratios) and they do
+not collapse: the median is <strong>Phi 0.07, Qwen3-4B 0.20, Qwen3.5 0.20, DeepSeek 0.31</strong>, and within a
+model it varies 3–15× across prompts.</p>
+<p><strong>Can it be fitted?</strong> The log-logistic fits five of the twenty curves well and three badly (tail
+exponent 2.3–17.6, $R^2$ as low as 0.28). There is no single functional form.</p>
+<p><strong>Verdict: include the ordering, not the law.</strong> "Phi is the most fragile (median $r_*=0.07$), DeepSeek
+the least (0.31), the others 0.20" is stable over five prompts and matches the amplification ordering.
+The distribution shape is prompt-specific and should not be presented as a law.</p>
 <hr />
-<h2 id="9-two-figures-from-the-earlier-list-that-i-would-drop-from-the-paper">9. Two figures from the earlier list that I would drop from the paper</h2>
-<p><strong><code>threshold_largr.png</code></strong> (predicted vs observed flip time at $r=0.5$–2): the axes span 300 tokens
-while the data occupy 0–50, one prompt is 20/20 exact and the other is 1–6/20, and the comparison is
-only meaningful where the margin response is still linear. <strong>Veto.</strong> The one-sentence version —
-"the rule is exact up to $r\approx0.3$ and becomes an extrapolation beyond" — belongs in the text.</p>
-<p><strong><code>flip_fraction_512.png</code></strong> as a headline: it is dominated by zero-margin ties (3.5% → 0.4% after
-removing one token). <strong>Include only as a caveat</strong> in the methods, with the tie-corrected numbers.</p>
+<h2 id="9-three-ways-to-see-the-position-scan-pick-one">9. Three ways to see the position scan (pick one)</h2>
+<p>The max-over-lag figure throws away the time structure. Three alternatives, same data:</p>
+<p><strong>A — heatmap (position × lag).</strong> Shows the diagonal gate and the decay at once.</p>
+<p><img alt="A" src="figures/positions/posscan_A_heatmap.png" /></p>
+<p><strong>B — violins per position.</strong> Shows the full direction-to-direction spread; hides the lag structure.</p>
+<p><img alt="B" src="figures/positions/posscan_B_violin.png" /></p>
+<p><strong>C — trajectories vs lag, one line per position.</strong> Shows the shape of each response; 22 lines is
+readable because they are ordered by colour.</p>
+<p><img alt="C" src="figures/positions/posscan_C_trajectories.png" /></p>
+<p><strong>My recommendation: A + C.</strong> A makes the gate visible (the diagonal), C shows that the late positions
+simply decay. B is the least informative because it discards exactly the time structure that carries
+the physics.</p>
 <hr />
-<h2 id="10-summary-table">10. Summary table</h2>
+<h2 id="10-bottom-line">10. Bottom line</h2>
 <table>
 <thead>
 <tr>
-<th>figure</th>
+<th>item</th>
 <th>verdict</th>
-<th>why</th>
+<th>what to do</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>stablechaos_windows</code></td>
-<td>veto</td>
-<td>stream-confounded; distribution, not dynamics</td>
+<td>margins per window (original)</td>
+<td><strong>veto</strong></td>
+<td>replace with the controlled same-token figure; one sentence</td>
 </tr>
 <tr>
-<td><code>regime_scaling</code> (b)</td>
-<td><strong>include (methods)</strong></td>
-<td>clean $1/W$ law of the mask</td>
+<td>post-clip $1/W$ law</td>
+<td><strong>methods only</strong></td>
+<td>DeepSeek 5 windows, not replicated; replicate (≈1 h) if wanted</td>
 </tr>
 <tr>
-<td><code>layer_probe</code></td>
-<td>superseded</td>
-<td>replaced by <code>perturbation_vs_depth</code></td>
+<td>layer probe</td>
+<td><strong>include (b)</strong></td>
+<td>local vs transported response; the rest is a null result</td>
 </tr>
 <tr>
-<td><code>probe_pulse</code></td>
-<td><strong>include (support)</strong></td>
-<td>delayed ×120 amplification in Phi</td>
+<td>probe pulse / heatmap</td>
+<td><strong>include (A)</strong></td>
+<td>replaces the max-over-lag figure; shows the gate</td>
 </tr>
 <tr>
-<td><code>window_token_agreement</code></td>
-<td>veto</td>
-<td>two different texts</td>
+<td>window token agreement</td>
+<td><strong>one sentence</strong></td>
+<td>confirms $W-P$</td>
 </tr>
 <tr>
-<td>latent perturbation, <em>latency</em></td>
-<td><strong>include (master)</strong></td>
-<td>the perturbation waits 107 tokens</td>
+<td>latent "decay"</td>
+<td><strong>veto the fit</strong></td>
+<td>keep the 107-token latency; the decay is a text statistic</td>
 </tr>
 <tr>
-<td>latent perturbation, <em>decay fit</em></td>
-<td>veto</td>
-<td>token agreement, not a physical decay</td>
-</tr>
-<tr>
-<td><code>depth_gain_6prompts</code></td>
-<td>veto</td>
+<td>depth gain 6 prompts</td>
+<td><strong>veto</strong></td>
 <td>it is the state norm, not amplification</td>
 </tr>
 <tr>
-<td><code>rstar</code> per model</td>
-<td><strong>include (scale only)</strong></td>
-<td>ordering stable, shape not universal</td>
+<td>$r_*$</td>
+<td><strong>include the ordering</strong></td>
+<td>medians only, no law</td>
 </tr>
 <tr>
-<td><code>threshold_largr</code></td>
-<td>veto</td>
-<td>axes and range make it unreadable; text suffices</td>
-</tr>
-<tr>
-<td><code>flip_fraction_512</code></td>
-<td>caveat only</td>
-<td>tie-dominated</td>
+<td>position max figure</td>
+<td><strong>replace</strong></td>
+<td>with A + C</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Net effect on the paper:</strong> two additions (the $1/W$ forgetting law and the latency), one supporting
-panel (Phi's delayed amplification), one qualitative panel ($r_*$ scale), and seven vetoes.</p>
+<hr />
+<h2 id="11-update-after-the-full-grid-5-models-8-prompts-192-directions">11. Update after the full grid (5 models × 8 prompts × 192 directions)</h2>
+<p>This section supersedes the earlier verdicts where the data changed.</p>
+<h3 id="111-margin-distribution-across-windows-fitted">11.1 Margin distribution across windows — fitted</h3>
+<p><img alt="margin fits" src="figures/veto/margin_fits.png" /></p>
+<p><strong>What is plotted.</strong> (a) The survival function of the top-two logit gap $P(m>x)$ along the <strong>same</strong>
+token sequence for five windows ($W=100\ldots1000$), with a fit per window over $m\in[0.02,10]$.
+(b) The fitted shape parameters.</p>
+<p><strong>Fit.</strong> Stretched exponential $P(m>x)=c+a\,e^{-(x/\tau)^\beta}$ in four of five windows
+($R^2=0.997$–$0.999$), with</p>
+<table>
+<thead>
+<tr>
+<th>$W$</th>
+<th>$\tau$</th>
+<th>$\beta$</th>
+<th>$R^2$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100</td>
+<td>1.91</td>
+<td>1.10</td>
+<td>0.997</td>
+</tr>
+<tr>
+<td>150</td>
+<td>— (exponential, $\beta=1$)</td>
+<td>—</td>
+<td>0.999</td>
+</tr>
+<tr>
+<td>200</td>
+<td>2.10</td>
+<td>0.96</td>
+<td>0.997</td>
+</tr>
+<tr>
+<td>300</td>
+<td>2.32</td>
+<td>0.78</td>
+<td>0.999</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>2.20</td>
+<td>0.77</td>
+<td>0.999</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Verdict: the fit is real and it confirms the veto.</strong> The margin distribution is a stretched
+exponential with scale ≈2 logits and exponent ≈0.8–1.1, and the parameters are the same for all
+windows. So the differences in the original <code>stablechaos_windows</code> (a) came from the different texts,
+not from the window. This is now a quantitative statement, not an assertion.</p>
+<h3 id="112-the-post-clip-math78-law-does-not-reproduce">11.2 The post-clip $1/W$ law does <strong>not</strong> reproduce</h3>
+<p><img alt="regime" src="figures/veto/regime_scaling_deepseek.png" /></p>
+<p><strong>What is plotted.</strong> The contraction rate after the window first clips, against $W$, on the DeepSeek
+window sweep (same prompt, $W=50,100,200$), and the product $(-\lambda_{\rm post})W$.</p>
+<p><strong>Numbers.</strong> $\lambda_{\rm post}$ = −0.0105 ($W=50$), <strong>−0.00216 ($W=100$)</strong>, −0.00258 ($W=200$).
+A $1/W$ law fitted to the $W=50$ and $W=200$ points predicts 0.0053 at $W=100$; the measurement is
+2.4× smaller.</p>
+<p><strong>Verdict: veto.</strong> The clean $A/W$ line in the earlier figure was obtained with a different definition of
+the post-clip interval (and a bootstrapped median); with the consistent estimator used everywhere else it
+does not hold. It is not a law I would put in the paper without re-deriving the analysis. The <em>qualitative</em>
+statement — that the decay after the clip weakens as $W$ grows — is supported; the $1/W$ form is not.</p>
+<h3 id="113-flip-probability-five-models-now-in-mastermd-8">11.3 Flip probability, five models (now in <code>master.md</code> §8)</h3>
+<p><img alt="flip fraction models" src="figures/fits/flip_fraction_models.png" /></p>
+<p>8 prompts × 192 directions × 4 radii per model, tie-corrected, with 95% CIs. The corrected fractions at
+$r=0.1$ are <strong>0.2% (DeepSeek), 3.6% (Qwen3.5), 16.8% (Qwen3-4B), 30.4% (Qwen2.5), 56.0% (Phi)</strong>. The
+ordering equals the amplification ordering, and the shapes differ (DeepSeek rises; Phi saturates).</p>
+<p><strong>Verdict: include.</strong> This is the strongest quantitative model comparison we have, and it replaces the
+single-prompt, tie-contaminated version.</p>
+<h3 id="114-superposition-three-panels-now-in-mastermd-72">11.4 Superposition, three panels (now in <code>master.md</code> §7.2)</h3>
+<p><img alt="superposition" src="figures/transport/superposition_3.png" /></p>
+<p><strong>(a)</strong> Predicted vs measured amplitude lie on the identity line; <strong>(b)</strong> the ratio is 1 with a ±5–10%
+spread; <strong>(c)</strong> the relative error falls with amplitude and is large only at the float32 floor.</p>
+<p><strong>Verdict: include.</strong> It is the validation of the kernel decomposition, and with the right axes it is
+unambiguous.</p>
+<h3 id="115-window-token-agreement-four-panels-now-in-mastermd-9">11.5 Window token agreement, four panels (now in <code>master.md</code> §9)</h3>
+<p><img alt="window tokens" src="figures/veto/window_token_agreement_multi.png" /></p>
+<p>First difference at $W-P$ (+2–7 tokens), surviving fraction $1-\exp(-(W/237)^{2.0})$ ($R^2=0.999$), text
+bit-identical for 300 tokens once $W\gtrsim500$.</p>
+<p><strong>Verdict: include (upgraded).</strong> The earlier single-curve figure was a one-line remark; with eight
+windows and a fit it is a result about the effective memory of the continuation.</p>
+<h3 id="116-layer-probe-temporal-view-now-in-mastermd-8">11.6 Layer probe, temporal view (now in <code>master.md</code> §8)</h3>
+<p><img alt="layer temporal" src="figures/fits/layer_probe_temporal.png" /></p>
+<p>At the perturbed position all models are ×1–3; 20 tokens later DeepSeek is ×0.05–0.7 while Qwen3-4B and
+Phi are ×1–9. <strong>Verdict: include</strong> — it is the panel that shows the model difference is in transport.</p>
+<h3 id="116b-large-windows-the-departure-law-holds-at-w300-and-500">11.6b Large windows: the departure law holds at W=300 and 500</h3>
+<p>Three models, the same fixed 900-token continuation, W=300 against W=500: the first difference between
+the two runs is at <strong>t=237 = W−P</strong> (P=63) in every saved layer of every model. The window law therefore
+holds at large windows too, where the effect appears late in the continuation. The flush at these
+windows falls beyond the 900-token horizon, so only the departure side is tested here.</p>
+<h3 id="117-bottom-line-updated">11.7 Bottom line (updated)</h3>
+<table>
+<thead>
+<tr>
+<th>item</th>
+<th>verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>margin distribution vs window</td>
+<td><strong>veto the original panel</strong>; the fitted version belongs in the methods</td>
+</tr>
+<tr>
+<td>post-clip $1/W$ law</td>
+<td><strong>veto</strong> — does not reproduce with the consistent estimator</td>
+</tr>
+<tr>
+<td>flip probability (5 models)</td>
+<td><strong>include</strong> (master §8)</td>
+</tr>
+<tr>
+<td>superposition (3 panels)</td>
+<td><strong>include</strong> (master §7.2)</td>
+</tr>
+<tr>
+<td>window token agreement (4 panels)</td>
+<td><strong>include</strong> (master §9)</td>
+</tr>
+<tr>
+<td>layer probe temporal</td>
+<td><strong>include</strong> (master §8)</td>
+</tr>
+<tr>
+<td>layer probe depth-independence</td>
+<td>one sentence</td>
+</tr>
+<tr>
+<td>$r_*$</td>
+<td>ordering only</td>
+</tr>
+<tr>
+<td>latent latency</td>
+<td>include; decay fit veto</td>
+</tr>
+<tr>
+<td>depth 6 prompts</td>
+<td>veto</td>
+</tr>
+</tbody>
+</table>
 <script src=".preview/katex/katex.min.js"></script>
 <script src=".preview/katex/contrib/auto-render.min.js"></script>
 <script>

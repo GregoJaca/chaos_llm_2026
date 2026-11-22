@@ -1,4 +1,4 @@
-"""Build markdown docs -> HTML (offline KaTeX) -> PDF (headless browser), serve over HTTP
+﻿"""Build markdown docs -> HTML (offline KaTeX) -> PDF (headless browser), serve over HTTP
 (Tailscale) and rebuild automatically when the sources change.
 
 Documents:

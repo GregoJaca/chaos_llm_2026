@@ -42,15 +42,12 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  master.md &nbsp;&middot;&nbsp; built 2026-11-20 19:11:01 &nbsp;&middot;&nbsp;
+  master.md &nbsp;&middot;&nbsp; built 2026-11-21 21:26:33 &nbsp;&middot;&nbsp;
   <a href="master.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="master.md">Markdown</a> &nbsp;&middot;&nbsp;
-  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="veto.html">veto</a> &middot; <a href="notebook.html">notebook</a>
+  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="controls.html">controls</a> &middot; <a href="veto.html">veto</a> &middot; <a href="notebook.html">notebook</a>
 </header>
 <h1 id="master-summary-perturbation-dynamics-of-greedy-llm-generation">Master summary — perturbation dynamics of greedy LLM generation</h1>
-<p>Version 2. Only the findings I would defend, with numbers and the plots that back them. The lab
-notebook (<code>notebook.md</code>) has everything, including dead ends; <code>veto.md</code> lists the extra results and
-whether I would include them.</p>
 <p>Models: DeepSeek-R1-Distill-Qwen-1.5B (28 blocks, d=1536), Qwen2.5-3B (36, 2048), Qwen3-4B (36,
 2560), Phi-4-mini (32, 3072), Qwen3.5-2B (24, 2048). Greedy decoding, one T4.</p>
 <hr />
@@ -94,9 +91,8 @@ perturbation multiplies by $e^{-0.0105}=0.9896$ per token, i.e. it loses 1% per 
 $e^{-3.15}=0.043$ over 300 tokens. Rates are computed as $\lambda=\frac{1}{k}\ln(y_{t+k}/y_{t-k})$,
 so the unit follows from the logarithm; it is a <em>logarithmic</em> growth rate, not an absolute size.</p>
 <h3 id="24-teacher-forcing-vs-free-run">2.4 Teacher forcing vs free run</h3>
-<p>Teacher-forced: the model runs on the fixed baseline token sequence, so the perturbation cannot change
-the text; this isolates the continuous dynamics. Free run: the model generates; a flip changes the
-continuation and is used for flip statistics.</p>
+<p>Teacher-forced: the model runs on the fixed baseline token sequence (no perturbation), so the perturbation cannot change
+the text; this isolates the continuous dynamics (from the token sampling). Free run: the model generates autoregressively (what we were doing before);</p>
 <hr />
 <h2 id="3-quantities-and-what-each-one-answers">3. Quantities, and what each one answers</h2>
 <table>
@@ -154,7 +150,7 @@ fixed perturbation is $\|Mv_0\|$.</p>
 divides by the number of blocks. $\sigma_1$ is nearly constant with depth, so this quantity falls like
 $1/\ell$; the fall is the division, not the model. We plot $\sigma_1(\ell)$ itself (§5).</p>
 <hr />
-<h2 id="4-result-1-the-perturbation-does-not-grow">4. Result 1 — the perturbation does not grow</h2>
+<h2 id="4-result-1-the-perturbation-does-not-always-grow">4. Result 1 — the perturbation does not always grow</h2>
 <p><img alt="flux models" src="figures/flux_models_all_layers.png" /></p>
 <p><strong>What is plotted.</strong> $\|\delta h_{t,\ell}\|/\|\delta h_{1,\ell}\|$ against generated token $t$ (log
 scale), one curve per layer, colour = layer. Prompt perturbation, $r=0.1$ ($r=0.3$ for Phi), 300
@@ -280,10 +276,13 @@ one-off amplifying directions. This is a measured property of the weights.</p>
 <p><strong>Panel (a)</strong> is the maximum stretch of the same-position tangent, $\sigma_1(\ell)/\sigma_1(1)$, from
 the block Jacobians. <strong>Panel (b)</strong> is the <em>actual</em> relative size of the perturbation,
 $[\|\delta h_\ell\|/\|h_\ell\|]$ at $t=50$, normalised at layer 1, measured from the hidden states.</p>
+<p><img alt="relative response" src="figures/fits/relative_response_models.png" /></p>
+<p><strong>Parameters.</strong> Prompt perturbation, $r=0.1$ ($r=0.3$ for Phi), 10–20 directions, generated token
+$t=50$; line = median over directions, band = 25–75%; all saved layers.</p>
 <p><strong>Answer.</strong> Only <strong>Phi-4-mini</strong> makes the perturbation more relevant: its relative size grows ×20
-through the depth. DeepSeek and Qwen3-4B peak at ×4 and ×3 near mid-depth and then decline; Qwen3.5
-stays within ×1.2. This is the quantity to quote when the question is "is the perturbation important
-for the state", because it cancels the residual stream's own growth (×18–30).</p>
+through the depth. DeepSeek peaks at ×3 near layer 13 and then declines; Qwen3-4B, Qwen2.5 and Qwen3.5
+stay within ×1.5–2 of their initial value. This is the quantity to quote when the question is "is the
+perturbation important for the state", because it cancels the residual stream's own growth (×18–30).</p>
 <h3 id="52-the-same-position-tangent-is-not-the-mechanism">5.2 The same-position tangent is not the mechanism</h3>
 <p><img alt="sigma vs real" src="figures/fits/sigma_vs_real.png" /></p>
 <p>From layer 1 to 27 the same-position chain grows <strong>×1.54</strong>; the actual prompt response grows <strong>×53</strong>.
@@ -291,20 +290,10 @@ The difference is cross-position transport. Panel (b)/(c) show a one-position pe
 same-position response is comparable across models (×2.8–4.7), but twenty tokens later DeepSeek has
 decayed to ×0.67 while Phi has grown to ×9.2 and Qwen3-4B to ×5.9.</p>
 <hr />
-<h2 id="6-result-3-flips-are-decisions">6. Result 3 — flips are decisions</h2>
-<p><strong>The rule.</strong> Let $m_t$ be the top-two logit gap and $\delta m_t$ its change under the perturbation.
-The token flips when $m_t+\delta m_t<0$, i.e. when $u_t=\delta m_t/m_t<-1$. At $r\le0.1$ this predicts
-the first flip in <strong>318 of 320</strong> direction–radius pairs.</p>
-<p><img alt="margin" src="figures/margin_coordinate.png" /></p>
-<p><strong>What is plotted.</strong> $u_t$ along the continuation at $r=0.3$ (left); the closest approach to $u=-1$
-against radius (middle); the distribution of $u$ at one step divided by $r$ (right). The closest
-approach is linear in $r$, which is the same statement as the linear response: the margin change is
-proportional to the perturbation size.</p>
-<p><strong>Where the rule stops.</strong> Above $r\approx0.3$ the margin change saturates (concave), so the tangent
-prediction is an extrapolation. I would report the rule with its range, not as a universal law.</p>
-<hr />
-<h2 id="6b-the-perturbation-waits-latency-before-the-flip">6b. The perturbation waits: latency before the flip</h2>
+<h2 id="6-the-perturbation-waits-latency-before-the-flip">6. The perturbation waits: latency before the flip</h2>
 <p><img alt="latent" src="figures/state_kick_latent_validated.png" /></p>
+<p><strong>Parameters.</strong> DeepSeek-1.5B, prompt <code>prompts.txt</code> (65 tokens), <strong>window $W=100$</strong>, $r=0.1$, <strong>24
+directions</strong>, free-running generation, 300 tokens, perturbation positions $s=16$ and $s=50$.</p>
 <p><strong>What is plotted.</strong> (a) Predicted (teacher-forced rule) against observed (free run) first changed
 token, five perturbations. (b) Token agreement with the unperturbed run along the continuation for one
 direction. (c) The same for 24 directions at $s=16$.</p>
@@ -340,8 +329,35 @@ added at <code>E[0, p]</code>, one prompt position only, and the baseline is unp
   decaying ×27 → ×6 over 300 tokens.
 - <strong>Travelling front</strong>: for later positions the peak is at a generated token that moves with $p$
   (peak $t=21$ at $p=0$, $t=97$ at $p=64$; slope ≈1).</p>
+<h3 id="71b-the-kernel-in-all-five-models">7.1b The kernel in all five models</h3>
+<p><img alt="kernel models" src="figures/transport/kernel_models.png" /></p>
+<p><strong>Parameters.</strong> Same protocol as above for each model: 8 prompts, all prompt positions, 8 directions,
+$r=0.1$ ($r=0.3$ for Phi), $W=100$, teacher-forced, 300 tokens, read at the last block. Curves are the
+median over prompts; <code>P</code> is the prompt length (60–65, so positions are shown as $p/P$).</p>
+<p><strong>Panel (a).</strong> The background $K(p\le5,t)$, i.e. the response to perturbing the first five prompt
+positions, against the generated token. <strong>Panel (b).</strong> The peak over $t$ of $K(p,t)$ for each position.</p>
+<p><strong>What it shows.</strong> The background decays in DeepSeek (14 → 1.3, i.e. −0.74% per token, exponential,
+$R^2=0.81$) and in Qwen2.5 (7 → 3); it is <strong>flat</strong> in Qwen3-4B and Phi; Phi's background even <em>rises</em>
+around $t=40$–60 before decaying. The front amplitude separates the models more sharply than any other
+measurement: <strong>Phi ≈78 for every position</strong>, DeepSeek 5–25, Qwen3-4B and Qwen2.5 15–45, Qwen3.5 ~3.</p>
+<p><strong>Why it matters.</strong> The two components of the kernel have different model signatures. Phi amplifies
+<em>every</em> position equally at a fixed future time; DeepSeek's influence decays with distance. This is the
+mechanism behind the "models differ" table, expressed as two numbers instead of a list.</p>
 <h3 id="72-is-the-kernel-a-valid-superposition-measured">7.2 Is the kernel a valid superposition? (measured)</h3>
-<p><img alt="superposition" src="figures/transport/superposition.png" /></p>
+<p><img alt="superposition" src="figures/transport/superposition_3.png" /></p>
+<p><strong>What exactly is measured.</strong> Three trials. In each trial one unit vector $u\in\mathbb{R}^{d}$ is drawn
+and two sets of runs are made on the same prompt (<code>prompts.txt</code>, $P=65$ tokens, window $W=100$,
+teacher-forced, 300 generated tokens, block $L$ = last):
+1. <strong>joint run</strong>: $r\,u$ added to <strong>every</strong> prompt position; the response at generated token $t$ is
+$A_t=h'_t-h_t\in\mathbb{R}^{d}$;
+2. <strong>single-position runs</strong>: $r\,u$ added to <strong>one</strong> prompt position $p$ at a time, giving $B_{p,t}$;
+the sum is $S_t=\sum_{p=0}^{64}B_{p,t}$.</p>
+<p>$A_t$ and $S_t$ are vectors of the same dimension; $\|A\|$ and $\|S\|$ are their Euclidean norms. If the
+model were linear in the input, $A_t=S_t$ exactly.</p>
+<p><strong>(a)</strong> $\|S\|$ against $\|A\|$ for every token and trial: the points lie on the identity line over three
+decades. <strong>(b)</strong> The ratio $\|S\|/\|A\|$ peaks at 1 with a spread of ±5–10%. <strong>(c)</strong> The relative error
+falls as the amplitude grows; it is large (0.5–0.7) only where $\|A\|\lesssim10^{-2}$, i.e. where the
+response is at the float32 resolution of the difference — not a physical failure.</p>
 <p><strong>The test.</strong> Add the <strong>same</strong> unit vector $u$ to every prompt position; call the response $A$. Then,
 separately, add $u$ to position $p$ alone for each $p$ and sum the responses: $S=\sum_p f(u\text{ at
 }p)$. If the response is linear, $A=S$.</p>
@@ -377,28 +393,82 @@ separately, add $u$ to position $p$ alone for each $p$ and sum the responses: $S
 </tr>
 </tbody>
 </table>
-<p>So superposition holds to <strong>7%</strong> at a total perturbation norm of 0.24 — inside the measured linear
+<p><strong>Why 0.36 at the smallest radius is not a failure.</strong> At r=0.003 the single-position response is ~1e-4 while the hidden states are ~500, so the difference of two forward passes is at the float32 resolution (relative 2e-7); the measured 36% is the round-off floor of the subtraction, not physics. The meaningful number is the minimum of the curve, 6.8%. Superposition holds to <strong>7%</strong> at a total perturbation norm of 0.24 — inside the measured linear
 regime ($r\le0.3$) — and degrades outside it. The error at the two smallest radii is the float32
 round-off of the difference of two ~500-magnitude states, not physics. This is the quantitative
 support for using $K$ as a decomposition: <strong>it is valid at total norms ≲0.3, which is exactly the
 range in which the rest of the analysis is done.</strong></p>
-<p>Qwen3-4B at $r=0.1$ per position shows a much larger error (13×), i.e. stronger saturation; the same
-test at $r=0.03$ for the other four models is running.</p>
+<p><strong>Replication at $r=0.03$ (total norm 0.24):</strong></p>
+<table>
+<thead>
+<tr>
+<th>run</th>
+<th>$\|A-S\|/\|A\|$ (median)</th>
+<th>$\cos(A,S)$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek, prompt 1</td>
+<td>6.2%</td>
+<td>0.999</td>
+</tr>
+<tr>
+<td>DeepSeek, prompt 2</td>
+<td>5.1%</td>
+<td>0.999</td>
+</tr>
+<tr>
+<td>DeepSeek, prompt 3</td>
+<td>5.5%</td>
+<td>0.999</td>
+</tr>
+<tr>
+<td>Qwen3.5-2B, <strong>fp32</strong>, prompt 1</td>
+<td>7.7%</td>
+<td>0.997</td>
+</tr>
+</tbody>
+</table>
+<p>So the decomposition holds to 5–8% across three prompts and on a second model when the arithmetic is
+fp32.</p>
+<p><strong>A limit of the measurement, found while checking the other models.</strong> The same test is meaningless
+for the fp16 models at these amplitudes: a hidden state is ~500 and fp16 resolves ~0.3 in absolute
+value, while the single-position response at $r=0.03$ is ~0.05. The difference of two fp16 forward
+passes is then below the format's resolution, and the measured "error" is 12–41× — a numerical
+artefact, not saturation. <strong>The superposition test is therefore only valid for DeepSeek (fp32).</strong></p>
 <hr />
 <h2 id="8-result-5-models-differ">8. Result 5 — models differ</h2>
-<p><img alt="perturbation vs position" src="figures/fits/perturbation_vs_position.png" /></p>
-<p><strong>What is plotted.</strong> A one-vector perturbation at <strong>one generated position</strong> $s$. For each direction,
-take the largest response at the <strong>last layer</strong> in the 50 tokens after $s$; plot the median over
-directions (line) and the 10–90% range (band), divided by $r$. 22 positions, generated-token
-positions, $r=0.1$ ($r=0.3$ for Phi).</p>
-<p><strong>What it shows.</strong> Phi rises from ×30 at $s=4$ to ×130 at $s=40$ and falls back; DeepSeek stays below
-×2.5 with a maximum at $s=16$; Qwen3-4B (×11–18), Qwen2.5 (×8–10) and Qwen3.5 (×1–3) are flat. The
-model difference is in the <em>level</em> and in whether there are hot spots.</p>
+<p><img alt="heatmap" src="figures/positions/posscan_A_heatmap.png" /></p>
+<p><strong>Parameters.</strong> One vector of norm $r=0.1$ ($r=0.3$ for Phi) at <strong>one generated position</strong> $s$,
+injected at block 0, read at the last block $L$; 8 random directions, median over directions; the
+prompt is <code>prompts.txt</code> (65 tokens), teacher-forced, 300 generated tokens; 22 positions from 4 to 100.</p>
+<p><strong>What is plotted.</strong> The response $\log_{10}\|\delta h_{s+\tau,L}\|/r$ as a function of the position $s$
+and the lag $\tau$ (0–50 tokens after $s$).</p>
+<p><strong>What it shows — and it corrects the earlier reading.</strong> For Phi there is a <strong>bright diagonal</strong>: a
+perturbation at position $s$ is amplified when the continuation reaches a particular <em>absolute</em> token,
+so the peak lag shrinks as $s$ grows. DeepSeek shows horizontal bands (the response depends on the
+position, not on the lag) and a global decay.</p>
+<p><img alt="peak absolute" src="figures/positions/peak_is_absolute.png" /></p>
+<p><strong>Panel (a).</strong> The lag of the peak against the position. <strong>Panel (b).</strong> The absolute token of the peak,
+$s+\tau^*$. For early positions it is <strong>flat</strong> at a model-specific value (DeepSeek ≈20–45, Qwen3-4B
+≈20, Qwen2.5-3B ≈27, Phi ≈45, Qwen3.5 ≈42); for late positions it follows the position.</p>
+<p><strong>Consequence.</strong> The "hot spot at $s\approx40$" in the max-over-lag plot was a projection artefact: a
+perturbation at $s=40$ peaks at lag ≈5, i.e. at the same absolute token where a perturbation at $s=16$
+peaks at lag ≈29. <strong>There is one amplification gate per continuation, not one per position.</strong> The model
+difference is the <em>time</em> of that gate (or its absence, for DeepSeek) and its amplitude, not a position.</p>
 <p><img alt="perturbation vs depth" src="figures/fits/perturbation_vs_depth.png" /></p>
 <p><strong>What is plotted.</strong> The same quantity against the <strong>block where the perturbation is injected</strong>, for
 $s=16$ (left) and $s=50$ (right). The curve is flat over the first 60–75% of the depth: injecting at
 block 0 or block 20 gives the same downstream amplitude. The amplitude is a property of the position
 and the model, not of the injection depth.</p>
+<p><img alt="layer probe temporal" src="figures/fits/layer_probe_temporal.png" /></p>
+<p><strong>Parameters.</strong> One-position perturbation at $s=16$, $r=0.1$ ($r=0.3$ for Phi), injected at block 0;
+6 directions; prompt <code>prompts.txt</code>, $W=100$; teacher-forced, 300 tokens. Solid: the response at the
+<strong>perturbed position</strong>; dashed: 5 tokens later; dotted: 20 tokens later. Band = 10–90% over directions.</p>
+<p><strong>What it shows.</strong> At the perturbed position the response is ×1–3 in every model. Twenty tokens later
+DeepSeek has decayed to ×0.05–0.7 while Qwen3-4B and Phi have <strong>grown</strong> to ×1–9. The transported
+response, not the local one, is where the models differ.</p>
 <p><strong>The consistent table</strong> (same prompt, $r=0.3$, last layer, 20 directions, perturbation at $s=16$):</p>
 <table>
 <thead>
@@ -456,6 +526,65 @@ and the model, not of the injection depth.</p>
 </table>
 <p>Two independent measurements (the rate and the amplification) agree on the ordering. Direction
 dependence is a DeepSeek property (×5.85); the newer models are nearly isotropic (×1.2–1.9).</p>
+<p><img alt="flip fraction models" src="figures/fits/flip_fraction_models.png" /></p>
+<p><strong>What exactly is measured.</strong> For each of <strong>8 prompts</strong>, <strong>192 random unit directions</strong> and four radii,
+the model generates greedily for 300 tokens with the perturbation on the prompt, and we record whether
+the generated sequence differs from the unperturbed run at least once. Panel (b) excludes flips at a
+step whose <em>unperturbed</em> margin is ≤0.02: those are quantisation ties where any perturbation flips the
+token, and they dominate the raw counts (panel a). Band = 25–75% across prompts; error bars = 95%
+confidence interval on the pooled fraction (Wilson), $n=1536$ direction–prompt pairs per point.</p>
+<p><strong>Tie-corrected flip fraction at $r=0.1\to1.0$:</strong></p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>0.1</th>
+<th>0.3</th>
+<th>0.6</th>
+<th>1.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-1.5B</td>
+<td>0.2%</td>
+<td>3.4%</td>
+<td>10.5%</td>
+<td>23.7%</td>
+</tr>
+<tr>
+<td>Qwen3.5-2B</td>
+<td>3.6%</td>
+<td>20.1%</td>
+<td>45.8%</td>
+<td>71.9%</td>
+</tr>
+<tr>
+<td>Qwen3-4B</td>
+<td>16.8%</td>
+<td>19.9%</td>
+<td>24.7%</td>
+<td>38.3%</td>
+</tr>
+<tr>
+<td>Qwen2.5-3B</td>
+<td>30.4%</td>
+<td>33.7%</td>
+<td>42.6%</td>
+<td>53.0%</td>
+</tr>
+<tr>
+<td>Phi-4-mini</td>
+<td>56.0%</td>
+<td>65.6%</td>
+<td>65.5%</td>
+<td>66.6%</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reading.</strong> The ordering matches the amplification ordering (DeepSeek ≪ Qwen3.5 &lt; Qwen3-4B &lt; Qwen2.5 &lt;
+Phi), and the <em>shape</em> differs: DeepSeek starts near zero and rises with $r$, while Phi is already at 56%
+at $r=0.1$ and saturates — it is fragile everywhere, not more fragile at larger $r$.</p>
 <hr />
 <h2 id="9-the-sliding-window-one-exact-result">9. The sliding window: one exact result</h2>
 <p><img alt="window law" src="figures/window4d_models.png" /></p>
@@ -464,63 +593,158 @@ measured time at which the response becomes exactly zero against the prediction.
 <p><strong>What is exact, and on what evidence.</strong>
 - <strong>DeepSeek</strong>: 240 (window, layer, radius) combinations, prompt length 63, residual 0.
 - <strong>Qwen3-4B and Phi-4-mini</strong>: 18 points each (3 windows × 6 layers, one prompt), residual 0.00.
-- <strong>First departure</strong> from the unwindowed run occurs at $t=W-P$: measured 36/136/0 for $W=100/200/60$
-  with $P=64$, all layers.
+- <strong>First departure</strong> from the unwindowed run occurs at $t=W-P$: measured 36/136/0 for $W=100/200/60$ with $P=64$, all layers; and 237 = 300−63 for $W=300$ in three models (DeepSeek, Qwen3-4B, Phi, all seven saved layers) on a 900-token continuation.
 - <strong>Not tested</strong>: Qwen2.5-3B (running), and Qwen3.5-2B, which has no window mechanism at all (its
   first block is linear attention; a mask leaves it bit-identical).</p>
+<p><img alt="window token agreement" src="figures/veto/window_token_agreement_multi.png" /></p>
+<p><strong>Parameters.</strong> DeepSeek, prompt of 65 tokens, no perturbation ($r=0$), free-running greedy generation,
+300 tokens, windows 60–1000 compared with the unwindowed run ($W=4096$).</p>
+<p><strong>(a)</strong> The running fraction of tokens identical to the unwindowed text. <strong>(b)</strong> The first differing
+token against $W$: it lies on $W-P$ (dashed) for every window. <strong>(c)</strong> The residual latency,
+$t_{\rm first}-(W-P)$: 2–7 tokens (mean 5), the time needed for the lost context to change a decision.
+<strong>(d)</strong> The surviving fraction of the 300 tokens against $W$; the best fit is a stretched rise
+$1-\exp(-(W/237)^{2.0})$ ($R^2=0.999$). <strong>Reading: the text is bit-identical for 300 tokens once
+$W\gtrsim500$, i.e. the effective memory of this continuation is ~5–8× the prompt length.</strong></p>
 <p>The law for the flush step is $t^*_\ell=(W-10)+(\ell-1)(W-1)$ for this prompt; the constant depends on
 the prompt and on the numerical resolution, the slope $W-1$ does not.</p>
 <hr />
-<h2 id="10-not-results-do-not-cite">10. Not results (do not cite)</h2>
+<h3 id="figure-parameters-one-table-so-nothing-has-to-be-guessed">Figure parameters (one table, so nothing has to be guessed)</h3>
+<p><code>W</code> = sliding-window size. "native" = the model's own window setting; "inert" = the model has no
+window mechanism, so <code>W</code> has no effect. <code>dirs</code> = number of random perturbation directions. All
+teacher-forced unless stated.</p>
 <table>
 <thead>
 <tr>
-<th>quantity</th>
-<th>why</th>
+<th>figure</th>
+<th>model(s)</th>
+<th>prompt</th>
+<th>W</th>
+<th>r</th>
+<th>dirs</th>
+<th>tokens</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>"$\lambda_1(\ell)$ decays with depth"</td>
-<td>$\log\sigma_1/(\ell+1)$ with $\sigma_1$ nearly flat: the decay is the division</td>
+<td><code>flux_models_all_layers</code></td>
+<td>DeepSeek, Qwen3-4B, Phi, Qwen3.5</td>
+<td><code>prompts.txt</code> (65 tok)</td>
+<td>100 (inert except DeepSeek)</td>
+<td>0.1 / 0.3 (Phi)</td>
+<td>20</td>
+<td>300</td>
 </tr>
 <tr>
-<td>"the depth tangent is isotropic"</td>
-<td>true only inside a random 8/64-dim subspace; the full block $\sigma_{\max}$ is 3–119 and rotates</td>
+<td><code>model_lambda_compare</code></td>
+<td>same four</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.3</td>
+<td>20</td>
+<td>300</td>
 </tr>
 <tr>
-<td>FSLE flat in $r$</td>
-<td>that is linearity; the value depends on the threshold and the start time</td>
+<td><code>long_horizon</code></td>
+<td>DeepSeek</td>
+<td><code>prompts_long2.txt</code></td>
+<td><strong>4096</strong></td>
+<td>0.1</td>
+<td>4</td>
+<td><strong>4000</strong></td>
 </tr>
 <tr>
-<td>"$r_*$ is log-logistic"</td>
-<td>4 models × 5 prompts: median varies 15×, exponent 2.3–17.6</td>
+<td><code>block_sigma_full</code></td>
+<td>DeepSeek, Qwen3-4B, Phi</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>Jacobian (no r)</td>
+<td>1 (power iteration, 20 it)</td>
+<td>4 positions</td>
 </tr>
 <tr>
-<td>flip fraction vs $r$ at small $r$</td>
-<td>dominated by zero-margin ties (0.4% vs 3.5% at $r=0.1$)</td>
+<td><code>sigma_vs_real</code></td>
+<td>DeepSeek</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.1</td>
+<td>8 (depth map) / 6 (probe)</td>
+<td>300</td>
 </tr>
 <tr>
-<td>window spectroscopy</td>
-<td>correct, but it measures the mask; the kernel is the better instrument</td>
+<td><code>relative_response_models</code></td>
+<td>five models</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.1 / 0.3</td>
+<td>10–20</td>
+<td>300, $t=50$</td>
 </tr>
 <tr>
-<td>pooled manifold dimension</td>
-<td>estimator unstable under pooling; the last saved state is the final RMSNorm</td>
+<td><code>kernel_deepseek</code></td>
+<td>DeepSeek</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.1</td>
+<td>8</td>
+<td>300, 65 positions</td>
+</tr>
+<tr>
+<td><code>superposition</code></td>
+<td>DeepSeek</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.003–0.1</td>
+<td>3 trials, same $u$</td>
+<td>300</td>
+</tr>
+<tr>
+<td><code>margin_coordinate</code></td>
+<td>DeepSeek</td>
+<td><code>window_sweep</code> prompt (63 tok)</td>
+<td><strong>200</strong></td>
+<td>0.03–0.3</td>
+<td>10</td>
+<td>300</td>
+</tr>
+<tr>
+<td><code>state_kick_latent_validated</code></td>
+<td>DeepSeek</td>
+<td><code>prompts.txt</code> (65 tok)</td>
+<td><strong>100</strong></td>
+<td>0.1</td>
+<td>24</td>
+<td>300, $s=16,50$</td>
+</tr>
+<tr>
+<td><code>posscan_A_heatmap</code>, <code>peak_is_absolute</code></td>
+<td>five models</td>
+<td><code>prompts.txt</code></td>
+<td>100</td>
+<td>0.1 / 0.3</td>
+<td>8</td>
+<td>300, 22 positions</td>
+</tr>
+<tr>
+<td><code>window4d_models</code></td>
+<td>Qwen3-4B, Phi (+ DeepSeek)</td>
+<td><code>prompts.txt</code></td>
+<td>60–4096</td>
+<td>0.1</td>
+<td>6</td>
+<td>300</td>
+</tr>
+<tr>
+<td><code>rstar_per_model</code></td>
+<td>four models</td>
+<td>5 prompts</td>
+<td>100</td>
+<td>0.1</td>
+<td><strong>512</strong></td>
+<td>300</td>
 </tr>
 </tbody>
 </table>
 <hr />
-<h2 id="11-where-i-would-push-back">11. Where I would push back</h2>
-<ul>
-<li><strong>"Stable chaos"</strong> must be defined every time as "the state contracts, but the readout is
-  discontinuous, so a shrinking perturbation can still change the token". Otherwise a referee will
-  ask for a positive Lyapunov exponent, and there is none.</li>
-<li><strong>300 tokens</strong> is enough for flips, not for the asymptotic rate (it drifts to −0.007 at 4000).</li>
-<li><strong>Five models</strong> is enough to say "models differ", not to say why.</li>
-<li><strong>The kernel</strong> is the most promising object and the least explored; the superposition test says it
-  is valid at total norms ≲0.3, which is a real constraint on how it may be used.</li>
-</ul>
 <script src=".preview/katex/katex.min.js"></script>
 <script src=".preview/katex/contrib/auto-render.min.js"></script>
 <script>
