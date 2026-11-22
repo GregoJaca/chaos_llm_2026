@@ -39,6 +39,7 @@ def wilson(k, n, z=1.96):
 
 
 rows = []
+rows_raw = []
 files = sorted(glob.glob(os.path.join(FF, "flipfrac_*.npz")))
 if not files:
     raise SystemExit("no flipfrac data yet")
@@ -61,6 +62,7 @@ for r in RADII:
         n += len(keep)
         per_prompt.append(float(np.mean(keep)) if keep else 0.0)
     rows.append((r, k, n, per_prompt))
+    rows_raw.append((r, k_raw, n_raw))
     print("r=%g: raw %d/%d (%.1f%%); tie-corrected %d/%d (%.1f%%); per-prompt %.3f-%.3f" % (
         r, k_raw, n_raw, 100 * k_raw / n_raw, k, n, 100 * k / n,
         min(per_prompt), max(per_prompt)))
@@ -74,13 +76,16 @@ xs = [r for r, _, _, _ in rows]
 ys = [k / n for _, k, n, _ in rows]
 lo = [wilson(k, n)[1] for _, k, n, _ in rows]
 hi = [wilson(k, n)[2] for _, k, n, _ in rows]
-ax.plot(xs, ys, "o-", ms=7, lw=2.2, color="#0072B2", label="Mamba-130m (control)")
+ax.plot(xs, ys, "o-", ms=7, lw=2.2, color="#0072B2", label="Mamba-130m (control, tie-corrected)")
 ax.fill_between(xs, lo, hi, color="#0072B2", alpha=0.2)
+ys_raw = [k / n2 for _, k, n2 in rows_raw]
+ax.plot(xs, ys_raw, "o--", ms=5, lw=1.4, color="#56B4E9", alpha=0.9,
+        label="Mamba-130m raw (no tie rule; fp32 has no quantisation ties)")
 ax.set_xscale("log")
 ax.set_xlabel(r"prompt perturbation radius $r$")
-ax.set_ylabel("tie-corrected flip fraction (300 tokens, greedy)")
-ax.set_title("Flip fraction vs radius, 8 prompts x 192 directions (master.md protocol):\nthe control spans the same range as the LLMs - thresholds, not chaos")
-ax.legend(fontsize=8)
+ax.set_ylabel("flip fraction (300 tokens, greedy)")
+ax.set_title("Flip fraction vs radius, 8 prompts x 192 directions (master.md protocol):\nraw, the control sits between DeepSeek and Qwen3-4B; nearly all its flips\nconcentrate on margin $\\leq0.02$ steps - it flips only at genuine near-ties")
+ax.legend(fontsize=7)
 ax.grid(alpha=0.3, which="both")
 fig.tight_layout(); fig.savefig(os.path.join(OUT, "c8_flipfrac.png"), dpi=190); plt.close(fig)
 

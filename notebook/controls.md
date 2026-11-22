@@ -1,8 +1,7 @@
 # Controls: what a provably non-chaotic system does in our pipeline
 
-Status: **in progress** (Parts 2–7 final; Part 8 master-comparison
-experiments running: transport kernel + superposition, flip fractions,
-512-direction thresholds, KV-cache kicks, random-model trajectories).
+Status: **complete** (all parts measured; every master.md quantity mapped
+in Part 8).
 
 This document is the control leg of the project. The reviewers' alternative
 explanation for our LLM results is: *"the threshold alone causes divergence"*
@@ -531,8 +530,23 @@ master is the *growth* of the transported response in the Qwen3/Phi family
 Master's tie-corrected flip-fraction protocol replicated exactly on
 Mamba-130m: 8 prompts, 192 dense random directions, radii
 $0.1/0.3/0.6/1.0$, 300 greedy tokens, flips at steps with unperturbed
-margin $\le0.02$ excluded. *(Numbers and reading inserted when the run
-completes — see the figure.)*
+margin $\le0.02$ excluded ($n=1536$ direction-prompt pairs per radius):
+
+| $r$ | raw fraction | tie-corrected | master: DeepSeek | master: Qwen3-4B |
+|---|---|---|---|---|
+| 0.1 | 1.2% | 0.0% | 0.2% | 16.8% |
+| 0.3 | 6.2% | 0.1% | 3.4% | 19.9% |
+| 0.6 | 10.9% | 0.5% | 10.5% | 24.7% |
+| 1.0 | 14.0% | 1.1% | 23.7% | 38.3% |
+
+Reading: **raw, the control sits between DeepSeek and Qwen3-4B** — the
+same fragility band as the LLMs. Under master's tie rule nearly all of
+the control's flips vanish — but the tie rule exists to remove *fp16
+quantisation* ties, and this model is fp32: its flips at margin $\le0.02$
+steps are *genuine* near-ties (its margin landscape is bimodal: near-zero
+minima like 0.0038, and a large bulk). The honest statement combines
+both: the control flips within the LLM range, and essentially *only* at
+its genuine near-tie steps — threshold behaviour in its purest form.
 
 ### 8.4 Where the response comes from: the front is attention
 
@@ -600,24 +614,32 @@ loop screen, 1000-token greedy trajectories, last layer):
 
 | model | $D_2$ median | plateau width median (decades) |
 |---|---|---|
+| randQwen g=0.35 (2/3 near-loops) | **0.92** | **0.87** |
+| Mamba-130m | 2.05 | 0.12 |
+| Mamba-370m / 790m | 2.95 / 2.23 | 0.22 / 0.13 |
+| Pythia-410m | 4.03 | 0.04 |
 | DeepSeek-1.5B (16 traj) | 6.8 | 0.02 |
 | Qwen2.5-3B | 6.8 | 0.02 |
 | Qwen3-4B | 9.6 | 0.02 |
-| Qwen3.5-2B | 13.8 | 0.00 |
 | Phi-4-mini | 8.0 | 0.01 |
-| **Mamba-130m** | **2.05** | **0.12** |
-| Mamba-370m / 790m | 2.95 / 2.23 | 0.22 / 0.13 |
-| Pythia-410m | 4.03 | 0.04 |
+| Qwen3.5-2B | 13.8 | 0.00 |
+| Pythia-410m step0 (random init) | 18.7 | 0.28 |
+| randQwen g=1.0 | 50.6 | 0.00 |
+| randQwen g=4.0 | 70.9 | 0.00 |
+| *Hénon / Lorenz (true chaotic)* | *1.16 / 1.98* | *1.67 / 0.95* |
 
-**No model has a scaling region** (all plateau widths $\le0.22$ decades
-vs 1.67/0.95 for Hénon/Lorenz through the same detector), and — the
-reductio — **the provably-contracting control has the lowest, prettiest
-$D_2$ values of the entire table.** Low D2 with a wide plateau is a
-signature of temporal smoothness, not of a chaotic attractor. A second
-artifact mechanism also appears in the control family: 3 of 4 Pythia-410m
-and 2 of 4 Mamba-370m trajectories are near-loops (repetition distance
-$<0.25$), reproducing the master's "loops give degenerate D2" finding on
-models never trained to avoid repetition.
+**No model has a scaling region** (all plateau widths $\le0.87$ decades,
+and everything except the loop-artifact rows is $\le0.28$ vs 1.67/0.95
+for Hénon/Lorenz through the same detector). The fitted $D_2$ instead
+spans **0.92 to 71** as a smooth function of the state cloud's effective
+dimension — with the *provably-contracting* control near the low end and
+the random-init transformers at the top: g=4.0, whose depth axis is the
+most "chaotic" by mean-field intuition, gives $D_2=71$ — the *opposite*
+of a low-dimensional attractor. Two artifact mechanisms are demonstrated
+inside the control family itself: near-loop trajectories (2 of 3 for
+randQwen g=0.35 → $D_2=0.92$ with a 0.87-decade "textbook" plateau; 3 of
+4 Pythia-410m, 3 of 4 Mamba-370m) reproduce the master's "loops give
+degenerate D2" finding on models never trained to avoid repetition.
 
 ![rpgallery](figures_controls/c5b_rp_gallery.png)
 
@@ -698,8 +720,8 @@ scripts, not from memory.
 | `c8_superposition` | Mamba-130m | `prompts.txt` | same $u$ at every position, r=0.01/0.03/0.1 per position (total $r\sqrt P$=0.08–0.81), 3 trials | 1 per trial | 300, TF |
 | `c8_lambda_all` | 5 LLMs (master values) + Mamba ×3 prompts, Mamba-790m, Pythia-410m, step0, randQwen g=1 | `prompts.txt` | r=0.1 (0.3 Pythia-410m) | 20 | 300, TF; late $\lambda$ = mean over $t\in[150,290]$ |
 | `c8_s16_spread` | Mamba-130m (+ master table values) | `prompts.txt` | one-position kick at s=16, 50 (generated), inject layer 0, r=0.1, dense | 8 | 300, TF, layers 0,6,12,18,23; spread 5–95 pct |
-| `c8_flipfrac` | Mamba-130m | 8 prompts: `prompts.txt`, `prompts_childhood.txt`, `prompts_cyber.txt`, `prompts_more.txt` | dense dirs, r=0.1, 0.3, 0.6, 1.0; tie rule $m\le0.02$ | **192** | 300 **free** (figure pending: run data not yet in repo) |
-| `c8_kv_kick`, `c8_kv_layers` | DeepSeek-1.5B, **$W$=100** | `prompts.txt` | KV-cache kick, $\varepsilon$=0.01, 0.1, 1.0 at $t_0$=70, 150; layer modes all/0/14/27; **live-window (k,v) entries only** | 8 dense | horizon 150, TF (figure pending: run data not yet in repo) |
+| `c8_flipfrac` | Mamba-130m | 8 prompts: `prompts.txt`, `prompts_childhood.txt`, `prompts_cyber.txt`, `prompts_more.txt` | dense dirs, r=0.1, 0.3, 0.6, 1.0; tie rule $m\le0.02$ | **192** | 300 **free**; raw + tie-corrected curves |
+| `c8_kv_kick`, `c8_kv_layers` | DeepSeek-1.5B, **$W$=100** | `prompts.txt` | KV-cache kick, $\varepsilon$=0.01, 0.1, 1.0 at $t_0$=70, 150; layer modes all/0/14/27; **live-window (k,v) entries only** | 8 dense | horizon 150, TF; stepped-cache protocol validated (argmax + duplicate rows exact) |
 
 Free-run radii notes: the `fr_*` Mamba free runs reuse the *same* simplex
 directions as the a1i run they are validated against; `c8_flipfrac` and the KV
