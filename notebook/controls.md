@@ -252,8 +252,6 @@ signature by itself — a qualifier for the LLM result. What discriminates is
 the *size* of the spread and its time-stability, both still larger for the
 transformer.
 
----
-
 ## Part 4 — The state-level story: measured, not just proved
 
 **Data.** In-batch finite-difference Jacobian measurements (bit-exact within
@@ -479,3 +477,153 @@ data-independent (threshold rule exact on all four pretrained models);
 by model scale/training, with small attention models behaving like the
 control; (iii) standard-scale random init is ordered, so the *phase* of a
 real LLM is an empirical question — Part 6 measures it directly.
+
+---
+
+## Part 8 — How the control results map onto the LLM results (master.md)
+
+This section compares every headline quantity of the master document with the
+controls, using matched conventions (the master's own figure-parameter table
+is replicated for our figures at the end of the document).
+
+### 8.1 Late stretching rate: no system grows
+
+![lambdaall](figures_controls/c8_lambda_all.png)
+
+Master's $\lambda_{10}$ late-rate table (DeepSeek $-0.0105$ ... Phi
+$+0.0003$, none positive in 31 configurations) extended with the controls:
+Mamba-130m $-0.0014$ to $-0.0002$ (three prompts), Mamba-790m $-0.0014$,
+Pythia-410m $-0.0066$, Pythia step0 $-0.0016$, random Qwen2 $-0.0006$.
+**The LLM values sit inside the band spanned by provably non-chaotic
+models.** The master's Result 1 ("the perturbation does not grow") is
+therefore not merely an empirical observation about five LLMs — it is the
+universal behaviour of every architecture we tested, including ones whose
+exponents are provably negative. For the paper: this quantity closes the
+"maybe it is secretly chaotic" objection; nothing in the family of greedy
+teacher-forced token dynamics grows.
+
+### 8.2 Local amplification and direction spread at a kicked position
+
+![s16](figures_controls/c8_s16_spread.png)
+
+Master's section-8 table (single-position kick at generated position
+$s=16$, read at the last layer) extended with Mamba-130m (same protocol,
+$r=0.1$, 8 directions):
+
+| quantity | DeepSeek | Qwen2.5 | Qwen3-4B | Phi | Qwen3.5 | **Mamba-130m** |
+|---|---|---|---|---|---|---|
+| amplification at $s=16$ ($\|\delta h\|/r$) | 0.76 | 4.63 | 5.84 | 7.25 | 0.48 | **35.8** ($s{=}16$), 10.8 ($s{=}50$) |
+| response 20 tokens later | 0.05–0.7 (decays) | grows | grows | grows ×9 | — | **9.3 → decays** |
+| direction spread (5–95 pct) | ×5.85 | ×1.36 | ×1.19 | ×1.19 | ×1.93 | **×2.35** |
+
+Two surprises: the **no-attention control has the largest local
+amplification of all models tested** (its depth gain is undamped by any
+window, Part 2), and its downstream behaviour matches DeepSeek's (decay),
+not the newer Qwens'. Direction anisotropy at a kicked position is
+likewise not attention-specific. What remains transformer-specific per
+master is the *growth* of the transported response in the Qwen3/Phi family
+— and the travelling front (8.4 below).
+
+### 8.3 Flip fractions: the control spans the LLM range
+
+![flipfrac](figures_controls/c8_flipfrac.png)
+
+Master's tie-corrected flip-fraction protocol replicated exactly on
+Mamba-130m: 8 prompts, 192 dense random directions, radii
+$0.1/0.3/0.6/1.0$, 300 greedy tokens, flips at steps with unperturbed
+margin $\le0.02$ excluded. *(Numbers and reading inserted when the run
+completes — see the figure.)*
+
+### 8.4 Where the response comes from: the front is attention
+
+![kernel](figures_controls/c8_kernel.png)
+
+The master's transport kernel $K(p,t)$ replicated on the control (same
+$r=0.1$, 8 directions, teacher-forced, last layer):
+
+- **Mamba has no travelling front**: the peak of $K(p,t)$ is at $t\approx0$
+  for every position (panel a vs b; panel c) — each prompt position enters
+  the state once and decays. DeepSeek's front (peak $t=21$ at $p=0$ →
+  $97$ at $p=64$, slope ≈ 1) is reproduced from the master's own data.
+- **The persistent background exists in both**: first-positions response
+  decays $12\to1.1$ (DeepSeek), $0.93\to0.14$ (Mamba), with Phi's rise in
+  between. Long-lived influence is *not* attention-specific; its
+  *re-amplification into later tokens* is.
+
+![superposition](figures_controls/c8_superposition.png)
+
+The superposition test $A=\sum_p B_p$: Mamba's median error at total norm
+0.24 is **4.7%** (cos 0.999), slightly *better* than DeepSeek's 5.1–6.2%.
+The kernel decomposition is valid wherever it is needed — in the control
+too.
+
+### 8.5 Memory kicks: KV cache (transformer) vs SSM state (control)
+
+![kvkick](figures_controls/c8_kv_kick.png)
+
+The user-approved symmetric experiment: kick DeepSeek's KV cache directly
+(in-batch, live window only, all layers or single layers,
+$\varepsilon\in\{0.01,0.1,1\}$, at $t_0=70/150$) and teacher-force the
+baseline tokens. Panel (b) shows the Mamba SSM-state kicks from Part 4.
+Both memories respond the same way: a bounded transient, then decay to
+the numerical floor — **a direct kick to the internal memory of neither
+architecture produces growth.** *(Layer-attribution figure:
+c8_kv_layers.png — single-layer cache kicks decay, the all-layer kick is
+their sum; no runaway layer.)*
+
+### 8.6 Correlation dimension and recurrence across every model
+
+![d2all](figures_controls/c5b_all_models.png)
+
+The Part-5 analysis extended to **all five master models + Mamba
+370m/790m + Pythia + the random-init transformers** (same estimator, same
+loop screen, 1000-token greedy trajectories, last layer):
+
+| model | $D_2$ median | plateau width median (decades) |
+|---|---|---|
+| DeepSeek-1.5B (16 traj) | 6.8 | 0.02 |
+| Qwen2.5-3B | 6.8 | 0.02 |
+| Qwen3-4B | 9.6 | 0.02 |
+| Qwen3.5-2B | 13.8 | 0.00 |
+| Phi-4-mini | 8.0 | 0.01 |
+| **Mamba-130m** | **2.05** | **0.12** |
+| Mamba-370m / 790m | 2.95 / 2.23 | 0.22 / 0.13 |
+| Pythia-410m | 4.03 | 0.04 |
+
+**No model has a scaling region** (all plateau widths $\le0.22$ decades
+vs 1.67/0.95 for Hénon/Lorenz through the same detector), and — the
+reductio — **the provably-contracting control has the lowest, prettiest
+$D_2$ values of the entire table.** Low D2 with a wide plateau is a
+signature of temporal smoothness, not of a chaotic attractor. A second
+artifact mechanism also appears in the control family: 3 of 4 Pythia-410m
+and 2 of 4 Mamba-370m trajectories are near-loops (repetition distance
+$<0.25$), reproducing the master's "loops give degenerate D2" finding on
+models never trained to avoid repetition.
+
+![rpgallery](figures_controls/c5b_rp_gallery.png)
+
+Recurrence plots at matched RR=2% across every family (trained LLMs, SSM
+control, random-init transformers): the band/patch texture is everywhere
+the same kind of structure. "Lorenz-like recurrence" is not a
+chaos-specific reading.
+
+### 8.7 What remains discriminative after the controls
+
+After mapping, the list of LLM findings that survive as *evidence of
+something beyond generic argmax behaviour* is short and precise:
+
+1. **The transported response's growth** (Qwen3/Phi families, master §5.2/§8)
+   — the controls decay downstream; the newer LLMs grow. This is the one
+   axis where a model family genuinely differs from the control.
+2. **The travelling kernel front and the window flush law** — both
+   attention-transport phenomena, absent in the SSM control, exact in the
+   transformers.
+3. **Response size**: DeepSeek's $a/r\approx2.5$ carried for 300+ tokens vs
+   the control's $0.3$–$0.9$ — a factor ~3, prompt- and scale-dependent
+   (Pythia-410m decays like the control).
+
+Everything else — flips, thresholds, TF-exactness, survival, latency,
+D2/RP, anisotropy, local amplification, superposition, memory-kick
+stability, late-$\lambda$ — reproduces fully in systems with all-negative
+Lyapunov exponents, and must be presented as generic properties of greedy
+argmax decoding rather than as evidence for chaos.
