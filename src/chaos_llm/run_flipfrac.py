@@ -84,10 +84,10 @@ def main():
                                        attention_mask=torch.ones((B + 1, P), dtype=torch.long, device="cuda"),
                                        max_new_tokens=T, do_sample=False,
                                        eos_token_id=None, pad_token_id=0)
-                ref = o[0]
+                ref = o[0].cpu()
                 for k in range(B):
-                    row = o[k + 1]
-                    mm = np.where(row != ref)[0]
+                    row = o[k + 1].cpu()
+                    mm = np.where(row.numpy() != ref.numpy())[0]
                     if len(mm):
                         flags[done + k] = True
                         steps[done + k] = int(mm[0])
