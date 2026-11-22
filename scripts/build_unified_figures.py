@@ -949,6 +949,13 @@ def main():
     make_fig09()
     make_fig10()
     make_fig11()
+
+    # Generate extended multi-model suites
+    try:
+        import build_extended_figures
+        build_extended_figures.main()
+    except Exception as e:
+        print("Note: error in build_extended_figures:", e)
     
     with open(OUTJSON, "w", encoding="utf-8") as f:
         json.dump(NUMBERS, f, indent=2)

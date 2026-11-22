@@ -18,11 +18,11 @@ OUT = os.path.join(ROOT, "notebook", "figures", "fsle")
 plt.rcParams.update({"font.size": 10, "axes.titlesize": 10.5, "axes.labelsize": 10,
                      "legend.fontsize": 8})
 COL = {"deepseek": "tab:blue", "qwen3_4b": "tab:orange", "phi4mini": "tab:green",
-       "qwen3_5": "tab:purple"}
+       "qwen3_5": "tab:purple", "qwen25_3b": "tab:red"}
 NAME = {"deepseek": "DeepSeek-1.5B", "qwen3_4b": "Qwen3-4B", "phi4mini": "Phi-4-mini",
-        "qwen3_5": "Qwen3.5-2B"}
+        "qwen3_5": "Qwen3.5-2B", "qwen25_3b": "Qwen2.5-3B"}
 
-fig, axs = plt.subplots(1, 4, figsize=(20, 4.4), sharey=True)
+fig, axs = plt.subplots(1, 5, figsize=(24, 4.4), sharey=True)
 out = {}
 for ax, tag in zip(axs, COL):
     rows = []
