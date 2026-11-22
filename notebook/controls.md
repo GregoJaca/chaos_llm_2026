@@ -541,14 +541,19 @@ completes — see the figure.)*
 The master's transport kernel $K(p,t)$ replicated on the control (same
 $r=0.1$, 8 directions, teacher-forced, last layer):
 
-- **Mamba has no travelling front**: the peak of $K(p,t)$ is at $t\approx0$
-  for every position (panel a vs b; panel c) — each prompt position enters
-  the state once and decays. DeepSeek's front (peak $t=21$ at $p=0$ →
-  $97$ at $p=64$, slope ≈ 1) is reproduced from the master's own data.
-- **The persistent background exists in both**: first-positions response
-  decays $12\to1.1$ (DeepSeek), $0.93\to0.14$ (Mamba), with Phi's rise in
-  between. Long-lived influence is *not* attention-specific; its
-  *re-amplification into later tokens* is.
+- **Mamba has no travelling front**: the front peak amplitude (max over $t$
+  of $K(p,t)$) is $1.0$–$1.2$ for every position — comparable to its
+  immediate response — while DeepSeek's front peaks at $13$–$53$ above a
+  background of $10$–$1$. The control does show *weak* delayed peaks
+  ($t^*\approx41$–$171$ for interior positions): the perturbed state
+  channels are read out most strongly at particular continuation tokens —
+  the same "amplification gate" phenomenon master reports, but at
+  $\approx1\times$ amplitude instead of $3$–$5\times$.
+- **The persistent background exists in both, with different laws**:
+  DeepSeek's decays exponentially ($-1.1\%$/token, $R^2=0.92$; master:
+  $-0.74\%$, $R^2=0.81$), the control's decays on a slow-channel tail that
+  is *not* exponential (flat $0.30\to0.14$). Long-lived influence is not
+  attention-specific; its *re-amplification* is.
 
 ![superposition](figures_controls/c8_superposition.png)
 

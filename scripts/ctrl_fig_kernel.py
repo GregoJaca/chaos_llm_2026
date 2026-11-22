@@ -38,7 +38,7 @@ im = ax.imshow(np.log10(np.maximum(Kmam, 1e-6)), aspect="auto", origin="lower",
 ax.plot(Kmam.argmax(axis=1), np.arange(Pm), "w-", lw=1.2)
 ax.set_xlabel(r"generated token $t$")
 ax.set_ylabel(r"perturbed prompt position $p$")
-ax.set_title("(a) Mamba-130m $\\log_{10}K(p,t)$: no front - every position's\nresponse enters once and decays; peak (white) is always at $t\\approx0$")
+ax.set_title("(a) Mamba-130m $\\log_{10}K(p,t)$: no front - each position enters once and decays;\nweak delayed peaks (read-out alignment) at amplitude ~1x its immediate response")
 plt.colorbar(im, ax=ax, label=r"$\log_{10}K$")
 
 ax = axs[0, 1]
@@ -56,7 +56,7 @@ ax.plot(np.arange(Pm) / Pm, Kmam.argmax(axis=1), "o-", ms=2, color=C_MAM, label=
 ax.plot(np.arange(Pd) / Pd, Kds.argmax(axis=1), "o-", ms=2, color=C_DS, label="DeepSeek-1.5B")
 ax.set_xlabel(r"$p/P$")
 ax.set_ylabel(r"peak time $t^*(p)$ of $K(p,t)$")
-ax.set_title("(c) Peak time: flat at 0 for the control; the front slope $\\approx1$\nis an attention transport property")
+ax.set_title("(c) Peak time: the control's delayed peaks are weak and scattered\n(amplitude $\\approx$1x); DeepSeek's front rises 3-5x above its background")
 ax.legend(fontsize=8); ax.grid(alpha=0.3)
 
 ax = axs[1, 1]
@@ -69,7 +69,7 @@ ax.semilogy(np.arange(len(bgd)), bgd, color=C_DS, label="DeepSeek-1.5B")
 ax.semilogy(np.arange(len(bgp)), bgp, color=C_PHI, alpha=0.7, label="Phi-4-mini")
 ax.set_xlabel(r"generated token $t$")
 ax.set_ylabel(r"$K(p\leq5,t)$ (background)")
-ax.set_title("(d) Persistent background: decays in DeepSeek, rises in Phi,\ndecays slowly in the control - all well above zero")
+ax.set_title("(d) Persistent background: DeepSeek decays exponentially ($-1.1\\%$/token,\n$R^2=0.92$); the control decays on a slow-channel tail (no exponential fit)")
 ax.legend(fontsize=8); ax.grid(alpha=0.3, which="both")
 fig.tight_layout(); fig.savefig(os.path.join(OUT, "c8_kernel.png"), dpi=190); plt.close(fig)
 
