@@ -568,13 +568,27 @@ too.
 
 The user-approved symmetric experiment: kick DeepSeek's KV cache directly
 (in-batch, live window only, all layers or single layers,
-$\varepsilon\in\{0.01,0.1,1\}$, at $t_0=70/150$) and teacher-force the
-baseline tokens. Panel (b) shows the Mamba SSM-state kicks from Part 4.
-Both memories respond the same way: a bounded transient, then decay to
-the numerical floor — **a direct kick to the internal memory of neither
-architecture produces growth.** *(Layer-attribution figure:
-c8_kv_layers.png — single-layer cache kicks decay, the all-layer kick is
-their sum; no runaway layer.)*
+$\varepsilon\in\{0.01,0.1,1.0\}$ at $t_0=70/150$, 8 dense directions,
+teacher-forced 150 tokens; protocol validated: the unperturbed stepped
+pass reproduces the baseline tokens exactly). Panel (b) shows the Mamba
+SSM-state kicks from Part 4. Both memories respond the same way:
+**dh(0) ≈ ε·0.06, a bounded transient (peaks up to ×3 of the initial
+value — the same non-normality as the control's ×2–10), then decay;
+at $\varepsilon=1$ (a kick comparable to the whole cache norm) the
+response still never grows: peak 0.17, end 0.016.** A direct kick to
+the internal memory of *neither* architecture produces growth —
+answering the "which part carries the perturbation" question for both
+mechanisms: the memory holds a bounded trace; divergence needs the
+argmax boundary, not memory instability.
+
+![kvlayers](figures_controls/c8_kv_layers.png)
+
+Layer attribution of the cache kick ($\varepsilon=0.1$, $t_0=70$): a
+single-layer cache kick (layer 0, 14, or 27) produces a bounded response
+that decays; the all-layer kick is roughly their sum. **No layer's cache
+is a runaway amplifier** — mid-layer (14) cache entries give the largest
+transient (peak ×6 of the initial value at $\varepsilon=0.1$), the
+last-layer cache dies to the numerical floor.
 
 ### 8.6 Correlation dimension and recurrence across every model
 
