@@ -1,0 +1,21 @@
+{
+  "model": "/home/grego/LLM/models/phi-4",
+  "dtype": "float32",
+  "window": 0,
+  "prompt_len": 64,
+  "max_new_tokens": 400,
+  "radii": [
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    0.3,
+    1.0
+  ],
+  "num_directions": 8,
+  "seed": 69,
+  "bit_identity": true,
+  "arch": "Phi3ForCausalLM",
+  "elapsed_sec": 425.5
+}
