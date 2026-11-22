@@ -1,0 +1,24 @@
+{
+  "model": "/u0/grego/LLM/models--state-spaces--mamba-130m-hf",
+  "prompts_file": "/tmp/ff8.txt",
+  "radii": [
+    0.1,
+    0.3,
+    0.6,
+    1.0
+  ],
+  "dirs": 192,
+  "max_new_tokens": 300,
+  "seed": 5,
+  "names": [
+    "interstellar_travel",
+    "childhood_experiences",
+    "cybersecurity",
+    "history_of_computing",
+    "evolution_of_language",
+    "renewable_energy_economics",
+    "history_of_mathematics",
+    "astronomy_observations"
+  ],
+  "elapsed_sec": 4271.4
+}

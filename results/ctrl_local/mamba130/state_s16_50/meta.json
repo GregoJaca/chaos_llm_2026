@@ -1,0 +1,23 @@
+{
+  "run": "results/ctrl/mamba130/a1i_txt",
+  "steps": [
+    16,
+    50
+  ],
+  "radii": [
+    0.1
+  ],
+  "dirs": 8,
+  "layers": [
+    0,
+    6,
+    12,
+    18,
+    23
+  ],
+  "inject_layer": 0,
+  "seed": 1000,
+  "prompt_len": 67,
+  "T": 300,
+  "window": 4096
+}

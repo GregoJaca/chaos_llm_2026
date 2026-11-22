@@ -1,0 +1,182 @@
+[
+ {
+  "name": "fr_childhood_r0.03",
+  "r": 0.03,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_childhood_r0.1",
+  "r": 0.1,
+  "K": 20,
+  "n_obs": 1,
+  "n_pred": 1,
+  "exact": 1,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_childhood_r0.3",
+  "r": 0.3,
+  "K": 20,
+  "n_obs": 3,
+  "n_pred": 3,
+  "exact": 3,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_childhood_r1",
+  "r": 1.0,
+  "K": 20,
+  "n_obs": 3,
+  "n_pred": 3,
+  "exact": 3,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_childhood_r3",
+  "r": 3.0,
+  "K": 20,
+  "n_obs": 6,
+  "n_pred": 6,
+  "exact": 6,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_cyber_r0.03",
+  "r": 0.03,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_cyber_r0.1",
+  "r": 0.1,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_cyber_r0.3",
+  "r": 0.3,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_cyber_r1",
+  "r": 1.0,
+  "K": 20,
+  "n_obs": 1,
+  "n_pred": 1,
+  "exact": 1,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_cyber_r3",
+  "r": 3.0,
+  "K": 20,
+  "n_obs": 7,
+  "n_pred": 7,
+  "exact": 7,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_txt_r0.03",
+  "r": 0.03,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_txt_r0.1",
+  "r": 0.1,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_txt_r0.3",
+  "r": 0.3,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_txt_r1.4",
+  "r": 1.4,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_txt_r1",
+  "r": 1.0,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_txt_r2",
+  "r": 2.0,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_txt_r3",
+  "r": 3.0,
+  "K": 20,
+  "n_obs": 0,
+  "n_pred": 0,
+  "exact": 0,
+  "fa": 0,
+  "miss": 0
+ },
+ {
+  "name": "fr_txt_r5",
+  "r": 5.0,
+  "K": 20,
+  "n_obs": 3,
+  "n_pred": 3,
+  "exact": 3,
+  "fa": 0,
+  "miss": 0
+ }
+]

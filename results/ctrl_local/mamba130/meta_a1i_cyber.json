@@ -1,0 +1,38 @@
+{
+  "model": "/u0/grego/LLM/models--state-spaces--mamba-130m-hf",
+  "model_path": "/u0/grego/LLM/models--state-spaces--mamba-130m-hf",
+  "dtype": "float32",
+  "window": 4096,
+  "prompt": "Write an exhaustive review of current cybersecurity threats and defense strategies. Cover state-sponsored hacking, ransomware, IoT vulnerabilities, and AI-powered attacks. Explain cryptographic foundations, network security architectures, zero-trust models, and emerging quantum-resistant algorithms. Discuss the human factors in security and the challenges of creating secure systems.",
+  "prompt_len": 68,
+  "max_new_tokens": 300,
+  "num_directions": 20,
+  "radii": [
+    0.0003,
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    0.3,
+    1.0,
+    1.4,
+    2.0,
+    3.0,
+    5.0
+  ],
+  "layers": [
+    0,
+    6,
+    12,
+    18,
+    23
+  ],
+  "seed": 69,
+  "fixed_tokens_from": null,
+  "inbatch_ref": true,
+  "baseline_duplicate_identical": true,
+  "torch": "2.5.1+cu121",
+  "transformers": "4.57.6",
+  "elapsed_sec": 31.5
+}

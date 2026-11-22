@@ -1,0 +1,29 @@
+{
+  "model": "/u0/grego/LLM/models--state-spaces--mamba-130m-hf",
+  "model_path": "/u0/grego/LLM/models--state-spaces--mamba-130m-hf",
+  "dtype": "float32",
+  "window": 4096,
+  "prompt": "Explain how ocean currents work and why they matter for climate. Cover wind-driven circulation, thermohaline circulation, the Coriolis effect, upwelling, El Nino and La Nina, and the role of the oceans in storing heat and carbon. Describe the observational methods used to map currents.",
+  "prompt_len": 63,
+  "max_new_tokens": 1000,
+  "num_directions": 8,
+  "radii": [
+    0.001,
+    0.1,
+    1.0
+  ],
+  "layers": [
+    0,
+    6,
+    12,
+    18,
+    23
+  ],
+  "seed": 69,
+  "fixed_tokens_from": "results/ctrl/mamba130/traj/ocean_currents.npz",
+  "inbatch_ref": true,
+  "baseline_duplicate_identical": true,
+  "torch": "2.5.1+cu121",
+  "transformers": "4.57.6",
+  "elapsed_sec": 13.9
+}

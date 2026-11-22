@@ -1,0 +1,22 @@
+{
+  "model": "~/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B",
+  "window": 100,
+  "prompt": "Provide a comprehensive technical review of current and proposed propulsion systems for interstellar travel. Compare chemical rockets, nuclear propulsion, laser sails, antimatter drives, and other theoretical concepts in terms of energy requirements, achievable speeds, technological feasibility, and projected timelines for development. Include discussion of major projects in the history of the field.",
+  "prompt_len": 65,
+  "max_new_tokens": 300,
+  "eps_list": [
+    0.01,
+    0.1,
+    1.0
+  ],
+  "t0_list": [
+    70,
+    150
+  ],
+  "layer_modes": "all,0,14,27",
+  "dirs": 8,
+  "horizon": 150,
+  "seed": 11,
+  "live_only": true,
+  "elapsed_sec": 3878.0
+}
