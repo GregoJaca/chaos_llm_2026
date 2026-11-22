@@ -21,6 +21,7 @@ def main():
     ap.add_argument('--layers', default='7,14,21,27')
     ap.add_argument('--window4d', action='store_true')
     ap.add_argument('--out', required=True)
+    ap.add_argument('--dtype', default='auto')
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
@@ -35,7 +36,7 @@ def main():
     radii = [float(x) for x in args.radii.split(',')]
     layers = [int(x) for x in args.layers.split(',')]
 
-    model, tok, model_path = load_model(args.model)
+    model, tok, model_path = load_model(args.model, dtype=args.dtype)
     set_window(model, args.window)
     D = model.config.hidden_size
     t0 = time.time()

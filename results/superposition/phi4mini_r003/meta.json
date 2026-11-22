@@ -1,0 +1,20 @@
+{
+  "model": "/u0/grego/LLM/models--microsoft--Phi-4-mini-instruct",
+  "run": "results/sens/phi4mini_p1/geom",
+  "trials": 3,
+  "r": 0.03,
+  "layers": [
+    1,
+    7,
+    14,
+    31
+  ],
+  "prompt_len": 64,
+  "T": 300,
+  "err_median": {
+    "1": NaN,
+    "7": 35.03125,
+    "14": 36.875,
+    "31": 41.28125
+  }
+}

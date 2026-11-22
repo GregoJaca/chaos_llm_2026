@@ -260,16 +260,23 @@ mechanism behind the "models differ" table, expressed as two numbers instead of 
 
 ### 7.2 Is the kernel a valid superposition? (measured)
 
-![superposition six views](figures/transport/superposition_six_views.png)
+![superposition](figures/transport/superposition_3.png)
 
-**Six views of the same test** (DeepSeek, 65 positions, 3 trials, last block, $W=100$).
+**What exactly is measured.** Three trials. In each trial one unit vector $u\in\mathbb{R}^{d}$ is drawn
+and two sets of runs are made on the same prompt (`prompts.txt`, $P=65$ tokens, window $W=100$,
+teacher-forced, 300 generated tokens, block $L$ = last):
+1. **joint run**: $r\,u$ added to **every** prompt position; the response at generated token $t$ is
+$A_t=h'_t-h_t\in\mathbb{R}^{d}$;
+2. **single-position runs**: $r\,u$ added to **one** prompt position $p$ at a time, giving $B_{p,t}$;
+the sum is $S_t=\sum_{p=0}^{64}B_{p,t}$.
 
-**(a)** $\|S\|$ against $\|A\|$ for every token and trial: the points lie on the identity line over
-three decades. **(b)** The ratio $\|S\|/\|A\|$ peaks at 1 with a spread of ±5–10%. **(c)** $\cos(A,S)$
-is 0.99–1.00. **(d)** The error **relative to the state norm** is $10^{-4}$–$10^{-3}$: negligible for
-the state. **(e)** The gain of the linear prediction, $\cos(A,S)\|S\|/\|A\|$, is 1.00 ± 0.05.
-**(f)** The relative error falls from ~0.7 at the smallest amplitude (where the response is at the
-float32 floor) to 0.05 at the largest.
+$A_t$ and $S_t$ are vectors of the same dimension; $\|A\|$ and $\|S\|$ are their Euclidean norms. If the
+model were linear in the input, $A_t=S_t$ exactly.
+
+**(a)** $\|S\|$ against $\|A\|$ for every token and trial: the points lie on the identity line over three
+decades. **(b)** The ratio $\|S\|/\|A\|$ peaks at 1 with a spread of ±5–10%. **(c)** The relative error
+falls as the amplitude grows; it is large (0.5–0.7) only where $\|A\|\lesssim10^{-2}$, i.e. where the
+response is at the float32 resolution of the difference — not a physical failure.
 
 **The test.** Add the **same** unit vector $u$ to every prompt position; call the response $A$. Then,
 separately, add $u$ to position $p$ alone for each $p$ and sum the responses: $S=\sum_p f(u\text{ at
@@ -290,8 +297,11 @@ round-off of the difference of two ~500-magnitude states, not physics. This is t
 support for using $K$ as a decomposition: **it is valid at total norms ≲0.3, which is exactly the
 range in which the rest of the analysis is done.**
 
-Qwen3-4B at $r=0.1$ per position shows a much larger error (13×), i.e. stronger saturation; the same
-test at $r=0.03$ for the other four models is running.
+**A limit of the measurement, found while checking the other models.** The same test is meaningless
+for the fp16 models at these amplitudes: a hidden state is ~500 and fp16 resolves ~0.3 in absolute
+value, while the single-position response at $r=0.03$ is ~0.05. The difference of two fp16 forward
+passes is then below the format's resolution, and the measured "error" is 12–41× — a numerical
+artefact, not saturation. **The superposition test is therefore only valid for DeepSeek (fp32).**
 
 ---
 
@@ -351,6 +361,29 @@ response, not the local one, is where the models differ.
 
 Two independent measurements (the rate and the amplification) agree on the ordering. Direction
 dependence is a DeepSeek property (×5.85); the newer models are nearly isotropic (×1.2–1.9).
+
+![flip fraction models](figures/fits/flip_fraction_models.png)
+
+**What exactly is measured.** For each of **8 prompts**, **192 random unit directions** and four radii,
+the model generates greedily for 300 tokens with the perturbation on the prompt, and we record whether
+the generated sequence differs from the unperturbed run at least once. Panel (b) excludes flips at a
+step whose *unperturbed* margin is ≤0.02: those are quantisation ties where any perturbation flips the
+token, and they dominate the raw counts (panel a). Band = 25–75% across prompts; error bars = 95%
+confidence interval on the pooled fraction (Wilson), $n=1536$ direction–prompt pairs per point.
+
+**Tie-corrected flip fraction at $r=0.1\to1.0$:**
+
+| model | 0.1 | 0.3 | 0.6 | 1.0 |
+|---|---|---|---|---|
+| DeepSeek-1.5B | 0.2% | 3.4% | 10.5% | 23.7% |
+| Qwen3.5-2B | 3.6% | 20.1% | 45.8% | 71.9% |
+| Qwen3-4B | 16.8% | 19.9% | 24.7% | 38.3% |
+| Qwen2.5-3B | 30.4% | 33.7% | 42.6% | 53.0% |
+| Phi-4-mini | 56.0% | 65.6% | 65.5% | 66.6% |
+
+**Reading.** The ordering matches the amplification ordering (DeepSeek ≪ Qwen3.5 < Qwen3-4B < Qwen2.5 <
+Phi), and the *shape* differs: DeepSeek starts near zero and rises with $r$, while Phi is already at 56%
+at $r=0.1$ and saturates — it is fragile everywhere, not more fragile at larger $r$.
 
 ---
 
