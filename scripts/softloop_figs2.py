@@ -238,12 +238,18 @@ def fig_decomp(group='ds15v2', out='sl2_decomp.png'):
                  'the network alone cannot destabilise the loop', fontsize=8)
 
     ax = axes[2]
-    ax.plot(Ts, ro, 'o-', color='#b8860b',
-            label=r'measured: $\langle\log(\sigma_{\max}/T)\rangle$ at live gates')
-    tref = np.log(2.35 / 4) - np.log(Ts)
-    ax.plot(Ts, tref, '--', color='gray',
-            label=r'definitional ceiling: $\log(G/4)-\log T$'
-                  '\n($\sigma$ is plateau-bounded; only $T$ grows)')
+    valid = np.isfinite(ro) & (Ts >= 0.04)
+    if valid.any():
+        ax.plot(Ts[valid], ro[valid], 'o-', color='#b8860b',
+                label=r'measured: $\langle\log(\sigma_{\max}/T)\rangle$ at live gates')
+        tref = np.log(2.35 / 4) - np.log(Ts[valid])
+        ax.plot(Ts[valid], tref, '--', color='gray',
+                label=r'definitional ceiling: $\log(G/4)-\log T$'
+                      '\n($\sigma$ is plateau-bounded; only $T$ grows)')
+        ax.set_xlim(0.04, 2.2)
+        y_min = min(ro[valid].min(), tref.min()) - 0.5
+        y_max = max(ro[valid].max(), tref.max()) + 0.5
+        ax.set_ylim(y_min, y_max)
     ax.set_xscale('log')
     ax.set_xlabel('temperature $T$')
     ax.set_ylabel('nats')
@@ -265,6 +271,8 @@ def fig_decomp(group='ds15v2', out='sl2_decomp.png'):
     fig.suptitle(f'{MLABEL.get(group, group)} soft-generation loop, decomposition v2', fontsize=10)
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, out), dpi=150)
+    note_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'notebook', 'newfigures')
+    fig.savefig(os.path.join(note_dir, out), dpi=150)
     plt.close(fig)
 
 
@@ -272,39 +280,73 @@ def fig_decomp(group='ds15v2', out='sl2_decomp.png'):
 
 def fig_phase(group='ds15v2', out='sl2_phase.png'):
     runs = all_runs(group)
-    fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.6))
-    ax = axes[0]
+    fig = plt.figure(figsize=(13.5, 5.0))
+    gs = fig.add_gridspec(1, 2, width_ratios=[1.15, 1], wspace=0.28)
+
+    # (a) Broken y-axis for predictability horizon
+    gs_a = gs[0].subgridspec(2, 1, height_ratios=[1, 3], hspace=0.09)
+    ax_top = fig.add_subplot(gs_a[0])
+    ax_bot = fig.add_subplot(gs_a[1])
+
     allpts = []
-    for T, z in sorted(runs.items()):
+    T_list = sorted(runs.keys())
+    for idx, (T, z) in enumerate(sorted(runs.items())):
         ts, h0 = tsat_all(z)
         S = z['dh'].shape[1]
         ok = ts < S
         pts = ts[ok] if ok.any() else np.array([S])
         allpts.append((T, pts))
-        ax.scatter(np.full(len(pts), T), np.clip(pts, 1, 650), s=13,
-                   color=CMAP(list(runs).index(T) / max(len(runs) - 1, 1)),
-                   alpha=0.75, zorder=3)
+        c_val = CMAP(idx / max(len(runs) - 1, 1))
+        # Top panel: censored points (600)
+        cens_pts = pts[pts >= 500]
+        if len(cens_pts) > 0:
+            ax_top.scatter(np.full(len(cens_pts), T), cens_pts, s=18, color=c_val, alpha=0.8)
         if not ok.any():
-            ax.scatter([T], [640], marker='^', s=60, color='k', zorder=4)
-    med = [np.median(np.clip(p, 1, 650)) for _, p in allpts]
-    ax.plot([T for T, _ in allpts], med, 'k-', lw=1.2, zorder=2,
-            label='median separation step')
-    ax.axhline(600, color='gray', ls=':', lw=0.9)
-    ax.text(1.2e-9, 615, 'censored: no direction separated in 600 steps', fontsize=7)
-    ax.text(1.2e-9, 470, '$\\blacktriangle$ = all directions survived', fontsize=7)
-    ax.set_xscale('log')
-    ax.set_ylim(0, 660)
-    ax.set_xlabel('temperature $T$')
-    ax.set_ylabel('separation step $t_{sat}$ per direction')
-    ax.set_title('(a) predictability horizon vs $T$\n'
-                 'scatter = individual directions; black = median;\n'
-                 'colour runs cold (blue) $\\to$ hot (yellow)', fontsize=9)
-    ax.legend(fontsize=8, loc='upper right')
+            ax_top.scatter([T], [600], marker='^', s=70, color='k', zorder=4)
+        # Bottom panel: separated points
+        sep_pts = pts[pts < 500]
+        if len(sep_pts) > 0:
+            ax_bot.scatter(np.full(len(sep_pts), T), sep_pts, s=18, color=c_val, alpha=0.8)
 
-    # (b) horizon vs live-gate density — the collapsing variable
-    ax = axes[1]
-    X, Y = [], []
-    for T, z in sorted(runs.items()):
+    med_pts = [(T, np.median(p)) for T, p in allpts]
+    ax_bot.plot([t for t, v in med_pts if v < 500], [v for t, v in med_pts if v < 500],
+                'k-', lw=1.5, zorder=2, label='median separation step')
+    
+    ax_top.set_xscale('log')
+    ax_bot.set_xscale('log')
+    ax_top.set_xlim(5e-10, 3.5)
+    ax_bot.set_xlim(5e-10, 3.5)
+    ax_top.set_ylim(570, 630)
+    ax_bot.set_ylim(0, 260)
+    ax_top.set_yticks([600])
+    ax_top.set_yticklabels(['600 (censored)'])
+    ax_top.axhline(600, color='gray', ls=':', lw=1.0)
+    ax_top.text(1e-9, 580, '▲ = all directions survived 600 steps', fontsize=7.5, color='#444')
+    
+    ax_top.spines['bottom'].set_visible(False)
+    ax_bot.spines['top'].set_visible(False)
+    ax_top.xaxis.tick_top()
+    ax_top.tick_params(labeltop=False, bottom=False)
+    
+    # Broken axis diagonal lines
+    d = .015
+    kwargs = dict(transform=ax_top.transAxes, color='k', clip_on=False, lw=1)
+    ax_top.plot((-d, +d), (-d*3, +d*3), **kwargs)
+    ax_top.plot((1 - d, 1 + d), (-d*3, +d*3), **kwargs)
+    kwargs.update(transform=ax_bot.transAxes)
+    ax_bot.plot((-d, +d), (1 - d*1.2, 1 + d*1.2), **kwargs)
+    ax_bot.plot((1 - d, 1 + d), (1 - d*1.2, 1 + d*1.2), **kwargs)
+
+    ax_bot.set_xlabel('temperature $T$')
+    ax_bot.set_ylabel('separation step $t_{sat}$')
+    ax_top.set_title('(a) predictability horizon vs $T$ (broken y-axis)\n'
+                     'points = individual directions; black = median', fontsize=9.5, fontweight='bold')
+    ax_bot.legend(fontsize=7.5, loc='upper left')
+
+    # (b) horizon vs live-gate density with COLORBAR
+    ax2 = fig.add_subplot(gs[1])
+    X, Y, Tc = [], [], []
+    for idx, (T, z) in enumerate(sorted(runs.items())):
         m = z['m_ref'].astype(np.float64)
         if T < 1e-6:
             continue
@@ -313,18 +355,22 @@ def fig_phase(group='ds15v2', out='sl2_phase.png'):
         med = np.median(np.clip(ts, 1, 650))
         X.append(float((m < 3 * T).mean()))
         Y.append(med)
-        ax.scatter(float((m < 3 * T).mean()), med, s=45,
-                   color=CMAP(list(runs).index(T) / max(len(runs) - 1, 1)), zorder=3)
-    X = np.array(X); Y = np.array(Y)
-    ax.set_xscale('log')
-    ax.set_yscale('log')
-    ax.set_xlabel('fraction of orbit steps with $m_t < 3T$  (live-gate density)')
-    ax.set_ylabel('median separation step')
+        Tc.append(T)
+    X = np.array(X); Y = np.array(Y); Tc = np.array(Tc)
+    sc = ax2.scatter(X, Y, s=65, c=np.log10(Tc), cmap=CMAP, edgecolor='k', lw=0.5, zorder=3)
+    ax2.set_xscale('log')
+    ax2.set_yscale('log')
+    ax2.set_xlabel('fraction of orbit steps with $m_t < 3T$  (live-gate density)')
+    ax2.set_ylabel('median separation step')
+    cb = fig.colorbar(sc, ax=ax2, pad=0.02)
+    cb.set_label(r'temperature $\log_{10} T$', fontsize=8.5)
     r = np.corrcoef(np.log(np.clip(X, 1e-4, 1)), np.log(Y))[0, 1] if len(X) > 3 else np.nan
-    ax.set_title(f'(b) same data against the mediator:\nlive-gate density '
-                 f'(log-log corr = {r:.2f})', fontsize=9)
+    ax2.set_title(f'(b) horizon vs live-gate density (mediator variable)\n'
+                  f'collapse across temperatures (log-log corr = {r:.2f})', fontsize=9.5, fontweight='bold')
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, out), dpi=150)
+    note_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'notebook', 'newfigures')
+    fig.savefig(os.path.join(note_dir, out), dpi=150)
     plt.close(fig)
 
 
@@ -397,11 +443,10 @@ def fig_sampling(out='sl2_sampling.png'):
         ('ds15/ind_T1.0', 'sampled-independent, T=1.0', '#c8102e', '--'),
     ]
     for tag, lab, col, ls in specs:
-        f = os.path.join(base, 'ds15', tag.replace('soft_', '') + '.npz') \
-            if False else os.path.join(base, tag)
-        # soft runs live in results/softloop/ds15v2; sampling runs in softloop_sample
-        if tag.startswith('soft_'):
+        if tag.startswith('ds15/soft_'):
             f = os.path.join(SRC, 'ds15v2', tag.split('_')[1], 'softloop.npz')
+        else:
+            f = os.path.join(base, tag, 'softloop.npz')
         if not os.path.exists(f):
             continue
         z = np.load(f)
@@ -442,66 +487,71 @@ def fig_sampling(out='sl2_sampling.png'):
         ax.set_title('(b) sampled runs: horizons (600 = censored)', fontsize=9)
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, out), dpi=150)
+    note_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'notebook', 'newfigures')
+    fig.savefig(os.path.join(note_dir, out), dpi=150)
     plt.close(fig)
 
 
 # ------------------------------------------------- F6: per-model measured law
 
 def fig_gate_law_per_model(out='sl2_gate_law_per_model.png'):
-    valdir = os.path.join(os.path.dirname(SRC), 'softloop_val')
-    groups = sorted(glob.glob(os.path.join(valdir, '*')))
-    groups = [g for g in groups if os.path.isdir(g)]
-    if not groups:
-        print('no loopval data yet; skip', out)
-        return
-    n = len(groups)
-    ncol = min(n, 3)
-    nrow = int(np.ceil(n / ncol))
-    fig, axes = plt.subplots(nrow, ncol, figsize=(4.6 * ncol, 3.7 * nrow),
-                             squeeze=False)
-    for i, g in enumerate(groups):
-        ax = axes[i // ncol][i % ncol]
-        name = os.path.basename(g)
+    models = ['ds15v2', 'qwen25_3b', 'qwen3_4b', 'phi4mini', 'mamba130', 'pythia410', 'randqwen']
+    ncol = 4
+    nrow = 2
+    fig, axes = plt.subplots(nrow, ncol, figsize=(18, 8.5))
+    axes = axes.flatten()
+
+    for i, g in enumerate(models):
+        ax = axes[i]
         xs, ys, ts_ = [], [], []
-        for d in sorted(glob.glob(os.path.join(g, 'T*'))):
-            if not os.path.isdir(d):
+        # Check both softloop and softloop_val
+        for src_path in [os.path.join(SRC, g), os.path.join(os.path.dirname(SRC), 'softloop_val', g)]:
+            if not os.path.isdir(src_path):
                 continue
-            f = os.path.join(d, 'softloop.npz')
-            if not os.path.exists(f):
-                continue
-            T = float(os.path.basename(d)[1:])
-            z = np.load(f)
-            m = z['m_ref'].astype(np.float64)
-            s = z['sig_read'].astype(np.float64)
-            act = s > 0
-            xs.append(m[act] / T)
-            ys.append(np.log(s[act]))
-            ts_.append(np.full(act.sum(), T))
+            for d in sorted(glob.glob(os.path.join(src_path, 'T*'))):
+                if not os.path.isdir(d):
+                    continue
+                f = os.path.join(d, 'softloop.npz')
+                if not os.path.exists(f):
+                    continue
+                try:
+                    T = float(os.path.basename(d)[1:])
+                except ValueError:
+                    continue
+                if T < 1e-6:
+                    continue
+                z = np.load(f)
+                m = z['m_ref'].astype(np.float64)
+                s = z['sig_read'].astype(np.float64)
+                act = (s > 0) & (m / T < 30)
+                xs.append(m[act] / T)
+                ys.append(np.log(s[act]))
+                ts_.append(np.full(act.sum(), T))
         if not xs:
             ax.axis('off')
             continue
-        x = np.concatenate(xs); y = np.concatenate(ys)
+        x = np.concatenate(xs); y = np.concatenate(ys); tc = np.concatenate(ts_)
         sel = (x > 0) & (x < 30)
-        ax.scatter(x[sel], y[sel], s=3, c=np.log10(np.concatenate(ts_))[sel],
-                   cmap='viridis', alpha=0.5)
+        sc = ax.scatter(x[sel], y[sel], s=3, c=np.log10(tc[sel]), cmap='viridis', alpha=0.45)
         if sel.sum() > 20:
             sl, ic = np.polyfit(x[sel], y[sel], 1)
-            r2 = 1 - np.sum((y[sel] - (sl * x[sel] + ic)) ** 2) / \
-                np.sum((y[sel] - y[sel].mean()) ** 2)
+            r2 = 1 - np.sum((y[sel] - (sl * x[sel] + ic)) ** 2) / max(np.sum((y[sel] - y[sel].mean()) ** 2), 1e-9)
             xr = np.linspace(0, 30, 20)
-            ax.plot(xr, sl * xr + ic, 'crimson', lw=1.6,
-                    label=rf'slope ${sl:+.2f}$, $G_{{eff}}={np.exp(ic):.2f}$, $R^2={r2:.3f}$')
-            ax.plot(xr, -xr + np.log(2.35), 'k--', lw=1.0, label='theory (slope $-1$)')
-        ax.set_title(name, fontsize=9)
+            ax.plot(xr, sl * xr + ic, 'crimson', lw=1.8,
+                    label=rf'fit: slope ${sl:+.2f}$, $G_{{eff}}={np.exp(ic):.2f}$, $R^2={r2:.3f}$')
+            if g != 'randqwen':
+                ax.plot(xr, -xr + np.log(2.35), 'k--', lw=1.1, label='theory (slope $-1$)')
+        ax.set_title(f'({chr(97+i)}) {MLABEL.get(g, g)}', fontsize=10, fontweight='bold')
         ax.set_xlabel(r'$m_t/T$')
         ax.set_ylabel(r'$\log\sigma_{\max}(\Sigma_p)$')
-        ax.legend(fontsize=6, loc='lower left')
-    for j in range(n, nrow * ncol):
-        axes[j // ncol][j % ncol].axis('off')
-    fig.suptitle('measured gate law per model (loop validation runs, $T=0.05...1.0$)',
-                 fontsize=10)
+        ax.legend(fontsize=7, loc='lower left' if g != 'randqwen' else 'upper right')
+    axes[7].axis('off')
+    fig.suptitle(r'Universal Gate Law Across Trained Architectures vs Breakdown on Random Weights: $\sigma_{\max}(\Sigma_p)\approx G_{\rm eff}\,e^{-m/T}$',
+                 fontsize=12, fontweight='bold')
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, out), dpi=150)
+    note_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'notebook', 'newfigures')
+    fig.savefig(os.path.join(note_dir, out), dpi=150)
     plt.close(fig)
 
 
@@ -616,7 +666,12 @@ def main():
     groups = [g for g in args.groups.split(',') if os.path.isdir(os.path.join(SRC, g))]
     stats = fig_gate_law(groups=('ds15v2',))
     print('gate law:', stats)
-    fig_decomp('ds15v2')
+    for g_dec in ['ds15v2', 'qwen25_3b', 'mamba130']:
+        out_name = 'sl2_decomp.png' if g_dec == 'ds15v2' else f'sl2_decomp_{g_dec}.png'
+        try:
+            fig_decomp(g_dec, out=out_name)
+        except Exception as e:
+            print(f'Failed decomp for {g_dec}: {e}')
     fig_phase('ds15v2')
     if groups:
         fig_survival_pooled(groups)
