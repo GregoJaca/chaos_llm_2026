@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  new.md &nbsp;&middot;&nbsp; built 2026-11-23 08:10:47 &nbsp;&middot;&nbsp;
+  new.md &nbsp;&middot;&nbsp; built 2026-11-23 10:46:35 &nbsp;&middot;&nbsp;
   <a href="new.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="new.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="notebook.html">notebook</a>
@@ -297,6 +297,14 @@ is physics, not noise: a confident orbit (the $T=0.1$ run drew median
 margin 3.7) survives; a fragile one (the $T=0.2$ run, median 1.35) dies in
 42 steps. Across 3 prompts, <em>no</em> orbit survived 600 steps at any
 $T\geq0.2$ (§8.3 of the proposal; survival figures below).</p>
+<h3 id="2d-the-long-horizon-question-does-the-cold-loop-always-die">2d. The long-horizon question: does the cold loop always die?</h3>
+<p>3000-step runs (32 directions, $r=0.03$): at $T=0.05$ every direction
+separates (median $t_{sat}=121$, quartiles 68/121 — quantized by gates);
+at $T=0.15$ every direction separates (median 192); but at $T=0.1$
+<strong>half the directions (16/32) survive all 3000 steps</strong> while the other
+half separates by $\sim240$. The cold regime contains genuinely stable
+directions, not merely slow ones — the frozen-to-unstable boundary is a
+mixed regime at the direction level.</p>
 <h3 id="2c-paper-grade-multi-orbit-statistics-frozen-10-prompt-set">2c. Paper-grade multi-orbit statistics (frozen 10-prompt set)</h3>
 <p><img alt="dense10" src="newfigures/sl2_survival_dense10.png" />
 <em>Figure 2.3 — <code>sl2_survival_dense10.png</code>. (a) Pooled survival curves at
@@ -382,6 +390,12 @@ falls from $\sim$200+ at $T=0.1$ to $\sim$15 at $T=1.0$.</p>
 directions per orbit and 9–10 orbits per temperature, the cold-regime
 survival claim (some orbits stable) and the warm-band claim (most orbits
 fast) are both now at $n\approx600$ directions each.</p>
+<p><img alt="survival" src="newfigures/sl2_survival_pooled.png" />
+<em>Figure 2.2 — <code>sl2_survival_pooled.png</code>. The same view across
+architectures: (a) fraction of directions not yet separated vs step,
+every model and temperature pooled (colour = model, light = colder, dark
+= hotter); (b) all models: median separation step vs live-gate density
+(colour = $\log T$, marker = model).</em></p>
 <hr />
 <h2 id="3-the-gate-law">3. The gate law</h2>
 <p><img alt="law" src="newfigures/sl2_gate_law.png" />
@@ -774,11 +788,19 @@ needed an HF bug workaround: passing an attention mask breaks
 <code>MambaCache.update_conv_state</code> in 4.50/4.57.)</p>
 <p><strong>Window $W=100$ vs full attention</strong> (departure verified at exactly
 $t=35=W-P$): with the window, $\lambda_{net}$ becomes <em>negative</em> at every
-$T$ (the flush evicts the perturbation support from the cache — the flush
-law acts inside the loop); windowed orbits are far more confident
-(median margins 4.6–9.2 vs 1.4); the onset of fast separation moves from
-$T\approx0.05$ to $T\approx0.3$. Less memory $\Rightarrow$ colder onset —
-shrimp's "chaos needs memory" theme, measured, via our window clock.</p>
+$T$ — at paper grade (64 directions) $\lambda_{net}=-0.007$ nats/step
+consistently (the flush evicts the perturbation support from the cache —
+the flush law acts inside the loop); windowed orbits are far more
+confident (median margins 6–7.5); the loop survives $T=0.1$
+(41/64 directions censored) and separates from $T\ge0.2$ (horizons
+41–85). Less memory $\Rightarrow$ colder onset — shrimp's "chaos needs
+memory" theme, measured, via our window clock.</p>
+<p><strong>Seed replication:</strong> repeating the dense grids with an independent
+direction set (seed 70, K=64 vs seed 69, K=128) reproduces the horizon
+statistics exactly — $T=0.2$: median 70 vs 70 (quartiles 6/93 vs 12/93);
+$T=1.0$: 68 vs 68. At fixed batch shape the reference orbit is
+bit-identical, and the direction ensemble only samples the same fate
+distribution twice. The statistics are not direction-set artifacts.</p>
 <p><strong>Pythia-410m</strong> (Pile-trained attention, the third control): frozen at
 $T\le0.05$ (its margins are huge, median 8.5); separates at
 $T=0.1$–$0.7$ with only 1–6% of steps live — one or two razor ties in
@@ -1032,16 +1054,26 @@ departure step measured on a single orbit. <strong>Practical consequence:</stron
 per-temperature comparisons across runs are only valid at equal batch
 shape; all grids in this document use $B=9$ (8 directions + reference).</p>
 <hr />
-<h2 id="13-running-pending-will-be-folded-in-as-they-land">13. Running / pending (will be folded in as they land)</h2>
-<ul>
-<li>Loop grids: Qwen3-4B, Phi-4-mini (K=8 after an OOM fix), randQwen,
-  Pythia-410m, Qwen3.5-2B (env fixed), Qwen3.5-9B (spark).</li>
-<li>DeepSeek-14B loop grid (spark; waits for a &gt;=64 GB free window).</li>
-<li>Dense-direction grids (K=128) for survival statistics.</li>
-<li>Sampling statistics (§9) and the CRN radius grid.</li>
-<li>Per-model measured gate law (loopval) and the D2/TwoNN summaries.</li>
-<li>The horizon-vs-live-density cross-model table (§5 prediction test).</li>
-</ul>
+<h2 id="13-status-of-the-running-queues-2026-11-23-1440">13. Status of the running queues (2026-11-23 14:40)</h2>
+<p>Everything on the x11 Tesla T4 is <strong>complete</strong> (campaign + 6 fix-up
+chains, ~13 h of GPU): eight model-family grids, per-model gate-law
+validation, the frozen-10-prompt dense statistics, 128-direction dense
+grids, long-horizon runs, the sampling suite (CRN/ind, three
+architectures, radius grid), state runs for the D2/TwoNN pipeline, the
+window grid at K=64, and seed replication.</p>
+<p>Still running on the DGX Spark: the Qwen3.5-9B grid tail
+($T=1.4/2.0$ loop+replay — the reference-implementation DeltaNet stepping
+is slow) and the conditional DeepSeek-14B fp32 loop grid, which waits
+for a $\ge64$ GB free-memory window (colleagues' usage permitting). Both
+write into <code>results_big/softloop/</code> on the spark and can be folded into
+the figures by re-running <code>scripts/softloop_figs2.py</code> /
+<code>softloop_master.py</code> when they land. The gate law for the 14B (from its
+existing fp32 A1 corpora) is already measured and in §5.</p>
+<p><strong>What is deliberately left open:</strong> the DeepSeek-14B <em>loop</em> (the
+cross-scale claim "razor margins $\Rightarrow$ colder onset" is predicted
+by the §5 gate table but not yet measured at fp32 in the loop); a
+multi-seed repetition of the sparse-orbit temperatures; and the
+sampling experiment on the large models.</p>
 <script src=".preview/katex/katex.min.js"></script>
 <script src=".preview/katex/contrib/auto-render.min.js"></script>
 <script>
