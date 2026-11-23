@@ -1,0 +1,5 @@
+{
+  "model": "/home/grego/LLM/models/DeepSeek-R1-Distill-Qwen-14B",
+  "source": "results_big/ds14/a1_inter_full/a1.npz",
+  "steps": 300
+}

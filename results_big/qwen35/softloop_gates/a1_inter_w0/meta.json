@@ -1,0 +1,5 @@
+{
+  "model": "/home/grego/LLM/models/Qwen3.5-9B",
+  "source": "results_big/qwen35/a1_inter_w0/a1.npz",
+  "steps": 300
+}

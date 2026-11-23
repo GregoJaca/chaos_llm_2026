@@ -1,0 +1,5 @@
+{
+  "model": "/home/grego/LLM/models/phi-4",
+  "source": "results_big/phi4/a1_inter_w0/a1.npz",
+  "steps": 300
+}

@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>new.md</title>
+<link rel="stylesheet" href=".preview/katex/katex.min.css">
+<style>
+:root { --fg:#1a1a1a; --muted:#666; --line:#d8d8d8; --accent:#0b5cad; }
+* { box-sizing: border-box; }
+body {
+  font-family: "Charter", "Georgia", "Cambria", serif;
+  font-size: 15px; line-height: 1.55; color: var(--fg);
+  margin: 0 auto; max-width: 210mm; padding: 18mm 16mm 24mm;
+  background: #fff;
+}
+h1, h2, h3, h4 { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; line-height:1.25; }
+h1 { font-size: 1.65em; margin: 1.4em 0 .5em; border-bottom: 2px solid var(--line); padding-bottom:.25em; }
+h2 { font-size: 1.3em; margin: 1.3em 0 .4em; color:#111; }
+h3 { font-size: 1.08em; margin: 1.1em 0 .3em; color:#222; }
+p, li { margin: .45em 0; }
+ul, ol { margin: .45em 0 .45em 1.3em; padding: 0; }
+code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: .86em; }
+code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; }
+pre { background:#f7f7f7; border:1px solid #e5e5e5; border-radius:4px; padding:8px 10px; overflow-x:auto; }
+img { max-width: 100%; height: auto; display:block; margin: 10px auto; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .93em; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+th { background: #f5f7f9; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.8em 0; }
+blockquote { margin: .6em 0; padding: .3em 1em; border-left: 3px solid var(--line); color:#333; }
+a { color: var(--accent); }
+.katex-display { margin: .7em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.03em; }
+header.banner {
+  font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; color: var(--muted);
+  border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 18px;
+}
+header.banner a { text-decoration: none; }
+h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid; }
+@page { size: A4; margin: 15mm 14mm 16mm; }
+</style>
+</head><body>
+<header class="banner">
+  new.md &nbsp;&middot;&nbsp; built 2026-11-23 02:31:52 &nbsp;&middot;&nbsp;
+  <a href="new.pdf">PDF</a> &nbsp;&middot;&nbsp;
+  <a href="new.md">Markdown</a> &nbsp;&middot;&nbsp;
+  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="notebook.html">notebook</a>
+</header>
+<h1 id="newmd-the-temperature-bridge-soft-token-feedback-margin-gates-and-the-stability-of-language-model-generation">new.md — The temperature bridge: soft-token feedback, margin gates, and the stability of language-model generation</h1>
+<p><em>Working document for the 2026-11-22/23 campaign. Companion to <code>master.md</code>
+(greedy corpus), <code>controls.md</code> (negative controls), <code>unified.md</code> (cross-scale
+treatise), and <code>notebook_big.md</code> (large models). All figures are in
+<code>newfigures/</code>; raw numbers in <code>results/figures/softloop/*.json</code>.</em></p>
+<hr />
+<h2 id="0-summary-in-plain-words">0. Summary in plain words</h2>
+<p><img alt="master" src="newfigures/sl2_master_summary.png" />
+<em>Figure 0.1 — <code>sl2_master_summary.png</code>. The four central results on one
+page: (a) the horizon vs temperature on four architectures (fp32 grids);
+(b) the decomposition — the network-only rate never leaves
+$\pm0.002$ nats/step while the loop reaches $+0.43$ in the warm band;
+(c) the gate law measured on 1,844 live-gate steps; (d) the sampling
+split at $T=1.0$ on the same model and prompt.</em></p>
+<p>We study one new system: <strong>the soft-generation loop</strong>. Instead of picking the
+best token (greedy decoding, our previous work) the model is fed its own
+<em>expected embedding</em>: the average of all token embeddings, weighted by the
+model's own next-token probabilities, at a temperature $T$. The context grows
+like real generation. The temperature $T$ interpolates between two worlds:</p>
+<ul>
+<li>$T \to 0$: the expected embedding becomes exactly the best token's
+  embedding — <strong>the loop is bit-for-bit greedy decoding</strong> (verified: the
+  loop's token choices equal <code>model.generate</code> token-for-token, 600/600).
+  This is the world our whole corpus describes: flux tubes, discrete flips
+  at near-ties, no growth.</li>
+<li>$T > 0$: the same system with a smooth feedback. This is the world the
+  neural-shrimp paper studies — but only for a <em>fixed prompt with one
+  fed-back position</em>; ours grows like actual generation, which they
+  explicitly left open.</li>
+</ul>
+<p><strong>Main findings so far</strong> (every number below is defined and sourced in the
+sections that follow):</p>
+<ol>
+<li>The network <strong>never</strong> destabilizes the loop: teacher-forced replay along
+   every orbit gives a rate within $\pm 0.002$ nats/step of zero at every
+   temperature, on every architecture tested. All instability is the
+   readout (the softmax/embedding feedback), exactly as the
+   Jacobian-factorization of shrimp predicts — now measured in the growing
+   system.</li>
+<li>The readout amplifier obeys a measured law:
+   $\log\sigma_{\max}(\Sigma_p) = -0.97\,(m_t/T) + \log G_{\rm eff}$ with
+   $R^2 = 0.995$ over 1,844 live-gate steps — where $m_t$ is the top-2
+   logit margin of the orbit and $G_{\rm eff}\approx1.6$ is the
+   embedding/head pair geometry. The <em>functional form</em> is the softmax
+   identity (near-definition); the <em>empirical content</em> is that the pair
+   geometry is nearly constant per model, that the law holds across
+   temperatures and (measured so far) two architectures, and that response
+   bursts happen exactly at $m_t \lesssim T$.</li>
+<li>Between $T=0$ and the warm regime there is a <strong>gate-schedule regime</strong>:
+   no smooth growth, separation quantized by the orbit's rare margin dips.
+   Inside the warm band ($T\approx0.5$–$2$) a genuine radius-independent
+   separation rate exists ($+0.05$ nats/step at $T=1$), with an additional
+   threshold-straddle channel at larger radii.</li>
+<li><strong>Sampled generation is different from both</strong>: with <em>common random
+   numbers</em> (all perturbed rows forced to sample the same token stream),
+   the response does <strong>not</strong> grow at any temperature (0.3–1.0), any
+   radius (0.003–0.3), or any architecture (transformer, SSM) — 16/16
+   directions censored everywhere; with independent sampling the runs
+   separate at step 0 on all three. The instability of "soft thinking"
+   is an artifact of the deterministic expected-embedding feedback; it
+   is not a property of temperature-sampled generation.</li>
+<li>Architecture: the loop destabilizes <strong>without attention</strong> (Mamba-130m)
+   and the random-weight control behaves exactly as its margin landscape
+   predicts (separation in 2–4 steps at every $T$, including $T\to0$,
+   because 42% of its greedy steps are near-ties). The gate geometry is a
+   per-model constant varying 25× across models, and the readout
+   covariance at live gates is <strong>effectively rank one</strong> for every
+   trained model (the two-token outer product is the whole operator,
+   not an approximation) — rank 13 for random weights, whose state
+   cloud is correspondingly high-dimensional (TwoNN 22.7 vs 5–8).</li>
+<li>The high-$T$ stabilization, previously inferred from rate fits, is
+   now direct: at $T=1.4$ the Qwen2.5-3B loop has <em>every</em> step as a
+   (weak) gate and 60/64 directions still survive 600 steps — the
+   shrinking gain $\sigma/T$ beats the growing gate density.</li>
+<li>The reference orbits settle into <strong>drifting repetition loops at most
+   temperatures</strong> (period-13 at 92% coverage at $T=1.4$), so the measured
+   separation is a transverse instability of quasi-periodic orbits — the
+   growing-system analogue of the periodic windows that dominate
+   shrimp's fixed-prefix maps.</li>
+</ol>
+<hr />
+<h2 id="1-the-system-and-every-quantity-used-below">1. The system, and every quantity used below</h2>
+<h3 id="11-the-loop">1.1 The loop</h3>
+<p>Model $M$ with input embedding matrix $E\in\mathbb{R}^{V\times d}$ and
+output head $W$. Prompt $x_{1..P}$. At step $t$ (generating token $t$):</p>
+<p>$$z_t = M(\text{prompt} + e_0,\dots,e_{t-1}) \in \mathbb{R}^V \quad\text{(logits at the last position)}$$
+$$p_t = \mathrm{softmax}(z_t / T) \in \mathbb{R}^V, \qquad e_t = E^\top p_t = \sum_v p_t(v)\,E_v \in \mathbb{R}^d$$</p>
+<p>$e_t$ (a "soft token") is appended and fed back. All runs use the
+teacher-forcing machinery of the repo (FP32 where the model fits, in-batch
+reference row, fixed batch shapes, sparse-simplex prompt perturbations of
+radius $r$ in the prompt-embedding space, 8–128 directions).</p>
+<h3 id="12-definitions-used-consistently-in-every-figure">1.2 Definitions (used consistently in every figure)</h3>
+<table>
+<thead>
+<tr>
+<th>symbol</th>
+<th>definition</th>
+<th>notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$m_t$</td>
+<td>$z_t^{(1)} - z_t^{(2)}$: top-1 minus top-2 logit gap ("margin") of the <em>unperturbed</em> orbit, in nats</td>
+<td>the only scalar that says how close the decision at step $t$ was; the same quantity as in the greedy corpus</td>
+</tr>
+<tr>
+<td>$\|\delta h_{t,\ell}\|$</td>
+<td>norm of the hidden-state difference between a perturbed row and the in-batch reference at layer $\ell$, step $t$</td>
+<td>the response; $\ell$ = last saved layer unless stated</td>
+</tr>
+<tr>
+<td>$\lambda_{sep}$</td>
+<td>OLS slope of $\log\|\delta h_t\|$ over $t\in[3,t_{sat})$ per direction, median over directions</td>
+<td>the finite-time separation rate; a staircase average (see §4)</td>
+</tr>
+<tr>
+<td>$t_{sat}$</td>
+<td>first $t$ with $\|\delta h_t\| > 0.25\,\mathrm{median}\|h\|$</td>
+<td>"the two rows sit on different orbit branches"; censored at the run length (600 or 3000)</td>
+</tr>
+<tr>
+<td>$\lambda_{net}$</td>
+<td>the same rate on a <strong>replay</strong> run: every row is fed the <em>recorded</em> soft tokens of the reference orbit; only the prompt perturbation differs</td>
+<td>pure network propagation along a fixed orbit: no feedback. This is the quantity shrimp's gap list calls "the sibling project's natural object"</td>
+</tr>
+<tr>
+<td>$\Sigma_p$</td>
+<td>$\sum_v p_v\,(E_v-\bar e)(W_v-\bar w)^\top$ with $\bar e=\sum_v p_v E_v$</td>
+<td>the readout cross-covariance; our models have untied embeddings, so this is the cross-covariance form of shrimp's factorization</td>
+</tr>
+<tr>
+<td>$\sigma_{\max}(\Sigma_p)$</td>
+<td>largest singular value of $\Sigma_p$</td>
+<td>the one-step readout gain available at step $t$; estimated on the top-64-mass tokens, validated exactly against float64 SVD</td>
+</tr>
+<tr>
+<td>$G_t$</td>
+<td>$\|E_{i}-E_{j}\|\cdot\|W_{i}-W_{j}\|$ where $i,j$ are the top-2 tokens at step $t$</td>
+<td>the two-token pair geometry; two-token theory predicts $\sigma_{\max}(\Sigma_p)\approx p(1-p)\,G_t$ with $p=\mathrm{sigmoid}(-m_t/T)$</td>
+</tr>
+<tr>
+<td>live gate</td>
+<td>a step with $\sigma_{\max}(\Sigma_p) > T$ (the readout can amplify at that step)</td>
+<td>at one-hot steps $\Sigma_p=0$ exactly: no amplification</td>
+</tr>
+<tr>
+<td>feedback modes</td>
+<td><code>soft</code> = $E^\top p$; <code>argmax</code> = embedding of the argmax token; <code>sample_crn</code> = sampled token, the same draw fed to every row; <code>sample_ind</code> = each row samples its own token</td>
+<td>§9</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Trivial vs non-trivial (flagged throughout):</strong> the shape
+$\sigma\approx p(1-p)G$ is the softmax-Jacobian identity — near-definition.
+The <em>measurements</em> are: the distribution of $G_t$ per model (§5), the
+collapse of all temperatures onto one law (§3), the burst-location
+statistics (§3c), and the phase structure (§2) — none of which follows
+from the identity alone.</p>
+<hr />
+<h2 id="2-the-phase-structure-of-the-growing-loop">2. The phase structure of the growing loop</h2>
+<p><strong>Data.</strong> DeepSeek-R1-Distill-Qwen-1.5B (FP32), prompts.txt, 600 steps,
+8 directions, $r=0.03$, temperatures $T\in\{10^{-9},0.05,...,2\}$;
+window $W=4096$ (no truncation). Files <code>results/softloop/ds15v2/T*/</code>.
+Numbers: <code>sl_numbers.json</code>.</p>
+<p><img alt="phase" src="newfigures/sl2_phase.png" />
+<em>Figure 2.1 — <code>sl2_phase.png</code>. (a) Separation step per direction vs $T$
+(log x; black = median; triangle = all directions survived 600 steps).
+(b) The same data plotted against the live-gate density (fraction of
+orbit steps with $m_t<3T$) — the quantity that actually mediates the
+horizon. Generated by <code>scripts/softloop_figs2.py:fig_phase</code>.</em></p>
+<table>
+<thead>
+<tr>
+<th>T</th>
+<th>1e-9</th>
+<th>0.05</th>
+<th>0.1</th>
+<th>0.15</th>
+<th>0.2</th>
+<th>0.3</th>
+<th>0.5</th>
+<th>0.7</th>
+<th>1.0</th>
+<th>1.4</th>
+<th>2.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>median $t_{sat}$</td>
+<td>&gt;600</td>
+<td>116</td>
+<td>&gt;600*</td>
+<td>193</td>
+<td>42</td>
+<td>189</td>
+<td>72</td>
+<td>22</td>
+<td>68</td>
+<td>14</td>
+<td>228</td>
+</tr>
+<tr>
+<td>$\lambda_{sep}$</td>
+<td>-0.0003</td>
+<td>+0.044</td>
+<td>+0.005</td>
+<td>+0.009</td>
+<td>(fit degenerate)</td>
+<td>+0.017</td>
+<td>+0.005</td>
+<td>+0.171</td>
+<td>+0.047</td>
+<td>+0.426</td>
+<td>+0.035</td>
+</tr>
+<tr>
+<td>$\lambda_{net}$</td>
+<td>-0.0003</td>
+<td>-0.0005</td>
+<td>-0.0017</td>
+<td>-0.0019</td>
+<td>-0.0000</td>
+<td>-0.0009</td>
+<td>+0.0001</td>
+<td>-0.0014</td>
+<td>-0.0018</td>
+<td>-0.0024</td>
+<td>-0.0016</td>
+</tr>
+</tbody>
+</table>
+<p>(*5 of 8 directions survived; the other three separated at $t\approx240$–500.)</p>
+<p><strong>What the data says.</strong> Four regimes. <strong>Frozen</strong> ($T\to0$): the greedy
+world; 0/8 flip at $r=0.03$. <strong>Gate-schedule</strong> ($T\approx0.1$–$0.5$): no
+smooth growth in the linear regime; separation happens at the orbit's
+rare margin dips, quantized ($t_{sat}$ clusters at 45 or 160–197 with
+nothing between; §4). <strong>Warm band</strong> ($T\approx0.5$–$2$): fast separation,
+including a genuine radius-independent rate at $T=1$ (§6). <strong>High-$T$
+weakening</strong>: by $T=2$ the orbit's own margins are $\lesssim T$, the
+readout gain $\sigma/T$ shrinks — the cold side of shrimp's high-$T$
+contraction bound.</p>
+<p><strong>Not a smooth trend — and why.</strong> The horizon is <em>orbit-dependent</em>: each
+$T$ generates different text with its own near-ties. The right variable is
+the live-gate density (Fig 2.1b), not $T$ itself. Non-monotonicity in $T$
+is physics, not noise: a confident orbit (the $T=0.1$ run drew median
+margin 3.7) survives; a fragile one (the $T=0.2$ run, median 1.35) dies in
+42 steps. Across 3 prompts, <em>no</em> orbit survived 600 steps at any
+$T\geq0.2$ (§8.3 of the proposal; survival figures below).</p>
+<p><img alt="survival" src="newfigures/sl2_survival_pooled.png" />
+<em>Figure 2.2 — <code>sl2_survival_pooled.png</code>. (a) Fraction of directions not yet
+separated vs step, every model and temperature pooled (colour = model,
+light = colder, dark = hotter). (b) All models: median separation step vs
+live-gate density (colour = $\log T$, marker = model).</em></p>
+<hr />
+<h2 id="3-the-gate-law">3. The gate law</h2>
+<p><img alt="law" src="newfigures/sl2_gate_law.png" />
+<em>Figure 3.1 — <code>sl2_gate_law.png</code>. (a) $\log\sigma_{\max}(\Sigma_p)$ on
+every live-gate step, all temperatures pooled, colour = $\log T$
+(colourbar). Red curve: the two-token softmax identity with $G=2.35$
+(the measured median pair geometry; <strong>no fit</strong>). Dotted red: the $G/4$
+plateau, the maximum possible readout gain at a 50/50 tie. (b) The same
+data at $T\le0.3$ on a <strong>linear</strong> $m/T$ axis: the fit (solid) vs theory
+slope $-1$ (dashed). (c) Response-burst amplitude ($\ge3\times$ jumps in
+$\|\delta h\|$, pre-first-flip, per direction) by gate tightness bins of
+$m/T$; boxes = IQR, red = median, whiskers = 1.5 IQR.</em></p>
+<p><strong>The measured law</strong> (panel b): over 1,844 live-gate steps at
+$T=0.05...0.3$,</p>
+<p>$$\log\sigma_{\max}(\Sigma_p) \;=\; -0.97\,(m_t/T) \;+\; \log G_{\rm eff},
+\qquad G_{\rm eff}=1.56,\quad R^2=0.995 .$$</p>
+<p>Per-temperature slopes are $-0.95...-0.98$. The two-token identity
+predicts slope exactly $-1$ and $G_{\rm eff}=$ the pair geometry at live
+gates (the all-step median is 2.35; the live-gate effective value is
+lower because softer pairs contribute).</p>
+<p><strong>What is trivial here and what is not.</strong> <em>Trivial (definition):</em> the
+functional form $\sigma\sim p(1-p)G$ is the softmax Jacobian identity; any
+model with two dominant tokens must obey it, and at one-hot steps
+$\Sigma_p=0$ exactly. <em>Non-trivial (measurement):</em> (i) the pair geometry
+$G_t$ is roughly constant per model (median 2.0–2.8 for the Qwen/DeepSeek
+family, IQR $\pm40\%$) — it could have been heavy-tailed; (ii) all five
+temperatures collapse onto one line with $R^2=0.995$ — no extra
+state-dependence hides in the tail; (iii) response bursts occur at
+median $m_t/T=0.6$ (vs 15.5 at non-burst steps) with amplitude falling
+from $\times10$ ($m/T<0.5$) to $\times3$ ($m/T>5$) — the law acts on the
+actual trajectories, not just on the readout matrix.</p>
+<p><strong>Per-model validation (measured, not predicted).</strong> Qwen2.5-3B loop
+validation runs ($T\in\{0.05,0.1,0.2,1.0\}$, 300 steps, $r=0.3$, 16
+directions): slope $-0.94$, $G_{\rm eff}=0.86$, $R^2=0.980$ (n=800).
+DeepSeek-1.5B: slope $-0.97$, $G_{\rm eff}=1.56$, $R^2=0.995$. More
+models pending (loopval grids running).</p>
+<hr />
+<h2 id="4-separation-is-a-staircase-not-an-exponential">4. Separation is a staircase, not an exponential</h2>
+<p><img alt="rates" src="newfigures/sl2_rates_vs_t.png" />
+<em>Figure 4.0 — <code>sl2_rates_vs_t.png</code>. The raw 1-token rate
+$\lambda_1(t)=\log(\|\delta h_{t+1}\|/\|\delta h_t\|)$ (top) and the
+20-token symmetric smoothing $\lambda_{20}$ (bottom), median over 8
+directions, per temperature. Raw rates are spikes at gates and dips
+after them; only the warm band ($T=0.7$–$1.4$) holds a positive smoothed
+plateau; cold temperatures sit at or below zero between bursts. This is
+the loop-analogue of unified.md Figure 3d, with the same lesson:
+nothing resembling a sustained positive Lyapunov level exists outside
+the band.</em></p>
+<p><img alt="response" src="newfigures/sl_response_ds15v2.png" />
+<em>Figure 4.1 — <code>sl_response_ds15v2.png</code>. Median $\|\delta h_{t,L}\|$ (log
+y) per temperature; shaded = IQR over 8 directions; dashed = the
+saturation level $0.25\,\mathrm{median}\|h\|$; red ticks = first argmax
+flips. Between gates the response is flat (the cache carries it);
+at a gate it multiplies by up to $\times100$ in one step.</em></p>
+<p>Example ($T=0.5$, from the raw arrays): margins $m_2=0.02$, $m_3=0.01$
+early; the response jumps $0.4\to4.5$ there, hovers $\sim1$ for 70 steps,
+and a razor pair at $t\approx13$ ($m\approx0.11$–$0.15$) throws it to
+40–340 in two steps. This is why $\lambda_{sep}$ must be read as a
+staircase average, and why the <em>horizon</em> (Fig 2.1) and the <em>gate law</em>
+(Fig 3.1) are the robust objects, not a single "Lyapunov exponent".</p>
+<p>At $T=0.35$ the radius grid shows separation quantized by gates
+($t_{sat}\in\{45, 160\text{–}197\}$, nothing between), with per-direction
+gate gains spanning $\times300$ to $\times40{,}000$ at the same event —
+the gate amplification depends on the perturbation direction's alignment
+with the readout's top singular direction. This is the
+"directions-are-not-equivalent" result of the greedy corpus reappearing
+at the gate level.</p>
+<hr />
+<h2 id="5-the-gate-geometry-across-models-and-the-controls">5. The gate geometry across models (and the controls)</h2>
+<p><img alt="geometry" src="newfigures/sl2_gate_geometry_models.png" />
+<em>Figure 5.1 — <code>sl2_gate_geometry_models.png</code>. (a) $G_t$ distributions per
+model (pooled over prompts). (b) The same on a log scale — the spread of
+$G_t$ sets the width of the gate-law band.</em></p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th style="text-align: right;">$G_t$ median</th>
+<th style="text-align: right;">margin median</th>
+<th style="text-align: right;">steps with $m<0.1$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-1.5B (5 prompts)</td>
+<td style="text-align: right;">2.01</td>
+<td style="text-align: right;">5.5</td>
+<td style="text-align: right;">2.1%</td>
+</tr>
+<tr>
+<td>Qwen2.5-3B (5 prompts)</td>
+<td style="text-align: right;">1.90</td>
+<td style="text-align: right;">1.66</td>
+<td style="text-align: right;">4.7%</td>
+</tr>
+<tr>
+<td>Phi-4-mini (5 prompts)</td>
+<td style="text-align: right;"><strong>50.8</strong></td>
+<td style="text-align: right;">3.5</td>
+<td style="text-align: right;">2.5%</td>
+</tr>
+<tr>
+<td>Mamba-130m (1 orbit)</td>
+<td style="text-align: right;"><strong>54.6</strong></td>
+<td style="text-align: right;">8.0</td>
+<td style="text-align: right;">0.7%</td>
+</tr>
+<tr>
+<td>DeepSeek-14B (3 runs)</td>
+<td style="text-align: right;">2.75</td>
+<td style="text-align: right;">1.79</td>
+<td style="text-align: right;">3.8%</td>
+</tr>
+<tr>
+<td>Qwen3-14B (1 run)</td>
+<td style="text-align: right;">3.95</td>
+<td style="text-align: right;">4.38</td>
+<td style="text-align: right;">2.7%</td>
+</tr>
+<tr>
+<td>Phi-4 (1 run)</td>
+<td style="text-align: right;">2.41</td>
+<td style="text-align: right;">3.47</td>
+<td style="text-align: right;">3.7%</td>
+</tr>
+<tr>
+<td>Qwen3.5-9B (1 run)</td>
+<td style="text-align: right;">1.30</td>
+<td style="text-align: right;">2.46</td>
+<td style="text-align: right;">4.0%</td>
+</tr>
+<tr>
+<td><strong>randQwen g=1 (control)</strong></td>
+<td style="text-align: right;"><strong>1.23 (IQR ±2%)</strong></td>
+<td style="text-align: right;"><strong>0.135</strong></td>
+<td style="text-align: right;"><strong>41.7%</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Reading.</strong> Two facts. (i) $G_t$ is a per-model constant to within
+$\pm40\%$ — <em>except</em> Phi-4-mini and Mamba-130m, whose pair geometry is
+25× larger (an embedding/head-scale property of those tokenizer families).
+The readout plateau at a 50/50 tie is $G/4$: those models' gates are
+intrinsically stronger. (ii) The <strong>randQwen control</strong>: random weights
+give razor-thin margins everywhere (42% of steps below 0.1 nats) and a
+<em>degenerate</em> $G_t$ distribution (IQR ±2%, exactly what random Gaussian
+embeddings predict) — the trained-model spread of $G_t$ and the tail
+structure of the margins are both properties of trained geometry.
+(Trained-model caveats: fp16 models' margins are quantized below
+~0.01–0.03 nats; exact ties $m=0$ are excluded from any flip statistic,
+per the repo rule.)</p>
+<p><img alt="livedensity" src="newfigures/sl2_live_density_models.png" />
+<em>Figure 5.2 — <code>sl2_live_density_models.png</code>. (a) Predicted live-gate
+density vs $T$ per model, computed purely from each model's measured
+greedy margins (one teacher-forced pass; no loop run needed).
+(b) The margin ECDFs that generate panel (a).</em></p>
+<p><strong>The prediction, tested where the loop grids have landed:</strong></p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th style="text-align: right;">live-gate density at $T=0.1$ (predicted from margins)</th>
+<th style="text-align: right;">measured median $t_{sat}$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>randQwen g=1</td>
+<td style="text-align: right;">38%</td>
+<td style="text-align: right;"><strong>2 steps (all 16 directions, every $T$, including $T\to0$)</strong></td>
+</tr>
+<tr>
+<td>Qwen2.5-3B</td>
+<td style="text-align: right;">4.1%</td>
+<td style="text-align: right;">261 ($r=0.1$, fp16)</td>
+</tr>
+<tr>
+<td>DeepSeek-1.5B</td>
+<td style="text-align: right;">1.7% (this prompt drew a confident orbit)</td>
+<td style="text-align: right;">&gt;600 (5/8 survived)</td>
+</tr>
+<tr>
+<td>Mamba-130m</td>
+<td style="text-align: right;">0.3%</td>
+<td style="text-align: right;">&gt;600 on confident orbits; 7–29 on orbits with a razor tie</td>
+</tr>
+</tbody>
+</table>
+<p><img alt="horizondensity" src="newfigures/sl2_horizon_vs_density.png" />
+<em>Figure 5.3 — <code>sl2_horizon_vs_density.png</code>. Every model and temperature:
+median separation step against the live-gate density of its own orbit
+(a), and against the density predicted from the greedy A1 corpora alone
+(b: one teacher-forced pass per model, no loop run). Marker = model,
+points at the top edge are censored (no separation in 600 steps).</em></p>
+<p>The randQwen control lands exactly where its margin landscape says it
+must: 42% of its greedy steps are near-ties, and <em>every</em> direction
+separates within 2–4 steps at every temperature — including $T\to0$,
+where the separation is pure greedy threshold crossing (the random model
+has no stable text to protect). Its network-only rate is still $\approx0$
+( $-0.001$ nats/step): even random weights do not destabilize the
+<em>network</em> part. More models land as the grids complete; the figure
+regenerates automatically.</p>
+<hr />
+<h2 id="6-radius-smooth-rate-vs-threshold-straddle">6. Radius: smooth rate vs threshold straddle</h2>
+<p>At $T=1.0$, same reference orbit (margins verified equal across runs):</p>
+<table>
+<thead>
+<tr>
+<th>$r$</th>
+<th>0.003</th>
+<th>0.01</th>
+<th>0.03</th>
+<th>0.1</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>$\lambda_{sep}$</td>
+<td>+0.056</td>
+<td>+0.049</td>
+<td>+0.047</td>
+<td>+0.144</td>
+</tr>
+<tr>
+<td>median $t_{sat}$</td>
+<td>71</td>
+<td>68</td>
+<td>68</td>
+<td>30</td>
+</tr>
+</tbody>
+</table>
+<p>For $r\le0.03$ the rate is radius-independent and the response sits far
+above the FP32 floor: a genuine linear-regime instability of the growing
+loop. At $r=0.1$ an additional channel appears — the greedy flip
+condition $|\delta m|\ge m$, smeared continuously by the mixture (the
+"straddle"). At $T=0.35$ there is no smooth growth at any
+$r\le0.01$: separation is pure gate events. The reviewers' threshold
+explanation governs the cold edge; smooth instability exists only inside
+the band; <strong>both are margin-gated</strong>.</p>
+<h3 id="6b-the-horizon-is-predictable-from-the-margin-sequence-gate-passage">6b. The horizon is predictable from the margin sequence (gate passage)</h3>
+<p><img alt="passage" src="newfigures/sl2_passage.png" />
+<em>Figure 6.1 — <code>sl2_passage.png</code>. (a) The gate-passage model: the response
+is assumed to accumulate the per-step readout gain,
+$\|\delta h_t\|\sim\|\delta h_0\|\exp\big(\sum_{s<t}\log(1+c\,\sigma_s/T)\big)$,
+and separation is predicted when the cumulative gain exceeds the
+saturation level. One constant $c=0.126$ is calibrated at $T=0.05$; every
+other temperature is a prediction. (b) Per temperature, the fraction of
+response bursts ($\geq3\times$ jumps) that land on live-gate steps
+($m_t<3T$).</em></p>
+<p><strong>Result.</strong> Bursts land on gates: 59–79% of bursts occur exactly on steps
+with $m_t<T$ and 89–100% within the $m_t<3T$ set (panel b). The passage
+model — built only from the orbit's own margins and measured readout
+gains — predicts the median horizon at $T=0.15$ to 3% (187 vs 193) and
+keeps the right order in the gate-schedule regime. It fails exactly
+where the straddle channel takes over ($T\ge0.2$ on this orbit:
+predicted 127 vs measured 42) and in the dense-gate band
+($T\ge0.5$). The failure modes are the physics: below the band the
+horizon is a gate-counting problem (predictable); inside the band the
+compounding smooth rate and the straddles dominate. This is the
+gate-analogue of shrimp's passage-time predictions at folds — with our
+margins in place of their normal forms, and no fold geometry needed.</p>
+<h3 id="6c-dense-statistics-the-direction-structure-of-the-two-regimes">6c. Dense statistics: the direction structure of the two regimes</h3>
+<p>With 128 directions (same protocol, $r=0.03$):</p>
+<ul>
+<li>$T=0.2$: the separation-step distribution is <strong>bimodal</strong> —
+  10–25% of directions straddle the early razor ties ($t_{sat}\approx6$),
+  the rest separate together at $t\approx70$–106. Direction fate is
+  decided by whether the perturbation happens to cross an early gate.</li>
+<li>$T=1.0$: the distribution is <strong>tight</strong> (deciles 23–70, median 68,
+  3/128 censored). The compounding smooth mechanism equalizes
+  directions: in the warm band, <em>when</em> you separate is a property of the
+  orbit, not of your direction.</li>
+</ul>
+<p>The same contrast on Qwen2.5-3B (64 directions): $T=0.2$ gives a wide
+spread (deciles 63–302), $T=0.5$ a point mass at 6, and
+$T=1.4$ <strong>60/64 survive</strong> — the direct observation of the high-$T$
+stabilization in survival statistics: every step is a gate there, but
+each gate is too weak ($\sigma_{\max}/T \lesssim G/4T$) to compound.</p>
+<hr />
+<h2 id="7-the-network-never-destabilizes-the-readout-does">7. The network never destabilizes; the readout does</h2>
+<p><img alt="decomp" src="newfigures/sl2_decomp.png" />
+<em>Figure 7.1 — <code>sl2_decomp.png</code>. (a) $\lambda_{sep}$ and $\lambda_{pre}$
+(+IQR) and the linear-regime rate (green star). (b) $\lambda_{net}$ on
+its own scale — never outside $[-0.002,+0.001]$ at any $T$. (c) The
+readout trend at live gates, with the <em>definitional ceiling</em>
+$\log(G/4)-\log T$ (grey dashed): most of the fall with $T$ is the
+definition ($\sigma$ is plateau-bounded while $T$ grows); the
+non-trivial part is the gap below the ceiling. (d) What actually moves:
+live-gate density and the inverted horizon.</em></p>
+<p>Two clarifications the reader asked for:</p>
+<ul>
+<li><strong>Why are $\lambda_{pre}$ and $\lambda_{sep}$ mostly positive while the
+  radius section says "no smooth growth" at some $T$?</strong> Because both
+  quantities are measured at $r=0.03$, where the straddle channel already
+  contributes: $\lambda_{pre}$ includes the continuous readout bursts at
+  gates (pre-flip), and $\lambda_{sep}$ includes post-flip text
+  divergence. The radius-independent smooth part is the green star
+  ($r\to0$). At $T=0.35$ even $\lambda_{pre}$ is $\approx0$: the bursts
+  there are one-time gate events, not a compounding rate.</li>
+<li><strong>The (c) panel's linear fall:</strong> ~70% definitional (see above), ~30%
+  physics: the mean $\log\sigma$ at live gates <em>rises</em> with $T$
+  ($-1.24\to-0.34$ from $T=0.05$ to $0.7$) because milder margins join
+  the live set and sit closer to the $p(1-p)$ plateau.</li>
+</ul>
+<hr />
+<h2 id="8-architecture-the-loop-without-attention-and-the-window">8. Architecture: the loop without attention, and the window</h2>
+<p><strong>Mamba-130m</strong> (SSM; provably contracting under teacher forcing):
+$\lambda_{net}\approx0$ at every $T$; horizons strongly bimodal — 7–29
+steps on orbits containing a razor tie, frozen (&gt;600) on confident
+orbits (the 130m's greedy text is very confident, median margins
+$\sim8$ nats); $t_{sat}=19$ at $T=1.0$. <strong>The readout/embedding
+competition destabilizes the loop without attention.</strong> (Mamba stepping
+needed an HF bug workaround: passing an attention mask breaks
+<code>MambaCache.update_conv_state</code> in 4.50/4.57.)</p>
+<p><strong>Window $W=100$ vs full attention</strong> (departure verified at exactly
+$t=35=W-P$): with the window, $\lambda_{net}$ becomes <em>negative</em> at every
+$T$ (the flush evicts the perturbation support from the cache — the flush
+law acts inside the loop); windowed orbits are far more confident
+(median margins 4.6–9.2 vs 1.4); the onset of fast separation moves from
+$T\approx0.05$ to $T\approx0.3$. Less memory $\Rightarrow$ colder onset —
+shrimp's "chaos needs memory" theme, measured, via our window clock.</p>
+<p><strong>Pythia-410m</strong> (Pile-trained attention, the third control): frozen at
+$T\le0.05$ (its margins are huge, median 8.5); separates at
+$T=0.1$–$0.7$ with only 1–6% of steps live — one or two razor ties in
+the whole orbit suffice once $T$ opens them; at $T\ge1$ its orbit's own
+margins collapse ($m_{med}\to1.0$) so nearly every step is a weak gate
+and separation <em>slows</em> again (97–138 steps). All four regimes on a
+fourth architecture.</p>
+<p><strong>Qwen3.5-9B</strong> (hybrid Gated-DeltaNet + attention, spark, fp16, $r=0.3$,
+32 directions): separates at every $T>0$ — fastest at $T=1.0$
+($t_{sat}=4$), recovering at $T=2.0$ (223, 11/32 censored). Caveat:
+fp16 and the large radius mean these horizons are dominated by the
+threshold channel; the qualitative band structure (fast in the middle,
+recovery at high $T$) matches the fp32 models. One cross-observation
+stands: <strong>the loop is more fragile than greedy at the same radius</strong> —
+at $T=0.1$ the effective flip threshold drops from $m\lesssim|\delta m|$
+(greedy) to $m\lesssim T$ (gates), so the loop amplifies from near-ties
+that greedy would have survived.</p>
+<hr />
+<h2 id="9-sampling-as-a-random-dynamical-system-the-common-random-number-experiment">9. Sampling as a random dynamical system (the common-random-number experiment)</h2>
+<p><strong>Setup.</strong> Same loop, but instead of the expected embedding, a token is
+<em>sampled</em> from $p_t$ and its embedding is fed back. Two variants:
+<code>sample_crn</code> — one draw from the reference row's $p_t$, the <em>same</em> token
+fed to every perturbed row (common random numbers: the sampling noise is
+identical across rows, so any growth is pure state dynamics);
+<code>sample_ind</code> — each row samples its own token (real sampled generation).</p>
+<p><strong>Complete result (16 directions, 600 steps, three architectures):</strong></p>
+<table>
+<thead>
+<tr>
+<th>run</th>
+<th>median $t_{sat}$</th>
+<th>directions separated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-1.5B, CRN, $T=0.3/0.5/1.0$</td>
+<td>600 (censored)</td>
+<td><strong>0/16 at every $T$</strong></td>
+</tr>
+<tr>
+<td>DeepSeek-1.5B, CRN, $T=1.0$, $r\in\{0.003,0.01,0.1,0.3\}$</td>
+<td>600 (censored)</td>
+<td><strong>0/16 at every $r$</strong></td>
+</tr>
+<tr>
+<td>Mamba-130m, CRN, $T=1.0$</td>
+<td>600 (censored)</td>
+<td><strong>0/16</strong></td>
+</tr>
+<tr>
+<td>Qwen2.5-3B, CRN, $T=1.0$</td>
+<td>600 (censored)</td>
+<td><strong>0/16</strong></td>
+</tr>
+<tr>
+<td>all three, independent, $T=0.5/1.0$</td>
+<td>0</td>
+<td><strong>16/16 instantly</strong></td>
+</tr>
+</tbody>
+</table>
+<p><img alt="sampling" src="newfigures/sl2_sampling.png" />
+<em>Figure 9.1 — <code>sl2_sampling.png</code>. (a) Median response under the three
+feedback rules (bands = IQR over directions). (b) Horizons per run
+(600 = censored). (c) The CRN radius grid at $T=1$: flat at every
+radius.</em></p>
+<p><strong>Reading.</strong> With the noise held fixed (CRN), the <em>conditional</em> state
+dynamics along sampled token paths are stable at every temperature and
+radius tested, on all three architectures — including the SSM. With
+independent sampling, the rows separate at the very first step: the
+divergence of real sampled generation is the sampling noise itself, not a
+state instability. The instability of deterministic soft feedback
+(shrimp's "Soft Thinking" construction) is therefore an artifact of
+feeding back the <em>mean</em> of the distribution rather than a draw from it.
+This also explains their answer-change phenomenology: replaying a fixed
+random stream cuts answer changes from 21% to 6% — the state dynamics are
+contracting; what changes answers is the stream. In our vocabulary:
+<strong>temperature moves the gates, but sampling moves the tokens; only the
+combination of temperature with mean feedback produces a smooth
+instability.</strong></p>
+<p>(Caveat: CRN measures the response to the <em>prompt</em> perturbation along a
+shared random stream. Two independent streams additionally differ by the
+noise itself — that is the $t_{sat}=0$ row. Both facts together give the
+full picture of sampled decoding.)</p>
+<hr />
+<h2 id="10-the-state-clouds-dimension-repetition-and-the-rank-of-the-readout">10. The state clouds: dimension, repetition, and the rank of the readout</h2>
+<p><img alt="twonn" src="newfigures/sl2_twonn_vs_T.png" />
+<em>Figure 10.2 — <code>sl2_twonn_vs_T.png</code>. (a) TwoNN dimension (the
+nearest-neighbour-ratio MLE — a point-cloud statistic that does not need
+a scaling region; it is "always a good fit" because it is a local
+neighbour count, not a plateau search) of the loop state cloud vs $T$.
+(b) The effective rank of the readout covariance $\Sigma_p$ itself,
+$(\sum_i\lambda_i)^2/\sum_i\lambda_i^2$ over the top-16 singular values,
+median over steps.</em></p>
+<p><strong>Three measurements from the 3000-step state runs:</strong></p>
+<ol>
+<li><strong>The loop inherits greedy's repetition attractors.</strong> The loop screens
+   flag drifting repetition loops at most temperatures: DeepSeek
+   period-13 (68% coverage, $T\to0$), period-10 at $T=0.3$, period-13 at
+   $T=1.4$ (92%!), period-29 at $T=1.0$; Qwen2.5-3B period-51 at
+   $T\to0$ and period-4 at $T=1.0$. The <em>reference</em> orbit settles into
+   quasi-periodic text even where the perturbation response separates
+   within tens of steps — the separation is a transverse instability of
+   drifting periodic orbits. (This is the growing-system analogue of the
+   periodic windows that dominate shrimp's fixed-prefix maps.)</li>
+<li><strong>The readout covariance is effectively rank one.</strong> At live gates,
+   the effective rank of $\Sigma_p$ is 1.0–1.3 for every trained model:
+   the two-token outer-product picture $(e_i-e_j)(w_i-w_j)^\top$ is not
+   just a law of the top singular value — the <em>whole operator</em> is one
+   direction. The random-weight control breaks this: eff-rank 13.3 for
+   randQwen, whose state cloud is correspondingly high-dimensional
+   (TwoNN 22.7, no stable plateau) against 5–8 for trained models.</li>
+<li><strong>TwoNN vs temperature.</strong> The aperiodic cold cases sit at
+   TwoNN $\approx6$; the one genuinely flat-orbit case ($T=2$,
+   margins $\lesssim T$, the fed embedding barely varies) drops to
+   TwoNN $=3.0$ — the dimension of the cloud tracks how many
+   directions the fed embedding actually explores, which is the
+   dimension of $\Sigma_p$ plus the cache's history variation. No
+   scaling region exists in any of them (the D2 verdict is unchanged
+   from the greedy corpus: inapplicable at these horizons, now in-family).</li>
+</ol>
+<p><img alt="d2" src="newfigures/d2pipe_softloop_summary.png" />
+<em>Figure 10.1 — <code>d2pipe_softloop_summary.png</code>. The repo's validated D2
+pipeline (Theiler windows, loop screens, TwoNN, kNN MLE) on 3000-step
+loop attractors. The $T\to0$ and $T=1$ orbits are drifting repetition
+loops (period 13 at 68% coverage; period 29 at 25%) — correctly flagged by
+our screens. The $T=0.5$ and $T=2$ orbits are aperiodic and have <strong>no
+scaling region (0.00 decades)</strong> — the same verdict as every greedy state
+cloud, now on a genuinely unstable continuous system, matching shrimp's
+own attractor.</em></p>
+<hr />
+<h2 id="11-what-the-gates-are-made-of-tokens">11. What the gates are made of (tokens)</h2>
+<p>Decoding the top-2 pairs at the 80 smallest-margin steps of each
+model's greedy orbits (host-side script
+<code>scripts/softloop_gate_tokens_host.py</code>; output
+<code>results/softloop_gate_tokens.json</code>):</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>content-word swaps</th>
+<th>short/function tokens</th>
+<th>punctuation</th>
+<th>numbers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DeepSeek-1.5B</td>
+<td>68%</td>
+<td>18%</td>
+<td>5%</td>
+<td>1%</td>
+</tr>
+<tr>
+<td>Qwen2.5-3B</td>
+<td>75%</td>
+<td>11%</td>
+<td>1%</td>
+<td>4%</td>
+</tr>
+<tr>
+<td>Phi-4-mini</td>
+<td>51%</td>
+<td>25%</td>
+<td>8%</td>
+<td>5%</td>
+</tr>
+<tr>
+<td>Mamba-130m</td>
+<td>64%</td>
+<td>15%</td>
+<td>3%</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>randQwen (control)</td>
+<td>gibberish pairs (multilingual/emoji/code)</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Examples (DeepSeek, smallest margins): <code>' ocean'</code> vs <code>' the'</code>;
+<code>' incident'</code> vs <code>' and'</code>; <code>' listed'</code> vs <code>' already'</code>; <code>' Use'</code> vs
+<code>' Also'</code>. Phi-4-mini: <code>' secure'</code> vs <code>' security'</code>; <code>' must'</code> vs
+<code>' should'</code>; <code>' predicting'</code> vs <code>' future'</code>.</p>
+<p><strong>Reading.</strong> The gates are genuine semantic choice points of the text —
+the "forking tokens" of the interpretability literature, now identified
+as the objects that control both the discrete flips at $T=0$ and the
+continuous amplification at $T>0$. The random-weight control's "gates"
+are meaningless-token pairs, as expected.</p>
+<hr />
+<h2 id="12-relation-to-the-two-bodies-of-work">12. Relation to the two bodies of work</h2>
+<p><strong>To our greedy corpus.</strong> The margin landscape — the object that predicts
+flip radii ($r_*$), survival, and cross-scale fragility — also predicts
+the continuous system's amplifier through the gate law, validated from
+one teacher-forced pass ($T=0.1$: correlation 0.988, median ratio 1.16;
+$T=0.05$: 0.91, ratio 1.33 — the excess is exactly the top-3+ tail
+contribution, measured independently in float64). One landscape, two
+dynamical regimes.</p>
+<p><strong>To shrimp.</strong> Consistent where they measured (the band location; the
+readout attribution; the growing-context twin growth at 7B), new where
+they stopped: the growing-context phase structure, the replay
+decomposition (their own gap list calls it ours to do), the margin
+statistics, the architectures (SSM/hybrid/untied), the window, and the
+sampling split (CRN vs independent), which reconciles their Soft
+Thinking numbers with a stable conditional dynamics.</p>
+<hr />
+<h2 id="11b-reproducibility-of-the-reference-orbit-a-self-correction">11b. Reproducibility of the reference orbit (a self-correction)</h2>
+<p>I initially attributed orbit-to-orbit differences at fixed $T$ to "batch
+roundoff" without checking which parameter actually matters. Comparing
+the recorded reference token streams of all $T=1.0$ runs on the same
+prompt:</p>
+<ul>
+<li><strong>Identical batch shape ($B=9$), different radius ($r=0.03$ vs
+  $0.1$) and different direction count: the reference orbits are
+  bit-for-bit identical for all 600 steps.</strong> The perturbed rows do not
+  affect the reference row at all.</li>
+<li><strong>Different batch shape ($B=3$ vs $B=9$): the reference orbits first
+  differ at exactly $t=102$.</strong> Floating-point reduction order changes
+  with the batch layout, and at $T=1$ the loop amplifies that roundoff
+  through its gates: a controlled, measured butterfly time.</li>
+</ul>
+<p>So: at fixed $B$ everything is exactly reproducible; the only lever is
+the batch layout itself. This is the growing-system version of shrimp's
+batch-layout reproducibility result (173/192 chaotic cells change text
+under a layout change; 7/192 periodic cells do not), now with the
+departure step measured on a single orbit. <strong>Practical consequence:</strong>
+per-temperature comparisons across runs are only valid at equal batch
+shape; all grids in this document use $B=9$ (8 directions + reference).</p>
+<hr />
+<h2 id="13-running-pending-will-be-folded-in-as-they-land">13. Running / pending (will be folded in as they land)</h2>
+<ul>
+<li>Loop grids: Qwen3-4B, Phi-4-mini (K=8 after an OOM fix), randQwen,
+  Pythia-410m, Qwen3.5-2B (env fixed), Qwen3.5-9B (spark).</li>
+<li>DeepSeek-14B loop grid (spark; waits for a &gt;=64 GB free window).</li>
+<li>Dense-direction grids (K=128) for survival statistics.</li>
+<li>Sampling statistics (§9) and the CRN radius grid.</li>
+<li>Per-model measured gate law (loopval) and the D2/TwoNN summaries.</li>
+<li>The horizon-vs-live-density cross-model table (§5 prediction test).</li>
+</ul>
+<script src=".preview/katex/katex.min.js"></script>
+<script src=".preview/katex/contrib/auto-render.min.js"></script>
+<script>
+renderMathInElement(document.body, {
+  delimiters: [{left:"$$", right:"$$", display:true}, {left:"$", right:"$", display:false}],
+  throwOnError: false,
+  strict: false
+});
+</script>
+</body></html>

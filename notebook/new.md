@@ -9,6 +9,14 @@ treatise), and `notebook_big.md` (large models). All figures are in
 
 ## 0. Summary in plain words
 
+![master](newfigures/sl2_master_summary.png)
+*Figure 0.1 — `sl2_master_summary.png`. The four central results on one
+page: (a) the horizon vs temperature on four architectures (fp32 grids);
+(b) the decomposition — the network-only rate never leaves
+$\pm0.002$ nats/step while the loop reaches $+0.43$ in the warm band;
+(c) the gate law measured on 1,844 live-gate steps; (d) the sampling
+split at $T=1.0$ on the same model and prompt.*
+
 We study one new system: **the soft-generation loop**. Instead of picking the
 best token (greedy decoding, our previous work) the model is fed its own
 *expected embedding*: the average of all token embeddings, weighted by the
