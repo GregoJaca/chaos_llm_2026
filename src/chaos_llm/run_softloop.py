@@ -55,7 +55,7 @@ def sparse_simplex(k, total, seed):
     return idx, v
 
 
-def topk_crosscov_sigma(p, E, W, k=64, iters=30):
+def topk_crosscov_sigma(p, E, W, k=64, iters=30, return_M=False):
     """sigma_max of sum_v p_v (E_v - ebar)(W_v - wbar)^T restricted to the
     top-k mass tokens (covers > 1-1e-6 of the distribution in practice).
     Clean power iteration on M^T M (fp32 accumulation, no big intermediate)."""
@@ -83,6 +83,8 @@ def topk_crosscov_sigma(p, E, W, k=64, iters=30):
         if vn == 0.0:
             return 0.0
         v = v / vn
+    if return_M:
+        return float((M @ v).norm()), M
     return float((M @ v).norm())
 
 
@@ -123,14 +125,20 @@ def main():
                          "(common random numbers: isolates the state dynamics); "
                          "sample_ind=each row samples its own token")
     ap.add_argument("--sample-seed", type=int, default=7)
+    ap.add_argument("--dtype", default="auto", choices=["auto", "float32", "float16"],
+                    help="model precision (default: protocol auto rule)")
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
     t0 = time.time()
 
-    model, tok, path = load_model(args.model)
+    model, tok, path = load_model(args.model, dtype=args.dtype)
     if args.window:
         set_window(model, args.window)
-    D = model.config.hidden_size
+    cfg = model.config
+    D = getattr(cfg, "hidden_size", None)
+    if D is None:
+        D = getattr(getattr(cfg, "text_config", cfg), "hidden_size")
+    del cfg
     Emb = model.get_input_embeddings().weight.detach().float()  # [V, d] fp32 view
     embed_dtype = model.get_input_embeddings().weight.dtype      # fp16 models feed fp16
     if hasattr(model, "lm_head") and getattr(model, "lm_head", None) is not None:
@@ -153,7 +161,10 @@ def main():
     if args.save_layers:
         layers = [int(x) for x in args.save_layers.split(",")]
     else:
-        nl = model.config.num_hidden_layers
+        nl = getattr(model.config, "num_hidden_layers", None)
+        if nl is None:
+            nl = getattr(getattr(model.config, "text_config", model.config),
+                         "num_hidden_layers")
         layers = sorted(set([0, nl // 4, nl // 2, 3 * nl // 4, nl]))
     NL = len(layers)
 
@@ -188,6 +199,7 @@ def main():
     top1_rows = np.zeros((B, steps), np.int64)
     sig_read = np.zeros(steps, np.float32)
     cov64 = np.zeros(steps, np.float32)
+    sv_read = np.zeros((16, steps), np.float32)  # top-16 singular values of Sigma_p
     flips = np.zeros((K, steps), np.int8)
     h_ref = np.zeros((steps, D), np.float32) if args.save_states else None
     fed_ids = np.zeros((B, steps), np.int64) - 1  # fed token ids (token modes)
@@ -211,7 +223,12 @@ def main():
         top1_ref[t] = int(top2.indices[0])
         top2_ref[t] = int(top2.indices[1])
         p = torch.softmax(zr / args.temp, -1)
-        sig_read[t] = topk_crosscov_sigma(p, Emb, Wout)
+        sig, M = topk_crosscov_sigma(p, Emb, Wout, return_M=True)
+        sig_read[t] = sig
+        try:
+            sv_read[:, t] = torch.linalg.svdvals(M)[:16].float().cpu().numpy()
+        except Exception:
+            sv_read[:, t] = 0.0
         cov64[t] = float(torch.topk(p, 64).values.sum())
         if args.feedback == "soft":
             e_ref[t] = (p[:, None] * Emb).sum(0).cpu().numpy()
@@ -276,8 +293,8 @@ def main():
     np.savez(os.path.join(args.out, "softloop.npz"),
              dh=dh, h0n=h0n, e_ref=e_ref, m_ref=m_ref, ent_ref=ent_ref,
              top1_ref=top1_ref, top2_ref=top2_ref, top1_rows=top1_rows,
-             sig_read=sig_read, cov64=cov64, flips=flips, greedy_ids=greedy_ids,
-             fed_ids=fed_ids,
+             sig_read=sig_read, sv_read=sv_read, cov64=cov64, flips=flips,
+             greedy_ids=greedy_ids, fed_ids=fed_ids,
              prompt_ids=pids.cpu().numpy(), idx=idx, srows=srows,
              **({"h_ref": h_ref} if h_ref is not None else {}))
     save_json(os.path.join(args.out, "meta.json"), dict(

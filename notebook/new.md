@@ -200,6 +200,17 @@ models pending (loopval grids running).
 
 ## 4. Separation is a staircase, not an exponential
 
+![rates](newfigures/sl2_rates_vs_t.png)
+*Figure 4.0 — `sl2_rates_vs_t.png`. The raw 1-token rate
+$\lambda_1(t)=\log(\|\delta h_{t+1}\|/\|\delta h_t\|)$ (top) and the
+20-token symmetric smoothing $\lambda_{20}$ (bottom), median over 8
+directions, per temperature. Raw rates are spikes at gates and dips
+after them; only the warm band ($T=0.7$–$1.4$) holds a positive smoothed
+plateau; cold temperatures sit at or below zero between bursts. This is
+the loop-analogue of unified.md Figure 3d, with the same lesson:
+nothing resembling a sustained positive Lyapunov level exists outside
+the band.*
+
 ![response](newfigures/sl_response_ds15v2.png)
 *Figure 4.1 — `sl_response_ds15v2.png`. Median $\|\delta h_{t,L}\|$ (log
 y) per temperature; shaded = IQR over 8 directions; dashed = the
@@ -287,6 +298,31 @@ condition $|\delta m|\ge m$, smeared continuously by the mixture (the
 $r\le0.01$: separation is pure gate events. The reviewers' threshold
 explanation governs the cold edge; smooth instability exists only inside
 the band; **both are margin-gated**.
+
+### 6b. The horizon is predictable from the margin sequence (gate passage)
+
+![passage](newfigures/sl2_passage.png)
+*Figure 6.1 — `sl2_passage.png`. (a) The gate-passage model: the response
+is assumed to accumulate the per-step readout gain,
+$\|\delta h_t\|\sim\|\delta h_0\|\exp\big(\sum_{s<t}\log(1+c\,\sigma_s/T)\big)$,
+and separation is predicted when the cumulative gain exceeds the
+saturation level. One constant $c=0.126$ is calibrated at $T=0.05$; every
+other temperature is a prediction. (b) Per temperature, the fraction of
+response bursts ($\geq3\times$ jumps) that land on live-gate steps
+($m_t<3T$).*
+
+**Result.** Bursts land on gates: 59–79% of bursts occur exactly on steps
+with $m_t<T$ and 89–100% within the $m_t<3T$ set (panel b). The passage
+model — built only from the orbit's own margins and measured readout
+gains — predicts the median horizon at $T=0.15$ to 3% (187 vs 193) and
+keeps the right order in the gate-schedule regime. It fails exactly
+where the straddle channel takes over ($T\ge0.2$ on this orbit:
+predicted 127 vs measured 42) and in the dense-gate band
+($T\ge0.5$). The failure modes are the physics: below the band the
+horizon is a gate-counting problem (predictable); inside the band the
+compounding smooth rate and the straddles dominate. This is the
+gate-analogue of shrimp's passage-time predictions at folds — with our
+margins in place of their normal forms, and no fold geometry needed.
 
 ---
 
