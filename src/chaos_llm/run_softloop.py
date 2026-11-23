@@ -55,7 +55,7 @@ def sparse_simplex(k, total, seed):
     return idx, v
 
 
-def topk_crosscov_sigma(p, E, W, k=64, iters=30, return_M=False):
+def topk_crosscov_sigma(p, E, W, k=64, iters=30, return_M=False, sv_out=0):
     """sigma_max of sum_v p_v (E_v - ebar)(W_v - wbar)^T restricted to the
     top-k mass tokens (covers > 1-1e-6 of the distribution in practice).
     Clean power iteration on M^T M (fp32 accumulation, no big intermediate)."""
@@ -73,16 +73,40 @@ def topk_crosscov_sigma(p, E, W, k=64, iters=30, return_M=False):
         M += pv[i] * torch.outer(e[i] - ebar, w[i] - wbar)
     v = torch.randn(M.shape[1], device=M.device)
     v = v / v.norm()
+    dead = False
     for _ in range(iters):
         u = M @ v
         un = float(u.norm())
         if un == 0.0:
-            return 0.0
+            dead = True
+            break
         v = M.T @ u
         vn = float(v.norm())
         if vn == 0.0:
-            return 0.0
+            dead = True
+            break
         v = v / vn
+    if sv_out > 0:
+        sv = torch.zeros(sv_out, dtype=torch.float32, device=M.device)
+        if not dead:
+            Wk = M
+            for j in range(sv_out):
+                vv = torch.randn(M.shape[1], device=M.device)
+                vv = vv / vv.norm()
+                for _ in range(20):
+                    uu = Wk @ vv
+                    nn = float(uu.norm())
+                    if nn == 0.0:
+                        break
+                    vv = Wk.T @ uu
+                    nv = float(vv.norm())
+                    if nv == 0.0:
+                        break
+                    vv = vv / nv
+                sv[j] = float((Wk @ vv).norm()) if float(vv.norm()) > 0 else 0.0
+                uu = Wk @ vv
+                Wk = Wk - torch.outer(uu, vv) / max(float(vv.norm() ** 2), 1e-30)
+        return (0.0 if dead else float((M @ v).norm())), sv
     if return_M:
         return float((M @ v).norm()), M
     return float((M @ v).norm())
@@ -223,12 +247,9 @@ def main():
         top1_ref[t] = int(top2.indices[0])
         top2_ref[t] = int(top2.indices[1])
         p = torch.softmax(zr / args.temp, -1)
-        sig, M = topk_crosscov_sigma(p, Emb, Wout, return_M=True)
+        sig, sv = topk_crosscov_sigma(p, Emb, Wout, sv_out=16)
         sig_read[t] = sig
-        try:
-            sv_read[:, t] = torch.linalg.svdvals(M)[:16].float().cpu().numpy()
-        except Exception:
-            sv_read[:, t] = 0.0
+        sv_read[:, t] = sv.cpu().numpy()
         cov64[t] = float(torch.topk(p, 64).values.sum())
         if args.feedback == "soft":
             e_ref[t] = (p[:, None] * Emb).sum(0).cpu().numpy()

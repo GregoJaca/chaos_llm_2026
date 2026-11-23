@@ -273,11 +273,30 @@ density vs $T$ per model, computed purely from each model's measured
 greedy margins (one teacher-forced pass; no loop run needed).
 (b) The margin ECDFs that generate panel (a).*
 
-**Prediction to test against the loop grids:** the horizon ordering
-across models should follow the live-gate density ordering (randQwen
-first — 42% of steps are near-ties at any $T\gtrsim0.1$; Mamba last
-among these; Qwen2.5-3B early; Qwen3-14B late). The loop grids for these
-models are running; the comparison table will close this section.
+**The prediction, tested where the loop grids have landed:**
+
+| model | live-gate density at $T=0.1$ (predicted from margins) | measured median $t_{sat}$ |
+|---|---:|---:|
+| randQwen g=1 | 38% | **2 steps (all 16 directions, every $T$, including $T\to0$)** |
+| Qwen2.5-3B | 4.1% | 261 ($r=0.1$, fp16) |
+| DeepSeek-1.5B | 1.7% (this prompt drew a confident orbit) | >600 (5/8 survived) |
+| Mamba-130m | 0.3% | >600 on confident orbits; 7–29 on orbits with a razor tie |
+
+![horizondensity](newfigures/sl2_horizon_vs_density.png)
+*Figure 5.3 — `sl2_horizon_vs_density.png`. Every model and temperature:
+median separation step against the live-gate density of its own orbit
+(a), and against the density predicted from the greedy A1 corpora alone
+(b: one teacher-forced pass per model, no loop run). Marker = model,
+points at the top edge are censored (no separation in 600 steps).*
+
+The randQwen control lands exactly where its margin landscape says it
+must: 42% of its greedy steps are near-ties, and *every* direction
+separates within 2–4 steps at every temperature — including $T\to0$,
+where the separation is pure greedy threshold crossing (the random model
+has no stable text to protect). Its network-only rate is still $\approx0$
+( $-0.001$ nats/step): even random weights do not destabilize the
+*network* part. More models land as the grids complete; the figure
+regenerates automatically.
 
 ---
 

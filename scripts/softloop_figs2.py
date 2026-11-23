@@ -466,8 +466,11 @@ def fig_gate_law_per_model(out='sl2_gate_law_per_model.png'):
         for d in sorted(glob.glob(os.path.join(g, 'T*'))):
             if not os.path.isdir(d):
                 continue
+            f = os.path.join(d, 'softloop.npz')
+            if not os.path.exists(f):
+                continue
             T = float(os.path.basename(d)[1:])
-            z = np.load(os.path.join(d, 'softloop.npz'))
+            z = np.load(f)
             m = z['m_ref'].astype(np.float64)
             s = z['sig_read'].astype(np.float64)
             act = s > 0
@@ -543,6 +546,69 @@ def fig_twonn(out='sl2_twonn_vs_T.png'):
     plt.close(fig)
 
 
+# ------------------------------------------- F8: horizon vs live-gate density
+
+def fig_horizon_density(groups, out='sl2_horizon_vs_density.png'):
+    """Every model x temperature: median separation step against the
+    live-gate density of ITS OWN orbit margins (measured) and against the
+    A1-corpus predicted density (no loop run)."""
+    fig, axes = plt.subplots(1, 2, figsize=(13.5, 4.8))
+    mks = {'ds15v2': 'o', 'mamba130': 's', 'qwen25_3b': '^', 'randqwen': 'P',
+           'pythia410': 'X', 'qwen3_4b': 'D', 'phi4mini': 'v', 'qwen3_5': 'p',
+           'qwen35_9b': '*'}
+    # A1-corpus predicted density per model (from sl2_gates_table.json + T)
+    tabp = os.path.join(OUT, 'sl2_gates_table.json')
+    pred = {}
+    if os.path.exists(tabp):
+        tab = json.load(open(tabp))
+        # we need the full margin ECDF; approximate from stored percentiles is
+        # not enough -> recompute from the gates files
+        for k in tab:
+            path = os.path.join(os.path.dirname(SRC), 'softloop_gates', k)
+            if not os.path.isdir(path):
+                path = os.path.join(os.path.dirname(SRC), '..', 'results_big',
+                                    k, 'softloop_gates')
+            fs = glob.glob(os.path.join(path, '*', 'gates.npz'))
+            if fs:
+                ms = np.concatenate([np.load(f)['m'] for f in fs])
+                pred[k] = ms
+    used = []
+    for g in groups:
+        for T, z in sorted(all_runs(g).items()):
+            if T < 1e-6:
+                continue
+            m = z['m_ref'].astype(np.float64)
+            dens = float((m < 3 * T).mean())
+            ts, _ = tsat_all(z)
+            S = z['dh'].shape[1]
+            ok = ts < S
+            med = np.median(ts[ok]) if ok.any() else S
+            col = MCOL.get(g, '#333')
+            axes[0].scatter(dens, med, s=60, marker=mks.get(g, 'o'), color=col,
+                            zorder=3, label=MLABEL.get(g, g) if g not in used else None)
+            # predicted density from the A1 corpus (if available for this model)
+            key = g.replace('v2', '')
+            if key in pred and T in [0.05, 0.1, 0.2, 0.3, 0.5, 1.0]:
+                dpred = float((pred[key] < 3 * T).mean())
+                axes[1].scatter(dpred, med, s=60, marker=mks.get(g, 'o'),
+                                color=col, zorder=3)
+        used.append(g)
+    for ax, ttl in [(axes[0], '(a) horizon vs live-gate density of the '
+                                 'loop\'s own orbit'),
+                    (axes[1], '(b) horizon vs the density predicted from the '
+                              'greedy A1 corpora (one pass, no loop)')]:
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_xlabel('fraction of steps with $m_t < 3T$')
+        ax.set_ylabel('median separation step')
+        ax.set_title(ttl, fontsize=9)
+        ax.axhline(600, color='gray', ls=':', lw=0.9)
+    axes[0].legend(fontsize=7)
+    fig.tight_layout()
+    fig.savefig(os.path.join(OUT, out), dpi=150)
+    plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--groups', default='ds15v2,mamba130,qwen25_3b')
@@ -554,6 +620,7 @@ def main():
     fig_phase('ds15v2')
     if groups:
         fig_survival_pooled(groups)
+        fig_horizon_density(groups)
     fig_sampling()
     fig_gate_law_per_model()
     fig_twonn()
