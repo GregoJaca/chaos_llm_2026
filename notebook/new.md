@@ -478,11 +478,21 @@ that greedy would have survived.
 venv311): $T\to0$: 8/16 directions separate by 550 steps (consistent with
 its greedy flux-tube radius $r_*\approx0.20$ median); then
 299 $\to$ 82 $\to$ 39 $\to$ 39 for $T=0.1...1.0$, recovering to 166 at
-$T=1.4$. The same four-regime band on the last missing architecture
-family. **The phase structure is now measured on seven architectures**
-(DeepSeek-1.5B, Qwen2.5-3B, Qwen3-4B, Qwen3.5-2B fp32; Qwen3.5-9B
-fp16; Pythia-410m; Mamba-130m) plus the degenerate random-weight control,
-and nowhere does the network part ($\lambda_{net}$) leave
+$T=1.4$. **Phi-4-mini** (fp16, $r=0.3$, 16 directions; the $G\approx51$
+strong-gate model): $T\to0$ separates in 59 steps (its greedy flux tube
+is the narrowest in the corpus: flip fraction 56% at $r=0.1$);
+$T=0.05$: instant ($t_{sat}=1$ — the strong-gate geometry at work);
+warm band fastest at $T=0.7$ ($t_{sat}=4$); and **complete
+high-$T$ stabilization at $T=2.0$: 0/16 directions separate in 600
+steps**, while every step there is a weak gate. The $G/4$ plateau
+($\approx12.7$ for Phi) sets the ceiling; $\sigma/T$ falls below the
+compounding threshold and the loop freezes — the strongest confirmation
+of the high-$T$ recovery, on the model with the strongest gates.
+
+With Phi, the phase structure is measured on **eight model families**
+(DeepSeek-1.5B, Qwen2.5-3B, Qwen3-4B, Qwen3.5-2B, Qwen3.5-9B,
+Phi-4-mini, Pythia-410m, Mamba-130m) plus the degenerate random-weight
+control, and nowhere does the network part ($\lambda_{net}$) leave
 $[-0.002,+0.001]$ nats/step.
 
 ---
