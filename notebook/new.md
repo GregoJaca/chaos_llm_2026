@@ -50,20 +50,30 @@ sections that follow):
    threshold-straddle channel at larger radii.
 4. **Sampled generation is different from both**: with *common random
    numbers* (all perturbed rows forced to sample the same token stream),
-   the response does **not** grow even at $T=1$ — the conditional dynamics
-   along sampled paths are stable; with independent sampling the runs
-   separate instantly, dominated by the sampling noise itself. The
-   instability of "soft thinking" is an artifact of the deterministic
-   expected-embedding feedback; it is not a property of temperature-sampled
-   generation.
-5. Architecture: the loop destabilizes **without attention** (Mamba-130m:
-   separation in 7–29 steps on orbits that contain a razor tie), and the
-   gate geometry is a per-model constant that varies 25× across models
-   (Qwen family $G\approx2$, Phi-4-mini and Mamba $\approx50$).
-6. The correlation dimension is inapplicable to these state clouds even
-   when the loop is genuinely unstable and aperiodic: no scaling region in
-   the T=0.5/T=2 attractors, closing the D2 question with an in-family
-   control.
+   the response does **not** grow at any temperature (0.3–1.0), any
+   radius (0.003–0.3), or any architecture (transformer, SSM) — 16/16
+   directions censored everywhere; with independent sampling the runs
+   separate at step 0 on all three. The instability of "soft thinking"
+   is an artifact of the deterministic expected-embedding feedback; it
+   is not a property of temperature-sampled generation.
+5. Architecture: the loop destabilizes **without attention** (Mamba-130m)
+   and the random-weight control behaves exactly as its margin landscape
+   predicts (separation in 2–4 steps at every $T$, including $T\to0$,
+   because 42% of its greedy steps are near-ties). The gate geometry is a
+   per-model constant varying 25× across models, and the readout
+   covariance at live gates is **effectively rank one** for every
+   trained model (the two-token outer product is the whole operator,
+   not an approximation) — rank 13 for random weights, whose state
+   cloud is correspondingly high-dimensional (TwoNN 22.7 vs 5–8).
+6. The high-$T$ stabilization, previously inferred from rate fits, is
+   now direct: at $T=1.4$ the Qwen2.5-3B loop has *every* step as a
+   (weak) gate and 60/64 directions still survive 600 steps — the
+   shrinking gain $\sigma/T$ beats the growing gate density.
+7. The reference orbits settle into **drifting repetition loops at most
+   temperatures** (period-13 at 92% coverage at $T=1.4$), so the measured
+   separation is a transverse instability of quasi-periodic orbits — the
+   growing-system analogue of the periodic windows that dominate
+   shrimp's fixed-prefix maps.
 
 ---
 
@@ -343,6 +353,25 @@ compounding smooth rate and the straddles dominate. This is the
 gate-analogue of shrimp's passage-time predictions at folds — with our
 margins in place of their normal forms, and no fold geometry needed.
 
+### 6c. Dense statistics: the direction structure of the two regimes
+
+With 128 directions (same protocol, $r=0.03$):
+
+- $T=0.2$: the separation-step distribution is **bimodal** —
+  10–25% of directions straddle the early razor ties ($t_{sat}\approx6$),
+  the rest separate together at $t\approx70$–106. Direction fate is
+  decided by whether the perturbation happens to cross an early gate.
+- $T=1.0$: the distribution is **tight** (deciles 23–70, median 68,
+  3/128 censored). The compounding smooth mechanism equalizes
+  directions: in the warm band, *when* you separate is a property of the
+  orbit, not of your direction.
+
+The same contrast on Qwen2.5-3B (64 directions): $T=0.2$ gives a wide
+spread (deciles 63–302), $T=0.5$ a point mass at 6, and
+$T=1.4$ **60/64 survive** — the direct observation of the high-$T$
+stabilization in survival statistics: every step is a gate there, but
+each gate is too weak ($\sigma_{\max}/T \lesssim G/4T$) to compound.
+
 ---
 
 ## 7. The network never destabilizes; the readout does
@@ -393,41 +422,111 @@ law acts inside the loop); windowed orbits are far more confident
 $T\approx0.05$ to $T\approx0.3$. Less memory $\Rightarrow$ colder onset —
 shrimp's "chaos needs memory" theme, measured, via our window clock.
 
+**Pythia-410m** (Pile-trained attention, the third control): frozen at
+$T\le0.05$ (its margins are huge, median 8.5); separates at
+$T=0.1$–$0.7$ with only 1–6% of steps live — one or two razor ties in
+the whole orbit suffice once $T$ opens them; at $T\ge1$ its orbit's own
+margins collapse ($m_{med}\to1.0$) so nearly every step is a weak gate
+and separation *slows* again (97–138 steps). All four regimes on a
+fourth architecture.
+
+**Qwen3.5-9B** (hybrid Gated-DeltaNet + attention, spark, fp16, $r=0.3$,
+32 directions): separates at every $T>0$ — fastest at $T=1.0$
+($t_{sat}=4$), recovering at $T=2.0$ (223, 11/32 censored). Caveat:
+fp16 and the large radius mean these horizons are dominated by the
+threshold channel; the qualitative band structure (fast in the middle,
+recovery at high $T$) matches the fp32 models. One cross-observation
+stands: **the loop is more fragile than greedy at the same radius** —
+at $T=0.1$ the effective flip threshold drops from $m\lesssim|\delta m|$
+(greedy) to $m\lesssim T$ (gates), so the loop amplifies from near-ties
+that greedy would have survived.
+
 ---
 
 ## 9. Sampling as a random dynamical system (the common-random-number experiment)
 
 **Setup.** Same loop, but instead of the expected embedding, a token is
 *sampled* from $p_t$ and its embedding is fed back. Two variants:
-`sample_crn` — one draw from the reference row's $p_t$, the *same*
-token fed to every perturbed row (common random numbers: the sampling
-noise is identical across rows, so any growth is pure state dynamics);
+`sample_crn` — one draw from the reference row's $p_t$, the *same* token
+fed to every perturbed row (common random numbers: the sampling noise is
+identical across rows, so any growth is pure state dynamics);
 `sample_ind` — each row samples its own token (real sampled generation).
 
-**First result (smoke, 120 steps, $T=1.0$, $r=0.03$):**
+**Complete result (16 directions, 600 steps, three architectures):**
 
-| feedback | $\max_t\|\delta h_t\|$ over the run |
-|---|---|
-| soft (expected embedding) | $\sim$400 (saturates) |
-| **sampled, common draws** | **0.09–0.17 (no growth)** |
-| sampled, independent | 364 at $t=0$ |
+| run | median $t_{sat}$ | directions separated |
+|---|---|---|
+| DeepSeek-1.5B, CRN, $T=0.3/0.5/1.0$ | 600 (censored) | **0/16 at every $T$** |
+| DeepSeek-1.5B, CRN, $T=1.0$, $r\in\{0.003,0.01,0.1,0.3\}$ | 600 (censored) | **0/16 at every $r$** |
+| Mamba-130m, CRN, $T=1.0$ | 600 (censored) | **0/16** |
+| Qwen2.5-3B, CRN, $T=1.0$ | 600 (censored) | **0/16** |
+| all three, independent, $T=0.5/1.0$ | 0 | **16/16 instantly** |
 
-The conditional dynamics along a sampled token path are **stable even at
-$T=1$**, where the soft loop separates explosively. The instability of
-deterministic soft feedback does not carry over to sampled generation:
-there, unpredictability is the sampling noise plus the threshold
-mechanism of the greedy world. Full statistics (16 directions, 600 steps,
-three temperatures, a radius grid, two more architectures) are running
-(`results/softloop_sample/`), and the figure will be added here.
+![sampling](newfigures/sl2_sampling.png)
+*Figure 9.1 — `sl2_sampling.png`. (a) Median response under the three
+feedback rules (bands = IQR over directions). (b) Horizons per run
+(600 = censored). (c) The CRN radius grid at $T=1$: flat at every
+radius.*
 
-This also reframes the answer-change phenomenology of shrimp's Soft
-Thinking experiments: with a fixed random stream (their "replay arm")
-answer changes drop from 21% to 6%; our CRN result explains why — the
-*state* dynamics are contracting; what changes answers is the stream.
+**Reading.** With the noise held fixed (CRN), the *conditional* state
+dynamics along sampled token paths are stable at every temperature and
+radius tested, on all three architectures — including the SSM. With
+independent sampling, the rows separate at the very first step: the
+divergence of real sampled generation is the sampling noise itself, not a
+state instability. The instability of deterministic soft feedback
+(shrimp's "Soft Thinking" construction) is therefore an artifact of
+feeding back the *mean* of the distribution rather than a draw from it.
+This also explains their answer-change phenomenology: replaying a fixed
+random stream cuts answer changes from 21% to 6% — the state dynamics are
+contracting; what changes answers is the stream. In our vocabulary:
+**temperature moves the gates, but sampling moves the tokens; only the
+combination of temperature with mean feedback produces a smooth
+instability.**
+
+(Caveat: CRN measures the response to the *prompt* perturbation along a
+shared random stream. Two independent streams additionally differ by the
+noise itself — that is the $t_{sat}=0$ row. Both facts together give the
+full picture of sampled decoding.)
 
 ---
 
-## 10. The correlation dimension, closed in-family
+## 10. The state clouds: dimension, repetition, and the rank of the readout
+
+![twonn](newfigures/sl2_twonn_vs_T.png)
+*Figure 10.2 — `sl2_twonn_vs_T.png`. (a) TwoNN dimension (the
+nearest-neighbour-ratio MLE — a point-cloud statistic that does not need
+a scaling region; it is "always a good fit" because it is a local
+neighbour count, not a plateau search) of the loop state cloud vs $T$.
+(b) The effective rank of the readout covariance $\Sigma_p$ itself,
+$(\sum_i\lambda_i)^2/\sum_i\lambda_i^2$ over the top-16 singular values,
+median over steps.*
+
+**Three measurements from the 3000-step state runs:**
+
+1. **The loop inherits greedy's repetition attractors.** The loop screens
+   flag drifting repetition loops at most temperatures: DeepSeek
+   period-13 (68% coverage, $T\to0$), period-10 at $T=0.3$, period-13 at
+   $T=1.4$ (92%!), period-29 at $T=1.0$; Qwen2.5-3B period-51 at
+   $T\to0$ and period-4 at $T=1.0$. The *reference* orbit settles into
+   quasi-periodic text even where the perturbation response separates
+   within tens of steps — the separation is a transverse instability of
+   drifting periodic orbits. (This is the growing-system analogue of the
+   periodic windows that dominate shrimp's fixed-prefix maps.)
+2. **The readout covariance is effectively rank one.** At live gates,
+   the effective rank of $\Sigma_p$ is 1.0–1.3 for every trained model:
+   the two-token outer-product picture $(e_i-e_j)(w_i-w_j)^\top$ is not
+   just a law of the top singular value — the *whole operator* is one
+   direction. The random-weight control breaks this: eff-rank 13.3 for
+   randQwen, whose state cloud is correspondingly high-dimensional
+   (TwoNN 22.7, no stable plateau) against 5–8 for trained models.
+3. **TwoNN vs temperature.** The aperiodic cold cases sit at
+   TwoNN $\approx6$; the one genuinely flat-orbit case ($T=2$,
+   margins $\lesssim T$, the fed embedding barely varies) drops to
+   TwoNN $=3.0$ — the dimension of the cloud tracks how many
+   directions the fed embedding actually explores, which is the
+   dimension of $\Sigma_p$ plus the cache's history variation. No
+   scaling region exists in any of them (the D2 verdict is unchanged
+   from the greedy corpus: inapplicable at these horizons, now in-family).
 
 ![d2](newfigures/d2pipe_softloop_summary.png)
 *Figure 10.1 — `d2pipe_softloop_summary.png`. The repo's validated D2
@@ -438,10 +537,6 @@ our screens. The $T=0.5$ and $T=2$ orbits are aperiodic and have **no
 scaling region (0.00 decades)** — the same verdict as every greedy state
 cloud, now on a genuinely unstable continuous system, matching shrimp's
 own attractor.*
-
-Per-model D2 pipelines and the TwoNN-dimension-vs-$T$ summary are
-running (state files for Mamba, Qwen2.5-3B, randQwen, Pythia, more
-temperatures of DeepSeek); figures will be added here.
 
 ---
 
@@ -490,6 +585,32 @@ decomposition (their own gap list calls it ours to do), the margin
 statistics, the architectures (SSM/hybrid/untied), the window, and the
 sampling split (CRN vs independent), which reconciles their Soft
 Thinking numbers with a stable conditional dynamics.
+
+---
+
+## 11b. Reproducibility of the reference orbit (a self-correction)
+
+I initially attributed orbit-to-orbit differences at fixed $T$ to "batch
+roundoff" without checking which parameter actually matters. Comparing
+the recorded reference token streams of all $T=1.0$ runs on the same
+prompt:
+
+- **Identical batch shape ($B=9$), different radius ($r=0.03$ vs
+  $0.1$) and different direction count: the reference orbits are
+  bit-for-bit identical for all 600 steps.** The perturbed rows do not
+  affect the reference row at all.
+- **Different batch shape ($B=3$ vs $B=9$): the reference orbits first
+  differ at exactly $t=102$.** Floating-point reduction order changes
+  with the batch layout, and at $T=1$ the loop amplifies that roundoff
+  through its gates: a controlled, measured butterfly time.
+
+So: at fixed $B$ everything is exactly reproducible; the only lever is
+the batch layout itself. This is the growing-system version of shrimp's
+batch-layout reproducibility result (173/192 chaotic cells change text
+under a layout change; 7/192 periodic cells do not), now with the
+departure step measured on a single orbit. **Practical consequence:**
+per-temperature comparisons across runs are only valid at equal batch
+shape; all grids in this document use $B=9$ (8 directions + reference).
 
 ---
 

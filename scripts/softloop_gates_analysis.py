@@ -33,10 +33,15 @@ SETS = {
     'randqwen': ('softloop_gates/randqwen', 'randQwen g=1'),
     'pythia410': ('softloop_gates/pythia410', 'Pythia-410m'),
     'qwen3_5': ('softloop_gates/qwen3_5', 'Qwen3.5-2B'),
+    'ds14': ('../results_big/ds14/softloop_gates', 'DeepSeek-14B'),
+    'qwen314': ('../results_big/qwen314/softloop_gates', 'Qwen3-14B'),
+    'phi4': ('../results_big/phi4/softloop_gates', 'Phi-4'),
+    'qwen35': ('../results_big/qwen35/softloop_gates', 'Qwen3.5-9B'),
 }
 COL = {'deepseek': '#1a6faa', 'phi4mini': '#7a4faa', 'qwen25_3b': '#2e8b57',
        'qwen3_4b': '#b8860b', 'mamba130': '#c8102e', 'randqwen': '#888888',
-       'pythia410': '#444444', 'qwen3_5': '#d55e00'}
+       'pythia410': '#444444', 'qwen3_5': '#d55e00', 'ds14': '#5a9bd4',
+       'qwen314': '#e8a33d', 'phi4': '#b18cd9', 'qwen35': '#ff7a45'}
 
 data = {}
 for key, (path, label) in SETS.items():

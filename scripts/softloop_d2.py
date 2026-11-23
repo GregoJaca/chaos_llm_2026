@@ -15,7 +15,7 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RESEARCH = os.path.normpath(os.path.join(HERE, '..', '..'))
-D2 = os.path.join(RESEARCH, 'chaos_spark_wt', 'scripts_spark', 'd2_local.py')
+D2 = os.path.join(RESEARCH, 'chaos_llm_2026', 'scripts_spark', 'd2_local.py')
 
 SRC = os.path.join(HERE, '..', 'results', 'softloop_states', 'ds15')
 TMP = os.path.join(HERE, '..', 'results', 'softloop_states', '_pt')
