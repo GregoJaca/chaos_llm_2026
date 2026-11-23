@@ -1,0 +1,2471 @@
+{
+ "deepseek": {
+  "n_steps": 1500,
+  "median_m": 5.5,
+  "frac_m_lt_01": 0.021333333333333333,
+  "categories": {
+   "content-word swap": 54,
+   "short tokens": 14,
+   "same word (whitespace/case)": 6,
+   "punctuation": 4,
+   "numbers/units": 1,
+   "empty/whitespace": 1
+  },
+  "pairs": [
+   [
+    0.0,
+    " ocean",
+    " the",
+    "content-word swap"
+   ],
+   [
+    0.0,
+    " So",
+    " M",
+    "short tokens"
+   ],
+   [
+    0.0,
+    " Also",
+    " I",
+    "content-word swap"
+   ],
+   [
+    0.0,
+    " incident",
+    " and",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " listed",
+    " already",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " and",
+    " cycle",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " Use",
+    " Also",
+    "content-word swap"
+   ],
+   [
+    0.0234375,
+    " Provide",
+    " Also",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    ",",
+    ".",
+    "punctuation"
+   ],
+   [
+    0.03125,
+    " that",
+    " I",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    " Finally",
+    " Additionally",
+    "content-word swap"
+   ],
+   [
+    0.046875,
+    " mentioned",
+    " provided",
+    "content-word swap"
+   ],
+   [
+    0.046875,
+    ",",
+    ".",
+    "punctuation"
+   ],
+   [
+    0.046875,
+    "Then",
+    "Testing",
+    "content-word swap"
+   ],
+   [
+    0.0546875,
+    " source",
+    " starting",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " crucial",
+    " critical",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " check",
+    " make",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " their",
+    " the",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " volcanic",
+    " super",
+    "content-word swap"
+   ],
+   [
+    0.0703125,
+    " plate",
+    " con",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    "So",
+    "Wait",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    " let",
+    " that",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    " an",
+    " examples",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    " Describe",
+    " Provide",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    " terms",
+    " term",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    ".\n\n",
+    ".",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.09375,
+    " the",
+    " El",
+    "short tokens"
+   ],
+   [
+    0.09375,
+    " I",
+    " magma",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    ".",
+    ".\n\n",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.09375,
+    ".",
+    ".\n\n",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.09375,
+    " has",
+    " influenced",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    " The",
+    " Hmm",
+    "short tokens"
+   ],
+   [
+    0.1015625,
+    " Also",
+    " Include",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " probably",
+    " explain",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " solid",
+    " material",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " illustrate",
+    " support",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    "1",
+    "2",
+    "numbers/units"
+   ],
+   [
+    0.109375,
+    " take",
+    " think",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    " all",
+    " volcan",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    " but",
+    " that",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    ".\n\n",
+    ",",
+    "punctuation"
+   ],
+   [
+    0.125,
+    " how",
+    " the",
+    "short tokens"
+   ],
+   [
+    0.125,
+    " points",
+    " each",
+    "content-word swap"
+   ],
+   [
+    0.1328125,
+    "Unit",
+    "unit",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.140625,
+    " currents",
+    " oceans",
+    "content-word swap"
+   ],
+   [
+    0.15625,
+    ",",
+    " by",
+    "short tokens"
+   ],
+   [
+    0.15625,
+    " other",
+    " Western",
+    "content-word swap"
+   ],
+   [
+    0.15625,
+    ",",
+    " in",
+    "short tokens"
+   ],
+   [
+    0.15625,
+    "0",
+    "th",
+    "short tokens"
+   ],
+   [
+    0.15625,
+    " discuss",
+    " provide",
+    "content-word swap"
+   ],
+   [
+    0.15625,
+    " +",
+    " multiplied",
+    "content-word swap"
+   ],
+   [
+    0.15625,
+    " me",
+    "'s",
+    "short tokens"
+   ],
+   [
+    0.171875,
+    " what",
+    " that",
+    "content-word swap"
+   ],
+   [
+    0.171875,
+    "Next",
+    "Then",
+    "content-word swap"
+   ],
+   [
+    0.171875,
+    " explain",
+    " say",
+    "content-word swap"
+   ],
+   [
+    0.171875,
+    " I",
+    " let",
+    "short tokens"
+   ],
+   [
+    0.1875,
+    ".\n",
+    ".\n\n",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.1875,
+    " a",
+    " the",
+    "short tokens"
+   ],
+   [
+    0.203125,
+    " including",
+    " and",
+    "content-word swap"
+   ],
+   [
+    0.2109375,
+    "0",
+    "th",
+    "short tokens"
+   ],
+   [
+    0.21875,
+    " I",
+    " examples",
+    "content-word swap"
+   ],
+   [
+    0.21875,
+    ".",
+    ".\n\n",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.21875,
+    ".\n\n",
+    " to",
+    "short tokens"
+   ],
+   [
+    0.21875,
+    " than",
+    ",",
+    "content-word swap"
+   ],
+   [
+    0.21875,
+    " cycles",
+    " events",
+    "content-word swap"
+   ],
+   [
+    0.2265625,
+    " magma",
+    " volcan",
+    "content-word swap"
+   ],
+   [
+    0.234375,
+    " evidence",
+    " sleep",
+    "content-word swap"
+   ],
+   [
+    0.234375,
+    " me",
+    "'s",
+    "short tokens"
+   ],
+   [
+    0.234375,
+    " Let",
+    " Maybe",
+    "content-word swap"
+   ],
+   [
+    0.234375,
+    " memory",
+    " and",
+    "content-word swap"
+   ],
+   [
+    0.234375,
+    " start",
+    " break",
+    "content-word swap"
+   ],
+   [
+    0.25,
+    " terms",
+    " several",
+    "content-word swap"
+   ],
+   [
+    0.25,
+    " how",
+    " the",
+    "short tokens"
+   ],
+   [
+    0.2578125,
+    ":",
+    " \"",
+    "punctuation"
+   ],
+   [
+    0.265625,
+    " that",
+    ",",
+    "content-word swap"
+   ],
+   [
+    0.265625,
+    " \n\n",
+    " Hmm",
+    "empty/whitespace"
+   ],
+   [
+    0.265625,
+    " remember",
+    " know",
+    "content-word swap"
+   ],
+   [
+    0.265625,
+    " terms",
+    " following",
+    "content-word swap"
+   ],
+   [
+    0.265625,
+    "Next",
+    "Wait",
+    "content-word swap"
+   ],
+   [
+    0.2734375,
+    " cultures",
+    " musical",
+    "content-word swap"
+   ]
+  ]
+ },
+ "phi4mini": {
+  "n_steps": 1500,
+  "median_m": 3.5,
+  "frac_m_lt_01": 0.024666666666666667,
+  "categories": {
+   "content-word swap": 41,
+   "short tokens": 20,
+   "punctuation": 6,
+   "same word (whitespace/case)": 5,
+   "numbers/units": 4,
+   "empty/whitespace": 4
+  },
+  "pairs": [
+   [
+    0.0,
+    "SS",
+    "ST",
+    "short tokens"
+   ],
+   [
+    0.0,
+    " entire",
+    " response",
+    "content-word swap"
+   ],
+   [
+    0.0,
+    " secure",
+    " security",
+    "content-word swap"
+   ],
+   [
+    0.0,
+    " how",
+    " the",
+    "short tokens"
+   ],
+   [
+    0.0,
+    "real",
+    "r",
+    "content-word swap"
+   ],
+   [
+    0.0,
+    " Western",
+    " The",
+    "content-word swap"
+   ],
+   [
+    0.0,
+    " predicting",
+    " future",
+    "content-word swap"
+   ],
+   [
+    0.0,
+    " must",
+    " should",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    "r",
+    "|",
+    "short tokens"
+   ],
+   [
+    0.03125,
+    "|",
+    "][",
+    "punctuation"
+   ],
+   [
+    0.03125,
+    " to",
+    " these",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    " This",
+    " Mag",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    "4",
+    "5",
+    "numbers/units"
+   ],
+   [
+    0.03125,
+    "][",
+    "med",
+    "short tokens"
+   ],
+   [
+    0.03125,
+    " Your",
+    " Use",
+    "content-word swap"
+   ],
+   [
+    0.046875,
+    "W",
+    ".M",
+    "short tokens"
+   ],
+   [
+    0.046875,
+    "QUEST",
+    "Q",
+    "content-word swap"
+   ],
+   [
+    0.046875,
+    " PM",
+    "PM",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.0625,
+    ",",
+    " stage",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " sleep",
+    " rem",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    "[",
+    "]][",
+    "punctuation"
+   ],
+   [
+    0.0625,
+    " mantle",
+    " Earth's",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " rises",
+    " can",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " P",
+    " PM",
+    "short tokens"
+   ],
+   [
+    0.0625,
+    "NO",
+    "QUESTION",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    "|",
+    "</",
+    "punctuation"
+   ],
+   [
+    0.0625,
+    "IN",
+    "S",
+    "short tokens"
+   ],
+   [
+    0.0625,
+    " must",
+    " should",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " in",
+    " divided",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    "QUEST",
+    "QUESTION",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    "|\n\n",
+    "|",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.078125,
+    "487",
+    "488",
+    "numbers/units"
+   ],
+   [
+    0.09375,
+    " REM",
+    " non",
+    "short tokens"
+   ],
+   [
+    0.09375,
+    " Explain",
+    " Provide",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    " climate",
+    " ocean",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    " in",
+    " [",
+    "short tokens"
+   ],
+   [
+    0.09375,
+    "BL",
+    "Circ",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    "QUESTION",
+    "\n\n",
+    "empty/whitespace"
+   ],
+   [
+    0.109375,
+    " ocean",
+    " ",
+    "empty/whitespace"
+   ],
+   [
+    0.109375,
+    "]][",
+    "][",
+    "punctuation"
+   ],
+   [
+    0.125,
+    " surface",
+    " Earth's",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    ".",
+    ".\n",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.125,
+    " primarily",
+    " driven",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    "notation",
+    "tech",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    " Use",
+    " Include",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    " implement",
+    " incorporate",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    " support",
+    " are",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    "][",
+    "|",
+    "punctuation"
+   ],
+   [
+    0.125,
+    "5",
+    "4",
+    "numbers/units"
+   ],
+   [
+    0.125,
+    " composers",
+    " works",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    " future",
+    " climate",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    " formed",
+    " geological",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    " that",
+    " for",
+    "content-word swap"
+   ],
+   [
+    0.125,
+    "(s",
+    ".s",
+    "short tokens"
+   ],
+   [
+    0.140625,
+    "|",
+    "|\n\n",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.140625,
+    "ru",
+    ".M",
+    "short tokens"
+   ],
+   [
+    0.15625,
+    " mapping",
+    " map",
+    "content-word swap"
+   ],
+   [
+    0.15625,
+    " ",
+    "2",
+    "empty/whitespace"
+   ],
+   [
+    0.15625,
+    " Con",
+    " Use",
+    "short tokens"
+   ],
+   [
+    0.171875,
+    "\n\n",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    0.171875,
+    "PM",
+    "Circ",
+    "content-word swap"
+   ],
+   [
+    0.171875,
+    "BL",
+    "AR",
+    "short tokens"
+   ],
+   [
+    0.1875,
+    " brain",
+    ",",
+    "content-word swap"
+   ],
+   [
+    0.1875,
+    " examples",
+    " specific",
+    "content-word swap"
+   ],
+   [
+    0.1875,
+    "487",
+    "488",
+    "numbers/units"
+   ],
+   [
+    0.1875,
+    " these",
+    " REM",
+    "content-word swap"
+   ],
+   [
+    0.1875,
+    " Discuss",
+    " Additionally",
+    "content-word swap"
+   ],
+   [
+    0.1875,
+    " and",
+    " (",
+    "short tokens"
+   ],
+   [
+    0.1875,
+    ",",
+    " and",
+    "short tokens"
+   ],
+   [
+    0.1875,
+    " methods",
+    " observing",
+    "content-word swap"
+   ],
+   [
+    0.203125,
+    " P",
+    " K",
+    "short tokens"
+   ],
+   [
+    0.21875,
+    " Explain",
+    " Finally",
+    "content-word swap"
+   ],
+   [
+    0.21875,
+    " tools",
+    " how",
+    "content-word swap"
+   ],
+   [
+    0.21875,
+    "Iron",
+    "Circ",
+    "content-word swap"
+   ],
+   [
+    0.21875,
+    " to",
+    " it",
+    "short tokens"
+   ],
+   [
+    0.25,
+    " and",
+    ",",
+    "short tokens"
+   ],
+   [
+    0.25,
+    "],",
+    "].",
+    "punctuation"
+   ],
+   [
+    0.25,
+    "W",
+    "ru",
+    "short tokens"
+   ],
+   [
+    0.25,
+    "W",
+    "<",
+    "short tokens"
+   ],
+   [
+    0.25,
+    "rr",
+    "RR",
+    "same word (whitespace/case)"
+   ]
+  ]
+ },
+ "qwen25_3b": {
+  "n_steps": 1500,
+  "median_m": 1.65625,
+  "frac_m_lt_01": 0.04733333333333333,
+  "categories": {
+   "content-word swap": 60,
+   "short tokens": 9,
+   "empty/whitespace": 5,
+   "numbers/units": 3,
+   "same word (whitespace/case)": 2,
+   "punctuation": 1
+  },
+  "pairs": [
+   [
+    0.0,
+    "opro",
+    "ogen",
+    "content-word swap"
+   ],
+   [
+    0.0,
+    ".\n",
+    ".\n\n",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.0,
+    " precursor",
+    " first",
+    "content-word swap"
+   ],
+   [
+    0.0,
+    " (",
+    ",",
+    "punctuation"
+   ],
+   [
+    0.0,
+    "4",
+    "0",
+    "numbers/units"
+   ],
+   [
+    0.0,
+    "rical",
+    "rom",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " purely",
+    " in",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " linguistic",
+    " variants",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " advanced",
+    " smart",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " Analy",
+    " Difference",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    "7",
+    "8",
+    "numbers/units"
+   ],
+   [
+    0.015625,
+    " large",
+    " general",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " sail",
+    " sails",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " fuels",
+    " fuel",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " drives",
+    " propulsion",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " We",
+    " The",
+    "short tokens"
+   ],
+   [
+    0.015625,
+    " notation",
+    " fractions",
+    "content-word swap"
+   ],
+   [
+    0.015625,
+    " decades",
+    " many",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    "light",
+    "-light",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    " Charles",
+    " Analy",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    "ac",
+    "acus",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    " renewable",
+    " renewables",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    " Computers",
+    " Computing",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    " Limited",
+    " Most",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    " power",
+    " is",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    " ARP",
+    " Bob",
+    "short tokens"
+   ],
+   [
+    0.03125,
+    " first",
+    " a",
+    "content-word swap"
+   ],
+   [
+    0.03125,
+    " coordinates",
+    " infinite",
+    "content-word swap"
+   ],
+   [
+    0.046875,
+    "-",
+    "-K",
+    "short tokens"
+   ],
+   [
+    0.046875,
+    " about",
+    " ",
+    "empty/whitespace"
+   ],
+   [
+    0.046875,
+    ",",
+    " and",
+    "short tokens"
+   ],
+   [
+    0.046875,
+    "\n",
+    " for",
+    "empty/whitespace"
+   ],
+   [
+    0.046875,
+    " Pascal",
+    " the",
+    "content-word swap"
+   ],
+   [
+    0.046875,
+    " Mes",
+    " Babylon",
+    "content-word swap"
+   ],
+   [
+    0.046875,
+    " key",
+    " main",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " depending",
+    " while",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " produce",
+    " overcome",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " systems",
+    " beams",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " Significant",
+    " Major",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    "\n",
+    " and",
+    "empty/whitespace"
+   ],
+   [
+    0.0625,
+    " like",
+    " and",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " and",
+    " PV",
+    "short tokens"
+   ],
+   [
+    0.0625,
+    " major",
+    " key",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " average",
+    " cost",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " sex",
+    " c",
+    "short tokens"
+   ],
+   [
+    0.0625,
+    " and",
+    ".",
+    "short tokens"
+   ],
+   [
+    0.0625,
+    "Main",
+    "Modern",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " recent",
+    " recently",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    "pit",
+    "bet",
+    "short tokens"
+   ],
+   [
+    0.0625,
+    " proposed",
+    " argued",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " change",
+    " evolution",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " systematic",
+    " rigorous",
+    "content-word swap"
+   ],
+   [
+    0.0625,
+    " stored",
+    " architecture",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    " computer",
+    "ized",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    " light",
+    " ",
+    "empty/whitespace"
+   ],
+   [
+    0.078125,
+    " the",
+    " a",
+    "short tokens"
+   ],
+   [
+    0.078125,
+    " manufacturing",
+    " economies",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    " stages",
+    " phase",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    " life",
+    " intelligence",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    " could",
+    " politically",
+    "content-word swap"
+   ],
+   [
+    0.078125,
+    ":\n",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    0.09375,
+    " changes",
+    " systems",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    " evolution",
+    " natural",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    "\"",
+    " hypothesis",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    " multi",
+    " $",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    " notes",
+    " work",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    "0",
+    "5",
+    "numbers/units"
+   ],
+   [
+    0.09375,
+    " about",
+    " typically",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    "Storage",
+    "However",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    " development",
+    " stages",
+    "content-word swap"
+   ],
+   [
+    0.09375,
+    " currently",
+    " now",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    ":\n\n",
+    ":\n",
+    "same word (whitespace/case)"
+   ],
+   [
+    0.109375,
+    " need",
+    " are",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " costs",
+    " is",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " introduced",
+    " used",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " and",
+    " evolution",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " competitive",
+    " falling",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " Electro",
+    " Fusion",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " Operating",
+    " CO",
+    "content-word swap"
+   ],
+   [
+    0.109375,
+    " Advanced",
+    " Still",
+    "content-word swap"
+   ]
+  ]
+ },
+ "mamba130": {
+  "n_steps": 600,
+  "median_m": 8.011024475097656,
+  "frac_m_lt_01": 0.006666666666666667,
+  "categories": {
+   "content-word swap": 51,
+   "empty/whitespace": 15,
+   "short tokens": 12,
+   "punctuation": 2
+  },
+  "pairs": [
+   [
+    0.05481457710266113,
+    " that",
+    " held",
+    "content-word swap"
+   ],
+   [
+    0.0836181640625,
+    " brings",
+    " is",
+    "content-word swap"
+   ],
+   [
+    0.09110260009765625,
+    " scientific",
+    " conference",
+    "content-word swap"
+   ],
+   [
+    0.09645843505859375,
+    " leading",
+    " scientists",
+    "content-word swap"
+   ],
+   [
+    0.13725852966308594,
+    " a",
+    " organized",
+    "content-word swap"
+   ],
+   [
+    0.14783859252929688,
+    " International",
+    " book",
+    "content-word swap"
+   ],
+   [
+    0.15564537048339844,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    0.158294677734375,
+    "\n",
+    "<|endoftext|>",
+    "empty/whitespace"
+   ],
+   [
+    0.16695785522460938,
+    " latest",
+    " science",
+    "content-word swap"
+   ],
+   [
+    0.18190383911132812,
+    ",",
+    " and",
+    "short tokens"
+   ],
+   [
+    0.3295631408691406,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    0.37720489501953125,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    0.39965152740478516,
+    " international",
+    " scientists",
+    "content-word swap"
+   ],
+   [
+    0.46009063720703125,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    0.4622650146484375,
+    " from",
+    " to",
+    "content-word swap"
+   ],
+   [
+    0.4642829895019531,
+    " researchers",
+    " space",
+    "content-word swap"
+   ],
+   [
+    0.46707916259765625,
+    " technical",
+    " technological",
+    "content-word swap"
+   ],
+   [
+    0.4956836700439453,
+    " science",
+    " exploration",
+    "content-word swap"
+   ],
+   [
+    0.5007648468017578,
+    " scientists",
+    " scientific",
+    "content-word swap"
+   ],
+   [
+    0.5109806060791016,
+    " space",
+    " the",
+    "content-word swap"
+   ],
+   [
+    0.5285186767578125,
+    " joint",
+    " forum",
+    "content-word swap"
+   ],
+   [
+    0.5701360702514648,
+    " developments",
+    " advances",
+    "content-word swap"
+   ],
+   [
+    0.6327648162841797,
+    " the",
+    " and",
+    "short tokens"
+   ],
+   [
+    0.6337661743164062,
+    " Congress",
+    " Federation",
+    "content-word swap"
+   ],
+   [
+    0.6811676025390625,
+    ",",
+    " and",
+    "short tokens"
+   ],
+   [
+    0.7841224670410156,
+    " is",
+    " will",
+    "content-word swap"
+   ],
+   [
+    0.7924232482910156,
+    " a",
+    " an",
+    "short tokens"
+   ],
+   [
+    0.808323860168457,
+    " around",
+    " the",
+    "content-word swap"
+   ],
+   [
+    0.827610969543457,
+    " conference",
+    " congress",
+    "content-word swap"
+   ],
+   [
+    0.8316011428833008,
+    " international",
+    " initiative",
+    "content-word swap"
+   ],
+   [
+    0.8494720458984375,
+    "The",
+    "This",
+    "content-word swap"
+   ],
+   [
+    0.8494834899902344,
+    " discuss",
+    " share",
+    "content-word swap"
+   ],
+   [
+    0.879669189453125,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    0.9074020385742188,
+    " to",
+    ".",
+    "short tokens"
+   ],
+   [
+    0.9739608764648438,
+    " joint",
+    " non",
+    "content-word swap"
+   ],
+   [
+    1.0188980102539062,
+    " Astr",
+    " Space",
+    "content-word swap"
+   ],
+   [
+    1.0969619750976562,
+    " technology",
+    " space",
+    "content-word swap"
+   ],
+   [
+    1.2017898559570312,
+    " and",
+    " conference",
+    "content-word swap"
+   ],
+   [
+    1.2407875061035156,
+    " engineering",
+    " space",
+    "content-word swap"
+   ],
+   [
+    1.311295509338379,
+    " together",
+    " leading",
+    "content-word swap"
+   ],
+   [
+    1.393960952758789,
+    " international",
+    " scientific",
+    "content-word swap"
+   ],
+   [
+    1.3962974548339844,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    1.5821075439453125,
+    " (",
+    " is",
+    "short tokens"
+   ],
+   [
+    1.602254867553711,
+    " I",
+    " conference",
+    "content-word swap"
+   ],
+   [
+    1.6328983306884766,
+    " is",
+    " will",
+    "content-word swap"
+   ],
+   [
+    1.765869140625,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    2.0134963989257812,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    2.030029296875,
+    ",",
+    " and",
+    "short tokens"
+   ],
+   [
+    2.0623817443847656,
+    " and",
+    " researchers",
+    "content-word swap"
+   ],
+   [
+    2.065938949584961,
+    "onaut",
+    "onom",
+    "content-word swap"
+   ],
+   [
+    2.1383209228515625,
+    " and",
+    " engineering",
+    "content-word swap"
+   ],
+   [
+    2.181987762451172,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    2.244861602783203,
+    " world",
+    " globe",
+    "content-word swap"
+   ],
+   [
+    2.299978256225586,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    2.3504257202148438,
+    " in",
+    " and",
+    "short tokens"
+   ],
+   [
+    2.386770248413086,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    2.39971923828125,
+    " technology",
+    " technological",
+    "content-word swap"
+   ],
+   [
+    2.4170989990234375,
+    ".",
+    ",",
+    "punctuation"
+   ],
+   [
+    2.4421768188476562,
+    " technical",
+    " technological",
+    "content-word swap"
+   ],
+   [
+    2.4516830444335938,
+    " international",
+    " scientists",
+    "content-word swap"
+   ],
+   [
+    2.4585981369018555,
+    " that",
+    ",",
+    "content-word swap"
+   ],
+   [
+    2.4600887298583984,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    2.4846811294555664,
+    " scientific",
+    " conference",
+    "content-word swap"
+   ],
+   [
+    2.5028858184814453,
+    "I",
+    "IA",
+    "short tokens"
+   ],
+   [
+    2.5356225967407227,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    2.620112895965576,
+    " The",
+    "\n",
+    "empty/whitespace"
+   ],
+   [
+    2.7560081481933594,
+    " is",
+    " has",
+    "short tokens"
+   ],
+   [
+    2.7663230895996094,
+    ")",
+    "),",
+    "punctuation"
+   ],
+   [
+    2.7667083740234375,
+    " and",
+    ",",
+    "short tokens"
+   ],
+   [
+    2.7905502319335938,
+    " from",
+    " to",
+    "content-word swap"
+   ],
+   [
+    2.8068161010742188,
+    " together",
+    " leading",
+    "content-word swap"
+   ],
+   [
+    2.9115867614746094,
+    " engineers",
+    " researchers",
+    "content-word swap"
+   ],
+   [
+    2.913762092590332,
+    " a",
+    " an",
+    "short tokens"
+   ],
+   [
+    2.9560890197753906,
+    " together",
+    " leading",
+    "content-word swap"
+   ],
+   [
+    2.9769248962402344,
+    " together",
+    " leading",
+    "content-word swap"
+   ],
+   [
+    2.9920692443847656,
+    " together",
+    " leading",
+    "content-word swap"
+   ],
+   [
+    3.0595855712890625,
+    " together",
+    " leading",
+    "content-word swap"
+   ],
+   [
+    3.0622177124023438,
+    " from",
+    " to",
+    "content-word swap"
+   ],
+   [
+    3.0813255310058594,
+    " together",
+    " leading",
+    "content-word swap"
+   ],
+   [
+    3.0998611450195312,
+    " from",
+    " to",
+    "content-word swap"
+   ]
+  ]
+ },
+ "randqwen": {
+  "n_steps": 300,
+  "median_m": 0.13506758213043213,
+  "frac_m_lt_01": 0.4166666666666667,
+  "categories": {
+   "content-word swap": 64,
+   "short tokens": 16
+  },
+  "pairs": [
+   [
+    0.00011706352233886719,
+    " \"\").",
+    "ived",
+    "content-word swap"
+   ],
+   [
+    0.001255035400390625,
+    "\uc801\uc73c\ub85c",
+    "\ud83c\udf4e",
+    "short tokens"
+   ],
+   [
+    0.003285646438598633,
+    " \uac00",
+    "\u0e1c\u0e39\u0e49\u0e1b\u0e48\u0e27\u0e22",
+    "content-word swap"
+   ],
+   [
+    0.00376129150390625,
+    "\ub86f",
+    " Laurel",
+    "content-word swap"
+   ],
+   [
+    0.0052433013916015625,
+    " gek",
+    "\ufffd",
+    "short tokens"
+   ],
+   [
+    0.006219625473022461,
+    "_queues",
+    "=color",
+    "content-word swap"
+   ],
+   [
+    0.006290435791015625,
+    "getTitle",
+    ".jsx",
+    "content-word swap"
+   ],
+   [
+    0.0066258907318115234,
+    "\u01d8",
+    "roller",
+    "content-word swap"
+   ],
+   [
+    0.006682395935058594,
+    "$.",
+    " scoring",
+    "content-word swap"
+   ],
+   [
+    0.007473945617675781,
+    " adviser",
+    " eventData",
+    "content-word swap"
+   ],
+   [
+    0.007498502731323242,
+    "\ufffd",
+    "\u9a91\u58eb",
+    "short tokens"
+   ],
+   [
+    0.00751185417175293,
+    "\u0645\u062c\u0644\u0633",
+    " extremism",
+    "content-word swap"
+   ],
+   [
+    0.00799107551574707,
+    "ATTERY",
+    " Trainer",
+    "content-word swap"
+   ],
+   [
+    0.008095264434814453,
+    "antu",
+    "_apps",
+    "content-word swap"
+   ],
+   [
+    0.008539438247680664,
+    "\u5e8f\u5e55",
+    " fian",
+    "content-word swap"
+   ],
+   [
+    0.008692502975463867,
+    "resolve",
+    "antu",
+    "content-word swap"
+   ],
+   [
+    0.009824752807617188,
+    "hw",
+    "\u75ab\u60c5\u671f\u95f4",
+    "content-word swap"
+   ],
+   [
+    0.010085821151733398,
+    " culo",
+    " Matthew",
+    "content-word swap"
+   ],
+   [
+    0.012773990631103516,
+    "movies",
+    "\u4e3a\u60a8\u63d0\u4f9b",
+    "content-word swap"
+   ],
+   [
+    0.013883829116821289,
+    " se\u00f1al",
+    " TZ",
+    "content-word swap"
+   ],
+   [
+    0.014423131942749023,
+    "\u5f3c",
+    " *(*",
+    "short tokens"
+   ],
+   [
+    0.014828205108642578,
+    "preg",
+    " \u043f\u0443\u0442\u0435\u0448\u0435\u0441\u0442\u0432",
+    "content-word swap"
+   ],
+   [
+    0.014882087707519531,
+    " embed",
+    "ocrin",
+    "content-word swap"
+   ],
+   [
+    0.015847206115722656,
+    "/mod",
+    "\\Resources",
+    "content-word swap"
+   ],
+   [
+    0.016968727111816406,
+    " Chennai",
+    "_equalTo",
+    "content-word swap"
+   ],
+   [
+    0.017019033432006836,
+    "min",
+    "onso",
+    "content-word swap"
+   ],
+   [
+    0.0177001953125,
+    "\u0145",
+    "\u65b0\u51a0\u75c5\u6bd2",
+    "content-word swap"
+   ],
+   [
+    0.01967644691467285,
+    " dic",
+    "\ucda3",
+    "short tokens"
+   ],
+   [
+    0.02005624771118164,
+    "\u6293",
+    "jam",
+    "short tokens"
+   ],
+   [
+    0.02031540870666504,
+    "idable",
+    "_variant",
+    "content-word swap"
+   ],
+   [
+    0.020364999771118164,
+    " sniper",
+    "_sessions",
+    "content-word swap"
+   ],
+   [
+    0.02176213264465332,
+    "\u59d4",
+    "\u05e8\u05d1",
+    "short tokens"
+   ],
+   [
+    0.022205352783203125,
+    "Justice",
+    "HI",
+    "content-word swap"
+   ],
+   [
+    0.022735118865966797,
+    "bedPane",
+    "_imp",
+    "content-word swap"
+   ],
+   [
+    0.02319955825805664,
+    "\u89ff",
+    " Adrian",
+    "content-word swap"
+   ],
+   [
+    0.02355670928955078,
+    "<c",
+    "\u306a\u306e",
+    "short tokens"
+   ],
+   [
+    0.02422356605529785,
+    " equipments",
+    "\u0645\u0646\u0627\u0642\u0634\u0629",
+    "content-word swap"
+   ],
+   [
+    0.024254798889160156,
+    " (){",
+    " nederland",
+    "content-word swap"
+   ],
+   [
+    0.027427196502685547,
+    "aycast",
+    " w\u0142a",
+    "content-word swap"
+   ],
+   [
+    0.027749061584472656,
+    " crypto",
+    " Sak",
+    "content-word swap"
+   ],
+   [
+    0.03004765510559082,
+    "idable",
+    "orca",
+    "content-word swap"
+   ],
+   [
+    0.030271053314208984,
+    " getApp",
+    "\u0645\u0646\u0638\u0645\u0627\u062a",
+    "content-word swap"
+   ],
+   [
+    0.03070354461669922,
+    "\ud802\udf4d",
+    "_cmd",
+    "content-word swap"
+   ],
+   [
+    0.031359195709228516,
+    "\u91cd\u8981\u6307\u793a",
+    "\u1fd6",
+    "content-word swap"
+   ],
+   [
+    0.0316927433013916,
+    "Partition",
+    " ListNode",
+    "content-word swap"
+   ],
+   [
+    0.032301902770996094,
+    "\ub1e9",
+    "[]):",
+    "content-word swap"
+   ],
+   [
+    0.0365900993347168,
+    ".strokeStyle",
+    "\u7075\u6d3b",
+    "content-word swap"
+   ],
+   [
+    0.037096261978149414,
+    "chimp",
+    " fatalities",
+    "content-word swap"
+   ],
+   [
+    0.03827333450317383,
+    " nostra",
+    "\u7537\u795e",
+    "content-word swap"
+   ],
+   [
+    0.03905940055847168,
+    ".daily",
+    "_CFG",
+    "content-word swap"
+   ],
+   [
+    0.04069828987121582,
+    " Tran",
+    " IOException",
+    "content-word swap"
+   ],
+   [
+    0.04123735427856445,
+    "\uc73c",
+    "\ud83c\udf4e",
+    "short tokens"
+   ],
+   [
+    0.041463613510131836,
+    "AVOR",
+    " assure",
+    "content-word swap"
+   ],
+   [
+    0.04182767868041992,
+    ".Css",
+    "\u81c3",
+    "content-word swap"
+   ],
+   [
+    0.04203033447265625,
+    " Group",
+    "\u0454",
+    "content-word swap"
+   ],
+   [
+    0.04204106330871582,
+    " se\u00f1al",
+    " contacted",
+    "content-word swap"
+   ],
+   [
+    0.04204392433166504,
+    "\u0445\u043e\u0436",
+    " Encyclopedia",
+    "content-word swap"
+   ],
+   [
+    0.04413485527038574,
+    " ROI",
+    "ocrin",
+    "content-word swap"
+   ],
+   [
+    0.04559326171875,
+    " gdb",
+    " forcing",
+    "content-word swap"
+   ],
+   [
+    0.04594874382019043,
+    "\u5b9c\u660c",
+    "enting",
+    "content-word swap"
+   ],
+   [
+    0.04596352577209473,
+    " wichtig",
+    "\ucc21",
+    "content-word swap"
+   ],
+   [
+    0.046248674392700195,
+    " Christians",
+    "Arc",
+    "content-word swap"
+   ],
+   [
+    0.046716928482055664,
+    " '{",
+    " immersion",
+    "content-word swap"
+   ],
+   [
+    0.047507524490356445,
+    "\u0e1e\u0e2d",
+    "\u05e8\u05df",
+    "short tokens"
+   ],
+   [
+    0.04770398139953613,
+    " diag",
+    ".auth",
+    "content-word swap"
+   ],
+   [
+    0.04815840721130371,
+    "\u4f46\u6211",
+    "=t",
+    "short tokens"
+   ],
+   [
+    0.048354387283325195,
+    "\u292b",
+    "\u6d0b\u8471",
+    "short tokens"
+   ],
+   [
+    0.049098968505859375,
+    " Na",
+    " barriers",
+    "content-word swap"
+   ],
+   [
+    0.05026388168334961,
+    " financed",
+    "rist",
+    "content-word swap"
+   ],
+   [
+    0.0506746768951416,
+    "\ufffd",
+    "\uaf50",
+    "short tokens"
+   ],
+   [
+    0.05155181884765625,
+    "\u7701\u94b1",
+    "\ud86e\udc06",
+    "short tokens"
+   ],
+   [
+    0.05242753028869629,
+    "bff",
+    ".auth",
+    "content-word swap"
+   ],
+   [
+    0.052977561950683594,
+    "kk",
+    "nings",
+    "content-word swap"
+   ],
+   [
+    0.05337667465209961,
+    "\u0145",
+    "\u6ccc",
+    "short tokens"
+   ],
+   [
+    0.05359315872192383,
+    " affine",
+    "_mysql",
+    "content-word swap"
+   ],
+   [
+    0.05448651313781738,
+    "VERT",
+    "_DAMAGE",
+    "content-word swap"
+   ],
+   [
+    0.05464816093444824,
+    " IOException",
+    " ANY",
+    "content-word swap"
+   ],
+   [
+    0.05489802360534668,
+    " ng\u00e0nh",
+    "DK",
+    "content-word swap"
+   ],
+   [
+    0.054902076721191406,
+    "inyin",
+    "clusions",
+    "content-word swap"
+   ],
+   [
+    0.0559239387512207,
+    " {}\\",
+    " hoy",
+    "short tokens"
+   ]
+  ]
+ }
+}

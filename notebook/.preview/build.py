@@ -39,6 +39,7 @@ DOCS = [
     ("controls", "controls.md", "Controls &mdash; Mamba / random-transformer vs the LLM results"),
     ("master", "master.md", "Claims only &mdash; the results I would defend, with definitions"),
     ("veto", "veto.md", "Extra results and whether to include them (verdicts)"),
+    ("new", "new.md", "Temperature bridge &mdash; the soft-generation loop, margin gates, sampling"),
     ("notebook", "notebook.md", "Lab notebook &mdash; everything, including dead ends"),
 ]
 
