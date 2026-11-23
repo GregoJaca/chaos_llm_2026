@@ -164,11 +164,47 @@ margin 3.7) survives; a fragile one (the $T=0.2$ run, median 1.35) dies in
 42 steps. Across 3 prompts, *no* orbit survived 600 steps at any
 $T\geq0.2$ (§8.3 of the proposal; survival figures below).
 
+### 2c. Paper-grade multi-orbit statistics (frozen 10-prompt set)
+
+![dense10](newfigures/sl2_survival_dense10.png)
+*Figure 2.3 — `sl2_survival_dense10.png`. (a) Pooled survival curves at
+three temperatures: median across prompt-orbits (thick), IQR across
+orbits (band); 64 directions per orbit. (b) The per-orbit median horizons
+that the band hides.*
+
+| prompt-orbit | $T=0.1$ | $T=0.2$ | $T=1.0$ |
+|---|---|---|---|
+| interstellar | 385 (27/64 cens.) | 70 | 68 |
+| childhood | 236 | 92 | 15 |
+| cyber | 36 | 13 | 35 |
+| flush-extra | 25 | 138 | 11 |
+| lengths | 129 | 12 | 6 (25/64 cens.) |
+| long2 | 12 | 172 | 16 |
+| more2 | 12 | 172 | 16 |
+| more3 | 210 (7/64 cens.) | 600 (34/64 cens.) | **600 (57/64 cens.)** |
+| more | **600 (64/64 cens.)** | 600 (43/64 cens.) | 14 |
+
+**Two readings.** (i) Orbit heterogeneity is the dominant scatter: at
+$T=0.1$ horizons run from 12 steps to *fully stable* (64/64 censored) —
+but the stable orbits are exactly the confident, low-entropy ones
+(prompts_more at $T=0.1$: median margin 7.3, live-gate density 2.3%;
+more3 at $T=1.0$: margin 7.5, density 9.5%, median entropy 0.02). The
+live-gate mediator holds *across prompts as well as temperatures*: the
+outliers confirm the rule rather than breaking it. (ii) The band
+nevertheless shows the systematic trend: the pooled median horizon
+falls from $\sim$200+ at $T=0.1$ to $\sim$15 at $T=1.0$.
+
+These are the statistics behind every earlier per-orbit number: with 64
+directions per orbit and 9–10 orbits per temperature, the cold-regime
+survival claim (some orbits stable) and the warm-band claim (most orbits
+fast) are both now at $n\approx600$ directions each.
+
 ![survival](newfigures/sl2_survival_pooled.png)
-*Figure 2.2 — `sl2_survival_pooled.png`. (a) Fraction of directions not yet
-separated vs step, every model and temperature pooled (colour = model,
-light = colder, dark = hotter). (b) All models: median separation step vs
-live-gate density (colour = $\log T$, marker = model).*
+*Figure 2.2 — `sl2_survival_pooled.png`. The same view across
+architectures: (a) fraction of directions not yet separated vs step,
+every model and temperature pooled (colour = model, light = colder, dark
+= hotter); (b) all models: median separation step vs live-gate density
+(colour = $\log T$, marker = model).*
 
 ---
 

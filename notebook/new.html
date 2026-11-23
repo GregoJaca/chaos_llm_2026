@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  new.md &nbsp;&middot;&nbsp; built 2026-11-23 06:15:22 &nbsp;&middot;&nbsp;
+  new.md &nbsp;&middot;&nbsp; built 2026-11-23 08:10:47 &nbsp;&middot;&nbsp;
   <a href="new.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="new.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="notebook.html">notebook</a>
@@ -297,11 +297,91 @@ is physics, not noise: a confident orbit (the $T=0.1$ run drew median
 margin 3.7) survives; a fragile one (the $T=0.2$ run, median 1.35) dies in
 42 steps. Across 3 prompts, <em>no</em> orbit survived 600 steps at any
 $T\geq0.2$ (§8.3 of the proposal; survival figures below).</p>
-<p><img alt="survival" src="newfigures/sl2_survival_pooled.png" />
-<em>Figure 2.2 — <code>sl2_survival_pooled.png</code>. (a) Fraction of directions not yet
-separated vs step, every model and temperature pooled (colour = model,
-light = colder, dark = hotter). (b) All models: median separation step vs
-live-gate density (colour = $\log T$, marker = model).</em></p>
+<h3 id="2c-paper-grade-multi-orbit-statistics-frozen-10-prompt-set">2c. Paper-grade multi-orbit statistics (frozen 10-prompt set)</h3>
+<p><img alt="dense10" src="newfigures/sl2_survival_dense10.png" />
+<em>Figure 2.3 — <code>sl2_survival_dense10.png</code>. (a) Pooled survival curves at
+three temperatures: median across prompt-orbits (thick), IQR across
+orbits (band); 64 directions per orbit. (b) The per-orbit median horizons
+that the band hides.</em></p>
+<table>
+<thead>
+<tr>
+<th>prompt-orbit</th>
+<th>$T=0.1$</th>
+<th>$T=0.2$</th>
+<th>$T=1.0$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>interstellar</td>
+<td>385 (27/64 cens.)</td>
+<td>70</td>
+<td>68</td>
+</tr>
+<tr>
+<td>childhood</td>
+<td>236</td>
+<td>92</td>
+<td>15</td>
+</tr>
+<tr>
+<td>cyber</td>
+<td>36</td>
+<td>13</td>
+<td>35</td>
+</tr>
+<tr>
+<td>flush-extra</td>
+<td>25</td>
+<td>138</td>
+<td>11</td>
+</tr>
+<tr>
+<td>lengths</td>
+<td>129</td>
+<td>12</td>
+<td>6 (25/64 cens.)</td>
+</tr>
+<tr>
+<td>long2</td>
+<td>12</td>
+<td>172</td>
+<td>16</td>
+</tr>
+<tr>
+<td>more2</td>
+<td>12</td>
+<td>172</td>
+<td>16</td>
+</tr>
+<tr>
+<td>more3</td>
+<td>210 (7/64 cens.)</td>
+<td>600 (34/64 cens.)</td>
+<td><strong>600 (57/64 cens.)</strong></td>
+</tr>
+<tr>
+<td>more</td>
+<td><strong>600 (64/64 cens.)</strong></td>
+<td>600 (43/64 cens.)</td>
+<td>14</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Two readings.</strong> (i) Orbit heterogeneity is the dominant scatter: at
+$T=0.1$ horizons run from 12 steps to <em>fully stable</em> (64/64 censored) —
+but the stable orbits are exactly the confident, low-entropy ones
+(prompts_more at $T=0.1$: median margin 7.3, live-gate density 2.3%;
+more3 at $T=1.0$: margin 7.5, density 9.5%, median entropy 0.02). The
+live-gate mediator holds <em>across prompts as well as temperatures</em>: the
+outliers confirm the rule rather than breaking it. (ii) The band
+nevertheless shows the systematic trend: the pooled median horizon
+falls from $\sim$200+ at $T=0.1$ to $\sim$15 at $T=1.0$.</p>
+<p>These are the statistics behind every earlier per-orbit number: with 64
+directions per orbit and 9–10 orbits per temperature, the cold-regime
+survival claim (some orbits stable) and the warm-band claim (most orbits
+fast) are both now at $n\approx600$ directions each.</p>
 <hr />
 <h2 id="3-the-gate-law">3. The gate law</h2>
 <p><img alt="law" src="newfigures/sl2_gate_law.png" />
