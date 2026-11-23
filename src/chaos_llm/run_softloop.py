@@ -115,6 +115,14 @@ def main():
     ap.add_argument("--save-layers", default="")
     ap.add_argument("--save-states", action="store_true",
                     help="save the reference row's last-layer hidden state at every step")
+    ap.add_argument("--feedback", default="soft",
+                    choices=["soft", "argmax", "sample_crn", "sample_ind"],
+                    help="what is fed back: soft=expected embedding (default); "
+                         "argmax=embedding of the argmax token; "
+                         "sample_crn=sampled token, SAME draw for every row "
+                         "(common random numbers: isolates the state dynamics); "
+                         "sample_ind=each row samples its own token")
+    ap.add_argument("--sample-seed", type=int, default=7)
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
     t0 = time.time()
@@ -166,6 +174,10 @@ def main():
 
     mask = torch.ones((B, P), dtype=torch.long, device="cuda")
 
+    sgen = None
+    if args.feedback in ("sample_crn", "sample_ind"):
+        sgen = torch.Generator(device="cuda").manual_seed(args.sample_seed)
+
     dh = np.zeros((K, NL, steps), np.float32)
     h0n = np.zeros((NL, steps), np.float32)
     e_ref = np.zeros((steps, D), np.float32)
@@ -178,6 +190,7 @@ def main():
     cov64 = np.zeros(steps, np.float32)
     flips = np.zeros((K, steps), np.int8)
     h_ref = np.zeros((steps, D), np.float32) if args.save_states else None
+    fed_ids = np.zeros((B, steps), np.int64) - 1  # fed token ids (token modes)
 
     # initial forward over the (perturbed) prompt; logits predict token 0
     o = model(inputs_embeds=Eb, attention_mask=mask, use_cache=True,
@@ -200,7 +213,9 @@ def main():
         p = torch.softmax(zr / args.temp, -1)
         sig_read[t] = topk_crosscov_sigma(p, Emb, Wout)
         cov64[t] = float(torch.topk(p, 64).values.sum())
-        e_ref[t] = (p[:, None] * Emb).sum(0).cpu().numpy()
+        if args.feedback == "soft":
+            e_ref[t] = (p[:, None] * Emb).sum(0).cpu().numpy()
+        # token modes: e_ref is recorded after the draw, from what was fed
 
         # argmax per row (flip record)
         am = torch.argmax(logits, -1)
@@ -208,11 +223,27 @@ def main():
         flips[:, t] = (am[1:].cpu().numpy() != top1_ref[t]).astype(np.int8)
 
         # next input embedding
-        if args.mode == "loop":
+        if args.mode == "replay":
+            e_next = e_file[t][None].expand(B, -1).contiguous().to(embed_dtype)
+        elif args.feedback == "soft":
             pt = torch.softmax(logits / args.temp, -1)  # [B, V] fp32
             e_next = (pt @ Emb).to(embed_dtype)        # [B, D] in the model's dtype
-        else:
-            e_next = e_file[t][None].expand(B, -1).contiguous().to(embed_dtype)
+        elif args.feedback == "argmax":
+            ids = torch.argmax(logits, -1)
+            e_next = Emb[ids].to(embed_dtype)
+            fed_ids[:, t] = ids.cpu().numpy()
+        elif args.feedback == "sample_crn":
+            p_ref = torch.softmax(logits[0] / args.temp, -1)
+            tok = int(torch.multinomial(p_ref, 1, generator=sgen).item())
+            e_next = Emb[tok][None].expand(B, -1).contiguous().to(embed_dtype)
+            e_ref[t] = e_next[0].float().cpu().numpy()
+            fed_ids[:, t] = tok
+        elif args.feedback == "sample_ind":
+            pb = torch.softmax(logits / args.temp, -1)  # [B, V]
+            ids = torch.multinomial(pb, 1, generator=sgen).squeeze(1)  # [B]
+            e_next = Emb[ids].to(embed_dtype)
+            e_ref[t] = e_next[0].float().cpu().numpy()
+            fed_ids[:, t] = ids.cpu().numpy()
 
         # feed at position P+t, then record the response at that position
         mask = torch.cat([mask, torch.ones((B, 1), dtype=torch.long, device="cuda")], 1)
@@ -246,11 +277,13 @@ def main():
              dh=dh, h0n=h0n, e_ref=e_ref, m_ref=m_ref, ent_ref=ent_ref,
              top1_ref=top1_ref, top2_ref=top2_ref, top1_rows=top1_rows,
              sig_read=sig_read, cov64=cov64, flips=flips, greedy_ids=greedy_ids,
+             fed_ids=fed_ids,
              prompt_ids=pids.cpu().numpy(), idx=idx, srows=srows,
              **({"h_ref": h_ref} if h_ref is not None else {}))
     save_json(os.path.join(args.out, "meta.json"), dict(
         model=path, prompt_len=P, steps=steps, temp=args.temp, mode=args.mode,
-        window=args.window, dirs=K, r=args.r, seed=args.seed, layers=layers,
+        feedback=args.feedback, window=args.window, dirs=K, r=args.r,
+        seed=args.seed, sample_seed=args.sample_seed, layers=layers,
         tied=tied, wall_s=round(time.time() - t0, 1)))
     print("saved", args.out, f"({time.time()-t0:.0f}s)")
 
