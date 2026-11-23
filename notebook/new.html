@@ -42,7 +42,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  new.md &nbsp;&middot;&nbsp; built 2026-11-23 02:31:52 &nbsp;&middot;&nbsp;
+  new.md &nbsp;&middot;&nbsp; built 2026-11-23 04:26:30 &nbsp;&middot;&nbsp;
   <a href="new.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="new.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="notebook.html">notebook</a>
@@ -641,6 +641,16 @@ stands: <strong>the loop is more fragile than greedy at the same radius</strong>
 at $T=0.1$ the effective flip threshold drops from $m\lesssim|\delta m|$
 (greedy) to $m\lesssim T$ (gates), so the loop amplifies from near-ties
 that greedy would have survived.</p>
+<p><strong>Qwen3.5-2B</strong> (hybrid, fp32, $r=0.1$, 16 directions — the env-repaired
+venv311): $T\to0$: 8/16 directions separate by 550 steps (consistent with
+its greedy flux-tube radius $r_*\approx0.20$ median); then
+299 $\to$ 82 $\to$ 39 $\to$ 39 for $T=0.1...1.0$, recovering to 166 at
+$T=1.4$. The same four-regime band on the last missing architecture
+family. <strong>The phase structure is now measured on seven architectures</strong>
+(DeepSeek-1.5B, Qwen2.5-3B, Qwen3-4B, Qwen3.5-2B fp32; Qwen3.5-9B
+fp16; Pythia-410m; Mamba-130m) plus the degenerate random-weight control,
+and nowhere does the network part ($\lambda_{net}$) leave
+$[-0.002,+0.001]$ nats/step.</p>
 <hr />
 <h2 id="9-sampling-as-a-random-dynamical-system-the-common-random-number-experiment">9. Sampling as a random dynamical system (the common-random-number experiment)</h2>
 <p><strong>Setup.</strong> Same loop, but instead of the expected embedding, a token is

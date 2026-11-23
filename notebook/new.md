@@ -449,6 +449,17 @@ at $T=0.1$ the effective flip threshold drops from $m\lesssim|\delta m|$
 (greedy) to $m\lesssim T$ (gates), so the loop amplifies from near-ties
 that greedy would have survived.
 
+**Qwen3.5-2B** (hybrid, fp32, $r=0.1$, 16 directions — the env-repaired
+venv311): $T\to0$: 8/16 directions separate by 550 steps (consistent with
+its greedy flux-tube radius $r_*\approx0.20$ median); then
+299 $\to$ 82 $\to$ 39 $\to$ 39 for $T=0.1...1.0$, recovering to 166 at
+$T=1.4$. The same four-regime band on the last missing architecture
+family. **The phase structure is now measured on seven architectures**
+(DeepSeek-1.5B, Qwen2.5-3B, Qwen3-4B, Qwen3.5-2B fp32; Qwen3.5-9B
+fp16; Pythia-410m; Mamba-130m) plus the degenerate random-weight control,
+and nowhere does the network part ($\lambda_{net}$) leave
+$[-0.002,+0.001]$ nats/step.
+
 ---
 
 ## 9. Sampling as a random dynamical system (the common-random-number experiment)

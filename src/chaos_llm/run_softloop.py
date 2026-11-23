@@ -63,8 +63,8 @@ def topk_crosscov_sigma(p, E, W, k=64, iters=30, return_M=False, sv_out=0):
     if float(pv[-1]) <= 0.0:
         k = int((pv > 0).sum().item())
         pv, iv = pv[:k], iv[:k]
-    e = E[iv]
-    w = W[iv]
+    e = E[iv].float()          # row-wise cast: works in fp16 or fp32 models
+    w = W[iv].float()
     ebar = (pv[:, None] * e).sum(0)
     wbar = (pv[:, None] * w).sum(0)
     # accumulate M = sum_i pv_i (e_i-ebar)(w_i-wbar)^T row by row
@@ -163,12 +163,11 @@ def main():
     if D is None:
         D = getattr(getattr(cfg, "text_config", cfg), "hidden_size")
     del cfg
-    Emb = model.get_input_embeddings().weight.detach().float()  # [V, d] fp32 view
-    embed_dtype = model.get_input_embeddings().weight.dtype      # fp16 models feed fp16
+    Emb = model.get_input_embeddings().weight.detach()      # [V, d], model dtype
+    embed_dtype = Emb.dtype
     if hasattr(model, "lm_head") and getattr(model, "lm_head", None) is not None:
         Wout = model.lm_head.weight.detach()
         tied = Wout.shape == Emb.shape and bool(torch.equal(Wout, Emb))
-        Wout = Wout.float()
     else:
         Wout, tied = Emb, True
 
@@ -251,9 +250,8 @@ def main():
         sig_read[t] = sig
         sv_read[:, t] = sv.cpu().numpy()
         cov64[t] = float(torch.topk(p, 64).values.sum())
-        if args.feedback == "soft":
-            e_ref[t] = (p[:, None] * Emb).sum(0).cpu().numpy()
-        # token modes: e_ref is recorded after the draw, from what was fed
+        # e_ref is recorded after the feed section from what the reference
+        # row actually received (avoids a [V,d] product per step)
 
         # argmax per row (flip record)
         am = torch.argmax(logits, -1)
@@ -263,9 +261,11 @@ def main():
         # next input embedding
         if args.mode == "replay":
             e_next = e_file[t][None].expand(B, -1).contiguous().to(embed_dtype)
+            e_ref[t] = e_next[0].float().cpu().numpy()
         elif args.feedback == "soft":
             pt = torch.softmax(logits / args.temp, -1)  # [B, V] fp32
-            e_next = (pt @ Emb).to(embed_dtype)        # [B, D] in the model's dtype
+            e_next = (pt.to(embed_dtype) @ Emb).to(embed_dtype)  # [B, D]
+            e_ref[t] = e_next[0].float().cpu().numpy()
         elif args.feedback == "argmax":
             ids = torch.argmax(logits, -1)
             e_next = Emb[ids].to(embed_dtype)
