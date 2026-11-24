@@ -41,3 +41,5 @@ results/figures/softloop/
 notebook/.preview/build.log*
 notebook/.preview/*.tmp*
 assets/
+results_big/softloop/*
+results_big/softloop*/
