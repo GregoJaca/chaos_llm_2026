@@ -40,9 +40,11 @@ Questions:
 4 we expand on (2) and do the analysis not for individual layers, but for the composition of the layers. so the real deal
 
 key results:
-- while each individual layer amplifies perturbation in certain directions, these directions tend to be rotates 87° from layer to layer. this makes perturbations not dominate, and keeps stability.
+- while each individual layer amplifies perturbation in certain directions (singular vectors), these directions tend to be rotates 87° from layer to layer. this makes perturbations not dominate, and keeps stability.
 - we see that perturbations grow in the first layer(s) and then stays almost constant (for most LLM models)
 - tangent contraction rate decreases wrt layers.
+- the hidden state norm grows a lot. the perturbation norm grows (mainly in te first layer), but way less. so the relative perturbation norm decreases. 
+- in Qwen3.5-9B we see perturbation norm growing significantly in every layer that has the Full Attention block, and to very slightly decrease in layer with Gated DealtaNet attention. interesting!
 
 Questions: 
 how does this look like in controls? 
@@ -73,12 +75,10 @@ Here if you think that pedagogically it's a useful concept, we can mention it, b
 8 Controls:
 We used several controls for most parts of our analysis, and we used many different controls. Some show negative results, e.g.: with mamba (a probably contractive transformer) we show that the LLMs we study don't amplify perturbations. Others show positive results:
 
+9 Loops:
+
 
 There are other interesting results we get
 - we look at Qwen3.5-9B (which has two different attention types: full attention and gated DeltaNet) and we clearly see this in how perturbations propagate with it.
-
-
-
-
 
 
