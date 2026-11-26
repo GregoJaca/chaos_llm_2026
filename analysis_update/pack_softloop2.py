@@ -49,6 +49,7 @@ for ax, n in zip(axes.flat, MODELS):
         if d["ar"] is not None:
             ar = d["ar"]; ar = ar / max(ar[1], 1e-30)
             ax.plot(t, ar[:len(a)], color=c, lw=0.9, ls="--")
+    ax.plot([], [], color="k", ls="--", lw=0.9, label="replay (network only)")
     ax.set_yscale("log")
     ax.set_xlim(0, 200)
     ax.set_title(n, fontsize=8.6)

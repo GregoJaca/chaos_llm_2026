@@ -29,6 +29,9 @@ ANGLE = {
     "Qwen3-4B":      "results/update/angle_qwen34/angle.npz",
     "Phi-4-mini":    "results/update/angle_phi/angle.npz",
     "Qwen3.5-2B":    "results/update/angle_qwen35/angle.npz",
+    "Mamba-130m":    "results/update/angle_mamba130/angle.npz",
+    "Pythia-410m":   "results/update/angle_pythia410/angle.npz",
+    "randQwen":      "results/update/angle_randqwen/angle.npz",
 }
 RSTAR_SMALL = {"deepseek": "DeepSeek-1.5B", "phi4mini": "Phi-4-mini",
                "qwen25_3b": "Qwen2.5-3B", "qwen3_4b": "Qwen3-4B",

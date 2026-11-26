@@ -100,7 +100,7 @@ def band_mask4d(L, W, device="cuda", dtype=torch.float32):
 
 def get_layers(model):
     """Return the list of decoder blocks, robust to the wrapper name."""
-    for path in ("model.layers", "backbone.layers", "transformer.h", "model.decoder.layers"):
+    for path in ("model.layers", "backbone.layers", "transformer.h", "model.decoder.layers", "gpt_neox.layers"):
         obj = model
         ok = True
         for part in path.split("."):
@@ -171,3 +171,4 @@ def full_embeddings(model, prompt_ids_t, gen_ids, prompt_delta=None):
 def save_json(path, obj):
     with open(path, "w") as f:
         json.dump(obj, f, indent=2)
+

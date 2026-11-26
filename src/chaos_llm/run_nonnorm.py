@@ -3,7 +3,7 @@ import argparse, json, os, time
 import numpy as np, torch
 from torch.func import jvp, vjp
 from scipy.sparse.linalg import LinearOperator, eigs
-from chaos_llm.protocol import load_model, set_window, full_embeddings, save_json
+from chaos_llm.protocol import load_model, set_window, full_embeddings, save_json, get_layers
 
 
 def main():
@@ -25,10 +25,11 @@ def main():
     E = full_embeddings(model, pids, gids); L = E.shape[1]
     captured = {}
     handles = []
-    for l in range(len(model.model.layers)):
+    blocks = get_layers(model)
+    for l in range(len(blocks)):
         def hook(mod, inp, out, l=l):
             captured[l] = inp[0].detach()
-        handles.append(model.model.layers[l].mlp.register_forward_hook(hook))
+        handles.append(blocks[l].mlp.register_forward_hook(hook))
     with torch.inference_mode():
         o = model(inputs_embeds=E, attention_mask=torch.ones((1, L), dtype=torch.long, device="cuda"),
                   output_hidden_states=True, use_cache=False)
@@ -40,7 +41,7 @@ def main():
                                            torch.arange(L, device="cuda"), None, output_attentions=False)
 
     def mlp_metrics(l, t):
-        mlp = model.model.layers[l].mlp; x = captured[l][0, P + t].clone()
+        mlp = blocks[l].mlp; x = captured[l][0, P + t].clone()
         with torch.no_grad():
             gate = mlp.gate_proj(x); up = mlp.up_proj(x); s = mlp.act_fn(gate)
             sig = torch.sigmoid(gate); ds = sig * (1 + gate * (1 - sig))
@@ -59,7 +60,7 @@ def main():
         return smax, rho
 
     def funcs(l, t):
-        layer = model.model.layers[l]; H = o.hidden_states[l].clone()
+        layer = blocks[l]; H = o.hidden_states[l].clone()
         def f(Hin):
             return layer(Hin, attention_mask=mask, position_ids=pos_ids, position_embeddings=pe, use_cache=False)[0]
         def jv(v):
@@ -98,8 +99,12 @@ def main():
     fs = np.full((len(toks), nL), np.nan, np.float32); fr = np.full_like(fs, np.nan); fk = np.full_like(fs, np.nan)
     for ti, t in enumerate(toks):
         for l in full_layers:
-            s, _ = power(l, t); r = rho_full(l, t)
-            fs[ti, l] = s; fr[ti, l] = r; fk[ti, l] = s / max(r, 1e-30)
+            s, _ = power(l, t)
+            try:
+                r = rho_full(l, t)
+            except Exception:
+                r = float("nan")
+            fs[ti, l] = s; fr[ti, l] = r; fk[ti, l] = s / max(r, 1e-30) if np.isfinite(r) else float("nan")
             print(f"full token {t} layer {l}: sigma {s:.3f} rho {r:.3f} kappa {s/max(r,1e-30):.3f}", flush=True)
 
     # principal angles between top singular vectors of consecutive layers

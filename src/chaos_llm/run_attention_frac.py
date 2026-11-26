@@ -3,7 +3,7 @@ import argparse, json, os
 import numpy as np
 import torch
 from chaos_llm.protocol import (full_embeddings, generate, load_model, prompt_ids,
-                                save_json, set_window)
+                                save_json, set_window, band_mask4d)
 
 
 def main():
@@ -28,22 +28,28 @@ def main():
     P = pids.shape[1]
     with torch.inference_mode():
         E0 = model.get_input_embeddings()(pids)
-        gen = generate(model, E0, args.max_new_tokens)
-    gen_ids = gen[:, P:]
+        gen = model.generate(inputs_embeds=E0,
+                             attention_mask=torch.ones((1, P), dtype=torch.long, device="cuda"),
+                             max_length=P + args.max_new_tokens,
+                             min_new_tokens=args.max_new_tokens,
+                             do_sample=False, eos_token_id=-1, pad_token_id=0)
+    gen_ids = gen
     E = full_embeddings(model, pids, gen_ids)
     L = E.shape[1]
-    mask = torch.ones((1, L), dtype=torch.long, device="cuda")
+    mask = band_mask4d(L, args.window, device="cuda") if args.window < 4096 else torch.ones((1, L), dtype=torch.long, device="cuda")
     with torch.inference_mode():
         out = model(inputs_embeds=E, attention_mask=mask, output_attentions=True, use_cache=False)
     T = int(gen_ids.shape[1])
     frac = np.zeros((len(layers), T), np.float32)
+    frac_heads = np.zeros((len(layers), out.attentions[0].shape[1], T), np.float32)
     for li, l in enumerate(layers):
         A = out.attentions[l][0].float()          # (heads, L, L)
         for t in range(T):
             pos = P + t
-            a = A[:, pos, :].mean(0)              # average over heads
-            frac[li, t] = float(a[:P].sum() / (a.sum() + 1e-30))
-    np.savez(os.path.join(args.out, "attn_frac.npz"), frac=frac,
+            a = A[:, pos, :]                      # (heads, L)
+            frac_heads[li, :, t] = (a[:, :P].sum(-1) / (a.sum(-1) + 1e-30)).cpu().numpy()
+            frac[li, t] = float(a[:, :P].sum() / (a.sum() + 1e-30))
+    np.savez(os.path.join(args.out, "attn_frac.npz"), frac=frac, frac_heads=frac_heads,
              layers=np.asarray(layers), prompt_len=P, gen_ids=gen_ids[0].cpu().numpy())
     save_json(os.path.join(args.out, "meta.json"), dict(
         model=args.model, window=args.window, prompt_len=int(P), T=T, layers=layers,
