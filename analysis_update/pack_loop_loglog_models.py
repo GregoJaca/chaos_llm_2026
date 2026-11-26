@@ -85,14 +85,46 @@ def roll(x, w=5):
     return np.convolve(xp, np.ones(w) / w, mode="valid")
 
 
+def same_dir_pair(tag, name=None):
+    """The longest (loop, replay) pair that lives in the SAME T directory.
+
+    Pairing across campaigns is not valid: the replay must be the recorded orbit
+    of the loop it is compared with, and a dtype change (fp16 vs fp32) changes
+    that orbit.  So the ratio panel only ever uses a matched pair.
+    """
+    tags = {tag}
+    if name is not None and name in LONGTAG:
+        tags.add(LONGTAG[name])
+    best = None
+    for root in ("results/longloop", "results/softloop"):
+        for tg in tags:
+            for sub in glob.glob(os.path.join(HERE, root, tg, "T*")):
+                if "T1.0" not in sub.replace("\\", "/"):
+                    continue
+                p = os.path.join(sub, "loop", "softloop.npz") if root.endswith("longloop") \
+                    else os.path.join(sub, "softloop.npz")
+                r = os.path.join(sub, "replay", "softloop.npz")
+                if not (os.path.exists(p) and os.path.exists(r)):
+                    continue
+                try:
+                    n = min(np.load(p, allow_pickle=True)["dh"].shape[-1],
+                            np.load(r, allow_pickle=True)["dh"].shape[-1])
+                except Exception:
+                    continue
+                key = (n, root.endswith("longloop"))
+                if best is None or key > best[0]:
+                    best = (key, p, r)
+    return (best[1], best[2]) if best else (None, None)
+
+
 rows = {}
 for name, tag in TAGS.items():
-    tag_l = LONGTAG.get(name, tag)
     pl = pick_t1(candidates(tag, "loop", name))
     pr = pick_t1(candidates(tag, "replay", name))
+    pm_l, pm_r = same_dir_pair(tag, name)
     if pl is None and pr is None:
         continue
-    rows[name] = dict(loop=pl, replay=pr)
+    rows[name] = dict(loop=pl, replay=pr, pair_loop=pm_l, pair_replay=pm_r)
 
 MODELS = list(rows)
 if not MODELS:
@@ -127,13 +159,22 @@ for name in MODELS:
     ax.legend(fontsize=7.4, loc="upper left"); ax.grid(True, which="both", alpha=0.28)
 
     ax = axes[1]
-    if "loop" in med and "replay" in med:
-        T = min(len(med["loop"]), len(med["replay"]))
-        lr = np.log(np.maximum(med["loop"][:T], 1e-30)) - np.log(np.maximum(med["replay"][:T], 1e-30))
+    pair_ok = bool(r["pair_loop"] and r["pair_replay"])
+    if pair_ok:
+        a = raw(r["pair_loop"]); b = raw(r["pair_replay"])
+        T = min(a.shape[1], b.shape[1])
+        med["pair_loop"] = np.median(a, axis=0)[:T]
+        med["pair_replay"] = np.median(b, axis=0)[:T]
+    else:
+        med.pop("pair_loop", None); med.pop("pair_replay", None)
+    if "pair_loop" in med and "pair_replay" in med:
+        T = min(len(med["pair_loop"]), len(med["pair_replay"]))
+        lr = np.log(np.maximum(med["pair_loop"][:T], 1e-30)) - np.log(np.maximum(med["pair_replay"][:T], 1e-30))
         lrs = roll(lr, 9)
         t = np.arange(T)
         ax.plot(t[1:], lr[1:], color="#7f7f7f", lw=0.5, alpha=0.5)
-        ax.plot(t[1:], lrs[1:], color="#2ca02c", lw=1.5, label=r"$\log(a_{\rm closed}/a_{\rm replay})$")
+        ax.plot(t[1:], lrs[1:], color="#2ca02c", lw=1.5,
+                label=rf"$\log(a_{{\rm closed}}/a_{{\rm replay}})$, matched pair ({T} steps)")
         sel = t >= 10
         if sel.sum() > 8:
             b = np.polyfit(t[sel], lr[sel], 1)[0]

@@ -307,7 +307,7 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 ![Fig. F0c](update_figures/pack_loop_loglog_all.png)
 
-**Fig. F0c — closed loop vs replay, log–log, every model.** 5-step rolling median over directions, $T=1$, 600 steps (the 1600–3000 step runs are landing on the cluster; this figure is regenerated automatically by `analysis_update/pack_loop_loglog_models.py`, which always picks the longest orbit available). **Read:** the closed loop climbs $10^2$–$10^4$ and *saturates*; the replay decays to 0.03–1. No model shows a straight line over the whole range — the growth is a staircase of gate events. Mamba grows the most ($\times10^4$) despite having no attention.
+**Fig. F0c — closed loop vs replay, log–log, every model.** 5-step rolling median over directions, $T=1$, longest orbit available per model (600–3000 steps; the 1600–3000 step runs are landing on the cluster and the figure regenerates from them automatically via `analysis_update/pack_loop_loglog_models.py`). **Read:** the closed loop climbs $10^2$–$10^4$ and *saturates*; the replay decays to 0.03–1. No model shows a straight line over the whole range — the growth is a staircase of gate events. Mamba grows the most ($\times10^4$) despite having no attention; the two 14B models and Qwen3.5-9B have 1600-step orbits and no long replay yet, so only their closed curves are shown. **Pairing rule:** the ratio $\log(a_{\rm closed}/a_{\rm replay})$ is always computed from a *matched* loop/replay pair recorded in the same directory (same orbit, same dtype), so the right-hand panels stop at the shorter of the two; the left-hand panels always show the longest loop.
 
 ![Fig. F0d](update_figures/pack_loop_loglog_ds15.png)
 
