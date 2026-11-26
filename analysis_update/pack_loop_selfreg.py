@@ -15,8 +15,11 @@ from style import plt, save
 
 TAGS = {"DeepSeek-1.5B": "ds15", "Qwen2.5-3B": "qwen25_3b", "Qwen3-4B": "qwen3_4b",
         "Phi-4-mini": "phi4mini", "Mamba-130m": "mamba130", "Pythia-410m": "pythia410",
-        "randQwen": "randqwen", "Qwen3.5-9B": "qwen35_9b"}
-ORDER = list(TAGS)
+        "randQwen": "randqwen", "Qwen3.5-9B": "qwen35_9b",
+        "DeepSeek-14B": "ds14", "Qwen3-14B": "qwen314", "Phi-4": "phi4"}
+SEL = sys.argv[1].split(",") if len(sys.argv) > 1 else None
+OUT = sys.argv[2] if len(sys.argv) > 2 else "pack_loop_selfreg.png"
+ORDER = [n for n in TAGS if SEL is None or n in SEL]
 
 
 def best(tag):
@@ -68,5 +71,5 @@ for ax, (n, z) in zip(np.atleast_1d(axes), D.items()):
                  loc="left", fontsize=8.6)
     ax.set_xlim(0, len(a) - 1)
 fig.tight_layout()
-save(fig, "pack_loop_selfreg.png")
+save(fig, OUT)
 print("done", list(D))
