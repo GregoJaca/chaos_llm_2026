@@ -23,15 +23,17 @@ $t^*_\ell = W-P+p_{\text{last}}+(\ell-1)(W-1)$.
 
 ## 1. What is running right now (check this first)
 
-Two long campaigns were started at **2026‑11‑26 22:50 CET**. They are
-**resume-safe** (each step is skipped when its `.npz` exists), **never retry**
-(a failure prints `FAILED` and the queue advances), and they only ever kill
-their own processes.
+Two long campaigns were started at **2026‑11‑26 22:50 CET** (restarted at 23:38
+after an fp32 OOM, see the gotcha below). They are **resume-safe** (each step is
+skipped when its `.npz` exists), **never retry** (a failure prints `FAILED` and
+the queue advances), and they only ever kill their own processes.
 
 | host | script | log | what |
 |---|---|---|---|
 | x11 (T4, 15 GB) | `scripts/queue_long_x11.sh` | `results/longloop_x11.log` | 8 small models, **3000 steps**, 4 saved layers, 8 dirs |
-| Spark (GB10, ~121 GB unified) | `scripts/queue_long_spark.sh` | `results/longloop_spark.log` | Qwen3-14B, DeepSeek-14B, Qwen3.5-9B, Phi-4, fp16, **1600 steps** (`≈3.4 s/step`) |
+| Spark (GB10, ~121 GB unified) | `scripts/queue_long_spark.sh` | `results/longloop_spark.log` | Qwen3-14B, DeepSeek-14B, Qwen3.5-9B, Phi-4, fp16, **1600 steps** (`≈1 s/step`) |
+| x11 (waits) | `scripts/queue_after_x11.sh` | `results/after_x11.log` | 32-direction loops + multi-prompt replication |
+| Spark (waits) | `scripts/queue_after_spark.sh` | `results/after_spark.log` | 16-direction loop + multi-prompt replication at 14B |
 
 Round order (both hosts) — designed so that partial completion still covers the
 most important comparison:
@@ -44,9 +46,10 @@ most important comparison:
 | D | teacher-forced, 1000 tokens | 800 tokens | long-horizon control |
 | E | $T=0.5$ loop + replay | $T=0.5$ loop | low-temperature limit |
 
-Runtime: x11 ≈ 15 min per 3000-step 1.5B run (0.28 s/step), 2–3× that for the
-3–4B models, so the whole x11 queue is ~30 h. Spark is ~2 h per 1600-step run,
-~30 h for the queue. Both were given 36–48 h of headroom.
+Measured cost: x11 820 s for the 1.5B at 3000 steps, 1185 s for the 3B (fp16),
+~40 min for the 4B; Spark 997–1384 s per 1600-step 9–14B run. Round A on x11
+takes ~3 h, the whole x11 queue ~14 h, the after-queue ~6 h. Spark's queue is
+~11 h, its after-queue ~5 h. Both fit inside the 36–48 h window.
 
 **How to check progress**
 
@@ -155,6 +158,16 @@ qwen34, phi, pythia; `~/LLM/venv311` → qwen35 (needs newer transformers);
    ($R^2>0.6$) for 6 of 7 models. This is the headline. Figures F0c–F0m.
    The growth is a **staircase** of gate events, not an exponential: FSLE,
    finite-time exponent, increment autocorrelation, power spectrum (F14–F18).
+   **The saturation is self-regulation** (F19): growth needs $m_t<T$ ("gate
+   open"); growth pushes the orbit into confident repetition, which raises
+   $m_t$ above $T$, which switches growth off. DeepSeek-1.5B shows it cleanly
+   (2% of steps open over 3000 steps, flat response for the last 2700); the
+   random transformer never locks in (margins 0.11 nats) and is the only model
+   with exponential-looking growth. Growth is bursty: the top 5% of steps
+   produce 26–73% of the total log growth (F20).
+   **Temperature is not the control parameter** (F21): at $T=10^{-9}$ (greedy
+   AR vs teacher forcing) $L=0.0$; at every $T\ge0.05$, $L=3.8$–$10.4$ nats with
+   no trend. Soft feedback at all is what matters.
 3. **The instability is the readout, not the network.** Replay (frozen soft
    teacher orbit) and CRN sampling are flat; only mean feedback and independent
    sampling destabilise (F1, F2, F9). Mamba (no attention) amplifies as much as
@@ -231,6 +244,10 @@ depth fit, the log-logistic $r_*$ law (KS rejects it), "entropy rises with $T$"
 - **fp16 floor.** Qwen3-4B and Phi-4-mini absolute responses at small radii are
   floor-dominated in fp16; only discrete flips and *shapes* are meaningful.
   fp32 for those two is still not done (a 4B fp32 will not fit on the T4).
+- **fp32 OOMs at 3000 steps on the T4.** Qwen2.5-3B fp32 (9 rows × 3000 tokens ×
+  36 layers + weights) needed 14.4 GB and died. All 2–4B loop runs are therefore
+  fp16; the loop responses are $O(10^2)$, far above the fp16 floor, so this is
+  safe *for the loop*. The 32-direction runs are fp16 too (33 rows).
 - **Sparse ≠ dense scale.** Never mix absolute response numbers from the sparse
   simplex ensemble with the dense Gaussian one; they differ by a constant factor
   in log–log.
