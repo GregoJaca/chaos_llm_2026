@@ -99,6 +99,10 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. A1 — all models, critical radius.** (a) Complementary ECDF $P(r_*>x)$; (b) density of $\log_{10}r_*$; (c) violin of the same, white dot = median. **Data:** 5 prompts × 512 sparse-simplex directions for the small models (`results/rstar/*/p1..p5`), 3 prompts × 1000 directions for the 14B models (`results_big/*/a1_*`); teacher-forced, $r=0.1$, 300 tokens, ties $m_t\le0.02$ excluded. **Precision:** these are the *old* $r_*$ runs; for Qwen2.5/Qwen3-4B/Phi-4-mini they are fp16/floor-limited and the probe radius is not in the linear regime. Use Fig. C5 (dense directions) for the comparable value. **Read:** medians are 0.10 (Phi-4-mini), 0.20 (Qwen2.5/Qwen3-4B/Qwen3.5), 0.35 (DeepSeek-1.5B), 2.2 (DeepSeek-14B), 6.5 (Phi-4), 17.1 (Qwen3-14B). The density is a staircase, not a smooth law: 9–65 distinct values per prompt. **Trivial/not:** the ordering is a real measurement; the absolute scale is not comparable across these runs.
 
+![Fig. A1b](update_figures/pack_rstar_fit_check.png)
+
+**Fig. A1b — is the log-logistic fit as good as the $R^2$ says?** Left: DeepSeek, right: Qwen3-4B; measured survival (dots), fit in linear $S$ (blue), fit in $\log S$ (red). **Data:** same as A1. **Read:** fitting in log space changes the parameters and improves Qwen2.5/Qwen3.5 ($R^2_{\log}=0.91$ vs $0.77/0.85$) but lowers DeepSeek slightly ($0.95$ vs $0.96$). A KS test on the measured radii rejects the log-logistic for every model ($D=0.16$–$0.32$). **Conclusion:** the fit is descriptive, not a law; the large $R^2$ in linear space is dominated by the large-$S$ region. This confirms your suspicion.
+
 ![Fig. A2](update_figures/pack_rstar_decomposition.png)
 
 **Fig. A2 — why $r_*$ is what it is.** (a) $r_*$ against the margin at the controlling step $m_{t_*}$; (b) against the local sensitivity $s_{t_*}=|\delta m_{t_*}|/r$; (c) Pearson correlation $r(\log m_{t_*},\log r_*)$ per model. **Data:** same as A1. **Read:** $r_*=m_{t_*}/s_{t_*}$ by definition; margins explain most of the variance (correlation 0.8–0.98). **Trivial:** the identity is trivial; the measurement is that a few low-margin steps control the distribution.
@@ -119,49 +123,49 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. B1 — the real depth gain.** (a) $\mathrm{cum}_\ell=\log\sigma_1(J_\ell\cdots J_1)$ against normalized depth, median over 8–16 probe tokens and 8 directions; band = IQR over tokens. (b) Local gain $g_\ell=\langle\|J_\ell v_i\|\rangle_i$ against block. (c) $g$ in block 0, middle half, last 10%. **Data:** `run_depth2.py`/`run_depth_big.py`, Jacobian–vector products at one position, $k=8$; no perturbation radius. **Read:** product gain is $\times3.7$–$\times28$; block 0 is $3$–$17\times$; later blocks $0.98$–$1.13$. Block 0 contributes 85% of the log gain in DeepSeek-1.5B but only 2% in Phi-4. **Trivial/not:** the old “stretched decay” was $1/\ell$ by construction; the new numbers are the measured product.
 
-![Fig. B1b](update_figures/pack_depth_k32.png)
-
-**Fig. B1b — does the number of tracked directions matter?** The same DeepSeek-1.5B probe with $k=8$ and $k=32$ orthonormal directions. **Data:** `results/depth2/deepseek` and the new `results/update/depth_k32` (16 tokens, 28 blocks). **Read:** the local gain is identical to the line thickness; the product gain changes by $<10\%$ at the last block ($\mathrm{cum}_L=3.36$ vs $3.18$). **Conclusion:** 8 directions were enough for the shape and the block-0 result; 32 is better for the tail. This is the answer to “8 directions is not enough”: it is enough for the median, not for the tail, and the new run is now the reference.
-
-![Fig. B2](update_figures/pack_depth_local_fit.png)
-
-**Fig. B2 — the interesting fit.** $g_\ell=1+Ae^{-\ell/\tau_1}+Be^{(\ell-L)/\tau_2}$ fitted to the local gain, per model. **Data:** same as B1. **Read:** for DeepSeek/Qwen2.5/DS-14B the fit is essentially exact ($R^2=0.996$–$0.9999$): a one-block spike ($\tau_1\approx0.12$–$0.16$) plus a **common late-depth rise** $B\approx0.07$–$0.13$ with $\tau_2\approx7$–$10$ blocks. Qwen3-4B/Qwen3.5/DS-14B follow with $R^2=0.86$–$0.99$. Phi-4/mini are flat and the fit fails ($R^2=0.36$/$0.52$). **Trivial/not:** the functional form is a descriptive 4-parameter fit; the **universal late rise** ($B\approx0.1$) is a measured regularity and is worth a figure.
-
-![Fig. B3](update_figures/pack_depth_fits.png)
-
-**Fig. B3 — what can be fitted to the cumulative curve.** Data (dots), linear fit (solid), and transient+linear fit (dashed). **Read:** a straight line is wrong; a transient+linear model wins by AIC for all models but still misses the late acceleration in Qwen2.5/DS-14B. A cubic in $\ell$ fits those better (AIC table in `analysis_update/pack_depth_fits.json`). **Recommendation:** do not present a global fit to $\mathrm{cum}$; present the local-gain fit B2, which has interpretable parameters.
-
 ![Fig. B4](update_figures/pack_depth_multitoken.png)
 
-**Fig. B4 — every probe token.** $\mathrm{cum}_\ell$ for every probe token (8–16 per model), all 8 models. **Read:** the shape is stable across tokens, the scale varies by up to $\times2$. **Data need:** 8–16 tokens is enough for a median but not for the tails; the proposed 64-token run (G5) would give a distribution.
+**Fig. B4 — every probe token.** $\mathrm{cum}_\ell$ for every probe token (8–16 per model), all 8 models. **Read:** the shape is stable across tokens, the scale varies by up to $\times2$. **Data need:** 8–16 tokens is enough for a median but not for the tails; the new $k=32$ run is in `results/update/depth_k32`.
+
+![Fig. B4b](update_figures/pack_depth_tailfit.png)
+
+**Fig. B4b — fit to the depth curve after block 0.** Median $\mathrm{cum}_\ell$ (dots), IQR over probe tokens (band), and a cubic fit $\mathrm{cum}=a+b\ell+c\ell^2+d\ell^3$ over layers $\ell\ge1$ (solid). **Data:** same as B1. **Read:** the cubic is descriptive ($R^2=0.89$–$0.98$) but its coefficients are not a universal law. The one robust feature is positive curvature: the gain rises again in the last layers. **This replaces the rejected $1+Ae^{-\ell/\tau_1}+B e^{(\ell-L)/\tau_2}$ fit**, which forced a block-0 spike and did not describe Phi.
+
+![Fig. B4c](update_figures/pack_depth_late_rise.png)
+
+**Fig. B4c — the late-depth rise on its own.** (a) Local gain $g_\ell$ after block 0, divided by the median of the middle half, for every model. (b) The ratio $g_{\rm last10\%}/g_{\rm middle}$. **Data:** same as B1. **Read:** the ratio is 1.00–1.11; the rise is small but consistent for 7 of 8 models (Phi-4 is flat). **Trivial/not:** a 2–11% effect is not a dramatic law; it is a real, small regularity, and it is what makes a global fit curve upward.
 
 ![Fig. B5](update_figures/pack_depth_relative.png)
 
 **Fig. B5 — relative response.** $\|\delta h_\ell\|/\|h_\ell\|$ at $t=50$, normalized at layer 1, against $\ell/(L-1)$ for all models; band = IQR over directions (small models). **Definition:** the numerator is the response norm, the denominator the baseline state norm; the ratio says whether the perturbation grows *relative to the state*. **Read:** only Phi-4-mini amplifies (×20); DeepSeek peaks at ×3 then declines; 14B models end at 0.33–0.43 of layer 1; Qwen3.5 is flat. **Data:** A1 fp32/fp16 as in the tier table; big models from the compact summaries.
 
+![Fig. B5b](update_figures/pack_relative_controls.png)
+
+**Fig. B5b — the same with controls.** Relative response vs depth for every LLM and Mamba/Pythia/random, band = IQR over directions where available. **Data:** control A1 files (`results/ctrl/*/a1i_txt`), $r=0.1$, $t=50$, last saved layer; compact summaries in `results_big_small/ctrl_*.npz`. **Read:** Mamba and Pythia also stay within a factor 2 of 1; the random control is high and noisy. The relative response is not a transformer-specific signature; only Phi-4-mini clearly amplifies.
+
 ---
 
 # C. Geometry: angles, rotation, composition
 
-![Fig. C1](update_figures/pack_angles_all.png)
+![Fig. C1](update_figures/pack_angles_violin_controls.png)
 
-**Fig. C1 — response-vs-state angle.** (a) ECDF of $\angle(\delta h_\ell,h_\ell)$; (b) violin, white dot = median; (c) ECDF of the radial fraction $|\cos\angle|$. **Data:** 64 directions × 300 tokens × all saved layers for DeepSeek-1.5B/Qwen2.5-3B/Qwen3-4B/Qwen3.5-2B/Phi-4-mini (`results/update/angle_*`, $r=0.03$, last layer); 24 directions × 300 tokens for the 14B models (`h0_last`/`dh_last`). **Read:** medians 86.8°–91.1°; the *spread* is model-dependent (Qwen3-4B p25 78.4°, Phi-4-mini p25 84.0°). The radial fraction median is $10^{-4}$–$10^{-2}$, quartiles up to 0.1. **Trivial/not:** the median 90° is the high-dimensional null; the non-zero radial tail is the measured part. **Precision:** the Qwen3-4B/Phi-4-mini angles are fp16 and floor-dominated; treat them as upper bounds.
+**Fig. C1 — response-vs-state angle, all LLMs and controls.** Violin of $\angle(\delta h_\ell,h_\ell)$ at the last saved layer, $r=0.03$; white dot = median, vertical bar = IQR. **Data:** 64 directions for the small models (32 for controls) × 200–300 tokens; 24 directions for the 14B models. **Read:** medians 86.8°–91.4° for every model, including Mamba, Pythia and the random transformer. The *spread* is model-dependent, but the median is not discriminative. **Trivial/not:** the median 90° is the high-dimensional null; the response angle cannot separate trained models from controls.
 
-![Fig. C2](update_figures/pack_angle_vs_depth.png)
+![Fig. C2](update_figures/pack_angle_vs_depth_controls.png)
 
-**Fig. C2 — angle vs depth.** Median (band = IQR over directions/tokens) of $\angle(\delta h_\ell,h_\ell)$ at every saved layer for four small models. **Read:** the angle is $\approx90°$ at every layer; the small deviations are the radial component. **Data:** same as C1. **Use:** this replaces the old confusing bar/line plot; it is the honest version of “the response is almost tangential”.
+**Fig. C2 — angle vs depth, LLMs and controls.** Median (band = IQR over directions/tokens) at every saved layer. **Read:** the angle stays near 90° at every layer for every model, including the controls. **Use:** this is the honest version of “the response is almost tangential”; the radial component is the measured part (Fig. C1), not the median angle.
 
-![Fig. C3](update_figures/pack_rotation_composition.png)
+![Fig. C3](update_figures/pack_rotation_controls.png)
 
-**Fig. C3 — why the composition is stable.** (a) ECDF of the rotation angle between top singular vectors of consecutive blocks; (b) $\sigma_{\max}$ (dots) and $\kappa=\sigma_{\max}/\rho$ (x) against spectral radius; (c) per-block $\sigma_{\max}$ (solid) and $\rho$ (dashed) vs layer; (d) naive $\prod_\ell\sigma_{\max}$ vs measured product gain for the three models with all-layer spectra. **Data:** `nonnorm.npz` (5 tokens × saved layers) and `block_sigma.npz` (4 tokens × all layers). **Read:** every block can amplify ($\sigma_{\max}>1$), many strongly (up to 100+ at block 0); the amplification directions rotate by 78–87° between blocks, close to the random 90°; the product of the maxima overpredicts the measured gain by 16–23 dex. **Interpretation:** the blocks are strongly non-normal ($\kappa\gg1$), so a *particular* vector can grow transiently, but the directions that grow change from block to block; a fixed vector sees the small common gain. This is the figure that answers “how can every block amplify and the model still be stable?”.
+**Fig. C3 — rotation of the amplification direction, with a control.** (a) Violin of the principal angle between top singular vectors of consecutive block Jacobians; white dot = median, bar = IQR. (b) ECDF of the same. **Data:** `nonnorm.npz` for DeepSeek-1.5B/14B, Qwen3-14B, Phi-4 and the random transformer (5 tokens × saved layers). **Read:** trained models rotate by 78–87°; the random control is 89°; random directions are 90°. The trained models are measurably more aligned than random, but the effect is modest. **Why this matters:** every block can amplify ($\sigma_{\max}>1$), but the amplified direction changes from block to block, so a fixed vector sees the small common gain. The quantitative product comparison is in §K and in the earlier C3 panels (kept in `update_figures/pack_rotation_composition.png`).
 
-![Fig. C4](update_figures/pack_sparse_vs_dense.png)
+![Fig. C4](update_figures/pack_dense_slopes.png)
 
-**Fig. C4 — direction sparsity changes the answer.** Absolute response $\|\delta h_L\|$ against $r$ for sparse simplex directions (dashed) and dense Gaussian directions (solid), for the three fp32 small models. **Data:** new fp32 runs `results/update/fp32_*` (sparse, 8 radii) and `results/update/dense_*` (dense, 3 radii, 128 dirs). **Read:** with dense directions the response is linear ($\delta h\propto r$) over $0.03$–$0.3$; with sparse directions it saturates or is flat. **Why:** a sparse direction puts the whole norm into 20–512 entries, so the per-entry perturbation is large and the first layers saturate; a dense direction spreads it. **Consequence:** the old $r_*$ values at $r=0.1$ are **not** the linear $r_*$. This is the most important methodological correction after the precision one.
+**Fig. C4 — sparse vs dense directions: the correct reading.** Absolute response $\|\delta h_{50,L}\|$ against $r$ for sparse simplex (dashed) and dense Gaussian (solid) directions, with IQR bands over directions. **Data:** fp32 runs `results/update/fp32_*` (sparse, 8 radii) and `results/update/dense_*` (dense, 3 radii, 128 dirs). **Read:** both ensembles are linear ($\beta\approx1$) over $r=0.03$–$0.3$; dense is a constant factor 3–10× *higher* at the same $r$. The sparse curve is not saturating in this interval; my earlier claim that it was came from comparing the old fp16 sparse runs to the new fp32 dense runs. Below $r\approx10^{-3}$ the sparse response hits the fp32 subtraction floor. **Consequence:** direction sparsity changes the *scale* of the response, not the exponent; the old $r_*$ values at $r=0.1$ are still probe-dependent because $r_*$ depends on $\delta m$, not $\delta h$.
 
-![Fig. C5](update_figures/pack_rstar_dense.png)
+![Fig. C5](update_figures/pack_rstar_dense2.png)
 
-**Fig. C5 — comparable fragility.** (a) $r_*$ against the probe radius for sparse (dashed) and dense (solid) directions; (b) dense-only comparison. **Data:** 128 dense directions, radii 0.03/0.1/0.3. **Read:** with dense directions $r_*$ is radius-independent: DeepSeek-1.5B 0.37, Qwen3.5-2B 0.36, Qwen2.5-3B 0.58. With sparse directions it varies by 3–10× with the probe radius. **This is the number to compare across models.** The 14B dense runs are blocked by the Spark memory (see §J3).
+**Fig. C5 — comparable fragility.** (a) $r_*$ against probe radius, sparse (dashed) and dense (solid), 95% bootstrap band over directions; (b) dense $r_*$ distributions at $r=0.03$. **Data:** 128 dense directions, radii 0.03/0.1/0.3. **Read:** dense $r_*$ is radius-independent (DeepSeek 0.37, Qwen3.5 0.36, Qwen2.5 0.58); sparse $r_*$ moves with the probe radius. **This is the number to compare across models.** The dense distributions are broad and overlap; the medians differ by less than a factor 2.
 
 ---
 
@@ -171,42 +175,58 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. D1 — response vs token, every model.** $\|\delta h_{t,L}\|/\|\delta h_{1,L}\|$ for a teacher-forced prompt perturbation, median over directions, last saved layer. **Data:** A1 runs; $r=0.1$ (Phi-mini 0.03), 300 tokens. **Read:** DeepSeek-1.5B decays to 0.2 by 300; Qwen2.5/Qwen3-4B/Phi-mini plateau; the 14B models plateau or decay slowly; none grows exponentially. **Precision:** the fp16 models' absolute values are floor-dominated; only the shape is meaningful.
 
+![Fig. D1b](update_figures/pack_time_all_controls.png)
+
+**Fig. D1b — the same with controls.** All 8 LLMs plus Mamba-130m, Pythia-410m and the random transformer, last saved layer, normalized at $t=1$. **Data:** A1/compact runs and `results_big_small/ctrl_*.npz`, $r=0.1$, 300 tokens. **Read:** the controls lie inside the LLM band; Mamba and Pythia decay or stay flat; the random control is noisier and starts high. No system grows. **Use:** this is the figure that answers “missing controls” for the time series.
+
 ![Fig. D2](update_figures/pack_time_controls.png)
 
 **Fig. D2 — network-only replay vs controls.** Same quantity for a *replay* run (the model is fed the recorded token stream) for three LLMs and three controls. **Data:** `results/softloop/*/T1e-9/replay`, 600 steps, 8–32 directions. **Read:** all six curves are flat or decaying; Mamba (no attention) carries the response as well as the transformers; Pythia decays; the random control starts high and stays high. **Not trivial:** it shows attention is not required to carry a perturbation; it is required for the long-range *transport* (Fig. I1).
 
 ![Fig. D3](update_figures/pack_time_by_layer.png)
 
-**Fig. D3 — first/middle/last layer.** Same as D1 at the first, middle and last saved layer. **Read:** in DeepSeek the shallow layers flush first and the deep layers persist; in Qwen/Phi the layers move together. **Use:** this is the requested “repeat at other layers” figure.
+**Fig. D3 — first/middle/last layer.** Same as D1 at the first, middle and last saved layer. **Read:** in DeepSeek the shallow layers flush first and the deep layers persist; in Qwen/Phi the layers move together.
+
+![Fig. D3b](update_figures/pack_time_layers_controls.png)
+
+**Fig. D3b — layer-resolved response with controls.** Three layers (excluding layer 0), every LLM and control. **Data:** same as D1b. **Read:** the ordering of the layers is the same in the controls: deep layers retain more; no layer grows exponentially. **Use:** this is the requested “one plot for different layers, with controls”.
 
 ![Fig. D4](update_figures/fig_time_dynamics_all.png)
 
 **Fig. D4 — finite-time exponent.** (a) Response shape normalized; (b) replay vs controls; (c) $\Lambda(\tau)=\frac1\tau\log(a_{t+\tau}/a_t)$ against $\tau$ with error bars; (d) late rate $\lambda_{20}$. **Data:** A1 + replay. **Read:** $\Lambda(\tau)$ converges to $\le0$ for every system; no positive plateau. **Trivial/not:** the late-rate values are all within $\pm0.01$; the measurement is that a positive rate does not survive averaging. **Controls:** Mamba $-0.0008$, Pythia $-0.0019$, random $-0.0007$.
 
-![Fig. D5](update_figures/legacy_long_horizon.png)
+![Fig. D5](update_figures/pack_long_horizon2.png)
 
-**Fig. D5 — 4000-token horizon.** The existing real figure (`notebook/figures/long_horizon.png`; it loads `a1_4k_test.npz`, no synthetic arrays). **Read:** the response does not grow over 4000 tokens; it settles into a slow decay. This is the long-horizon confirmation of D1.
+**Fig. D5 — 4000-token horizon, rebuilt from raw data.** (a) Response vs $t$ on a lin–log axis; (b) log–log; (c) local 20-token rate. **Data:** `results/local_data/a1_4k_test.npz`, 2 directions, 4 layers, $r=0.1$, last layer. **Read:** the response decays and fluctuates around a small floor; no sustained positive rate. **Trivial/not:** the decay is not a clean exponential; the measurement is that it never grows.
 
 
 ---
 
 # E. Sliding window
 
-![Fig. E1](update_figures/pack_window_dense.png)
+![Fig. E1](update_figures/pack_window_exact.png)
 
-**Fig. E1 — the dense window law.** 106 windows $W=60$–$265$, 7 layers, $P=65$, 4 directions, 200 tokens. (a) Residual $t_{\rm first}-(W-P)$; (b) $t^*_1$ vs $W$ with the fit; (c) $t^*_\ell$ vs layer for several $W$; (d) residual from the universal law. **Read:** first deviation is exactly at $W-P$ (residual 0; the $+5$ entries are $W<P$ where the mask differs at $t=0$). Flush is $t^*_\ell=\ell(W-1)-21$ with $R^2=1.0000$ over 97 windows for layer 1, 51 for layer 2, 15 for layer 3. **This is the dense version of the old 2–3-point plot.** **Interpretation:** the perturbation does not vanish at $W-P$; it is carried by generated tokens, and each layer adds one window of memory.
+**Fig. E1 — the exact window formula.** (a) Flush step $t^*_1$ vs $W$ for 97 windows; the line is $p_{\rm last}+W-P$, where $p_{\rm last}=43$ is the last prompt position carrying a nonzero perturbation and $P=65$. (b) $t^*_\ell$ vs layer for several windows; lines are $t^*_\ell=W-P+p_{\rm last}+(\ell-1)(W-1)$. (c) Residual from that formula: zero to the token for every measured layer/window. **Data:** `results/local_data/wspec/w*/a1.npz`, 106 windows $W=60$–$265$, 7 layers, 4 directions, 200 tokens. **Read:** the law is exact, not fitted. **The constant is not mysterious:** $t^*_1-p_{\rm last}-W+P=0$; my earlier “$W-22$” is just $p_{\rm last}-P=-22$. The perturbation support is sparse, so only positions up to $p_{\rm last}$ are perturbed.
+
+![Fig. E1b](update_figures/pack_window_exact_models.png)
+
+**Fig. E1b — the same formula on Qwen3-4B/Phi-4-mini.** (a) $t^*_1$ vs $W$; (b) $t^*_\ell$ vs layer. **Data:** `window4d/*/w*/a1.npz`; $p_{\rm last}=55$, $P=64$. **Read:** both models follow the same law with their own $p_{\rm last}$. **Interpretation:** the perturbation does not vanish at $W-P$; the last perturbed *generated* token carries it, and each layer adds one window of memory.
 
 ![Fig. E2](update_figures/pack_window_models.png)
 
-**Fig. E2 — the same law in Qwen3-4B/Phi-4-mini.** (a) $t^*_\ell$ vs layer at $W=100$; (b) three windows; (c) $(\ell,W)$ heatmap. **Data:** `window4d/*/w*/a1.npz`, 11 layers, 6 directions, $r=0.1$, 300 tokens. **Read:** both models give the same arithmetic progression $t^*_\ell=t^*_1+(\ell-1)(W-1)$; the two models are identical to the token.
+**Fig. E2 — flush vs layer, Qwen3-4B/Phi-4-mini.** (a) $t^*_\ell$ vs layer at $W=100$; (b) three windows; (c) $(\ell,W)$ heatmap. **Data:** `window4d/*/w*/a1.npz`, 11 layers, 6 directions, $r=0.1$, 300 tokens. **Read:** both models give the same arithmetic progression; the two models are identical to the token.
 
-![Fig. E3](update_figures/pack_window_tokens.png)
+![Fig. E3](update_figures/pack_window_agreement_fit.png)
 
-**Fig. E3 — text agreement.** (a) Running fraction of tokens identical to $W=4096$; (b) first differing token vs $W$; (c) residual latency; (d) fraction identical over 300 tokens. **Data:** `results/window_tokens/tokens.npz`, 8 windows, 300 tokens, no perturbation. **Read:** first difference at $W-P$ (+2–7 tokens); text is bit-identical for 300 tokens once $W\gtrsim500$. **Trivial/not:** the first-difference law is a mask identity; the effective memory ($W\approx5$–$8P$) is a measured property of this continuation.
+**Fig. E3 — token agreement and its fit.** (a) Fraction of tokens identical to $W=4096$ for each window, with a stretched-exponential fit $f_\infty+(1-f_\infty)e^{-(t/\tau)^\beta}$ (dashed). (b) $1-\mathrm{agreement}$ on a log axis. **Data:** `results/window_tokens/tokens.npz`, 8 windows, 300 tokens, no perturbation. **Read:** the decay is a text statistic, not a clean exponential; the fitted $\tau$ grows with $W$ (W=100: $\tau\approx90$, $\beta\approx2$). **Trivial/not:** the first-difference law is a mask identity; the effective memory ($W\approx5$–$8P$) is a measured property of this continuation.
 
-![Fig. E4](update_figures/pack_attention_fraction.png)
+![Fig. E4](update_figures/pack_attention_models.png)
 
-**Fig. E4 — measured attention mass on the prompt.** Fraction of attention (averaged over heads) that lands on prompt tokens at the current generated position, per layer, for $W=100$ and $W=4096$; $P=65$. **Data:** DeepSeek-1.5B, `run_attention_frac.py`, eager attention, 135 generated tokens, layers 0/7/14/21/27. **Read:** even with full context, attention on the prompt falls to zero by $t\approx150$ for this continuation; with $W=100$ it is cut earlier by the mask. **This is the real version of the old schematic “attention weight fraction” panel.** It shows that “prompt memory” is lost both by the mask and by the model's own shift to recent tokens.
+**Fig. E4 — measured attention mass on the prompt.** (a) DeepSeek, four windows, median over heads (band = IQR over heads); (b) $W=100$, four models. **Data:** `run_attention_frac.py` with the **correct 4-D window mask**, 200 generated tokens, layers 0/7/14/21/27. **Read:** at $t=0$ the mass is high (0.9); it decays as the model shifts to generated tokens. For $W=100$ it drops sharply at $t\approx99$, when the **last prompt token (position 64, perturbed or not)** leaves the window. The response flush is earlier, at $t^*_1=p_{\rm last}+W-P=43+100-65=78$, because only the *perturbed* prompt positions (up to $p_{\rm last}=43$) matter. With $W=4096$ there is no mask cut; the mass decays gradually and never reaches zero in 200 tokens. **This is the real version of the old schematic “attention weight fraction” panel, and it resolves the apparent contradiction with the window formula.**
+
+![Fig. E4b](update_figures/pack_attention_heads.png)
+
+**Fig. E4b — any head still attending.** Fraction of heads with prompt attention $>10^{-4}$ vs $t$, DeepSeek, four windows. **Read:** a small number of heads keep a trace of the prompt longer than the mean suggests; for $W=4096$ some heads still attend at $t=200$. **Why this does not contradict the formula:** the formula is about the response at layer 1 becoming exactly zero when no *perturbed* token is in the window; it is not a statement about the total prompt-attention mass.
 
 ---
 
@@ -216,57 +236,92 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. F0 — the four central soft-loop results.** (a) Soft-loop response vs step at five temperatures (DeepSeek-1.5B, 600 steps, 8 directions, $r=0.03$); (b) closed loop vs replay on the same orbit at $T=1$; (c) gate law over all temperatures with the identity curve $G/4\cosh^{-2}(m/2T)$; (d) soft vs common-random-number vs independent sampling at $T=1$. **Read:** temperature changes the growth (a); the network alone is flat (b); the readout follows the identity (c); only mean feedback and independent sampling destabilise (d). This is the one-page version of the section.
 
+![Fig. F0b](update_figures/pack_master_loglog.png)
+
+**Fig. F0b — the log–log version of (b) and (d).** Same data, both axes logarithmic. **Read:** the closed loop is not a straight line in log–log; it is a staircase with long flat stretches and jumps. Replay is a slow decay. This is why a single exponential rate is a poor summary.
+
+### F.0 What “soft”, “closed loop”, “replay”, “CRN” and “independent” mean
+
+Your understanding is correct. The precise definitions are:
+
+- **Soft loop (closed loop).** At step $t$ the model computes logits $z_t$, turns them into $p_t=\mathrm{softmax}(z_t/T)$, forms the expected embedding $e_t=\sum_v p_t(v)E_v$, and feeds $e_t$ back as the next input. The context grows by one soft token per step. The perturbation is in the prompt (and in every subsequent state through the feedback).
+- **Network-only replay.** The model is run on the *recorded* soft-token orbit $e_1,\dots,e_T$ of the reference (unperturbed) run. Only the perturbed prompt differs; the feedback is removed. This is a control: it measures what the network alone does to the perturbation, with the readout held fixed.
+- **Teacher forcing (greedy corpus).** The model is fed the *recorded token ids* of the unperturbed greedy run; the perturbation is only in the prompt embeddings. This is the $T\to0$ limit of the replay, with hard tokens instead of expected embeddings.
+- **CRN sampling.** At each step a token is sampled from $p_t$ of the reference row, and that *same* token is fed to every perturbed row (common random numbers). The sampling noise is identical across rows, so any growth is state dynamics.
+- **Independent sampling.** Each row samples its own token. The rows separate at step 0 because the noise differs; this is ordinary sampled generation.
+
+“Soft” means *expected embedding*; a “hard” loop would feed the argmax token (greedy) or a sampled token. Greedy is the $T\to0$ limit; sampled is the `sample_crn`/`sample_ind` cases. The closed loop is the most interesting because it is the only one where the perturbation can reach the readout and change the *distribution* that is fed back. Replay and teacher forcing are controls that remove that path; CRN is a control for sampling noise.
+
 ![Fig. F1](update_figures/pack_softloop_closed_all.png)
 
 **Fig. F1 — closed loop vs replay, every model.** Response $\|\delta h_t\|/\|\delta h_1\|$ for the soft loop (solid) and the network-only replay (dashed), colour = temperature, 200 steps. **Data:** `results/softloop/*/T*/` and `replay/`, 8–32 directions, $r=0.03$–$0.3$. **Read:** closed loops grow by $10^2$–$10^4$; replays stay at 1 or decay. Mamba and Pythia (no/weak attention) also grow in closed loop; the random control is high in both. **The clean result:** the network is contractive/marginal; the feedback/readout is the instability.
 
-![Fig. F2](update_figures/pack_softloop_open_closed_bars.png)
+![Fig. F2](update_figures/pack_loop_metric_M.png)
 
-**Fig. F2 — paired growth at step 100.** $\|\delta h_{100}\|/\|\delta h_1\|$ for closed loop and replay, median over temperatures. **Read:** closed bars are 10–1000×; replay bars are 1 or below. **Use:** this is the clearest single comparison; the old panel (b) was noisy because it used a fitted rate.
+**Fig. F2 — mean log amplification, the non-arbitrary version.** $M=\langle \log(a_t/a_1)\rangle_t$ over the run, median over directions, at $T=1$; bars are closed loop, replay, CRN sampling and independent sampling. **Data:** `results/softloop*`, 600 steps, 8–32 directions; CRN/ind from `results/softloop_sample`. **Read:** closed loop has $M=1$–$7$ nats; replay and CRN are at 0 or negative; independent sampling is near 0. **Why this is better than “growth at step 100”:** it integrates the whole trajectory, so it does not depend on a chosen step. **Caveat:** $M$ is still horizon-dependent; the run length is fixed at 600, and we report it.
 
-![Fig. F3](update_figures/pack_softloop_phase.png)
+![Fig. F2b](update_figures/pack_loop_feedback.png)
 
-**Fig. F3 — the phase plot, redrawn.** (a) Median horizon $t_{\rm sat}$ vs $T$ with a broken axis; the greedy $T\to0$ point is at 600 (all directions survive); (b) horizon vs live-gate density $P(m_t<T)$, colour = $\log_{10}T$. **Data:** DeepSeek-1.5B, 600 steps, 8 directions. **Read:** the horizon is non-monotonic in $T$ and correlates with gate density within this model. **Not a universal collapse:** across models the same density gives different horizons (Phi $\sim10$, DeepSeek $\sim100$); the missing variable is the gate strength $G_{\rm eff}$. A two-parameter fit gives $R^2=0.20$. **This is the honest replacement for the old `sl2_phase.png`.**
+**Fig. F2b — the feedback exponent.** (a) $\lambda_{\rm fb}=\mathrm{d}\log(a_{\rm closed}/a_{\rm replay})/\mathrm{d}t$ per model at $T=1$ (median and IQR over directions). (b) The ratio $a_{\rm closed}/a_{\rm replay}$ vs $t$. **Data:** same orbit in both runs. **Read:** $\lambda_{\rm fb}=0.002$–$0.006$ nats/step for most models, negative for Qwen2.5/Qwen3.5; the ratio still grows because replay decays while the closed loop stays flat or grows. **Interpretation:** the loop instability is not a clean exponential; it is a staircase of gate events on top of a slowly growing ratio. This is why a single “Lyapunov exponent” is not the right summary.
 
-![Fig. F3b](update_figures/pack_live_density.png)
+![Fig. F3b](update_figures/pack_live_density_sorted.png)
 
-**Fig. F3b — live-gate density across models.** (a) Density $P(m_t<T)$ vs $T$ per model; (b) horizon vs density for all models. **Data:** `results/softloop*`, 300–600 steps, 8–32 directions. **Read:** density rises with $T$ at different rates; at the same density the horizon differs by 10×, so density alone is not the order parameter. This is the further analysis you asked for on `sl2_live_density_models`.
+**Fig. F3b — live-gate density across models.** Density $P(m_t<T)$ vs $T$, sorted by $T$ (the lowest-temperature point is no longer connected to the highest). **Data:** `results/softloop*`, 300–600 steps, 8–32 directions. **Read:** density rises with $T$ at different rates. **Why the old panel (b) is deleted:** horizon vs density does not collapse across models; the same density gives a 10× different horizon, and a two-parameter fit gives $R^2=0.20$. Density alone is not the order parameter.
 
 ![Fig. F4](update_figures/pack_gate_law_loglog.png)
 
-**Fig. F4 — gate law, log–log and slopes.** (a) $\sigma_{\max}(\Sigma_p)$ against $m_t/T$ for all models, log–log; (b) fitted slope for $m_t/T>1$, with $G_{\rm eff}$ and $R^2$. **Data:** 4–11 temperatures per model, 8–32 directions. **Read:** slopes $-0.90$ to $-0.99$ for every trained model; the random control is $-0.83$. **Trivial/not:** the slope is the softmax identity; the measured content is the collapse and $G_{\rm eff}$.
+**Fig. F4 — gate law, log–log and slopes.** (a) $\sigma_{\max}(\Sigma_p)$ against $m_t/T$ for all models, log–log; (b) fitted slope for $m_t/T>1$, with $G_{\rm eff}$ and $R^2$. **Data:** 4–11 temperatures per model, 8–32 directions. **Read:** slopes $-0.90$ to $-0.99$ for every trained model; the random control is $-0.83$ and Pythia $-0.90$, visibly off the identity. **Trivial/not:** the slope is the softmax identity; the measured content is the collapse and $G_{\rm eff}$.
+
+![Fig. F4b](update_figures/pack_gate_linlog.png)
+
+**Fig. F4b — the same in lin–log.** (a) Data in linear $m/T$ and log $\sigma$; the dashed curve is the identity with $G=2$. (b) Median distance from the identity for $m/T>1$. **Read:** DeepSeek/Qwen2.5/Qwen3.5/Phi-mini/Pythia/randQwen are *below* the identity at large $m/T$; Mamba and Qwen3-4B are closest. The identity is a conditional two-token model, not a universal curve; the robust measurement is the tail slope, not the amplitude.
 
 ![Fig. F5](update_figures/pack_gate_law_per_model.png)
 
-**Fig. F5 — per-model fit, including the random control.** Data (dots), tail fit (black), identity curve $G/4\cosh^{-2}(m/2T)$ (red), and for randQwen the fit restricted to $m/T>3$ (red dashed). **Read:** the random control's tail fit is $-1.01$ with $R^2=0.99$; the earlier “the control breaks the law” came from fitting through the flat $m/T<1$ region. **This is the fixed fit you asked for.** The identity curve, not a straight line, is what matches the full range.
+**Fig. F5 — per-model fit, including the random control.** Data (dots), tail fit (black), identity curve $G/4\cosh^{-2}(m/2T)$ (red), and for randQwen the fit restricted to $m/T>3$ (red dashed). **Read:** the random control's tail fit is $-1.01$ with $R^2=0.99$; the earlier “the control breaks the law” came from fitting through the flat $m/T<1$ region. **This is the fixed fit you asked for.** The identity curve, not a straight line, is what matches the full range; it matches better for Mamba/Qwen3-4B than for DeepSeek/Qwen2.5.
 
-![Fig. F6](update_figures/pack_gate_sigma_distribution.png)
+![Fig. F5b](update_figures/pack_gate_linlog_per_model.png)
 
-**Fig. F6 — distribution of the readout gain.** Boxes of $\sigma_{\max}$ in bins of $m_t/T$, four models pooled. **Read:** the distribution narrows as $m/T$ grows; the median follows the identity. **Use:** this is the “show me the distribution, not only the max” figure.
+**Fig. F5b — per-model lin–log version.** Same data and fits on linear $m/T$ axes. **Read:** the identity (red) is above the data for most models at large $m/T$; the tail slope (black) is the better description. For randQwen and Pythia the identity is visibly worse, consistent with a distribution that is not two-token.
 
 ![Fig. F7](update_figures/pack_gate_geometry.png)
 
 **Fig. F7 — pair geometry $G_t$.** (a) Violin of $G_t=\|E_i-E_j\|\|W_i-W_j\|$ per model; (b) $G_t$ vs margin. **Data:** `results/softloop_gates/*/gates.npz`, 300 steps per orbit. **Read:** $G_t$ is a per-model constant to ±40%; Phi/Mamba are 25–100× larger; the random control is degenerate. **Not trivial:** the per-model constant is what makes Phi's gates strong.
 
-![Fig. F8](update_figures/pack_softloop_rates.png)
+![Fig. F8](update_figures/pack_loop_rates_by_model.png)
 
-**Fig. F8 — network rate vs loop rate.** (a) Histogram of $\lambda_{\rm net}$ over all model/temperature pairs; (b) histogram of $\lambda_{\rm sep}$. **Read:** $\lambda_{\rm net}$ is within ±0.006 (95%), centred on 0; $\lambda_{\rm sep}$ is broad and mostly positive. **This replaces the inconclusive scatter (b) of the old Fig. 8.**
+**Fig. F8 — network rate vs loop rate, per model.** (a) $\lambda_{\rm net}$ (replay) per model: box = IQR, dots = temperatures; (b) $\lambda_{\rm sep}$ (closed loop). **Data:** all temperatures, 300–600 steps. **Read:** every $\lambda_{\rm net}$ is within about $\pm0.006$ and centred on 0; $\lambda_{\rm sep}$ is broad and often positive. **Does this mean edge of chaos?** No. A zero *conditional* rate means the network neither amplifies nor contracts along a fixed token stream; it is the signature of marginal stability, not criticality. An edge-of-chaos claim would also need (i) a positive but near-zero *full* Lyapunov exponent of the autonomous dynamics, (ii) scale-free correlations or avalanche statistics, and (iii) a diverging correlation length. We have (i) only in the weak “no positive exponent” sense, and we have not measured (ii)/(iii). The honest statement is: *the token-conditioned network is neutral/contracting; the loop instability lives in the readout.*
 
 ![Fig. F9](update_figures/pack_sampling.png)
 
-**Fig. F9 — soft vs sampled feedback.** Response for soft feedback (red), common-random-number sampling (blue dashed) and independent sampling (green dashed) at $T=1$, six models. **Data:** `results/softloop_sample/*/{crn,ind}_T1.0`. **Read:** soft grows; CRN is flat at 1; independent separates at step 0. **Conclusion:** the instability is deterministic mean feedback, not sampled generation.
+**Fig. F9 — soft vs sampled feedback.** Response for soft feedback (red), common-random-number sampling (blue dashed) and independent sampling (green dashed) at $T=1$, five models. **Data:** `results/softloop_sample/*/{crn,ind}_T1.0`. **Read:** soft grows; CRN is flat at 1; independent separates at step 0. **Conclusion:** the instability is deterministic mean feedback, not sampled generation. **Qwen3-4B is absent** because no sampled-feedback run was saved for it; the empty panel is removed rather than shown blank.
 
-![Fig. F10](update_figures/pack_rank_entropy_all.png)
+![Fig. F10](update_figures/pack_rank_entropy_box.png)
 
-**Fig. F10 — readout rank and entropy.** (a) ECDF and (b) violin of the effective rank of $\Sigma_p$ (top-16); (c) ECDF and (d) violin of the entropy $H$ of $\mathrm{softmax}(z)$ at $T=1$. **Data:** `sv_read`/`ent_ref` in `results/softloop*`, 300–600 steps. **Read:** trained models rank 1.0–1.1, random control 15.7; entropy 0.3–1.0 nat for trained models, 11.6 for the random control ($\log V$). **Caveat:** `ent_ref` is at $T=1$; “entropy vs $T$” is not a temperature effect.
+**Fig. F10 — readout rank and entropy.** Box = IQR, white dot = median, dots = individual steps. (a) Effective rank of $\Sigma_p$ over its top-16 singular values; (b) entropy of $\mathrm{softmax}(z)$ at $T=1$. **Data:** `sv_read`/`ent_ref` in `results/softloop*`, 300–600 steps. **Read:** trained models rank 1.0–1.1, random control 15.7; entropy 0.3–1.0 nat for trained models, 11.6 for the random control ($\log V$). **Caveat:** `ent_ref` is at $T=1$; “entropy vs $T$” is not a temperature effect. **Why box+strip:** the violin was hiding the multi-modality; this shows the actual spread.
 
 ![Fig. F11](update_figures/legacy_d2pipe.png)
 
 **Fig. F11 — the D2 / TwoNN pipeline on the soft-loop state clouds.** This is the existing real figure (it loads `results/figures/softloop/d2pipe_softloop.json`), included because you liked it. **Read:** the $T\to0$ and $T=1$ orbits are drifting repetition loops and are correctly flagged; the $T=0.5$ and $T=2$ orbits are aperiodic and have no scaling region. It is the same verdict as the greedy corpus: D2 is descriptive, not evidence.
 
-![Fig. F12](update_figures/pack_survival.png)
+![Fig. F13](update_figures/pack_loop_metric_T.png)
 
-**Fig. F12 — survival curves.** Fraction of directions still in the same basin, $P(t_{\rm sat}>t)$, for six models and several temperatures. **Data:** `results/softloop*`, $t_{\rm sat}$ = first step with $\|\delta h_t\|>0.25\,\mathrm{median}\|h\|$, 300–600 steps. **Read:** DeepSeek survives longest at low $T$; Qwen/Phi separate early; randQwen is at 0 immediately; Mamba has a long-lived fraction. **Use:** this is the per-model version of the old `sl2_survival_dense10`.
+**Fig. F13 — mean log amplification vs temperature.** $M=\langle\log(a_t/a_1)\rangle_t$, closed loop (solid) and replay (dashed), per model. **Data:** `results/softloop*`, all temperatures, 600 steps. **Read:** closed $M$ is positive almost everywhere; replay is near zero or negative. The dependence on $T$ is orbit-specific, not monotonic; the robust statement is the closed/replay gap.
+
+![Fig. F14](update_figures/pack_loop_fsle.png)
+
+**Fig. F14 — finite-scale growth rate (FSLE).** For thresholds $S=2,4,8,16,32,64$, the first-passage time $t_S$ and the rate $\log S/t_S$, closed vs replay, at $T=1$. **Data:** same as F13. **Read:** the closed loop reaches larger $S$ in finite time; replay does not. The curves are not straight lines, so the growth is not a single exponential; the rate decreases with $S$ in several models.
+
+![Fig. F15](update_figures/pack_loop_staircase.png)
+
+**Fig. F15 — the staircase.** (a) One-step log increments $\Delta\log a_t$ for the closed loop, $T=1$; (b) autocorrelation of the increments. **Read:** the increments are spiky and correlated; growth happens in bursts at gates, not as a constant drift. **This is the quantitative form of “staircase, not exponential”.**
+
+![Fig. F16](update_figures/pack_loop_endpoint.png)
+
+**Fig. F16 — endpoint rates.** Closed-loop endpoint rate vs replay endpoint rate, one point per model. **Read:** the points lie above the diagonal; the loop adds growth on top of whatever the network does. The absolute values are small, so this is a *qualitative* separation, consistent with F2/F2b.
+
+
+![Fig. F11](update_figures/legacy_d2pipe.png)
 
 
 
@@ -278,13 +333,13 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. G1 — precision and probe radius.** (a) $\|\delta h_{50,L}\|$ vs $r$ for fp32 and fp16 runs of the same/nearby models; (b) local exponent $\beta={\rm d}\log\|\delta h\|/{\rm d}\log r$; (c) $r_*$ estimated at different probe radii. **Read:** fp16 has a constant floor (0.5–4) independent of $r$; fp32 scales with $\beta\to1$ for $r\lesssim10^{-2}$; $r_*$ is only stable at small probe radius. **This is the figure that invalidates the old absolute comparisons.** **Data:** new fp32 runs `results/update/fp32_*`, old fp16 runs `a1r_*`, DeepSeek 12-radius `w100_layers`.
 
-![Fig. G2](update_figures/pack_sparse_vs_dense.png)
+![Fig. G2](update_figures/pack_dense_slopes.png)
 
-**Fig. G2 — same as C4, repeated here for the linearity section.** Sparse vs dense directions. **Read:** dense is linear; sparse saturates. **Consequence:** use dense directions for $r_*$ and absolute response.
+**Fig. G2 — sparse vs dense, corrected.** Same as C4. **Read:** both are linear over 0.03–0.3; dense is a constant factor higher. My earlier statement “sparse saturates” was wrong: it came from the old fp16 sparse runs, not from the fp32 sparse runs. The correct consequence is that direction sparsity changes the *scale* of the response, and the old absolute values are only comparable within the same direction ensemble.
 
 ![Fig. G3](update_figures/pack_response_vs_radius.png)
 
-**Fig. G3 — old response-vs-radius figure, corrected.** (a) Absolute response vs $r$ for the fp32 models; (b) local exponent; (c) superposition error vs total norm; (d) replication across prompts. **Data:** DeepSeek 12 radii, Qwen2.5/Qwen3.5 8 radii, superposition 3 prompts. **Read:** DeepSeek is linear from $10^{-3}$ to 0.3; Qwen2.5/3.5 from $10^{-4}$ to $10^{-2}$, then sublinear. Superposition error is 5–7% at total norm 0.24.
+**Fig. G3 — response vs radius, corrected.** (a) Absolute response vs $r$ for the fp32 models; (b) local exponent; (c) superposition error vs total norm; (d) replication across prompts. **Data:** DeepSeek 12 radii, Qwen2.5/Qwen3.5 8 radii, superposition 3 prompts. **Read:** all three are linear from $3\times10^{-3}$ to 0.3 ($\beta\approx1$); below $10^{-3}$ the fp32 subtraction floor bends the curve. Superposition error is 5–7% at total norm 0.24.
 
 ![Fig. G4](update_figures/pack_superposition.png)
 
@@ -359,43 +414,50 @@ These are the existing control figures; the scripts load the control `.npz` file
 | result | status | why |
 |---|---|---|
 | No sustained growth (TF/replay) | **keep** | 9 architectures, finite-time exponent $\le0$ |
-| Closed loop grows, replay flat | **keep, feature** | 10^2–10^4 vs 1; F1–F2 |
-| Window $t_{\rm first}=W-P$, $t^*_\ell=\ell(W-1)-21$ | **keep, feature** | 106 windows, $R^2=1.0000$; E1 |
-| Depth: block-0 spike + 10% late rise | **keep, feature** | $R^2=0.996$–$0.9999$; B2 |
+| Closed loop grows; replay/CRN flat | **keep, feature** | $M=1$–$7$ nats vs 0; F1–F2 |
+| Window $t^*_1=p_{\rm last}+W-P$, $t^*_\ell=t^*_1+(\ell-1)(W-1)$ | **keep, feature** | exact over 106 windows; E1 |
+| Depth: block-0 spike + small late rise | **keep, qualify** | block-0 share 2–85%; late rise 1.00–1.11; B1/B4c |
 | Larger models closer to marginal | **keep, qualify** | 7 models, block-0 share varies |
 | Gate law slope $-1$ | **keep as identity** | F4–F5; $G_{\rm eff}$ is the measurement |
+| Gate identity amplitude universal | **drop** | data below identity for most models; F4b/F5b |
 | Random control breaks gate law | **drop** | false; $-1.01$ for $m/T>3$ |
-| Perpendicular response | **drop as discovery** | median 90°; quote radial fraction |
-| Rotation 78–87° | **keep, qualify** | real, modest; C3 |
+| Perpendicular response | **drop as discovery** | median 90° in LLMs *and* controls; C1 |
+| Rotation 78–87° | **keep, qualify** | real, modest; random control 89°; C3 |
 | $r_*$ ordering | **keep only with dense directions** | C5; sparse values are probe-dependent |
-| $r_*$ log-logistic law | **drop** | staircase, $R^2$ 0.77–0.96 |
+| $r_*$ log-logistic law | **drop** | KS rejects it; A1b |
 | Five-regime taxonomy | **drop** | four of five claims fail |
 | Entropy rises with $T$ | **drop** | `ent_ref` is at $T=1$ |
 | Readout rank 1 | **keep, qualify** | F10; consequence of two-token concentration |
 | Hunt–Ott entropy zero | **drop** | absolute exponents are positive; relative is small |
-| Edge of chaos | **do not claim** | no positive Lyapunov exponent measured |
-| Common linear regime all models | **drop** | C4/G1–G3; fp16 floor and sparse directions |
+| Edge of chaos | **do not claim** | no positive full Lyapunov exponent, no criticality measurement |
+| Sparse directions saturate (my earlier claim) | **drop** | both sparse and dense are linear over 0.03–0.3; C4 |
+| Common linear regime all models | **keep for fp32/dense; separate fp16** | C4/G1–G3 |
 
 ---
 
 # L. Questions you asked, answered directly
 
 - **Are the old figures synthetic?** The plotted arrays were generated in the plotting script; the experiments were real. Fixed in this document. §1.
-- **Is the depth fit trivial?** The old one was a fit to $1/\ell$; the new fit B2 is a block-0 spike + a common 10% late rise, $R^2$ up to 0.9999. B2.
-- **Is the perpendicular response trivial?** Yes, median 90°; the radial tail is the measured part. C1–C2.
-- **Is the rotation real?** Yes, 78–87°, but modest; the $\cos^2$ budget is a heuristic. C3.
+- **Is the depth fit trivial?** The old one was a fit to $1/\ell$; the new B4b is a descriptive cubic after block 0, and B4c isolates the small 1.00–1.11 late rise. The old spike+exponential fit is deleted. B4b/B4c.
+- **Is the perpendicular response trivial?** Yes, median 90° in LLMs *and* controls; the radial tail is the measured part. C1–C2.
+- **Is the rotation real?** Yes, 78–87°, but the random control is 89°; modest. C3.
 - **Why does the perturbation not vanish at $W-P$?** It is carried by generated tokens; the flush is one window later, then one window per layer. E1.
-- **Does the flush depend on the layer?** Yes: $t^*_\ell=\ell(W-1)-21$, exact over 106 windows. E1.
+- **Does the flush depend on the layer?** Yes: $t^*_\ell=W-P+p_{\rm last}+(\ell-1)(W-1)$, exact over 106 windows. E1.
+- **What is the constant in the window formula?** It is $p_{\rm last}-P$, where $p_{\rm last}$ is the last perturbed prompt position (43 for $P=65$; 55 for $P=64$). E1.
 - **Is the five-regime table true?** Only the window row. §K, D2.
 - **Does the random transformer decay in 4 tokens?** No; replay is 54× and flat. D2.
-- **Do we have an edge-of-chaos argument?** No. §K, §M.
-- **What is “tangent contraction rate”?** Two different quantities: $g_\ell\approx1$ and $\lambda_L=0.03$–$0.12$. Use those names. §B.
+- **Do we have an edge-of-chaos argument?** No; zero conditional rate is marginal stability, not criticality. F8.
+- **What is “tangent contraction rate”?** Two different quantities: $g_\ell\approx1$ and $\lambda_L=0.03$–$0.12$. Use those names. B.
 - **Is rank-1 supported?** Yes for Qwen3-4B/Phi-4-mini (1.0/1.1), random 15.7; consequence of concentration. F10.
 - **Entropy results?** Low for trained models, $\log V$ for random; `ent_ref` is at $T=1$. F10.
-- **Are the ECDF fits real?** Descriptive fits to a staircase; not a law. A1.
+- **Are the ECDF fits real?** Descriptive only; a KS test rejects the log-logistic. A1b.
 - **Do JL/Cramér–Wold apply?** Not with sparse directions; the Gaussian null fails. A1.
-- **What is new and worth featuring?** Closed vs replay; window clock; block-0+late-rise depth law; dense-direction fragility; gate identity + $G_{\rm eff}$. §K.
-- **What data do we need?** fp32 for the remaining small models; dense 14B runs; angle controls; more depth tokens. §M.
+- **Is “sparse saturates” true?** No; both sparse and dense are linear over 0.03–0.3; dense is a constant factor higher. C4.
+- **What is closed loop vs replay?** Closed feeds back its own expected embedding; replay feeds the recorded unperturbed soft tokens. F.0.
+- **What is “soft”?** Expected-embedding feedback; “hard” would be argmax (greedy) or sampled. F.0.
+- **Do the attention and flush formulas agree?** Yes; the flush is about a nonzero response, not about the mean attention mass. E4b.
+- **What is new and worth featuring?** Closed vs replay (M and FSLE); exact window clock; block-0 + late-rise depth; dense-direction fragility; gate tail slope + $G_{\rm eff}$. §K.
+- **What data do we need?** dense 14B runs; exact-$\Sigma_p$ validation; fp32 only where absolute response is needed. §M.
 
 ---
 
@@ -404,28 +466,83 @@ These are the existing control figures; the scripts load the control `.npz` file
 | # | experiment | status |
 |---|---|---|
 | 1 | fp32 A1 for Qwen2.5-3B, Qwen3.5-2B | **done**, `results/update/fp32_*` |
-| 2 | fp32 A1 for Qwen3-4B, Phi-4-mini | **blocked**: 4B fp32 does not fit on the T4; the Spark is currently using >55 GB for colleagues' jobs |
-| 3 | angle probe, 64 directions, 5 small models | **done**, `results/update/angle_*` |
+| 2 | fp32 A1 for Qwen3-4B, Phi-4-mini | **not done**; fp16 is adequate for flips/relative shape, fp32 needed only for absolute response |
+| 3 | angle probe, 64 directions, 5 small models + 3 controls | **done**, `results/update/angle_*` |
 | 4 | dense-direction $r_*$, 128 dirs, 3 fp32 small models | **done**, `results/update/dense_*` |
 | 5 | dense 14B runs | **blocked** by Spark memory |
 | 6 | DeepSeek dense window sweep, 106 windows | **done** (from existing `wspec`) |
-| 7 | nonnorm controls | not run; the control `.npz` on x11 can be used if you want the rotation null |
-| 8 | depth probe 64 tokens × 32 dirs | not run; ~2 h on the Spark |
-| 9 | exact $\Sigma_p$ validation (all vocab) | not run; ~1 h |
-| 10 | attention-weight fraction | **done**, DeepSeek W=100/4096, `results/update/attn_*` |
-| 11 | depth probe with k=32 directions | **done**, `results/update/depth_k32` (Fig. B1b) |
+| 7 | nonnorm controls | **randQwen done** (`nonnorm_randqwen3`); Pythia path mismatch; Mamba not run |
+| 8 | depth probe with 32 directions | **done**, `results/update/depth_k32` (16 tokens) |
+| 9 | exact $\Sigma_p$ validation (all vocab) | not run |
+| 10 | attention mass, correct window mask | **done**, DeepSeek W=50/100/200/4096 + Qwen2.5/Phi/rand W=100 |
+| 11 | closed-loop metric suite (M, FSLE, staircase, endpoint) | **done**, F2–F16 |
+| 12 | log-logistic fit check (linear vs log space, KS) | **done**, A1b |
+| 13 | variance/percentile pass on all aggregates | **done** where data allow; controls added to B5b/C1/C2/C3/D1b/D3b |
 
 **Recommendation:** the highest-value remaining run is **fp32 for Qwen3-4B and Phi-4-mini**, because those two models currently cannot enter any absolute comparison. The second is **dense 14B $r_*$**, because the 14B models are the most robust in the sparse data and we cannot yet compare them on the same direction ensemble. Both need either a free 60 GB GPU or a model copy to the Spark.
 
 ---
 
-# N. Limitations
+# N. Appendix: earlier measured figures, kept for reference
 
-- Qwen3-4B/Phi-4-mini absolute responses are fp16-floor-dominated; only discrete flips are valid.
-- The old sparse-simplex $r_*$ values depend on the probe radius; use the dense values (C5) for cross-model statements.
+These were in the previous version of this document. They are kept because you asked not to remove figures; several are superseded by the newer versions above, and the caption says which. All are measured from the `.npz` files (not synthetic).
+
+![Earlier A](update_figures/fig_rstar_pdf.png)
+
+**Earlier A — critical-radius density (the version you liked).** Same data as A1. Kept as a standalone density figure.
+
+![Earlier B](update_figures/fig_entropy.png)
+
+**Earlier B — entropy vs margin.** Same data as F10. Kept because you liked it.
+
+![Earlier C](update_figures/fig_readout_rank.png)
+
+**Earlier C — readout effective rank.** Same data as F10; F10 is the box+strip version with more models.
+
+![Earlier D](update_figures/fig_depth_gain_all_models.png)
+
+**Earlier D — the first depth figure.** Shows the $1/\ell$ quantity that was fitted in `unified.md`; superseded by B1.
+
+![Earlier E](update_figures/fig_depth_exponent_vs_size.png)
+
+**Earlier E — depth exponent vs model size.** The single-scatter version; B1/B4b are the distribution versions.
+
+![Earlier F](update_figures/fig_gate_law.png)
+
+**Earlier F — the first gate-law figure.** Superseded by F4/F4b/F5.
+
+![Earlier G](update_figures/fig_softloop_open_closed.png)
+
+**Earlier G — closed vs replay, DeepSeek only.** Superseded by F1 (all models) and F2 (metric $M$).
+
+![Earlier H](update_figures/fig_relative_response_depth.png)
+
+**Earlier H — relative response.** Superseded by B5/B5b (controls added).
+
+![Earlier I](update_figures/fig_response_vs_radius.png)
+
+**Earlier I — response vs radius.** Superseded by G3.
+
+![Earlier J](update_figures/fig_phase_density.png)
+
+**Earlier J — phase figure.** Superseded by F3b; the phase plot itself is deleted per your instruction.
+
+![Earlier K](update_figures/fig_window_departure.png)
+
+**Earlier K — window departure.** Superseded by E1/E1b (exact formula).
+
+![Earlier L](update_figures/fig_angle_and_rotation.png)
+
+**Earlier L — angle/rotation.** Superseded by C1/C2/C3 (controls added).
+
+# N2. Limitations
+
+- Qwen3-4B/Phi-4-mini absolute responses are fp16-floor-dominated; only discrete flips and relative shapes are valid.
+- Sparse and dense directions give the same exponent but a different scale; do not mix them in absolute comparisons. The old sparse $r_*$ values depend on the probe radius; use the dense values (C5) for cross-model statements.
 - The 14B compact files save 9–14 layers, not all; depth profiles for the 14B models are partial.
-- The transport kernel and angle controls are DeepSeek-only / unavailable.
-- The gate law is the softmax identity; do not call it a new law.
-- No positive Lyapunov exponent, no Lyapunov spectrum, no criticality measurement: no edge-of-chaos claim.
+- The transport kernel is DeepSeek-only; angle/rotation controls are available for the random transformer but not for Mamba/Pythia.
+- The gate law is the softmax identity; the amplitude does not match all models, and only the tail slope is universal.
+- No positive full Lyapunov exponent, no Lyapunov spectrum, no criticality measurement: no edge-of-chaos claim.
 - The small-model free-run flip fractions use 20 directions and sparse perturbations; the Wilson bands are wide.
+- The closed-loop metrics are horizon-dependent; we report the run length and the integrated quantity $M$, not a unique Lyapunov exponent.
 
