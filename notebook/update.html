@@ -43,7 +43,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  update.md &nbsp;&middot;&nbsp; built 2026-11-26 17:22:13 &nbsp;&middot;&nbsp;
+  update.md &nbsp;&middot;&nbsp; built 2026-11-26 17:32:18 &nbsp;&middot;&nbsp;
   <a href="update.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="update.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="unified.html">unified</a> &middot; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="new.html">new</a> &middot; <a href="notebook.html">notebook</a>
@@ -369,6 +369,8 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 <p><strong>Fig. D3 — first/middle/last layer.</strong> Same as D1 at the first, middle and last saved layer. <strong>Read:</strong> in DeepSeek the shallow layers flush first and the deep layers persist; in Qwen/Phi the layers move together.</p>
 <p><img alt="Fig. D3b" src="update_figures/pack_time_layers_controls.png" /></p>
 <p><strong>Fig. D3b — layer-resolved response with controls.</strong> Three layers (excluding layer 0), every LLM and control. <strong>Data:</strong> same as D1b. <strong>Read:</strong> the ordering of the layers is the same in the controls: deep layers retain more; no layer grows exponentially. <strong>Use:</strong> this is the requested “one plot for different layers, with controls”.</p>
+<p><img alt="Fig. D3c" src="update_figures/pack_time_all_layers.png" /></p>
+<p><strong>Fig. D3c — all saved layers.</strong> Response vs time for every saved layer of DeepSeek-1.5B, Qwen3-4B and Mamba-130m. <strong>Data:</strong> A1/control summaries, $r=0.1$, 300 tokens. <strong>Read:</strong> the shallow layers decay fastest; the deep layers plateau. No layer grows. <strong>Use:</strong> a single view of the full layer dependence; layer 0 is included but is the input embedding.</p>
 <p><img alt="Fig. D4" src="update_figures/fig_time_dynamics_all.png" /></p>
 <p><strong>Fig. D4 — finite-time exponent.</strong> (a) Response shape normalized; (b) replay vs controls; (c) $\Lambda(\tau)=\frac1\tau\log(a_{t+\tau}/a_t)$ against $\tau$ with error bars; (d) late rate $\lambda_{20}$. <strong>Data:</strong> A1 + replay. <strong>Read:</strong> $\Lambda(\tau)$ converges to $\le0$ for every system; no positive plateau. <strong>Trivial/not:</strong> the late-rate values are all within $\pm0.01$; the measurement is that a positive rate does not survive averaging. <strong>Controls:</strong> Mamba $-0.0008$, Pythia $-0.0019$, random $-0.0007$.</p>
 <p><img alt="Fig. D5" src="update_figures/pack_long_horizon2.png" /></p>
@@ -650,7 +652,7 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 <tr>
 <td>5</td>
 <td>dense 14B runs</td>
-<td><strong>blocked</strong> by Spark memory</td>
+<td><strong>queued</strong> on Spark (<code>queue_spark_wait.sh</code>), waits for 66 GB free; Qwen3-14B first attempt hit OOM because colleagues took the memory</td>
 </tr>
 <tr>
 <td>6</td>
@@ -665,36 +667,41 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 <tr>
 <td>8</td>
 <td>depth probe with 32 directions</td>
-<td><strong>done</strong>, <code>results/update/depth_k32</code> (16 tokens)</td>
+<td><strong>done</strong> for DeepSeek; Qwen2.5/Phi-4-mini <strong>running</strong> (<code>queue_extra.sh</code>)</td>
 </tr>
 <tr>
 <td>9</td>
+<td>sampled feedback for Qwen3-4B (CRN/ind)</td>
+<td><strong>running</strong> (<code>queue_extra.sh</code>), fills the missing F9 panel</td>
+</tr>
+<tr>
+<td>10</td>
 <td>exact $\Sigma_p$ validation (all vocab)</td>
 <td>not run</td>
 </tr>
 <tr>
-<td>10</td>
+<td>11</td>
 <td>attention mass, correct window mask</td>
 <td><strong>done</strong>, DeepSeek W=50/100/200/4096 + Qwen2.5/Phi/rand W=100</td>
 </tr>
 <tr>
-<td>11</td>
-<td>closed-loop metric suite (M, FSLE, staircase, endpoint)</td>
-<td><strong>done</strong>, F2–F16</td>
+<td>12</td>
+<td>closed-loop metric suite (M, FSLE, finite-time, spectrum, staircase, endpoint)</td>
+<td><strong>done</strong>, F2–F18</td>
 </tr>
 <tr>
-<td>12</td>
+<td>13</td>
 <td>log-logistic fit check (linear vs log space, KS)</td>
 <td><strong>done</strong>, A1b</td>
 </tr>
 <tr>
-<td>13</td>
+<td>14</td>
 <td>variance/percentile pass on all aggregates</td>
 <td><strong>done</strong> where data allow; controls added to B5b/C1/C2/C3/D1b/D3b</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Recommendation:</strong> the highest-value remaining run is <strong>fp32 for Qwen3-4B and Phi-4-mini</strong>, because those two models currently cannot enter any absolute comparison. The second is <strong>dense 14B $r_*$</strong>, because the 14B models are the most robust in the sparse data and we cannot yet compare them on the same direction ensemble. Both need either a free 60 GB GPU or a model copy to the Spark.</p>
+<p><strong>Running on the GPUs.</strong> On x11: depth $k=32$ for Qwen2.5-3B and Phi-4-mini, then CRN/independent sampling for Qwen3-4B (<code>scripts/queue_extra.sh</code>). On Spark: a memory-gated queue for dense 14B $r_*$ (<code>scripts/queue_spark_wait.sh</code>); it waits for 66 GB free and runs Qwen3-14B, Phi-4, DeepSeek-14B one at a time. I did not kill the colleagues' jobs. The x11 jobs finish in ~20–30 min; the Spark one may wait for a long window. <strong>Recommendation:</strong> the highest-value remaining measurement is the <strong>dense 14B $r_*$</strong>; fp32 for Qwen3-4B/Phi-mini is optional because your own analyses use fp16 for flips and shapes.</p>
 <hr />
 <h1 id="n-appendix-earlier-measured-figures-kept-for-reference">N. Appendix: earlier measured figures, kept for reference</h1>
 <p>These were in the previous version of this document. They are kept because you asked not to remove figures; several are superseded by the newer versions above, and the caption says which. All are measured from the <code>.npz</code> files (not synthetic).</p>

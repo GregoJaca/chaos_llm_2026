@@ -23,6 +23,7 @@ for n in ORDER:
     med, lay = curve(n)
     a = med[-1]; a = a / max(a[1], 1e-30)
     ax.plot(np.arange(len(a)), a, color=COL[n], lw=1.4, label=n)
+    ax.axhline(1, color="k", ls=":", lw=0.8)
 ax.set_yscale("log"); ax.set_xlim(0, 300)
 ax.axhline(1, color="k", ls=":", lw=0.8)
 ax.set_xlabel("generated token $t$")

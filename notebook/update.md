@@ -191,6 +191,10 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. D3b — layer-resolved response with controls.** Three layers (excluding layer 0), every LLM and control. **Data:** same as D1b. **Read:** the ordering of the layers is the same in the controls: deep layers retain more; no layer grows exponentially. **Use:** this is the requested “one plot for different layers, with controls”.
 
+![Fig. D3c](update_figures/pack_time_all_layers.png)
+
+**Fig. D3c — all saved layers.** Response vs time for every saved layer of DeepSeek-1.5B, Qwen3-4B and Mamba-130m. **Data:** A1/control summaries, $r=0.1$, 300 tokens. **Read:** the shallow layers decay fastest; the deep layers plateau. No layer grows. **Use:** a single view of the full layer dependence; layer 0 is included but is the input embedding.
+
 ![Fig. D4](update_figures/fig_time_dynamics_all.png)
 
 **Fig. D4 — finite-time exponent.** (a) Response shape normalized; (b) replay vs controls; (c) $\Lambda(\tau)=\frac1\tau\log(a_{t+\tau}/a_t)$ against $\tau$ with error bars; (d) late rate $\lambda_{20}$. **Data:** A1 + replay. **Read:** $\Lambda(\tau)$ converges to $\le0$ for every system; no positive plateau. **Trivial/not:** the late-rate values are all within $\pm0.01$; the measurement is that a positive rate does not survive averaging. **Controls:** Mamba $-0.0008$, Pythia $-0.0019$, random $-0.0007$.
@@ -477,17 +481,18 @@ These are the existing control figures; the scripts load the control `.npz` file
 | 2 | fp32 A1 for Qwen3-4B, Phi-4-mini | **not done**; fp16 is adequate for flips/relative shape, fp32 needed only for absolute response |
 | 3 | angle probe, 64 directions, 5 small models + 3 controls | **done**, `results/update/angle_*` |
 | 4 | dense-direction $r_*$, 128 dirs, 3 fp32 small models | **done**, `results/update/dense_*` |
-| 5 | dense 14B runs | **blocked** by Spark memory |
+| 5 | dense 14B runs | **queued** on Spark (`queue_spark_wait.sh`), waits for 66 GB free; Qwen3-14B first attempt hit OOM because colleagues took the memory |
 | 6 | DeepSeek dense window sweep, 106 windows | **done** (from existing `wspec`) |
 | 7 | nonnorm controls | **randQwen done** (`nonnorm_randqwen3`); Pythia path mismatch; Mamba not run |
-| 8 | depth probe with 32 directions | **done**, `results/update/depth_k32` (16 tokens) |
-| 9 | exact $\Sigma_p$ validation (all vocab) | not run |
-| 10 | attention mass, correct window mask | **done**, DeepSeek W=50/100/200/4096 + Qwen2.5/Phi/rand W=100 |
-| 11 | closed-loop metric suite (M, FSLE, staircase, endpoint) | **done**, F2–F16 |
-| 12 | log-logistic fit check (linear vs log space, KS) | **done**, A1b |
-| 13 | variance/percentile pass on all aggregates | **done** where data allow; controls added to B5b/C1/C2/C3/D1b/D3b |
+| 8 | depth probe with 32 directions | **done** for DeepSeek; Qwen2.5/Phi-4-mini **running** (`queue_extra.sh`) |
+| 9 | sampled feedback for Qwen3-4B (CRN/ind) | **running** (`queue_extra.sh`), fills the missing F9 panel |
+| 10 | exact $\Sigma_p$ validation (all vocab) | not run |
+| 11 | attention mass, correct window mask | **done**, DeepSeek W=50/100/200/4096 + Qwen2.5/Phi/rand W=100 |
+| 12 | closed-loop metric suite (M, FSLE, finite-time, spectrum, staircase, endpoint) | **done**, F2–F18 |
+| 13 | log-logistic fit check (linear vs log space, KS) | **done**, A1b |
+| 14 | variance/percentile pass on all aggregates | **done** where data allow; controls added to B5b/C1/C2/C3/D1b/D3b |
 
-**Recommendation:** the highest-value remaining run is **fp32 for Qwen3-4B and Phi-4-mini**, because those two models currently cannot enter any absolute comparison. The second is **dense 14B $r_*$**, because the 14B models are the most robust in the sparse data and we cannot yet compare them on the same direction ensemble. Both need either a free 60 GB GPU or a model copy to the Spark.
+**Running on the GPUs.** On x11: depth $k=32$ for Qwen2.5-3B and Phi-4-mini, then CRN/independent sampling for Qwen3-4B (`scripts/queue_extra.sh`). On Spark: a memory-gated queue for dense 14B $r_*$ (`scripts/queue_spark_wait.sh`); it waits for 66 GB free and runs Qwen3-14B, Phi-4, DeepSeek-14B one at a time. I did not kill the colleagues' jobs. The x11 jobs finish in ~20–30 min; the Spark one may wait for a long window. **Recommendation:** the highest-value remaining measurement is the **dense 14B $r_*$**; fp32 for Qwen3-4B/Phi-mini is optional because your own analyses use fp16 for flips and shapes.
 
 ---
 

@@ -26,6 +26,7 @@ SCRIPTS = [
     "pack_attention2.py",
     "pack_time.py",
     "pack_time_controls2.py",
+    "pack_time_all_layers.py",
     "pack_long_horizon2.py",
     "pack_gate2.py",
     "pack_gate_linlog.py",
