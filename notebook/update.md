@@ -349,6 +349,22 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. F0m — the same comparison as one number.** (a) $L_{\rm end}=\log(a_{\rm closed}/a_{\rm replay})$ at the end of the run, with the equivalent linear factor; (b) $L_{\rm end}$ vs the rise time $\tau$ of the saturating fit. **Read:** the ordering is Mamba ($\times12\,000$) $>$ DeepSeek-1.5B ($\times2\,400$) $>$ Phi-4-mini ($\times173$) $>$ Pythia ($\times85$) $>$ Qwen3-4B ($\times10$) $>$ randQwen ($\times4$) $>$ Qwen2.5 ($\times3$). **Caveat:** $L_{\rm end}$ is horizon-limited; with the 1600–3000 step runs it will be recomputed, and the poor-fit points ($\times$) should only be read as lower bounds.
 
+**Scoreboard ($T=1$, one orbit per model).** Every number below is in `analysis_update/pack_loop_loglog_models.json`, `pack_loop_intermittency.json`, `pack_loop_temperature.json`.
+
+| model | steps (loop/replay) | growth closed | growth replay | $L_{\rm end}$ (nats) | $\times$ | $\tau$ (fit $R^2$) | top-5% share of growth |
+|---|---|---|---|---|---|---|---|
+| Mamba-130m | 600 / 600 | 1769 | 0.41 | 9.4 | 12 400 | 35 (0.79) | 27% |
+| DeepSeek-1.5B | **3000** / 600 | 790 | 0.29 | 7.8 | 2 400 | 50 (0.95) | 26% |
+| Phi-4-mini | 600 / 600 | 130 | 0.78 | 5.2 | 173 | 70 (0.85) | 73% |
+| Pythia-410m | 600 / 600 | 44 | 0.35 | 4.4 | 85 | 186 (0.71) | 36% |
+| Qwen3-4B | 600 / 600 | 5.3 | 0.57 | 2.4 | 10 | n/a (0.74) | — |
+| Qwen3.5-9B | 600 / 600 | 35 | 3.1 | 2.2 | 9 | n/a (0.03) | 49% |
+| randQwen | 600 / 600 | 3.3 | 0.86 | 1.3 | 3.5 | 669 (0.99) | 14% |
+| Qwen2.5-3B | 600 / 600 | 4.3 | 1.3 | 0.9 | 2.6 | n/a (0.33) | 30% |
+| Qwen3.5-2B | 600 / – | 297 | – | – | 297 | – | 56% |
+
+`n/a` means the saturating fit is not a good description ($R^2<0.85$) — for those models the growth is still rising at the end of the window, so $L_{\rm end}$ is a lower bound. The "top-5% share" is the fraction of the total positive log growth contributed by the 5% largest one-step increments (F20c); 5% would be a constant-rate exponential.
+
 ### F.0b What the replay teacher trajectory actually is
 
 **The replay teacher is not ordinary autoregressive generation — it is the closed soft loop of the unperturbed prompt.** In `run_softloop.py` row 0 of the batch is the unperturbed reference; in `--feedback soft` mode *every* row, including row 0, feeds back its own `softmax(z/T)` expected embedding. The `e_ref[t]` array that `--mode replay` later reads is therefore the reference row's *soft-loop* orbit, recorded step by step. Replay then feeds that frozen sequence to all rows, so the only difference from the closed loop is that the reference stops reacting to the perturbation.

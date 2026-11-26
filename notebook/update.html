@@ -43,7 +43,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  update.md &nbsp;&middot;&nbsp; built 2026-11-26 19:24:35 &nbsp;&middot;&nbsp;
+  update.md &nbsp;&middot;&nbsp; built 2026-11-26 19:28:39 &nbsp;&middot;&nbsp;
   <a href="update.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="update.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="unified.html">unified</a> &middot; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="new.html">new</a> &middot; <a href="notebook.html">notebook</a>
@@ -450,6 +450,114 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 <p><strong>Fig. F0l — the random transformer.</strong> Closed loop $\times3.3$, the smallest of all models, with an almost perfect saturating fit ($R^2=0.99$, $\tau\approx670$). <strong>Read:</strong> a random transformer <em>does</em> amplify when its own expectation is fed back, but 2–3 orders of magnitude less than a trained model at the same radius. The trained readout — not the architecture — is what makes the loop unstable.</p>
 <p><img alt="Fig. F0m" src="update_figures/pack_loop_saturation.png" /></p>
 <p><strong>Fig. F0m — the same comparison as one number.</strong> (a) $L_{\rm end}=\log(a_{\rm closed}/a_{\rm replay})$ at the end of the run, with the equivalent linear factor; (b) $L_{\rm end}$ vs the rise time $\tau$ of the saturating fit. <strong>Read:</strong> the ordering is Mamba ($\times12\,000$) $>$ DeepSeek-1.5B ($\times2\,400$) $>$ Phi-4-mini ($\times173$) $>$ Pythia ($\times85$) $>$ Qwen3-4B ($\times10$) $>$ randQwen ($\times4$) $>$ Qwen2.5 ($\times3$). <strong>Caveat:</strong> $L_{\rm end}$ is horizon-limited; with the 1600–3000 step runs it will be recomputed, and the poor-fit points ($\times$) should only be read as lower bounds.</p>
+<p><strong>Scoreboard ($T=1$, one orbit per model).</strong> Every number below is in <code>analysis_update/pack_loop_loglog_models.json</code>, <code>pack_loop_intermittency.json</code>, <code>pack_loop_temperature.json</code>.</p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>steps (loop/replay)</th>
+<th>growth closed</th>
+<th>growth replay</th>
+<th>$L_{\rm end}$ (nats)</th>
+<th>$\times$</th>
+<th>$\tau$ (fit $R^2$)</th>
+<th>top-5% share of growth</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mamba-130m</td>
+<td>600 / 600</td>
+<td>1769</td>
+<td>0.41</td>
+<td>9.4</td>
+<td>12 400</td>
+<td>35 (0.79)</td>
+<td>27%</td>
+</tr>
+<tr>
+<td>DeepSeek-1.5B</td>
+<td><strong>3000</strong> / 600</td>
+<td>790</td>
+<td>0.29</td>
+<td>7.8</td>
+<td>2 400</td>
+<td>50 (0.95)</td>
+<td>26%</td>
+</tr>
+<tr>
+<td>Phi-4-mini</td>
+<td>600 / 600</td>
+<td>130</td>
+<td>0.78</td>
+<td>5.2</td>
+<td>173</td>
+<td>70 (0.85)</td>
+<td>73%</td>
+</tr>
+<tr>
+<td>Pythia-410m</td>
+<td>600 / 600</td>
+<td>44</td>
+<td>0.35</td>
+<td>4.4</td>
+<td>85</td>
+<td>186 (0.71)</td>
+<td>36%</td>
+</tr>
+<tr>
+<td>Qwen3-4B</td>
+<td>600 / 600</td>
+<td>5.3</td>
+<td>0.57</td>
+<td>2.4</td>
+<td>10</td>
+<td>n/a (0.74)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Qwen3.5-9B</td>
+<td>600 / 600</td>
+<td>35</td>
+<td>3.1</td>
+<td>2.2</td>
+<td>9</td>
+<td>n/a (0.03)</td>
+<td>49%</td>
+</tr>
+<tr>
+<td>randQwen</td>
+<td>600 / 600</td>
+<td>3.3</td>
+<td>0.86</td>
+<td>1.3</td>
+<td>3.5</td>
+<td>669 (0.99)</td>
+<td>14%</td>
+</tr>
+<tr>
+<td>Qwen2.5-3B</td>
+<td>600 / 600</td>
+<td>4.3</td>
+<td>1.3</td>
+<td>0.9</td>
+<td>2.6</td>
+<td>n/a (0.33)</td>
+<td>30%</td>
+</tr>
+<tr>
+<td>Qwen3.5-2B</td>
+<td>600 / –</td>
+<td>297</td>
+<td>–</td>
+<td>–</td>
+<td>297</td>
+<td>–</td>
+<td>56%</td>
+</tr>
+</tbody>
+</table>
+<p><code>n/a</code> means the saturating fit is not a good description ($R^2<0.85$) — for those models the growth is still rising at the end of the window, so $L_{\rm end}$ is a lower bound. The "top-5% share" is the fraction of the total positive log growth contributed by the 5% largest one-step increments (F20c); 5% would be a constant-rate exponential.</p>
 <h3 id="f0b-what-the-replay-teacher-trajectory-actually-is">F.0b What the replay teacher trajectory actually is</h3>
 <p><strong>The replay teacher is not ordinary autoregressive generation — it is the closed soft loop of the unperturbed prompt.</strong> In <code>run_softloop.py</code> row 0 of the batch is the unperturbed reference; in <code>--feedback soft</code> mode <em>every</em> row, including row 0, feeds back its own <code>softmax(z/T)</code> expected embedding. The <code>e_ref[t]</code> array that <code>--mode replay</code> later reads is therefore the reference row's <em>soft-loop</em> orbit, recorded step by step. Replay then feeds that frozen sequence to all rows, so the only difference from the closed loop is that the reference stops reacting to the perturbation.</p>
 <p>Consequences you should keep in mind:</p>
