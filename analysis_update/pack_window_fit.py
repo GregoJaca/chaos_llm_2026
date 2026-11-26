@@ -24,12 +24,17 @@ fits = {}
 for W in Ws[:-1]:
     y = frac(W); t = np.arange(1, len(y) + 1)
     ax.plot(t, y, lw=1.2, label=f"W={W}")
-    try:
-        popt, _ = curve_fit(fdecay, t, y, p0=[0.4, 30, 1], bounds=([0, 1, 0.2], [1, 500, 4]), maxfev=20000)
-        fits[W] = popt
-        ax.plot(t, fdecay(t, *popt), "k--", lw=0.8, alpha=0.6)
-    except Exception:
-        pass
+    onset = np.where(y < 0.999)[0]
+    if len(onset) > 10:
+        i0 = onset[0]
+        tt, yy = t[i0:], y[i0:]
+        try:
+            popt, _ = curve_fit(fdecay, tt, yy, p0=[0.4, 60, 1], bounds=([0, 5, 0.2], [1, 2000, 4]), maxfev=30000)
+            fits[W] = popt
+            ax.plot(tt, fdecay(tt, *popt), "k--", lw=0.8, alpha=0.6)
+            ax.axvline(t[i0], color="k", lw=0.5, ls=":")
+        except Exception:
+            pass
 ax.set_xlabel("generated token $t$")
 ax.set_ylabel("fraction identical to $W=4096$")
 ax.set_title("(a) Agreement and stretched-exponential fits (dashed)", loc="left")

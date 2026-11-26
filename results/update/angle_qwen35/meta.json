@@ -1,0 +1,23 @@
+{
+  "model": "/u0/grego/LLM/models--Qwen--Qwen3.5-2B",
+  "dtype": "float32",
+  "window": 4096,
+  "prompt_len": 64,
+  "max_new_tokens": 200,
+  "num_directions": 64,
+  "radii": [
+    0.03,
+    0.1
+  ],
+  "layers": [
+    0,
+    4,
+    8,
+    12,
+    16,
+    20,
+    23
+  ],
+  "seed": 69,
+  "elapsed_sec": 59.3
+}

@@ -1,0 +1,46 @@
+{
+ "DeepSeek-1.5B": {
+  "last_over_mid": 3.4566051959991455,
+  "n_layers": 28
+ },
+ "Qwen2.5-3B": {
+  "last_over_mid": 6.704800605773926,
+  "n_layers": 36
+ },
+ "Qwen3-4B": {
+  "last_over_mid": 7.067464828491211,
+  "n_layers": 36
+ },
+ "Qwen3.5-2B": {
+  "last_over_mid": 7.281121253967285,
+  "n_layers": 7
+ },
+ "Phi-4-mini": {
+  "last_over_mid": 10.9906005859375,
+  "n_layers": 32
+ },
+ "DeepSeek-14B": {
+  "last_over_mid": 4.167750358581543,
+  "n_layers": 9
+ },
+ "Qwen3-14B": {
+  "last_over_mid": 11.680169105529785,
+  "n_layers": 14
+ },
+ "Phi-4": {
+  "last_over_mid": 6.444514751434326,
+  "n_layers": 14
+ },
+ "Mamba-130m": {
+  "last_over_mid": 14.29702377319336,
+  "n_layers": 5
+ },
+ "Pythia-410m": {
+  "last_over_mid": 1.2021359205245972,
+  "n_layers": 5
+ },
+ "randQwen": {
+  "last_over_mid": 1.6718465089797974,
+  "n_layers": 5
+ }
+}

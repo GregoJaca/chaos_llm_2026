@@ -147,6 +147,10 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. B5b — the same with controls.** Relative response vs depth for every LLM and Mamba/Pythia/random, band = IQR over directions where available. **Data:** control A1 files (`results/ctrl/*/a1i_txt`), $r=0.1$, $t=50$, last saved layer; compact summaries in `results_big_small/ctrl_*.npz`. **Read:** Mamba and Pythia also stay within a factor 2 of 1; the random control is high and noisy. The relative response is not a transformer-specific signature; only Phi-4-mini clearly amplifies.
 
+![Fig. B6](update_figures/pack_layer_gain.png)
+
+**Fig. B6 — does the response grow with depth? (your observation, quantified, with controls).** (a) $\|\delta h_\ell\|$ at $t=50$ normalized first to the layer-1 response and then to the middle-layer response, against normalized depth, for all 8 LLMs and the 3 controls; (b) last/middle ratio. **Data:** A1 compact summaries, $r=0.1$; 14B models are sampled at 9–14 layers. **Read:** every trained model rises by a factor **3.5–14** from mid to last layer (DeepSeek-1.5B 3.5, DS-14B 4.2, Qwen2.5 6.7, Qwen3-4B 7.1, Qwen3.5-2B 7.3, Qwen3-14B 11.7, Phi-4-mini 11.0, Mamba 14.3). The random transformer is flat (**1.7**) and Pythia is nearly flat (**1.2**). **Interpretation:** the late-depth amplification of the *prompt* perturbation is a property of the trained weights, not of the architecture — a randomly initialised transformer of the same shape does not have it, and Mamba (no attention) does. **Caveat:** the layer-1 response is small, so the first points of the normalized profile are noisy; the last/middle ratio in (b) is the robust number.
+
 ---
 
 # C. Geometry: angles, rotation, composition
@@ -197,7 +201,52 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 ![Fig. D3c](update_figures/pack_time_all_layers.png)
 
-**Fig. D3c — all saved layers.** Response vs time for every saved layer of DeepSeek-1.5B, Qwen3-4B and Mamba-130m. **Data:** A1/control summaries, $r=0.1$, 300 tokens. **Read:** the shallow layers decay fastest; the deep layers plateau. No layer grows. **Use:** a single view of the full layer dependence; layer 0 is included but is the input embedding.
+**Fig. D3c — all saved layers, three examples.** Response vs time for every saved layer of DeepSeek-1.5B, Qwen3-4B and randQwen; colour = layer (colourbar). **Data:** A1/control summaries, $r=0.1$, 300 tokens. **Read:** the shallow layers decay fastest and the deep layers plateau; every layer overlaps in randQwen. No layer grows. **Each model has its own panel below (D3d–D3n).**
+
+![Fig. D3d](update_figures/pack_time_layers_DeepSeek_15B.png)
+
+**Fig. D3d — DeepSeek-1.5B, every layer.** Layer colourbar on the right. **Read:** layers 7–21 flush toward 0.1–0.3; the last layer stays highest at ≈0.2–0.5. The layer ordering is monotone: deeper = more persistent.
+
+![Fig. D3e](update_figures/pack_time_layers_DeepSeek_14B.png)
+
+**Fig. D3e — DeepSeek-14B, every layer** (9 saved layers, 300 tokens). **Read:** same ordering as the 1.5B; the spread between shallow and deep is smaller.
+
+![Fig. D3f](update_figures/pack_time_layers_Qwen25_3B.png)
+
+**Fig. D3f — Qwen2.5-3B, every layer.** **Read:** monotone persistence with depth; the last layer stays at ≈0.5.
+
+![Fig. D3g](update_figures/pack_time_layers_Qwen3_4B.png)
+
+**Fig. D3g — Qwen3-4B, every layer.** **Read:** all layers stay within a factor 2 of each other; no layer amplifies over time.
+
+![Fig. D3h](update_figures/pack_time_layers_Qwen35_2B.png)
+
+**Fig. D3h — Qwen3.5-2B, every layer** (7 saved layers). **Read:** the deepest layer sits above the rest by ×2, the ordering is otherwise flat.
+
+![Fig. D3i](update_figures/pack_time_layers_Qwen3_14B.png)
+
+**Fig. D3i — Qwen3-14B, every layer.** **Read:** the clearest monotone depth ordering of the 14B models; the last layer stays at ≈0.8.
+
+![Fig. D3j](update_figures/pack_time_layers_Phi_4_mini.png)
+
+**Fig. D3j — Phi-4-mini, every layer.** **Read:** an initial *rise* (this is the model that amplifies relative to its own state norm, Fig. B5), then a slow decay; the deepest layer is highest.
+
+![Fig. D3k](update_figures/pack_time_layers_Phi_4.png)
+
+**Fig. D3k — Phi-4, every layer.** **Read:** shallow layers decay fast, deep layers stay near 1: the same depth trend as the rest.
+
+![Fig. D3l](update_figures/pack_time_layers_Mamba_130m.png)
+
+**Fig. D3l — Mamba-130m (control), every layer.** **Read:** deeper layers persist more than shallow, exactly as in the transformers — “deeper responds more” is not a transformer-specific property.
+
+![Fig. D3m](update_figures/pack_time_layers_Pythia_410m.png)
+
+**Fig. D3m — Pythia-410m (control), every layer.** **Read:** all layers decay to ≈0.05; the depth spread is the smallest of all models, consistent with its near-flat last/middle ratio (1.2, Fig. B6).
+
+![Fig. D3n](update_figures/pack_time_layers_randQwen.png)
+
+**Fig. D3n — randQwen (control), every layer.** **Read:** this is your observation, quantified: all layers collapse onto a single band (0.6–1.1) that decays together, with no depth ordering. The trained models' monotone depth ordering (D3d–D3m) is therefore a property of the learned weights, not of the architecture or of depth per se.
+
 
 ![Fig. D4](update_figures/fig_time_dynamics_all.png)
 
@@ -226,7 +275,7 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 ![Fig. E3](update_figures/pack_window_agreement_fit.png)
 
-**Fig. E3 — token agreement and its fit.** (a) Fraction of tokens identical to $W=4096$ for each window, with a stretched-exponential fit $f_\infty+(1-f_\infty)e^{-(t/\tau)^\beta}$ (dashed). (b) $1-\mathrm{agreement}$ on a log axis. **Data:** `results/window_tokens/tokens.npz`, 8 windows, 300 tokens, no perturbation. **Read:** the decay is a text statistic, not a clean exponential; the fitted $\tau$ grows with $W$ (W=100: $\tau\approx90$, $\beta\approx2$). **Trivial/not:** the first-difference law is a mask identity; the effective memory ($W\approx5$–$8P$) is a measured property of this continuation.
+**Fig. E3 — token agreement and its fit (onset excluded).** (a) Fraction of tokens identical to $W=4096$ for each window, with a stretched-exponential fit $f_\infty+(1-f_\infty)e^{-(t/\tau)^\beta}$ (dashed) started **at the first token where the agreement drops below 1** (dotted vertical line), not at $t=0$. (b) $1-\mathrm{agreement}$ on a log axis. **Data:** `results/window_tokens/tokens.npz`, 8 windows, 300 tokens, no perturbation. **Read:** the onset of disagreement is exactly $t_{\rm onset}=W-P$ (35, 85, 135, 235 for $W=100,150,200,300$, $P=65$) — the same clock as the flush law. The decay after onset is stretched-exponential with $\beta\approx1.7$–$4$ and $\tau\approx90$ ($W=100$), $162$ ($W=150$), $218$ ($W=200$). **Why the earlier fit looked wrong:** it was fitted from $t=0$, through the flat plateau, which dragged $f_\infty$ and $\tau$; excluding the plateau fixes the shape. $W=60<P$ is excluded from the fit because the window clips the prompt itself and the text differs from $t=0$.
 
 ![Fig. E4](update_figures/pack_attention_models.png)
 
@@ -247,6 +296,60 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 ![Fig. F0b](update_figures/pack_master_loglog.png)
 
 **Fig. F0b — the log–log version of (b) and (d).** Same data, both axes logarithmic. **Read:** the closed loop is not a straight line in log–log; it is a staircase with long flat stretches and jumps. Replay is a slow decay. This is why a single exponential rate is a poor summary.
+
+![Fig. F0c](update_figures/pack_loop_loglog_all.png)
+
+**Fig. F0c — closed loop vs replay, log–log, every model.** 5-step rolling median over directions, $T=1$, 600 steps (the 1600–3000 step runs are landing on the cluster; this figure is regenerated automatically by `analysis_update/pack_loop_loglog_models.py`, which always picks the longest orbit available). **Read:** the closed loop climbs $10^2$–$10^4$ and *saturates*; the replay decays to 0.03–1. No model shows a straight line over the whole range — the growth is a staircase of gate events. Mamba grows the most ($\times10^4$) despite having no attention.
+
+![Fig. F0d](update_figures/pack_loop_loglog_ds15.png)
+
+**Fig. F0d — DeepSeek-1.5B.** (a) Response, closed vs replay, log–log; thin = raw median over 8 directions, thick = 5-step rolling median, band = IQR over directions. (b) $\log(a_{\rm closed}/a_{\rm replay})$, grey = raw, green = smoothed, dashed = saturating fit $y_0+(L_\infty-y_0)(1-e^{-t/\tau})$. **Read:** the ratio saturates at $L_\infty=7.8$ nats ($\times2\,400$) with $\tau\approx60$ steps and $R^2=0.96$. This is the cleanest statement of the loop instability: a *finite* amplification that saturates, not exponential growth.
+
+![Fig. F0e](update_figures/pack_loop_loglog_qwen25_3b.png)
+
+**Fig. F0e — Qwen2.5-3B.** The closed loop grows by only $\times4$ and the ratio is noisy ($L_{\rm end}=1.0$, poor fit). **Read:** this model locks into confident repetition quickly, so the closed loop and the replay end up in similar states; the loop has little room to amplify.
+
+![Fig. F0f](update_figures/pack_loop_loglog_qwen3_4b.png)
+
+**Fig. F0f — Qwen3-4B.** Steady staircase growth ($\times5$), ratio rising linearly over 600 steps ($\lambda_{\rm fb}=0.004$ nats/step, the fit has not saturated).
+
+![Fig. F0g](update_figures/pack_loop_loglog_qwen3_5.png)
+
+**Fig. F0g — Qwen3.5-2B.** The largest growth among the small transformer LLMs ($\times300$) with a pronounced jump at $t\approx12$; no replay orbit was saved for this model, so only the closed loop is shown.
+
+![Fig. F0h](update_figures/pack_loop_loglog_qwen35_9b.png)
+
+**Fig. F0h — Qwen3.5-9B.** Closed loop $\times35$; the replay itself grows to $\times3$ and then decays, so the *ratio* is non-monotone. This is the case where the network alone is not perfectly neutral.
+
+![Fig. F0i](update_figures/pack_loop_loglog_phi4mini.png)
+
+**Fig. F0i — Phi-4-mini.** Closed loop $\times130$, ratio saturating at 5.2 nats with $\tau\approx70$ ($R^2=0.85$); the replay decays to 0.8.
+
+![Fig. F0j](update_figures/pack_loop_loglog_mamba130.png)
+
+**Fig. F0j — Mamba-130m.** The strongest amplification of all ($\times1\,800$; 9.6 nats, $\tau\approx35$ steps). **Why this matters:** the loop instability is *not* an attention artefact — a state-space model with no attention at all amplifies just as strongly when its own expected embedding is fed back.
+
+![Fig. F0k](update_figures/pack_loop_loglog_pythia410.png)
+
+**Fig. F0k — Pythia-410m.** $\times44$ ($L_{\rm end}=4.4$, slow rise $\tau\approx190$). The early part is flat for 20 steps: the perturbation has to cross the first gate.
+
+![Fig. F0l](update_figures/pack_loop_loglog_randqwen.png)
+
+**Fig. F0l — the random transformer.** Closed loop $\times3.3$, the smallest of all models, with an almost perfect saturating fit ($R^2=0.99$, $\tau\approx670$). **Read:** a random transformer *does* amplify when its own expectation is fed back, but 2–3 orders of magnitude less than a trained model at the same radius. The trained readout — not the architecture — is what makes the loop unstable.
+
+![Fig. F0m](update_figures/pack_loop_saturation.png)
+
+**Fig. F0m — the same comparison as one number.** (a) $L_{\rm end}=\log(a_{\rm closed}/a_{\rm replay})$ at the end of the run, with the equivalent linear factor; (b) $L_{\rm end}$ vs the rise time $\tau$ of the saturating fit. **Read:** the ordering is Mamba ($\times12\,000$) $>$ DeepSeek-1.5B ($\times2\,400$) $>$ Phi-4-mini ($\times173$) $>$ Pythia ($\times85$) $>$ Qwen3-4B ($\times10$) $>$ randQwen ($\times4$) $>$ Qwen2.5 ($\times3$). **Caveat:** $L_{\rm end}$ is horizon-limited; with the 1600–3000 step runs it will be recomputed, and the poor-fit points ($\times$) should only be read as lower bounds.
+
+### F.0b What the replay teacher trajectory actually is
+
+**The replay teacher is not ordinary autoregressive generation — it is the closed soft loop of the unperturbed prompt.** In `run_softloop.py` row 0 of the batch is the unperturbed reference; in `--feedback soft` mode *every* row, including row 0, feeds back its own `softmax(z/T)` expected embedding. The `e_ref[t]` array that `--mode replay` later reads is therefore the reference row's *soft-loop* orbit, recorded step by step. Replay then feeds that frozen sequence to all rows, so the only difference from the closed loop is that the reference stops reacting to the perturbation.
+
+Consequences you should keep in mind:
+
+- At $T\to0$ the soft loop reduces to greedy autoregressive generation (the expected embedding becomes the argmax token embedding), and the script verifies this: `T->0 CHECK` compares the loop's argmax stream against greedy tokens. So at very low $T$ the replay teacher *is* the greedy trajectory; at $T=1$–$2$ it is not — it is a "soft greedy" path whose tokens are mixtures.
+- The replay control therefore removes *two* things relative to the closed loop: the perturbation's effect on the readout and, through it, the perturbation's effect on the input stream. That is exactly what a control should do, but it means replay is not the same object as teacher forcing on hard tokens (the `longtf` runs), where the token stream is the greedy one at any $T$.
+- Because the teacher orbit itself depends on $T$, a replay run must be paired with the loop run at the same $T$; we always pass `--replay-file <loop>/softloop.npz`.
 
 ### F.0 What “soft”, “closed loop”, “replay”, “CRN” and “independent” mean
 
@@ -274,7 +377,11 @@ Your understanding is correct. The precise definitions are:
 
 ![Fig. F3b](update_figures/pack_live_density_sorted.png)
 
-**Fig. F3b — live-gate density across models.** Density $P(m_t<T)$ vs $T$, sorted by $T$ (the lowest-temperature point is no longer connected to the highest). **Data:** `results/softloop*`, 300–600 steps, 8–32 directions. **Read:** density rises with $T$ at different rates. **Why the old panel (b) is deleted:** horizon vs density does not collapse across models; the same density gives a 10× different horizon, and a two-parameter fit gives $R^2=0.20$. Density alone is not the order parameter.
+**Fig. F3b — live-gate density across models.** Density $P(m_t<T)$ vs $T$, sorted by $T$ (the lowest-temperature point is not connected to the highest). **Data:** `results/softloop*`, 300–600 steps, 8–32 directions, one orbit per $({\rm model},T)$. **Read:** the density is 0 below $T\approx0.2$ and $\approx1$ above $T\approx2$; the rise is at $T\approx1$ for trained models and at $T\approx0.13$ for the random control. **Why the old panel (b) is deleted:** horizon vs density does not collapse across models; the same density gives a 10× different horizon, and a two-parameter fit gives $R^2=0.20$. Density alone is not the order parameter.
+
+![Fig. F3c](update_figures/pack_live_density_fit.png)
+
+**Fig. F3c — the gate density is a margin distribution.** (a) $P(m_t<T)$ vs $T$ on linear axes; (b) median margin $\bar m$ vs $T$ on log axes; (c) the pooled margin distribution per model (bar = IQR, thin line = 5–95%, dot = median). **Data:** same as F3b, all temperatures pooled. **Read:** the "gate-opening temperature" is just the median margin in temperature units, and the median margin separates the control from every trained model by an order of magnitude: **randQwen 0.11 nats** vs 1.5 (Qwen2.5), 1.6 (Qwen3.5-9B), 1.8 (DeepSeek-1.5B), 1.9 (Phi-4-mini), 3.1 (Qwen3-4B), 3.5 (Qwen3.5-2B), 6.1 (Mamba, Pythia). **About fitting:** a Hill fit $aT^b/(c^b+T^b)$ is degenerate here — $b$ pins at any upper bound (4.999) because the curve is a sharp threshold, so the fit parameters are not meaningful and I report the non-parametric $T_{10}$, $T_{50}$, $T_{90}$ instead (`pack_live_density_fit.json`). The curve is also *not monotone in $T$*: each $T$ has its own orbit, and at some temperatures the loop locks into a confident repetition (large margins, low density). That is physics, not a plotting artefact, and it is why the density should not be treated as a thermodynamic curve.
 
 ![Fig. F4](update_figures/pack_gate_law_loglog.png)
 
@@ -485,18 +592,33 @@ These are the existing control figures; the scripts load the control `.npz` file
 | 2 | fp32 A1 for Qwen3-4B, Phi-4-mini | **not done**; fp16 is adequate for flips/relative shape, fp32 needed only for absolute response |
 | 3 | angle probe, 64 directions, 5 small models + 3 controls | **done**, `results/update/angle_*` |
 | 4 | dense-direction $r_*$, 128 dirs, 3 fp32 small models | **done**, `results/update/dense_*` |
-| 5 | dense 14B runs | **queued** on Spark (`queue_spark_wait.sh`), waits for 66 GB free; Qwen3-14B first attempt hit OOM because colleagues took the memory |
+| 5 | dense 14B runs | **Phi-4 done** (`results/update/dense14_phi4`, $r_*=1.21$–$1.28$); Qwen3-14B/DS-14B hit OOM when colleagues held the memory, retried by `queue_spark_wait.sh` |
 | 6 | DeepSeek dense window sweep, 106 windows | **done** (from existing `wspec`) |
 | 7 | nonnorm controls | **randQwen done** (`nonnorm_randqwen3`); Pythia path mismatch; Mamba not run |
 | 8 | depth probe with 32 directions | **done** for DeepSeek, Qwen2.5-3B, Phi-4-mini (`results/update/depth_*_k32`) |
 | 9 | sampled feedback for Qwen3-4B (CRN/ind) | **done**, `results/softloop_sample/qwen3_4b` |
 | 10 | exact $\Sigma_p$ validation (all vocab) | not run |
 | 11 | attention mass, correct window mask | **done**, DeepSeek W=50/100/200/4096 + Qwen2.5/Phi/rand W=100 |
-| 12 | closed-loop metric suite (M, FSLE, finite-time, spectrum, staircase, endpoint) | **done**, F2–F18 |
+| 12 | closed-loop metric suite (M, FSLE, finite-time, spectrum, staircase, endpoint, saturation $L_\infty$/$\\tau$) | **done**, F2–F18 |
 | 13 | log-logistic fit check (linear vs log space, KS) | **done**, A1b |
-| 14 | variance/percentile pass on all aggregates | **done** where data allow; controls added to B5b/C1/C2/C3/D1b/D3b |
+| 14 | variance/percentile pass on all aggregates | **done** where data allow; controls added to B5b/B6/C1/C2/C3/D1b/D3b |
+| 15 | **long looping campaign, 3000 steps (x11) / 1600 steps (Spark)** | **running**: closed loop + replay at $T=1$, then $T=2$, CRN/ind, long teacher-forced (1000/800 tokens), then $T=0.5$ |
 
-**Running on the GPUs.** On x11: depth $k=32$ for Qwen2.5-3B and Phi-4-mini, then CRN/independent sampling for Qwen3-4B (`scripts/queue_extra.sh`). On Spark: a memory-gated queue for dense 14B $r_*$ (`scripts/queue_spark_wait.sh`); it waits for 66 GB free and runs Qwen3-14B, Phi-4, DeepSeek-14B one at a time. I did not kill the colleagues' jobs. The x11 jobs finish in ~20–30 min; the Spark one may wait for a long window. **Recommendation:** the highest-value remaining measurement is the **dense 14B $r_*$**; fp32 for Qwen3-4B/Phi-mini is optional because your own analyses use fp16 for flips and shapes.
+**Running on the GPUs (36–48 h, started 2026‑11‑26 22:50 CET).**
+
+- **x11** (`scripts/queue_long_x11.sh`, log `results/longloop_x11.log`): 8 models (DeepSeek-1.5B, Qwen2.5-3B, Qwen3-4B, Qwen3.5-2B, Phi-4-mini, Mamba-130m, Pythia-410m, randQwen), 3000 steps, 4 saved layers, $r=0.03$–$0.1$, 8 directions. Rounds: (A) $T=1$ loop+replay for every model, (B) $T=2$ loop+replay, (C) CRN+independent sampling, (D) 1000-token teacher-forced, (E) $T=0.5$ loop+replay. ~15 min per 3000-step run for the 1.5B model, longer for the 3–4B models; the whole queue is ~30 h. Resume-safe: each step is skipped if its `.npz` exists.
+- **Spark** (`scripts/queue_long_spark.sh`, log `results/longloop_spark.log`): Qwen3-14B, DeepSeek-14B, Qwen3.5-9B, Phi-4 at fp16, 1600 steps (≈3.4 s/step, ~2 h per run), 4 saved layers. Same round structure with 800-token teacher-forced runs. ~30 h total. I only killed my own earlier jobs; the colleagues' memory is untouched and the models load in fp16 (~30 GB), which fits in the free 60 GB.
+- Neither queue retries on failure: a failed step prints `FAILED` and the queue moves on, so nothing can spin.
+
+**Re-running the analysis when the data land** (all on the Windows checkout after `analysis_update/sync_from_cluster.ps1`):
+
+```
+python analysis_update/pack_loop_loglog_models.py   # F0c-F0m: picks the longest orbit per model
+python analysis_update/pack_loop_saturation.py      # F0m summary numbers
+python analysis_update/pack_loop_metrics.py         # M, FSLE, staircase, endpoint
+python analysis_update/pack_loop_finitetime.py      # finite-time exponent + spectrum
+python analysis_update/run_all.py                   # everything, then copy to notebook/update_figures
+```
 
 ---
 

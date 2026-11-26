@@ -1,0 +1,14 @@
+{
+  "model": "/u0/grego/LLM/models--Qwen--Qwen2.5-3B-Instruct",
+  "window": 100,
+  "prompt_len": 64,
+  "T": 200,
+  "layers": [
+    0,
+    7,
+    14,
+    21,
+    35
+  ],
+  "dtype": "float32"
+}

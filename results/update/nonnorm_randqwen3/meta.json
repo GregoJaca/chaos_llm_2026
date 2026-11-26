@@ -1,0 +1,20 @@
+{
+  "run": "results/ctrl/randqwen_g1.0/a1i_txt",
+  "tokens": [
+    16,
+    50,
+    123,
+    143,
+    200
+  ],
+  "layers": [
+    0,
+    7,
+    14,
+    21,
+    27
+  ],
+  "n_layers": 28,
+  "elapsed_sec": 283.1,
+  "model": "/u0/grego/LLM/models--randqwen-g1.0"
+}

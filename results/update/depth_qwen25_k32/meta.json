@@ -1,0 +1,26 @@
+{
+  "run": "results/rstar/qwen25_3b/p1",
+  "tokens": [
+    0,
+    4,
+    8,
+    12,
+    16,
+    20,
+    30,
+    40,
+    50,
+    70,
+    100,
+    123,
+    143,
+    180,
+    200,
+    250
+  ],
+  "k": 32,
+  "n_layers": 36,
+  "hidden_dim": 2048,
+  "elapsed_sec": 1084.8,
+  "model": "/u0/grego/LLM/models--Qwen--Qwen2.5-3B-Instruct"
+}
