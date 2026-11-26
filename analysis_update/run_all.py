@@ -59,6 +59,11 @@ for s in SCRIPTS:
     print("=== ", s, flush=True)
     subprocess.run([sys.executable, p], cwd=os.path.dirname(HERE), check=False)
 
+# the self-regulation figure is made twice: small models, then 14B
+subprocess.run([sys.executable, os.path.join(HERE, "pack_loop_selfreg.py"),
+                "DeepSeek-14B,Qwen3-14B,Phi-4", "pack_loop_selfreg_big.png"],
+               cwd=os.path.dirname(HERE), check=False)
+
 src = os.path.join(HERE, "..", "update_figures")
 dst = os.path.join(HERE, "..", "notebook", "update_figures")
 os.makedirs(dst, exist_ok=True)

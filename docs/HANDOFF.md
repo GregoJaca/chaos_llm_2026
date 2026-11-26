@@ -164,7 +164,11 @@ qwen34, phi, pythia; `~/LLM/venv311` → qwen35 (needs newer transformers);
    (2% of steps open over 3000 steps, flat response for the last 2700); the
    random transformer never locks in (margins 0.11 nats) and is the only model
    with exponential-looking growth. Growth is bursty: the top 5% of steps
-   produce 26–73% of the total log growth (F20).
+   produce 26–73% of the total log growth (F20). At 14B it is a **one-shot
+   ratchet** (F19b): a single gate episode at $t\approx200$ lifts the response
+   ×200–350 and it stays there even when the gate reopens — i.e. the loop has
+   moved onto a **stable limit cycle**, and the perturbation rides at the
+   cycle's amplitude. Say "limit cycle", not "exponential instability".
    **Temperature is not the control parameter** (F21): at $T=10^{-9}$ (greedy
    AR vs teacher forcing) $L=0.0$; at every $T\ge0.05$, $L=3.8$–$10.4$ nats with
    no trend. Soft feedback at all is what matters.
