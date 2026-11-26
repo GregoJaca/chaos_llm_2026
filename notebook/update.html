@@ -43,7 +43,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  update.md &nbsp;&middot;&nbsp; built 2026-11-26 17:13:43 &nbsp;&middot;&nbsp;
+  update.md &nbsp;&middot;&nbsp; built 2026-11-26 17:22:13 &nbsp;&middot;&nbsp;
   <a href="update.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="update.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="unified.html">unified</a> &middot; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="new.html">new</a> &middot; <a href="notebook.html">notebook</a>
@@ -437,6 +437,10 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 <p><strong>Fig. F15 — the staircase.</strong> (a) One-step log increments $\Delta\log a_t$ for the closed loop, $T=1$; (b) autocorrelation of the increments. <strong>Read:</strong> the increments are spiky and correlated; growth happens in bursts at gates, not as a constant drift. <strong>This is the quantitative form of “staircase, not exponential”.</strong></p>
 <p><img alt="Fig. F16" src="update_figures/pack_loop_endpoint.png" /></p>
 <p><strong>Fig. F16 — endpoint rates.</strong> Closed-loop endpoint rate vs replay endpoint rate, one point per model. <strong>Read:</strong> the points lie above the diagonal; the loop adds growth on top of whatever the network does. The absolute values are small, so this is a <em>qualitative</em> separation, consistent with F2/F2b.</p>
+<p><img alt="Fig. F17" src="update_figures/pack_loop_finitetime.png" /></p>
+<p><strong>Fig. F17 — finite-time exponent.</strong> $\Lambda(\tau)=\frac1\tau\log(a_{t+\tau}/a_t)$ vs $\tau$, closed (red) vs replay (blue), $T=1$. <strong>Data:</strong> <code>results/softloop*</code>, 600 steps. <strong>Read:</strong> the closed loop is positive at all $\tau$ for most models; replay is near zero or negative. The curves are not flat, so there is no single asymptotic exponent; the finite-time value is the meaningful object.</p>
+<p><img alt="Fig. F18" src="update_figures/pack_loop_spectrum.png" /></p>
+<p><strong>Fig. F18 — power spectrum of the log response.</strong> PSD of $\log a_t$ (quadratic trend removed), closed vs replay, $T=1$. <strong>Read:</strong> the closed loop has more low-frequency power (slow staircase), while replay is closer to a flat/noisy spectrum. <strong>Use:</strong> this is another way to show that the loop growth is a slow, structured process, not white noise.</p>
 <p><img alt="Fig. F11" src="update_figures/legacy_d2pipe.png" /></p>
 <hr />
 <h1 id="g-linearity-and-precision">G. Linearity and precision</h1>

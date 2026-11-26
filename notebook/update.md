@@ -320,6 +320,14 @@ Your understanding is correct. The precise definitions are:
 
 **Fig. F16 — endpoint rates.** Closed-loop endpoint rate vs replay endpoint rate, one point per model. **Read:** the points lie above the diagonal; the loop adds growth on top of whatever the network does. The absolute values are small, so this is a *qualitative* separation, consistent with F2/F2b.
 
+![Fig. F17](update_figures/pack_loop_finitetime.png)
+
+**Fig. F17 — finite-time exponent.** $\Lambda(\tau)=\frac1\tau\log(a_{t+\tau}/a_t)$ vs $\tau$, closed (red) vs replay (blue), $T=1$. **Data:** `results/softloop*`, 600 steps. **Read:** the closed loop is positive at all $\tau$ for most models; replay is near zero or negative. The curves are not flat, so there is no single asymptotic exponent; the finite-time value is the meaningful object.
+
+![Fig. F18](update_figures/pack_loop_spectrum.png)
+
+**Fig. F18 — power spectrum of the log response.** PSD of $\log a_t$ (quadratic trend removed), closed vs replay, $T=1$. **Read:** the closed loop has more low-frequency power (slow staircase), while replay is closer to a flat/noisy spectrum. **Use:** this is another way to show that the loop growth is a slow, structured process, not white noise.
+
 
 ![Fig. F11](update_figures/legacy_d2pipe.png)
 
