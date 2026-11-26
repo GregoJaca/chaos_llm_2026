@@ -36,6 +36,8 @@ RETRY_SECONDS = 20.0
 
 # name, source file, short description shown on the index page
 DOCS = [
+    ("update", "update.md", "Update 2 &mdash; all old figures rebuilt from raw data, plus new analyses"),
+    ("unified", "unified.md", "Unified treatise &mdash; figures regenerated from raw data; text is the old draft"),
     ("controls", "controls.md", "Controls &mdash; Mamba / random-transformer vs the LLM results"),
     ("master", "master.md", "Claims only &mdash; the results I would defend, with definitions"),
     ("veto", "veto.md", "Extra results and whether to include them (verdicts)"),
@@ -69,8 +71,9 @@ code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: .86em;
 code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; }
 pre { background:#f7f7f7; border:1px solid #e5e5e5; border-radius:4px; padding:8px 10px; overflow-x:auto; }
 img { max-width: 100%; height: auto; display:block; margin: 10px auto; }
-table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .93em; }
-th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .93em; table-layout: fixed; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top;
+         word-break: break-word; overflow-wrap: anywhere; }
 th { background: #f5f7f9; }
 hr { border: 0; border-top: 1px solid var(--line); margin: 1.8em 0; }
 blockquote { margin: .6em 0; padding: .3em 1em; border-left: 3px solid var(--line); color:#333; }

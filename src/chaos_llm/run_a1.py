@@ -38,6 +38,9 @@ def main():
     ap.add_argument("--fixed-tokens-from", default="",
                     help="npz file (or dir containing a1.npz) whose prompt_ids/gen_ids are reused")
     ap.add_argument("--layers", default="0,7,14,21,27")
+    ap.add_argument("--dense", action="store_true",
+                    help="use dense Gaussian unit directions instead of the sparse simplex")
+    ap.add_argument("--dtype", default="auto")
     ap.add_argument("--inbatch-ref", action="store_true",
                     help="add an r=0 reference row to every perturbed batch and measure all "
                          "differences in-batch (exact numerical floor); batch shape is kept "
@@ -53,7 +56,7 @@ def main():
     radii = [float(x) for x in args.radii.split(",") if x.strip()]
     layers = [int(x) for x in args.layers.split(",")]
 
-    model, tok, model_path = load_model(args.model)
+    model, tok, model_path = load_model(args.model, dtype=args.dtype)
     set_window(model, args.window)
 
     pids = prompt_ids(tok, text)
@@ -110,6 +113,12 @@ def main():
         m_t = torch.as_tensor(margins, device="cuda")
 
     simplex, sub = make_directions(args.num_directions, P, D, args.seed)
+    if args.dense:
+        rng = np.random.default_rng(args.seed)
+        U = rng.normal(size=(args.num_directions, P * D)).astype(np.float32)
+        U /= np.linalg.norm(U, axis=1, keepdims=True)
+        simplex = U
+        sub = np.arange(P * D, dtype=np.int64)
     sub_t = torch.as_tensor(sub, device="cuda", dtype=torch.long)
 
     nr, K, nl = len(radii), args.num_directions, len(layers)

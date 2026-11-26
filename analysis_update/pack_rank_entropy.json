@@ -1,0 +1,22 @@
+{
+ "Qwen3-4B": {
+  "rank_median": 1.0,
+  "ent_median": 0.30677440762519836
+ },
+ "Phi-4-mini": {
+  "rank_median": 1.1385812712838488,
+  "ent_median": 0.8507996499538422
+ },
+ "Mamba-130m": {
+  "rank_median": null,
+  "ent_median": 0.0537234079092741
+ },
+ "Pythia-410m": {
+  "rank_median": 1.0,
+  "ent_median": 0.05130319111049175
+ },
+ "randQwen": {
+  "rank_median": 15.702791672833477,
+  "ent_median": 11.62480640411377
+ }
+}
