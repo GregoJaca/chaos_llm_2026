@@ -36,28 +36,38 @@ LONGTAG.update({"DeepSeek-1.5B": "ds15v2", "Qwen3-4B": "qwen34",
                 "Qwen2.5-3B": "qwen25", "Phi-4-mini": "phi"})
 
 
-def candidates(tag, mode):
-    out = []
-    for root in ("results/longloop", "results/softloop"):
-        for sub in glob.glob(os.path.join(HERE, root, tag, "T*")):
-            p = os.path.join(sub, "loop" if mode == "loop" else "replay", "softloop.npz")
-            if mode == "loop" and root == "results/softloop":
-                p = os.path.join(sub, "softloop.npz")
-            if os.path.exists(p):
-                out.append(p)
+def candidates(tag, mode, name=None):
+    """All npz paths for one model, best first.
 
-    def nsteps(p):
-        try:
-            return np.load(p, allow_pickle=True)["dh"].shape[-1]
-        except Exception:
-            return 0
-    return sorted(out, key=nsteps, reverse=True)
+    Preference: the long campaign (`results/longloop`, 3000/1600 steps) over the
+    older 600-step `results/softloop`, T=1.0 over other temperatures, and the
+    longest run over shorter ones.
+    """
+    tags = {tag}
+    if name is not None and name in LONGTAG:
+        tags.add(LONGTAG[name])
+    found = []
+    for root in ("results/longloop", "results/softloop"):
+        for tg in tags:
+            for sub in glob.glob(os.path.join(HERE, root, tg, "T*")):
+                if mode == "loop":
+                    p = os.path.join(sub, "loop", "softloop.npz") if root.endswith("longloop") \
+                        else os.path.join(sub, "softloop.npz")
+                else:
+                    p = os.path.join(sub, "replay", "softloop.npz")
+                if not os.path.exists(p):
+                    continue
+                try:
+                    n = np.load(p, allow_pickle=True)["dh"].shape[-1]
+                except Exception:
+                    n = 0
+                t1 = "T1.0" in sub.replace("\\", "/")
+                found.append(((root.endswith("longloop"), t1, n), p))
+    found.sort(key=lambda r: r[0], reverse=True)
+    return [p for _, p in found]
 
 
 def pick_t1(paths):
-    for p in paths:
-        if "T1.0" in p.replace("\\", "/"):
-            return p
     return paths[0] if paths else None
 
 
@@ -78,8 +88,8 @@ def roll(x, w=5):
 rows = {}
 for name, tag in TAGS.items():
     tag_l = LONGTAG.get(name, tag)
-    pl = pick_t1(candidates(tag_l, "loop")) or pick_t1(candidates(tag, "loop"))
-    pr = pick_t1(candidates(tag_l, "replay")) or pick_t1(candidates(tag, "replay"))
+    pl = pick_t1(candidates(tag, "loop", name))
+    pr = pick_t1(candidates(tag, "replay", name))
     if pl is None and pr is None:
         continue
     rows[name] = dict(loop=pl, replay=pr)
@@ -105,7 +115,7 @@ for name in MODELS:
         t = np.arange(len(m))
         sel = t >= 1
         ax.plot(t[sel], m[sel], color=c, lw=0.5, alpha=0.35)
-        ax.plot(t[sel], roll(m)[sel], color=c, lw=1.5, ls=ls, label=lab)
+        ax.plot(t[sel], roll(m)[sel], color=c, lw=1.5, ls=ls, label=f"{lab} ({len(m)} steps)")
         ax.fill_between(t[sel], np.maximum(lo[sel], 1e-8), hi[sel], color=c, alpha=0.10, lw=0)
         med[key] = m
         summary.setdefault(name, {})[f"n_steps_{key}"] = int(len(m))
@@ -178,7 +188,7 @@ for ax, n in zip(axes.flat, MODELS):
         if not r[key]:
             continue
         a = raw(r[key]); m = np.median(a, axis=0); t = np.arange(len(m))
-        ax.plot(t[1:], roll(m)[1:], color=c, lw=1.3, ls=ls, label=lab)
+        ax.plot(t[1:], roll(m)[1:], color=c, lw=1.3, ls=ls, label=f"{lab} ({len(m)})")
     ax.axhline(1, color="k", ls=":", lw=0.7)
     ax.set_xscale("log"); ax.set_yscale("log")
     ax.set_title(n, fontsize=8.8)
@@ -193,5 +203,6 @@ save(fig, "pack_loop_loglog_all.png")
 
 json.dump(summary, open(os.path.join(HERE, "analysis_update", "pack_loop_loglog_models.json"), "w"), indent=1)
 print("done", len(MODELS), "models")
+
 
 

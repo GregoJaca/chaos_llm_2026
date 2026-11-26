@@ -443,6 +443,14 @@ Your understanding is correct. The precise definitions are:
 
 **Fig. F18 — power spectrum of the log response.** PSD of $\log a_t$ (quadratic trend removed), closed vs replay, $T=1$. **Read:** the closed loop has more low-frequency power (slow staircase), while replay is closer to a flat/noisy spectrum. **Use:** this is another way to show that the loop growth is a slow, structured process, not white noise.
 
+![Fig. F19](update_figures/pack_loop_selfreg.png)
+
+**Fig. F19 — why the growth stops: the loop self-regulates into confident repetition.** Red, left axis: response $a_t$ of the closed loop (log). Blue, right axis: the reference row's margin $m_t$ (21-step median, log). Green shading: the live-gate region $m_t<1$, i.e. the steps on which the readout is soft enough for the perturbation to change the feedback distribution. **Read:** growth happens only inside the green region, and it stops precisely when the margin rises above 1 and stays there. DeepSeek-1.5B is the clearest case: the response climbs to $\times800$ over the first ~300 steps while the margin is $O(1)$, then the margin settles at ≈10 nats and the response is flat for 2700 more steps (only 2% of steps have $m_t<1$). Phi-4-mini and Mamba show the same lock-in after a single gate-opening episode (at $t\approx110$ and $t\approx40$–200). **The exception is the random transformer**, whose margins never exceed ≈0.3 nats: its gate is always open (100% of steps), it never locks in, and it is the only model whose growth looks exponential over the whole run (F0l). Qwen2.5-3B never locks in either and its response keeps wandering. **Interpretation:** the saturation $L_\infty$ in F0d–F0m is not an imposed cutoff — it is a *fixed point of the coupled system*: growth drives the trajectory toward high-confidence repetitive text, which closes the gates and switches growth off. This is a self-regulating mechanism, and it is why a single Lyapunov exponent does not describe the loop.
+
+![Fig. F20](update_figures/pack_loop_intermittency.png)
+
+**Fig. F20 — the growth is bursty and gate-conditioned.** (a) Windowed live-gate density $P(m_t<1)$ (window 50) — the gates open in bursts, and after the lock-in of F19 the density stays at 0. (b) Mean one-step log growth $\Delta\log a_t$, split by gate state: every trained model grows only while the gate is open (red, +0.02 to +0.15 nats/step) and *contracts* while it is closed (blue, −0.01 to −0.05 nats/step); Pythia is the extreme case (−0.5 nats/step when closed). (c) Concentration of the total log growth: the top 5% of steps produce 26–73% of the growth for the trained models (Phi-4-mini 73%), versus ~14% for randQwen and the 5% diagonal of a constant-rate exponential. **Read:** the staircase is not a plotting artefact; a handful of gate-opening events do most of the work, and between them the response decays.
+
 
 ![Fig. F11](update_figures/legacy_d2pipe.png)
 

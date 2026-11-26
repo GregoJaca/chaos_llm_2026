@@ -1,0 +1,1 @@
+﻿renewable_energy_economics	Analyze the economics of renewable energy. Cover the levelized cost of electricity for solar and wind, storage, grid integration, subsidies, and market design. Explain how learning curves and manufacturing scale have driven cost declines, and discuss the remaining barriers to deep decarbonization.
