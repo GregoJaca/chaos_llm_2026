@@ -1,0 +1,20 @@
+{
+  "run": "results_big/qwen314/a1_inter_w0",
+  "tokens": [
+    0,
+    21,
+    50,
+    100,
+    150,
+    200,
+    250,
+    299
+  ],
+  "k": 8,
+  "n_layers": 40,
+  "hidden_dim": 5120,
+  "model": "/home/grego/LLM/models/Qwen3-14B",
+  "dtype": "float32",
+  "window": 0,
+  "elapsed_sec": 188.1
+}

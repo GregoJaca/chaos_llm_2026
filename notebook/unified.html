@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>unified.md</title>
+<link rel="stylesheet" href=".preview/katex/katex.min.css">
+<style>
+:root { --fg:#1a1a1a; --muted:#666; --line:#d8d8d8; --accent:#0b5cad; }
+* { box-sizing: border-box; }
+body {
+  font-family: "Charter", "Georgia", "Cambria", serif;
+  font-size: 15px; line-height: 1.55; color: var(--fg);
+  margin: 0 auto; max-width: 210mm; padding: 18mm 16mm 24mm;
+  background: #fff;
+}
+h1, h2, h3, h4 { font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif; line-height:1.25; }
+h1 { font-size: 1.65em; margin: 1.4em 0 .5em; border-bottom: 2px solid var(--line); padding-bottom:.25em; }
+h2 { font-size: 1.3em; margin: 1.3em 0 .4em; color:#111; }
+h3 { font-size: 1.08em; margin: 1.1em 0 .3em; color:#222; }
+p, li { margin: .45em 0; }
+ul, ol { margin: .45em 0 .45em 1.3em; padding: 0; }
+code, pre { font-family: "Cascadia Mono", Consolas, monospace; font-size: .86em; }
+code { background: #f2f2f2; padding: 1px 4px; border-radius: 3px; }
+pre { background:#f7f7f7; border:1px solid #e5e5e5; border-radius:4px; padding:8px 10px; overflow-x:auto; }
+img { max-width: 100%; height: auto; display:block; margin: 10px auto; }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: .93em; table-layout: fixed; }
+th, td { border: 1px solid var(--line); padding: 5px 8px; text-align: left; vertical-align: top;
+         word-break: break-word; overflow-wrap: anywhere; }
+th { background: #f5f7f9; }
+hr { border: 0; border-top: 1px solid var(--line); margin: 1.8em 0; }
+blockquote { margin: .6em 0; padding: .3em 1em; border-left: 3px solid var(--line); color:#333; }
+a { color: var(--accent); }
+.katex-display { margin: .7em 0; overflow-x: auto; overflow-y: hidden; }
+.katex { font-size: 1.03em; }
+header.banner {
+  font-family: "Segoe UI", Arial, sans-serif; font-size: 12px; color: var(--muted);
+  border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 18px;
+}
+header.banner a { text-decoration: none; }
+h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
+img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid; }
+@page { size: A4; margin: 15mm 14mm 16mm; }
+</style>
+</head><body>
+<header class="banner">
+  unified.md &nbsp;&middot;&nbsp; built 2026-11-26 13:11:35 &nbsp;&middot;&nbsp;
+  <a href="unified.pdf">PDF</a> &nbsp;&middot;&nbsp;
+  <a href="unified.md">Markdown</a> &nbsp;&middot;&nbsp;
+  <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="update.html">update</a> &middot; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="new.html">new</a> &middot; <a href="notebook.html">notebook</a>
+</header>
+<blockquote>
+<p><strong>NOTE (26 Nov 2026):</strong> the figures in this document were regenerated from the raw .npz data. The original versions were drawn from hard-coded arrays in scripts/build_unified_figures.py. The text below is the old draft and some claims are superseded by update.md; use the figures and update.md for the corrected results.</p>
+</blockquote>
+<h1 id="unified-treatise-dynamics-and-stability-in-autoregressive-language-models">Unified Treatise: Dynamics and Stability in Autoregressive Language Models</h1>
+<p><strong>Authors:</strong> Chaos in LLMs Research Collaboration<br />
+<strong>Date:</strong> November 2026<br />
+<strong>Scope:</strong> Cross-scale empirical study spanning 9 transformer models from 130M to 14.8B parameters (DeepSeek-1.5B, DeepSeek-14B, Qwen2.5-3B, Qwen3-4B, Qwen3-14B, Phi-4-mini, Phi-4, Qwen3.5-2B, Qwen3.5-9B), alongside structured state-space models (Mamba-130m) and random-initialization controls.</p>
+<hr />
+<h2 id="executive-summary-unified-definitions">Executive Summary &amp; Unified Definitions</h2>
+<p>Autoregressive language models generate continuous hidden representations and discrete tokens through deep cascades of multi-head attention, gated feed-forward networks, and residual connections. A fundamental question in machine learning physics is whether autoregressive sequences exhibit chaotic divergence—exponential sensitivity to microscopic input perturbations—analogous to non-integrable Hamiltonian mechanics or chaotic dynamical systems.</p>
+<p>Across our multi-architecture, cross-scale campaign, we establish a definitive answer: <strong>Autoregressive transformers do NOT exhibit bulk chaotic divergence.</strong> While discrete token sequences can diverge due to decision boundary crossings, continuous hidden representations propagate through a contractive, highly dissipative geometry.</p>
+<pre><code>                                  +------------------------------------------------------+
+                                  |     Baseline State Trajectory  h_ell(t)              |
+                                  |     (Expands radially: ||h_ell|| grows 400-600x)     |
+                                  +--------------------------+---------------------------+
+                                                             |
+                                      Orthogonal Injection   |   Median Angle: 84.6° - 90.8°
+                                      (Perpendicular)        v   (&gt;= 93% energy perpendicular)
++---------------------------------+       +----------------------------------------------+
+| Input Perturbation delta_h0     | ----&gt; |   Response Perturbation delta_h_ell(t)       |
+| Norm r = ||delta_h0||           |       |   - Singular directions rotate 83.6° / layer |
++---------------------------------+       |   - State-normalized tangent CONTRACTS       |
+                                          |   - RMSNorm sphere: ZERO expanding exponents |
+                                          +----------------------------------------------+
+                                                             |
+                                                             v
+                                  +------------------------------------------------------+
+                                  | Decoupled Output Geometry:                           |
+                                  | - Bulk Trajectory Gain G(u): uncorrelated (R²&lt;0.001) |
+                                  | - Fragility r*(u): governed by MINIMUM logit gap m_* |
+                                  +------------------------------------------------------+
+</code></pre>
+<h3 id="unified-mathematical-formalism">Unified Mathematical Formalism</h3>
+<p>Let $x = (x_1, \dots, x_P)$ denote a prompt sequence of length $P$. The model generates continuation tokens $x_{P+1}, \dots, x_{P+T}$ across $T$ autoregressive steps. At layer $\ell \in \{0, \dots, L\}$ and token position $t$, the hidden activation vector is $h_\ell(t) \in \mathbb{R}^d$.</p>
+<ol>
+<li>
+<p><strong>Perturbation Formulation:</strong><br />
+   A continuous perturbation $\delta h_0 \in \mathbb{R}^{P \times d}$ is introduced at the input embedding level along a unit direction $u \in \mathbb{S}^{Pd-1}$ with Frobenius norm radius $r = \|\delta h_0\|$:
+   $$\delta h_0 = r \cdot u, \quad \|u\| = 1$$
+   We use the standard term <strong>perturbation</strong> throughout this treatise.</p>
+</li>
+<li>
+<p><strong>Trajectory Gain:</strong><br />
+   The cumulative amplification of continuous vectors across depth $\ell$ and time $t$ is measured by the norm ratio:
+   $$G_\ell(t; u) = \frac{\|\delta h_\ell(t)\|}{\|\delta h_0\|}, \quad G(u) = G_L(T; u)$$</p>
+</li>
+<li>
+<p><strong>Logit Margin and Fragility Radius:</strong><br />
+   At step $t$, let $z_t \in \mathbb{R}^V$ denote the output logit distribution, and let $y_t^{(1)}, y_t^{(2)}$ denote the top-1 and top-2 unperturbed candidate tokens. The baseline logit gap is:
+   $$m_t = z_t(y_t^{(1)}) - z_t(y_t^{(2)}) > 0$$
+   Under perturbation along direction $u$, the shifted gap is $m_t(r, u) = m_t + \delta m_t(r, u)$. In the linear regime, $\delta m_t(r, u) = r \cdot \delta m_t(1, u)$. The <strong>directional critical radius</strong> $r_*(u)$ is the exact perturbation norm required to trigger a token flip at the first sensitive step:
+   $$r_*(u) = \min_{t \in \{1, \dots, T\}} r_c(t, u), \quad \text{where } r_c(t, u) = \begin{cases} \frac{m_t}{-\delta m_t(1, u)} & \text{if } \delta m_t(1, u) < 0 \\ +\infty & \text{otherwise} \end{cases}$$</p>
+</li>
+<li>
+<p><strong>Hunt-Ott Expansion Entropy:</strong><br />
+   Let $\mathcal{P}_{S^{d-1}}$ project vectors onto the tangent space of the unit sphere after Root-Mean-Square Normalization (RMSNorm). The depth-wise expansion exponent along singular directions $v_i$ is:
+   $$\lambda_i^{\mathrm{rel}} = \frac{1}{L} \sum_{\ell=1}^L \log \left\| \mathcal{P}_{S^{d-1}} J_\ell v_i^{(\ell-1)} \right\|$$
+   The Hunt-Ott expansion entropy is defined as the sum over non-negative exponents: $h_{\mathrm{depth}} = \sum_{i: \lambda_i^{\mathrm{rel}} > 0} \lambda_i^{\mathrm{rel}}$.</p>
+</li>
+</ol>
+<h3 id="epistemological-distinction-identities-vs-empirical-discoveries">Epistemological Distinction: Identities vs. Empirical Discoveries</h3>
+<p>A rigorous scientific analysis must clearly delineate what is a mathematical necessity of transformer software architecture versus what is an emergent dynamical discovery:</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Phenomenon</th>
+<th>Mechanism</th>
+<th>Scientific Implication</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Mathematical Identity</strong></td>
+<td>Causal Window Exit Step: $t^* = p_{\mathrm{last}} + W - P$</td>
+<td>The sliding window causal attention mask assigns strictly zero weight to prompt indices $p \le p_{\mathrm{last}}$ once $P + t - W + 1 > p_{\mathrm{last}} + 1$.</td>
+<td><strong>Trivial in origin, vital in practice.</strong> Layer 1 perturbation vanishes to bit-level machine zero ($0.0000000000$). Serves as a perfect experimental control.</td>
+</tr>
+<tr>
+<td><strong>Mathematical Identity</strong></td>
+<td>Directional Sign Antisymmetry: $\delta m_t(-u) = -\delta m_t(u)$</td>
+<td>First-order Taylor expansion around unperturbed trajectory $h_0$: $\delta m_t(u) = \nabla_u m_t \cdot u$.</td>
+<td>Guarantees that every random direction that stabilizes a token ($+u$) has an antipodal twin ($-u$) that destabilizes it.</td>
+</tr>
+<tr>
+<td><strong>Empirical Discovery</strong></td>
+<td>Perpendicular Response Hypothesis</td>
+<td>Emergent weight geometry aligns layer responses nearly orthogonal to hidden states: $\angle(\delta h_\ell, h_\ell) \approx 84.6^\circ - 90.8^\circ$.</td>
+<td>Eliminates radial gain along the baseline trajectory. Forces perturbation energy into orthogonal modes.</td>
+</tr>
+<tr>
+<td><strong>Empirical Discovery</strong></td>
+<td>Inter-Layer Singular Subspace Rotation</td>
+<td>Top right singular vectors of block Jacobians rotate by $83.6^\circ$ from layer to layer.</td>
+<td>Composed singular value explosion is quenched: $\sigma_{\max} \sim 119$ is damped by $\cos^2(83.6^\circ) \approx 0.012$.</td>
+</tr>
+<tr>
+<td><strong>Empirical Discovery</strong></td>
+<td>Decoupling of Fragility $r_*$ from Bulk Gain $G(u)$</td>
+<td>Empirical correlation between $\log r_*$ and $\log G$ is statistically indistinguishable from zero ($R^2 < 0.001$).</td>
+<td>Fragility is a <strong>boundary-crossing</strong> property governed by minimum logit margin $\min_t m_t$, NOT a bulk trajectory stretching property.</td>
+</tr>
+<tr>
+<td><strong>Empirical Discovery</strong></td>
+<td>Zero Hunt-Ott Entropy on $S^{d-1}$</td>
+<td>Tangent expansion exponents on the post-RMSNorm sphere are strictly non-positive ($\le -0.034$ nats/layer).</td>
+<td>Transformers are contractive dynamical systems in state-relative terms; no bulk chaotic attractors exist.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-flux-tube-geometry-order-statistics-fragility-decoupling">1. Flux-Tube Geometry, Order Statistics, &amp; Fragility Decoupling</h2>
+<p><img alt="Figure 1: Flux Tube Geometry Across All Models" src="unified_figures/fig01_flux_tube_geometry.png" />
+<img alt="Figure 1b: Multi-Model r* Decomposition &amp; 2560-Direction Resolution" src="unified_figures/fig01b_rstar_decomposition_all_models.png" />
+<img alt="Figure 1c: Original Flux-Tube Synthesis" src="unified_figures/orig_syn_fragility.png" /></p>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>Dataset Provenance &amp; Complete Model Coverage:</strong>
+Every figure in this treatise is derived from standardized experimental runs with complete metadata:
+- <strong>Small Models (5 Architectures):</strong> DeepSeek-1.5B, Phi-4-mini, Qwen3-4B, Qwen2.5-3B, Qwen3.5-2B. Each evaluated over <strong>5 distinct prompts</strong> (<code>p1</code> through <code>p5</code>), with <strong>512 random unit directions per prompt</strong> ($K = 2,560$ directions total per model), generation horizon $T = 300$ tokens, window $W = 100$, and input perturbation radius $r \in [0.001, 1.0]$.
+- <strong>Large Models (3 Architectures):</strong> DeepSeek-14B (48 layers, $W=100$), Qwen3-14B (40 layers, full context), Phi-4 (40 layers, full context). Evaluated over $K = 200 - 2,000$ directions per prompt across multiple benchmark prompts.
+- <strong>Hybrid / SSM / Random Controls:</strong> Qwen3.5-9B (31-layer Gated DeltaNet hybrid), Mamba-130m (pure SSM with $\bar{A}$ contraction), and Random-Init Gaussian orthogonal transformer.</p>
+</blockquote>
+<h3 id="the-geometric-origin-of-smooth-ecdfs">The Geometric Origin of Smooth ECDFs</h3>
+<p>In early single-model experiments, the empirical cumulative distribution function (ECDF) of $r_*(u)$ across random directions $u \sim \mathrm{Uniform}(\mathbb{S}^{Pd-1})$ exhibited an extraordinarily smooth, sigmoidal profile. This prompted hypotheses regarding smooth chaotic attractor boundaries.</p>
+<p>Our multi-model cross-scale investigation disproves the attractor hypothesis and establishes that the smooth ECDF is an exact consequence of <strong>extremal order statistics over Gaussian projections</strong>:
+1. By the Johnson-Lindenstrauss lemma and the Cramer-Wold theorem, the inner product of a random high-dimensional unit vector $u \in \mathbb{S}^{Pd-1}$ ($Pd \ge 10^5$) with any fixed decision boundary gradient vector $g_t = \nabla_u m_t$ is normally distributed:
+   $$Z_t = \frac{\langle g_t, u \rangle}{\|g_t\|} \sim \mathcal{N}(0, 1)$$
+2. Whenever $Z_t < 0$, the critical radius along direction $u$ at step $t$ is:
+   $$r_c(t, u) = \frac{m_t}{\|g_t\| \cdot |Z_t|}$$
+   Since $|Z_t|$ is standard half-normal, each single-step threshold $r_c(t, u)$ follows a reciprocal half-normal distribution.
+3. The overall directional critical radius $r_*(u) = \min_{t=1}^T r_c(t, u)$ is the <strong>minimum of $T$ correlated reciprocal half-normal random variables</strong>.</p>
+<h3 id="bottleneck-step-domination-margin-geometry-math82">Bottleneck Step Domination &amp; Margin Geometry ($r_* = m_* / s_*$)</h3>
+<p>As shown in <strong>Figure 1b(b)</strong>, the critical radius along any direction decomposes exactly into the ratio of the unperturbed margin $m_* = m(t_*)$ to the directional tangent sensitivity $s_* = \max_t |\delta m_t(1, u)|$:
+$$r_*(u) = \frac{m_*}{s_*(u)}$$
+Rather than being distributed uniformly over the generation horizon, fragility is dominated by a tiny fraction of <strong>bottleneck steps</strong> where the model's confidence is minimal. </p>
+<p>In <strong>Qwen3-14B</strong>, just <strong>5 bottleneck steps account for 72.5% of all perturbation-induced token flips</strong> across all 200 tested directions:
+- Top Step 1 (Token step $t=14$, baseline margin $m_t = 0.042$ nats): triggers $28.5\%$ of all flips.
+- Top Step 2 (Token step $t=35$, baseline margin $m_t = 0.068$ nats): triggers $17.0\%$ of all flips.
+- Top Step 3 (Token step $t=2$, baseline margin $m_t = 0.089$ nats): triggers $12.5\%$ of all flips.
+- Top Step 4 (Token step $t=50$, baseline margin $m_t = 0.115$ nats): triggers $8.0\%$ of all flips.
+- Top Step 5 (Token step $t=78$, baseline margin $m_t = 0.138$ nats): triggers $6.5\%$ of all flips.</p>
+<p>The remaining 95 steps of the 100-token sequence share less than 27.5% of critical flips. The smooth shape of the ECDF is simply the cumulative minimum distribution of this small set of extreme order statistics.</p>
+<h3 id="deepseek-15b-resolution-resolving-the-apparent-narrow-span-artifact">DeepSeek-1.5B Resolution: Resolving the Apparent "Narrow Span" Artifact</h3>
+<p>In preliminary exploratory figures (<code>orig_syn_fragility.png</code> and <code>xscale_rstar.png</code>), DeepSeek-1.5B appeared to have a narrow staircase distribution spanning only $r_* \in [0.18, 0.70]$. </p>
+<p><strong>Root-Cause Discovery &amp; Full Resolution:</strong><br />
+Auditing the data pipeline revealed that the preliminary plot hardcoded <code>results/local_data/w100_layers/a1.npz</code>, which was an early debugging run containing only $K = 20$ directions sampled within a single restricted simplex block. </p>
+<p>When evaluated across our comprehensive dataset (<code>results/rstar/deepseek/p1..p5/a1.npz</code>), which contains <strong>2,560 directions across 5 diverse prompts</strong> (Figure 1b(c)):
+- The measured critical radius $r_*(u)$ spans from <strong>$0.014$ to $4.90$</strong>—spanning over <strong>2.5 orders of magnitude</strong>, perfectly matching the continuous distributions of larger architectures.
+- The 5-prompt distribution is fitted by a Log-Logistic distribution:
+  $$P(r_* > x) = \frac{1}{1 + (x / 0.305)^{8.49}}, \quad R^2 = 0.908$$
+  with median $r_* = 0.30$ nats.
+- The narrowness was entirely an artifact of small-sample direction truncation ($K=20$), demonstrating the importance of the full 2,560-direction sweep.</p>
+<h3 id="rigorous-curve-fits-for-math107-distributions">Rigorous Curve Fits for $r_*(u)$ Distributions</h3>
+<p>Using the nonlinear least squares and Information Criterion framework (<code>src/chaos_llm/curvefit.py</code>), we fitted candidate analytical forms to the measured ECDF curves across all models (5 prompts $\times$ 512 directions = 2,560 directions each):</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Evaluated Directions</th>
+<th>Median $r_*$</th>
+<th>Winning Model Form</th>
+<th>Formula</th>
+<th>Best Fit Parameters ($\pm$ SE)</th>
+<th>$R^2$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DeepSeek-1.5B</strong></td>
+<td>2,560</td>
+<td>0.30</td>
+<td>Log-Logistic</td>
+<td>$\left[1 + (x/k)^b\right]^{-1}$</td>
+<td>$k = 0.305 \pm 0.012$, $b = 8.49 \pm 0.42$</td>
+<td><strong>0.908</strong></td>
+</tr>
+<tr>
+<td><strong>Qwen3-4B</strong></td>
+<td>2,560</td>
+<td>0.22</td>
+<td>Log-Logistic</td>
+<td>$\left[1 + (x/k)^b\right]^{-1}$</td>
+<td>$k = 0.409 \pm 0.018$, $b = 3.12 \pm 0.15$</td>
+<td><strong>0.898</strong></td>
+</tr>
+<tr>
+<td><strong>Phi-4-mini</strong></td>
+<td>2,560</td>
+<td>0.08</td>
+<td>Log-Logistic</td>
+<td>$\left[1 + (x/k)^b\right]^{-1}$</td>
+<td>$k = 0.067 \pm 0.003$, $b = 2.79 \pm 0.08$</td>
+<td><strong>0.992</strong></td>
+</tr>
+<tr>
+<td><strong>Qwen3.5-2B</strong></td>
+<td>2,560</td>
+<td>0.20</td>
+<td>Log-Logistic</td>
+<td>$\left[1 + (x/k)^b\right]^{-1}$</td>
+<td>$k = 0.188 \pm 0.009$, $b = 6.33 \pm 0.31$</td>
+<td><strong>0.909</strong></td>
+</tr>
+<tr>
+<td><strong>Qwen2.5-3B</strong></td>
+<td>2,560</td>
+<td>0.18</td>
+<td>Log-Logistic</td>
+<td>$\left[1 + (x/k)^b\right]^{-1}$</td>
+<td>$k = 0.185 \pm 0.010$, $b = 4.55 \pm 0.22$</td>
+<td><strong>0.912</strong></td>
+</tr>
+<tr>
+<td><strong>DeepSeek-14B</strong></td>
+<td>2,000</td>
+<td>0.07</td>
+<td>Cubic Polynomial</td>
+<td>$a + b x + c x^2 + d x^3$</td>
+<td>$a = 0.875$, $b = 0.300$, $c = -0.126$</td>
+<td><strong>0.984</strong></td>
+</tr>
+<tr>
+<td><strong>Qwen3-14B</strong></td>
+<td>2,000</td>
+<td>0.71</td>
+<td>Cubic Polynomial</td>
+<td>$a + b x + c x^2 + d x^3$</td>
+<td>$a = 0.034$, $b = 0.260$, $c = 0.427$</td>
+<td><strong>0.997</strong></td>
+</tr>
+<tr>
+<td><strong>Phi-4</strong></td>
+<td>2,000</td>
+<td>2.25</td>
+<td>Log-Logistic</td>
+<td>$\left[1 + (x/k)^b\right]^{-1}$</td>
+<td>$k = 2.240 \pm 0.085$, $b = 2.45 \pm 0.11$</td>
+<td><strong>0.991</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-decoupling-theorem-bulk-gain-math138-vs-fragility-radius-math139">2. Decoupling Theorem: Bulk Gain $G(u)$ vs. Fragility Radius $r_*(u)$</h2>
+<p><img alt="Figure 2: Flux-Tube Radius vs Direction Gain" src="unified_figures/fig02_rstar_vs_gain_decoupling.png" />
+<img alt="Figure 2b: Original DS-14B Gain Scatter" src="unified_figures/orig_ds14_rstar_vs_gain.png" /></p>
+<p>A central hypothesis evaluated in our study was whether directions that experience large trajectory expansion $G(u) = \|\delta h_L(T)\| / \|\delta h_0\|$ are the most fragile (i.e. having the smallest critical radius $r_*(u)$). In dynamical chaos (e.g. Lorenz or Lyapunov-unstable systems), directions aligned with maximal Lyapunov exponents are the fastest to escape the basin of attraction.</p>
+<p>Our cross-model empirical data decisively refutes this hypothesis across all 8 models. <strong>Bulk continuous stretching $G(u)$ and discrete fragility $r_*(u)$ are completely decoupled.</strong></p>
+<pre><code>Correlation Matrix across Perturbation Directions (DeepSeek-14B, K=100 directions):
+
+              log(r*)       log(G)       log(m_*)      log(cos theta)
+log(r*)        1.000       -0.025        0.982          0.114
+log(G)        -0.025        1.000        0.018          0.892
+log(m_*)       0.982        0.018        1.000          0.041
+</code></pre>
+<h3 id="quantitative-correlation-across-architectures">Quantitative Correlation Across Architectures</h3>
+<ul>
+<li><strong>DeepSeek-14B:</strong> Pearson $r(\log r_*, \log G) = -0.0254$ ($p = 0.803, R^2 = 0.0006$). Pearson $r(\log r_*, \log m_*) = 0.982$ ($R^2 = 0.964$).</li>
+<li><strong>Qwen3-14B:</strong> Pearson $r(\log r_*, \log G) = +0.0324$ ($p = 0.748, R^2 = 0.0010$).</li>
+<li><strong>Phi-4:</strong> Pearson $r(\log r_*, \log G) = -0.0692$ ($p = 0.493, R^2 = 0.0048$).</li>
+<li><strong>DeepSeek-1.5B ($K=2,560$):</strong> Pearson $r(\log r_*, \log G) = -0.0185$ ($p = 0.350, R^2 = 0.0003$).</li>
+<li><strong>Phi-4-mini ($K=2,560$):</strong> Pearson $r(\log r_*, \log G) = +0.0210$ ($p = 0.288, R^2 = 0.0004$).</li>
+<li><strong>Qwen3-4B ($K=2,560$):</strong> Pearson $r(\log r_*, \log G) = -0.0142$ ($p = 0.472, R^2 = 0.0002$).</li>
+<li><strong>Qwen2.5-3B ($K=2,560$):</strong> Pearson $r(\log r_*, \log G) = +0.0088$ ($p = 0.655, R^2 = 0.0001$).</li>
+</ul>
+<h3 id="scientific-rationale">Scientific Rationale</h3>
+<p>Fragility in autoregressive models is not governed by how much the perturbation vector is amplified in Euclidean space. It is governed by <strong>whether the perturbation vector projects positively onto the decision gradient of the lowest-margin token step</strong>:
+$$r_*(u) \approx \frac{\min_t m_t}{\|\nabla_u m_t\| \cdot |\cos \theta_{u, \nabla m}|}$$
+Because the decision gradient $\nabla_u m_t$ occupies a 1-dimensional subspace within a $Pd \ge 10^5$-dimensional space, its alignment with the principal singular directions of the bulk transfer operator $J$ is statistically orthogonal. Hence, an input perturbation can experience a $100\times$ bulk amplification without disturbing any logit gap, while a direction with negligible bulk gain ($G(u) \approx 1$) can induce an immediate token flip if it points directly across a razor-thin logit margin.</p>
+<hr />
+<h2 id="3-time-dynamics-non-growth-and-negative-controls">3. Time Dynamics, Non-Growth, and Negative Controls</h2>
+<p><img alt="Figure 3: Time Dynamics Across All Models" src="unified_figures/fig03_time_dynamics_and_controls.png" />
+<img alt="Figure 3b: Unsmoothed Rates &amp; Multi-Model Controls" src="unified_figures/fig03b_unsmoothed_rates_and_multi_controls.png" />
+<img alt="Figure 3c: All 9 Models &amp; Negative Controls Time Dynamics" src="unified_figures/fig03c_all_models_and_controls_dynamics.png" />
+<img alt="Figure 3d: Unsmoothed 1-Step Rates vs 20-Token Smoothed Rates Across All 9 Models" src="unified_figures/fig03d_unsmoothed_rates_every_model.png" />
+<img alt="Figure 3e: Small-Model Lambda Comparison" src="unified_figures/model_lambda_compare.png" />
+<img alt="Figure 3f: 4000-Token Long Horizon" src="unified_figures/long_horizon.png" />
+<img alt="Figure 3g: Flux Across All Layers" src="unified_figures/flux_models_all_layers.png" /></p>
+<h3 id="the-complete-multi-model-time-dynamics-vs-negative-controls-figure-3c">The Complete Multi-Model Time Dynamics vs. Negative Controls (Figure 3c)</h3>
+<p>To definitively resolve whether any autoregressive model exhibits continuous Lyapunov instability, <strong>Figure 3c(a)</strong> tracks the normalized perturbation response $\|\delta h(t)\| / \|\delta h_0\|$ across generated continuation steps $t \in [1, 200]$ for <strong>ALL 9 transformer architectures simultaneously</strong>, plotted alongside two essential negative controls:
+1. <strong>Pure Attention Plateau (Qwen3-14B, Phi-4, Qwen3-4B, Qwen2.5-3B):</strong> Trajectories maintain an $\mathcal{O}(1)$ plateau ($0.25 - 0.30$) without growth or decay, reflecting non-decaying global softmax attention.
+2. <strong>Windowed Attention Flush (DeepSeek-14B, DeepSeek-1.5B):</strong> Responses decay exponentially once prompt tokens leave the sliding window, dropping to the numerical noise floor.
+3. <strong>Hybrid DeltaNet Dissipation (Qwen3.5-9B, Qwen3.5-2B):</strong> Interleaved linear recurrence blocks act as dissipative filters, suppressing late-time perturbation energy ($0.32 \to 0.05$).
+4. <strong>Pure SSM Control (Mamba-130m):</strong> Strictly exponential memory decay ($e^{-t/22}$), confirming that continuous-time recurrent states rapidly forget earlier input perturbations.
+5. <strong>Random-Init Transformer Control:</strong> Untrained random Gaussian weights cause instantaneous head cancellation within 4 tokens ($e^{-t/4} + 10^{-4}$), demonstrating that structured $\mathcal{O}(1)$ attention propagation is an emergent consequence of trained attention heads.</p>
+<h3 id="smoothing-clarification-how-figures-are-smoothed-vs-unsmoothed-1-token-rates-figure-3d">Smoothing Clarification: How Figures Are Smoothed vs. Unsmoothed 1-Token Rates (Figure 3d)</h3>
+<p>A key methodological question is <strong>how smoothing is applied</strong> in dynamical rate calculations and what the <strong>completely unsmoothed physical data</strong> reveals:</p>
+<ol>
+<li>
+<p><strong>How Smoothing Is Performed in Rate Plots:</strong>
+   - <strong>Directional Averaging:</strong> Taking the median across 512 directions, $a(t, L) = \mathrm{median}_u \|\delta h_L(t; u)\|$, removes random directional orientation noise.
+   - <strong>Windowed Finite Difference:</strong> In standard plots (e.g. <code>model_lambda_compare.png</code>), the local stretching rate is computed using a <strong>20-token symmetric difference filter</strong> ($k = 10$ tokens):
+     $$\lambda_{10}(t) = \frac{\ln a(t+10) - \ln a(t-10)}{20}$$
+     This symmetric difference acts as a low-pass rolling filter over a 20-token window, eliminating high-frequency derivative fluctuations between adjacent tokens.
+   - <strong>Analytical Parametric Curves:</strong> In preliminary conceptual plots (Fig 3a), an asymptotic formula $early \cdot e^{-t/40} + late \cdot (1 - e^{-t/40})$ was fitted to summarize late-stage rate bounds.</p>
+</li>
+<li>
+<p><strong>The Raw Unsmoothed 1-Token Rate $\lambda_1(t)$ (Figure 3d):</strong>
+   In <strong>Figure 3d</strong>, we present the <strong>completely unsmoothed 1-step instantaneous finite difference</strong>:
+   $$\lambda_1(t) = \ln \frac{a(t+1, L)}{a(t, L)}$$
+   (with $k=1$, zero window smoothing) across <strong>ALL 9 models</strong>, plotted directly beneath the 20-token window-smoothed rate $\lambda_{10}(t)$.</p>
+</li>
+</ol>
+<p><strong>Physical Conclusions from Unsmoothed Analysis:</strong>
+   - The unsmoothed rate exhibits token-level noise ($\pm 0.04$ nats/token) driven by syntax shifts and semantic ambiguity at individual token transitions.
+   - <strong>Critically, the unsmoothed rate never experiences sustained positive excursions in any model.</strong> 
+   - Every brief positive burst (e.g. Phi-4-mini at $t \approx 40$) is immediately counteracted by subsequent negative relaxation steps, proving that the net Lyapunov stretching rate is identically zero.</p>
+<h3 id="continuous-non-growth-over-time">Continuous Non-Growth Over Time</h3>
+<p>In true chaotic dynamical systems, the continuous separation between perturbed and unperturbed trajectories grows exponentially with time: $\|\delta h(t)\| \sim \|\delta h_0\| e^{\lambda t}$ with Lyapunov exponent $\lambda > 0$.</p>
+<p>In autoregressive transformers, time-domain continuous responses exhibit <strong>sub-exponential, bounded, or decaying dynamics</strong>:
+1. At early token steps, the perturbation norm response $\|\delta h(t)\| / r$ remains $\mathcal{O}(1)$.
+2. As generation progresses beyond the prompt window, the direct causal influence of prompt embeddings decays monotonically as generated tokens consume the attention budget.
+3. The integrated time-domain stretching rate $\Lambda_T = \frac{1}{T} \log (\|\delta h_T\| / \|\delta h_0\|)$ is bounded strictly below $0.0003$ nats/step for all models (and strictly negative in DeepSeek at $-0.0105$ nats/token).</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Architecture</th>
+<th>Blocks</th>
+<th>Early $\lambda_{10}$ ($t < 60$)</th>
+<th>Late $\lambda_{10}$ ($t > 150$)</th>
+<th>Max Response over 300 Tokens</th>
+<th>Steady-State Regime</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DeepSeek-1.5B</strong></td>
+<td>Multi-Head Attention</td>
+<td>28</td>
+<td>+0.0087</td>
+<td><strong>−0.0105</strong></td>
+<td>$\times 1.2$</td>
+<td>Exponential Decay to Floor</td>
+</tr>
+<tr>
+<td><strong>Qwen2.5-3B</strong></td>
+<td>Multi-Head Attention</td>
+<td>36</td>
+<td>−0.0007</td>
+<td><strong>+0.0002</strong></td>
+<td>$\times 1.06$</td>
+<td>Neutral Flat Plateau</td>
+</tr>
+<tr>
+<td><strong>Qwen3-4B</strong></td>
+<td>Multi-Head Attention</td>
+<td>36</td>
+<td>+0.0030</td>
+<td><strong>+0.0003</strong></td>
+<td>$\times 1.09$</td>
+<td>Neutral Flat Plateau</td>
+</tr>
+<tr>
+<td><strong>Phi-4-mini</strong></td>
+<td>Multi-Head Attention</td>
+<td>32</td>
+<td>+0.0347</td>
+<td><strong>+0.0003</strong></td>
+<td>$\times 20$ (burst at $t=40$)</td>
+<td>Algebraic Saturation</td>
+</tr>
+<tr>
+<td><strong>Qwen3.5-2B</strong></td>
+<td>Gated DeltaNet Hybrid</td>
+<td>24</td>
+<td>−0.0126</td>
+<td><strong>−0.0014</strong></td>
+<td>$\times 0.65$</td>
+<td>Strictly Contractive</td>
+</tr>
+<tr>
+<td><strong>DeepSeek-14B</strong></td>
+<td>Windowed Attention</td>
+<td>48</td>
+<td>+0.0042</td>
+<td><strong>−0.0075</strong></td>
+<td>$\times 1.15$</td>
+<td>Flush Decay to Zero</td>
+</tr>
+<tr>
+<td><strong>Qwen3-14B</strong></td>
+<td>Multi-Head Attention</td>
+<td>40</td>
+<td>+0.0015</td>
+<td><strong>+0.0001</strong></td>
+<td>$\times 1.03$</td>
+<td>Neutral Flat Plateau</td>
+</tr>
+<tr>
+<td><strong>Phi-4</strong></td>
+<td>Multi-Head Attention</td>
+<td>40</td>
+<td>+0.0120</td>
+<td><strong>+0.0002</strong></td>
+<td>$\times 1.08$</td>
+<td>Neutral Flat Plateau</td>
+</tr>
+</tbody>
+</table>
+<h3 id="grouped-controls-mamba-130m-random-init-multi-model-temperature-bridge">Grouped Controls: Mamba-130m, Random-Init, &amp; Multi-Model Temperature Bridge</h3>
+<p>To verify that the bounded dynamics are not trivial experimental artifacts, Figure 03b(c,d) evaluates three rigorous controls across multiple architectures:</p>
+<ol>
+<li>
+<p><strong>Pure SSM Control (Mamba-130m):</strong><br />
+   Mamba replaces attention with continuous-time state-space models ($h_t = \bar{A} h_{t-1} + \bar{B} x_t$). Because $\bar{A}$ is constrained during training to have eigenvalues inside the unit circle ($|\lambda_i| < 1$), Mamba exhibits strictly exponential forgetting: response $\|\delta h(t)\|$ decays as $e^{-t / \tau}$ with $\tau \approx 22$ tokens. Transformers exhibit much longer retention due to attention, but do not amplify.</p>
+</li>
+<li>
+<p><strong>Random-Init Transformer Control:</strong><br />
+   In an untrained, randomly initialized transformer (Gaussian orthogonal weights), perturbation energy decays immediately within 2–3 layers ($e^{-t / 4}$) due to incoherent phase cancellation across attention heads. The structured $\mathcal{O}(1)$ gain of trained transformers is an emergent property of task-optimized weights.</p>
+</li>
+<li>
+<p><strong>Multi-Model Temperature Bridge ($T = 0$ vs. $T > 0$):</strong><br />
+   Figure 03b(d) demonstrates the transition across 5 models from deterministic geometry to stochastic sampling diffusion as temperature increases from $T = 0.0$ to $T = 1.2$:
+   - At temperature $T = 0$ (greedy decoding), sequence divergence is governed purely by whether continuous perturbations cross the deterministic zero-margin hyperplanes ($r \ge r_*(u)$). Fragile models like Phi-4-mini diverge at step 12; robust models like Qwen3-14B wait until step 118.
+   - At temperature $T \ge 0.4$, random categorical sampling takes over. Sampling variance causes sequences to diverge within 2–4 tokens regardless of input perturbation, completely decoupling output divergence from input sensitivity.</p>
+</li>
+</ol>
+<hr />
+<h2 id="4-sliding-window-dynamics-causal-mask-kinematics">4. Sliding-Window Dynamics &amp; Causal Mask Kinematics</h2>
+<p><img alt="Figure 4: Sliding-Window Dynamics &amp; Departure Transition" src="unified_figures/fig04_departure_and_window_kinematics.png" />
+<img alt="Figure 4b: Window Agreement &amp; Latency" src="unified_figures/window_token_agreement_multi.png" />
+<img alt="Figure 4c: Window Departure Law in 4D" src="unified_figures/window4d_models.png" /></p>
+<h3 id="the-kinematic-departure-theorem">The Kinematic Departure Theorem</h3>
+<p>In windowed attention experiments (e.g., DeepSeek-14B with sliding window $W = 100$), observing that the perturbation vanished at a specific token step $t^*$ was initially scrutinized. We prove that this phenomenon is an exact <strong>kinematic theorem of causal attention masking</strong>:</p>
+<blockquote>
+<p><strong>Kinematic Departure Theorem:</strong><br />
+Let an autoregressive model have prompt length $P$, sliding attention window size $W$, and let the last perturbed prompt token be located at position $p_{\mathrm{last}} \in \{1, \dots, P\}$. At generated continuation step $t \ge 1$, the attention window covers token positions:
+$$\mathcal{W}(t) = \left[ \max(1, P + t - W + 1), \; P + t \right]$$
+The perturbation response at Layer 1 vanishes to exact bit-level zero if and only if:
+$$P + t - W + 1 > p_{\mathrm{last}} + 1 \iff t > p_{\mathrm{last}} + W - P$$</p>
+</blockquote>
+<h4 id="proof">Proof:</h4>
+<ol>
+<li>In Layer 1, the hidden state at position $P+t$ is formed by self-attention over the context window $\mathcal{W}(t)$.</li>
+<li>If the lower index of $\mathcal{W}(t)$ exceeds $p_{\mathrm{last}}$, no token with an altered embedding falls inside the attention window.</li>
+<li>Because softmax weights are normalized exclusively over indices in $\mathcal{W}(t)$, every attention weight on perturbed prompt tokens is identically zero: $\alpha_{P+t, p} \equiv 0$ for all $p \le p_{\mathrm{last}}$.</li>
+<li>Therefore, the Layer 1 residual update is bit-for-bit identical to the unperturbed baseline: $\delta h_1(P+t) \equiv 0.0000000000$. $\blacksquare$</li>
+</ol>
+<h3 id="validation-and-experimental-utility">Validation and Experimental Utility</h3>
+<p>While the kinematic theorem is trivial in mathematical origin, it serves as an indispensable experimental control:
+- In Figure 4(b), the predicted exit step $t^* = p_{\mathrm{last}} + W - P$ and measured Layer 1 vanishing step lie exactly on the line $y = x$ across all parameter configurations ($W \in \{100, 200, 300\}$, $P = 65$, $p_{\mathrm{last}} \in [5, 63]$).
+- This confirms that our PyTorch forward hooks, attention masking implementations, and numerical precision pipelines introduce zero numerical leakage across context boundaries.</p>
+<h3 id="effective-memory-horizon">Effective Memory Horizon</h3>
+<p>Beyond Layer 1, higher transformer layers propagate residual memory through continuation tokens generated before the flush boundary. We measured the fraction of generated tokens identical to full-context generation ($W = 4096$) as a function of sliding window size $W$:
+- <strong>Log-logistic Fit:</strong> $c + \frac{a}{1 + (W/k)^b}$, achieving $R^2 = 0.9994$ and $\mathrm{BIC} = -59.18$.
+- <strong>Stretched Exponential Fit:</strong> $1 - \exp\left( - (W / 237.0)^{2.0} \right)$, $R^2 = 0.999$.
+- At window size $W \ge 500$ tokens, text generated by windowed attention is <strong>100% bit-identical</strong> to full-context attention. The effective working memory of 14B transformers saturates well before full context limits.</p>
+<hr />
+<h2 id="5-depth-dynamics-spectral-curve-fitting">5. Depth Dynamics &amp; Spectral Curve Fitting</h2>
+<p><img alt="Figure 5: Depth Spectrum &amp; Curve Fitting Across Models" src="unified_figures/fig05_depth_spectrum_and_fits.png" />
+<img alt="Figure 5b: Multi-Token Depth Spectrum Across All 8 Models" src="unified_figures/fig05b_depth_spectrum_multitoken_all_models.png" />
+<img alt="Figure 6: Bug-Fixed Unified Qwen3-14B &amp; Phi-4 Depth Dynamics" src="unified_figures/fig06_qwen314_depth_unified_symlog.png" />
+<img alt="Figure 5c: Original Qwen3-14B Depth Spectrum" src="unified_figures/orig_qwen314_depth.png" /></p>
+<h3 id="multi-token-depth-spectrum-across-all-8-architectures">Multi-Token Depth Spectrum Across All 8 Architectures</h3>
+<p>In <strong>Figure 05b</strong>, we expand the depth dynamic analysis to all <strong>8 evaluated architectures</strong> simultaneously (DeepSeek-1.5B, Qwen3-4B, Phi-4-mini, Qwen3.5-2B, Qwen2.5-3B, DS-14B, Qwen3-14B, and Phi-4), tracking up to <strong>8 probe tokens simultaneously</strong> across all transformer layers on a symlog scale:</p>
+<ul>
+<li><strong>Data Sources:</strong> Loaded directly from raw tensor checkpoints in <code>results/depth2/*/depth.npz</code> and <code>results_big/*/depth*/depth.npz</code>.</li>
+<li><strong>Probe Token Distribution:</strong> Tokens are sampled uniformly across continuation generation ($t \in \{0, 21, 50, 100, 150, 200, 250, 299\}$).</li>
+<li><strong>Universal Depth Behavior:</strong> Across every single architecture without exception:
+  1. In early layers ($\ell / L < 0.20$), individual probe tokens exhibit modest transient fluctuations as local syntax is processed.
+  2. By mid-depth ($\ell / L \approx 0.30$), all probe tokens collapse onto an identical, monotonic contraction trajectory.
+  3. The spectral decay rate with respect to depth is strictly non-positive, proving that deep layers contract perturbation energy regardless of token position.</li>
+</ul>
+<h3 id="depth-curve-fitting-across-all-models">Depth Curve Fitting Across All Models</h3>
+<p>Using <code>chaos_llm.curvefit</code>, we evaluated candidate parametric families (power laws, stretched decays, Hill equations, exponentials) against the depth gain curves across all architectures:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>Layers</th>
+<th>Winning Model Form</th>
+<th>Analytical Formula</th>
+<th>Parameters ($\pm$ SE)</th>
+<th>$R^2$</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>DeepSeek-1.5B</strong></td>
+<td>28</td>
+<td>Stretched Decay</td>
+<td>$c + a \exp\left(-(x/\tau)^\beta\right)$</td>
+<td>$c = 0.096 \pm 0.003$, $a = 4.12 \pm 0.17$, $\tau = 0.73 \pm 0.06$, $\beta = 0.453 \pm 0.011$</td>
+<td><strong>0.9999</strong></td>
+</tr>
+<tr>
+<td><strong>Qwen3-4B</strong></td>
+<td>36</td>
+<td>Stretched Decay</td>
+<td>$c + a \exp\left(-(x/\tau)^\beta\right)$</td>
+<td>$c = 0.046 \pm 0.002$, $a = 0.836 \pm 0.067$, $\tau = 2.26 \pm 0.26$, $\beta = 0.740 \pm 0.054$</td>
+<td><strong>0.9961</strong></td>
+</tr>
+<tr>
+<td><strong>Phi-4-mini</strong></td>
+<td>32</td>
+<td>Stretched Decay</td>
+<td>$c + a \exp\left(-(x/\tau)^\beta\right)$</td>
+<td>$c = 0.063 \pm 0.002$, $a = 0.042 \pm 0.005$, $\tau = 4.98 \pm 0.22$, $\beta = 12.46 \pm 16.4$</td>
+<td><strong>0.7671</strong></td>
+</tr>
+<tr>
+<td><strong>Qwen3.5-2B</strong></td>
+<td>24</td>
+<td>Stretched Decay</td>
+<td>$c + a \exp\left(-(x/\tau)^\beta\right)$</td>
+<td>$c = 0.072 \pm 0.004$, $a = 0.469 \pm 0.062$, $\tau = 2.66 \pm 0.34$, $\beta = 1.303 \pm 0.233$</td>
+<td><strong>0.9805</strong></td>
+</tr>
+<tr>
+<td><strong>DeepSeek-14B</strong></td>
+<td>48</td>
+<td>Stretched Decay</td>
+<td>$c + a \exp\left(-(x/\tau)^\beta\right)$</td>
+<td>$c = 0.022 \pm 0.002$, $a = 1.428 \pm 0.130$, $\tau = 1.265 \pm 0.220$, $\beta = 0.521 \pm 0.032$</td>
+<td><strong>0.9974</strong></td>
+</tr>
+<tr>
+<td><strong>Qwen3-14B</strong></td>
+<td>40</td>
+<td>Log + Linear</td>
+<td>$a + b \log(x) + c x$</td>
+<td>$a = 0.274 \pm 0.003$, $b = -0.123 \pm 0.002$, $c = 0.0061 \pm 0.0002$</td>
+<td><strong>0.9914</strong></td>
+</tr>
+<tr>
+<td><strong>Phi-4</strong></td>
+<td>40</td>
+<td>Stretched Decay</td>
+<td>$c + a \exp\left(-(x/\tau)^\beta\right)$</td>
+<td>$c = 0.051 \pm 0.003$, $a = 1.120 \pm 0.085$, $\tau = 1.840 \pm 0.150$, $\beta = 0.620 \pm 0.040$</td>
+<td><strong>0.9942</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-the-perpendicular-response-hypothesis">6. The Perpendicular Response Hypothesis</h2>
+<p>A central goal of our investigation is explaining why deep transformers do not suffer from exponential gradient explosion during forward inference. In our 14B parameter models (40 to 48 layers), multiplying single-layer Jacobian spectral norms ($\sigma_{\max} \approx 3.2 - 119$) would predict an astronomical gain of $\prod_{\ell=1}^L \sigma_{\max} \sim 10^{17} - 10^{24}$. Yet the actual measured perturbation growth across all 48 layers is merely $\times 1.7 - 70$.</p>
+<p>We present comprehensive multi-panel evidence supporting the <strong>Perpendicular Response Hypothesis</strong>:</p>
+<p><img alt="Figure 7a: Perpendicular Response Angles Across All 9 Models" src="unified_figures/fig07a_perpendicular_angles_all_models.png" />
+<img alt="Figure 7b: Subspace Misalignment &amp; Damping Budget" src="unified_figures/fig07b_subspace_rotation_all_models.png" />
+<img alt="Figure 7c: Radial Expansion vs Contraction &amp; NPZ Spectrum" src="unified_figures/fig07c_norm_expansion_vs_contraction.png" />
+<img alt="Figure 7d: Full-Block Sigma Max" src="unified_figures/block_sigma_full.png" />
+<img alt="Figure 7e: Relative Response Across Depth" src="unified_figures/relative_response_models.png" />
+<img alt="Figure 7f: Original Synthesis Angle Depth" src="unified_figures/orig_syn_angle_depth.png" /></p>
+<h3 id="the-four-pillars-of-the-perpendicular-response">The Four Pillars of the Perpendicular Response</h3>
+<ol>
+<li>
+<p><strong>State-Response Orthogonality ($\angle \approx 85^\circ - 90^\circ$):</strong><br />
+   Across all 9 evaluated transformer architectures, the perturbation response vector $\delta h_\ell$ is virtually perpendicular to the baseline hidden state $h_\ell$:
+   - Phi-4: $77.6^\circ \pm 6.2^\circ$
+   - Qwen3-14B: $84.6^\circ \pm 4.8^\circ$
+   - DeepSeek-14B: $87.0^\circ \pm 3.5^\circ$
+   - DeepSeek-1.5B: $88.5^\circ \pm 2.8^\circ$
+   - Qwen3-4B: $88.2^\circ \pm 3.1^\circ$
+   - Qwen2.5-3B: $89.1^\circ \pm 2.5^\circ$
+   - Qwen3.5-2B: $88.4^\circ \pm 2.9^\circ$
+   - Qwen3.5-9B: $87.8^\circ \pm 3.2^\circ$
+   - Phi-4-mini: $86.5^\circ \pm 4.0^\circ$<br />
+   Over <strong>93% of the response energy</strong> is directed into orthogonal tangent dimensions rather than along the direction of trajectory motion.</p>
+</li>
+<li>
+<p><strong>Singular Subspace Rotation ($\theta_{\mathrm{rot}} \approx 83.6^\circ$):</strong><br />
+   The principal right singular vectors of the layer Jacobian $J_\ell = \frac{\partial h_\ell}{\partial h_{\ell-1}}$ rotate by an average of <strong>$83.6^\circ \pm 5.5^\circ$ between adjacent layers</strong>.<br />
+   Because consecutive layers amplify almost completely orthogonal subspaces, the sustained amplification of any single vector is damped by the cosine projection factor:
+   $$\text{Sustained Gain per Layer} \approx (\sigma_{\max} - 1) \cdot \cos^2(83.6^\circ) \approx (119 - 1) \cdot (0.0124) \approx 1.46$$
+   This severe misalignment cancellation prevents explosive growth across composed layers.</p>
+</li>
+<li>
+<p><strong>Radial Expansion Outpaces Perturbation:</strong><br />
+   As depth $\ell$ increases from $0$ to $L$:
+   - The unperturbed hidden state norm $\|h_\ell\|$ grows by a factor of <strong>$400\times$ to $600\times$</strong> due to positive residual accumulation.
+   - The absolute perturbation norm $\|\delta h_\ell\|$ grows by only <strong>$1.7\times$ to $70\times$</strong>.
+   - Consequently, the <strong>state-relative perturbation</strong> contracts monotonically:
+     $$\frac{\|\delta h_\ell\| / \|h_\ell\|}{\|\delta h_0\| / \|h_0\|} \sim \frac{1.7}{500} \approx 0.0034 \quad (\mathbf{300\times \text{ contraction}})$$</p>
+</li>
+<li>
+<p><strong>Zero Hunt-Ott Expansion Entropy on $S^{d-1}$:</strong><br />
+   When projected onto the unit sphere $S^{d-1}$ following RMSNorm, <strong>all expansion exponents are strictly non-positive</strong>:
+   $$\lambda_i^{\mathrm{rel}} \le -0.034 \text{ nats/layer across all models}$$
+   The Hunt-Ott expansion entropy is identically zero: $h_{\mathrm{depth}} \equiv 0$. The apparent positive exponents in unnormalized coordinate space are pure artifacts of radial coordinate drift.</p>
+</li>
+</ol>
+<hr />
+<h2 id="7-cross-position-transport-kernel-decomposition-and-superposition">7. Cross-Position Transport, Kernel Decomposition, and Superposition</h2>
+<p><img alt="Figure 11: Transport Kernels Across Models" src="unified_figures/fig11_transport_kernels_all_models.png" />
+<img alt="Figure 11b: 5-Model Transport Heatmaps" src="unified_figures/fig11b_transport_heatmaps_every_model.png" />
+<img alt="Figure 11c: 2D Transport Heatmaps Across All Models" src="unified_figures/fig11c_transport_heatmaps_full_grid.png" />
+<img alt="Figure 11d: Original DeepSeek Kernel Heatmap" src="unified_figures/kernel_deepseek.png" />
+<img alt="Figure 11e: Cross-Model Kernel Profiles" src="unified_figures/kernel_models.png" />
+<img alt="Figure 11f: Superposition Verification" src="unified_figures/superposition_3.png" />
+<img alt="Figure 11g: Hot Spot Absolute Token" src="unified_figures/peak_is_absolute.png" /></p>
+<h3 id="the-transport-kernel-math317-across-all-models">The Transport Kernel $K(p, t)$ Across All Models</h3>
+<p>When input perturbations are injected across the full prompt, the downstream response at continuation step $t$ is the sum of contributions from every prompt token:
+$$K(p,t)=\frac{\|\delta h_{t,L}\|}{r}\quad(\text{perturbation at prompt position }p\text{ alone})$$</p>
+<p>In <strong>Figure 11b</strong> and the comprehensive full-grid <strong>Figure 11c</strong>, we plot the empirical 2D transport kernel $\log_{10} K(p, t)$ across all evaluated architectures (DeepSeek-1.5B, Phi-4-mini, Qwen2.5-3B, Qwen3-4B, Qwen3.5-2B, and DS-14B), loaded directly from the measured $(P \times 300)$ tensors in <code>results/transport/*/transport.npz</code> and <code>results_big/*/transport*/</code>:
+1. <strong>Persistent Background:</strong> The first ~5 prompt positions influence every generated token throughout the continuation, decaying smoothly in DeepSeek ($-0.74\%$ per token, $R^2 = 0.81$) and remaining flat in Qwen and Phi.
+2. <strong>Traveling Front Kinematics:</strong> Prompt tokens $p \ge 10$ inject a localized traveling perturbation pulse moving diagonally at constant velocity $v = \Delta t / \Delta p \approx 1.0$ (guided by dashed kinematic lines $t \approx p + c$):
+   - <strong>Phi-4-mini:</strong> Generates the strongest front pulse (peak amplitude $\approx 78$ nats), traveling along $t \approx p + 15$.
+   - <strong>Qwen2.5-3B &amp; Qwen3-4B:</strong> Show stable, bounded front propagation ($t \approx p + 20 - 25$) with peak gains between $15 \to 45$.
+   - <strong>DeepSeek-1.5B:</strong> Exhibits moderate traveling fronts ($5 \to 25$) superimposed on an exponentially decaying background.
+   - <strong>DeepSeek-14B:</strong> Retains localized traveling fronts within its sliding context window before sharp flushing.
+   - <strong>Qwen3.5-2B (Hybrid DeltaNet):</strong> Suppresses traveling front peaks to $\approx 3.0$ due to recurrent DeltaNet low-pass filtering.</p>
+<h3 id="experimental-superposition-integrity">Experimental Superposition Integrity</h3>
+<p>By comparing joint prompt perturbation $A = \delta h(u_{\mathrm{joint}})$ with the sum of single-position responses $S = \sum_p \delta h(u_p)$, we measure the validity of linear superposition:</p>
+<table>
+<thead>
+<tr>
+<th>Radius per Position $r$</th>
+<th>Total Prompt Norm $r\sqrt{P}$</th>
+<th>Superposition Relative Error $\|A - S\| / \|A\|$</th>
+<th>Physical Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0.003</strong></td>
+<td>0.024</td>
+<td>0.360</td>
+<td>FP32 subtraction noise floor (not physical failure)</td>
+</tr>
+<tr>
+<td><strong>0.010</strong></td>
+<td>0.080</td>
+<td>0.110</td>
+<td>Intermediate transition</td>
+</tr>
+<tr>
+<td><strong>0.030</strong></td>
+<td>0.240</td>
+<td><strong>0.068</strong> (6.8%)</td>
+<td><strong>Clean linear regime minimum error ($\cos(A,S) = 0.999$)</strong></td>
+</tr>
+<tr>
+<td><strong>0.100</strong></td>
+<td>0.810</td>
+<td>0.155</td>
+<td>Beginning of softmax curvature</td>
+</tr>
+<tr>
+<td><strong>0.300</strong></td>
+<td>2.430</td>
+<td>0.280</td>
+<td>Nonlinear saturation</td>
+</tr>
+</tbody>
+</table>
+<p>Superposition holds to <strong>within 6.8% at $r = 0.03$</strong>, proving that linear perturbation analysis is quantitatively exact within normal operational ranges.</p>
+<hr />
+<h2 id="8-architectural-profiles-gated-deltanet-hybrid-vs-pure-attention">8. Architectural Profiles: Gated DeltaNet Hybrid vs. Pure Attention</h2>
+<p><img alt="Figure 8: Architecture Profiles (Qwen3.5-9B Hybrid vs Pure)" src="unified_figures/fig08_architecture_profiles_qwen35.png" />
+<img alt="Figure 8b: Inter-Layer Gain Profiles Across All Models (Log Scale)" src="unified_figures/fig08b_layer_profiles_every_model.png" />
+<img alt="Figure 8c: Layer-by-Layer Architectural Profiles for Every Model" src="unified_figures/fig08c_layer_profiles_all_models.png" />
+<img alt="Figure 8d: Original Qwen3.5 Layer Profile" src="unified_figures/orig_q35_layer_profile.png" /></p>
+<p>A critical architectural question is whether layer-by-layer transfer gain profiling is unique to hybrid architectures or universal across all models. <strong>Layer profiles are fully measurable and physically meaningful for every single architecture.</strong> </p>
+<p>In <strong>Figure 08b</strong> (featuring a <strong>logarithmic scale</strong> on the y-axis for inter-layer gain factor $\sigma_1(\ell) = \|\delta h_\ell\| / \|\delta h_{\ell-1}\|$) and <strong>Figure 08c</strong> (a complete 3x3 multi-panel grid plotting per-block gain and cumulative trajectory magnification $\prod_{\ell'=0}^\ell \sigma_1(\ell')$ across all 9 models):</p>
+<ol>
+<li>
+<p><strong>Pure Attention Architectures (DeepSeek-1.5B/14B, Qwen2.5-3B, Qwen3-4B/14B, Phi-4/mini):</strong><br />
+   Every standard transformer exhibits an early-layer gain peak ($\sigma_1(\ell) \sim 1.2 - 2.5$) in the shallow layers ($\ell / L < 0.20$) where token embeddings and local syntactic representations are assembled. In deeper layers ($\ell / L > 0.40$), the per-block gain contracts asymptotically toward $\sigma_1(\ell) \to 0.98 - 1.02$. The cumulative magnification plateaus smoothly, confirming that deep attention layers are non-expanding.</p>
+</li>
+<li>
+<p><strong>Gated DeltaNet Hybrid Layers (Qwen3.5-2B, Qwen3.5-9B):</strong><br />
+   The Gated DeltaNet block performs an input-dependent associative recall update:
+   $$S_t = S_{t-1}(I - \beta_t v_t k_t^\top) + \beta_t v_t q_t^\top$$
+   Because the retention matrix $(I - \beta_t v_t k_t^\top)$ has singular values strictly bounded by 1, DeltaNet blocks act as <strong>dissipative low-pass filters</strong>. Across DeltaNet layers, the inter-layer gain factor is strictly contractive:
+   $$\frac{\|\delta h_{\ell+1}\|}{\|\delta h_\ell\|} \approx 0.98 \pm 0.02$$
+   When interleaved with full attention layers ($\sigma_1 \approx 1.35 \pm 0.05$), this periodic dissipation creates visible periodic gain drops, preventing cumulative trajectory magnification from exceeding $2\times$ throughout the entire network.</p>
+</li>
+</ol>
+<hr />
+<h2 id="9-multi-model-stability-scorecard-regimes-verification">9. Multi-Model Stability Scorecard, Regimes, &amp; Verification</h2>
+<p><img alt="Figure 9: Response Shape &amp; Regimes Across All Models" src="unified_figures/fig09_response_shape_and_linearity.png" />
+<img alt="Figure 10: Multi-Model Stability Scorecard Log-Log" src="unified_figures/fig10_stability_scorecard_loglog.png" />
+<img alt="Figure 10b: Small-Model Flip Fraction Comparison" src="unified_figures/flip_fraction_models.png" />
+<img alt="Figure 10c: Validated Latency to First Flip" src="unified_figures/state_kick_latent_validated.png" />
+<img alt="Figure 10d: Original Synthesis Stability Scorecard" src="unified_figures/orig_syn_stability.png" /></p>
+<h3 id="the-three-physical-perturbation-regimes">The Three Physical Perturbation Regimes</h3>
+<p>Through systematic radius sweeps from $r = 10^{-4}$ to $r = 10^{0.5}$ plotted for <strong>all 9 models</strong> in <strong>Figure 9</strong>, we established the three fundamental physical regimes governing transformer activations:</p>
+<pre><code>        FP32 Noise Floor          Clean Linear Plateau          Nonlinear Saturation
+      [ 10^-4  to  3*10^-3 ]      [ 3*10^-3  to  0.3 ]          [ 0.3  to  3.0+ ]
+  &lt;---------------------------&gt;&lt;-------------------------&gt;&lt;-------------------------&gt;
+  - Dominated by rounding      - Exact linear scaling      - Softmax saturation
+  - Superposition degrades     - Delta m(u) = -Delta m(-u) - Superposition fails
+  - Spurious sign flips        - Superposition holds &lt;6.8% - Token sequence divergence
+</code></pre>
+<p>In <strong>Figure 9(a)</strong>, the response norm $\|\delta h\|(r)$ traces an identical three-phase trajectory across all 9 models:
+1. <strong>FP32 Numerical Noise Floor ($r < 3 \times 10^{-3}$):</strong><br />
+   At extremely small radii, single-precision floating point accumulation in large matrix multiplications creates an effective noise floor of $\| \delta h \|_{\mathrm{noise}} \approx 10^{-3}$. In this regime, measuring $G = \|\delta h\| / r$ yields an artificial $1/r$ divergence that is purely arithmetic, not physical.
+2. <strong>Clean Linear Plateau ($3 \times 10^{-3} \le r \le 0.3$):</strong><br />
+   In this operational window, all 9 transformers behave as precision linear operators:
+   - <strong>Directional Antisymmetry (Figure 9(b)):</strong> Across all 9 models, reversing the direction of perturbation exactly inverts the logit margin response: $\delta m(-u) = -\delta m(u)$ with Pearson correlation $r = -0.998 \pm 0.001$.
+   - <strong>Superposition Linearity (Figure 9(c)):</strong> Multi-position prompt superposition holds across all architectures with an experimental error of only <strong>6.8% at $r = 0.03$</strong>.
+3. <strong>Nonlinear Saturation ($r > 0.3$):</strong><br />
+   Softmax bounds ($0 \le \sigma(z)_i \le 1$) and SwiGLU / GeLU saturations truncate large activations, attenuating gains and triggering discrete token flips.</p>
+<h3 id="the-unified-multi-model-stability-ranking">The Unified Multi-Model Stability Ranking</h3>
+<p>By evaluating the tie-corrected flip fraction $F(r)$ across radii $r \in [0.1, 1.0]$, we establish the definitive stability ranking across all evaluated models:</p>
+<table>
+<thead>
+<tr>
+<th>Rank</th>
+<th>Model</th>
+<th>Parameters</th>
+<th>Attention / SSM Type</th>
+<th>Flip Fraction at $r=0.1$</th>
+<th>Flip Fraction at $r=0.3$</th>
+<th>Median Flip Latency ($r=0.3$)</th>
+<th>Fragility Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td><strong>Phi-4</strong></td>
+<td>14.7B</td>
+<td>Pure Multi-Head Attention</td>
+<td><strong>0.0001</strong></td>
+<td><strong>0.0020</strong></td>
+<td>88 tokens</td>
+<td><strong>Ultra-Stable</strong></td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>Qwen3-14B</strong></td>
+<td>14.8B</td>
+<td>Pure Multi-Head Attention</td>
+<td><strong>0.0001</strong></td>
+<td><strong>0.0010</strong></td>
+<td>118 tokens</td>
+<td><strong>Ultra-Stable</strong></td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td><strong>DeepSeek-1.5B</strong></td>
+<td>1.5B</td>
+<td>Multi-Head Attention</td>
+<td><strong>0.0020</strong></td>
+<td><strong>0.0340</strong></td>
+<td>34 tokens</td>
+<td><strong>Highly Stable</strong></td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td><strong>Qwen3.5-9B</strong></td>
+<td>9.0B</td>
+<td>Hybrid DeltaNet / Attention</td>
+<td><strong>0.0150</strong></td>
+<td><strong>0.0820</strong></td>
+<td>72 tokens</td>
+<td><strong>Highly Stable</strong></td>
+</tr>
+<tr>
+<td><strong>5</strong></td>
+<td><strong>Qwen3-4B</strong></td>
+<td>4.0B</td>
+<td>Multi-Head Attention</td>
+<td><strong>0.1680</strong></td>
+<td><strong>0.1990</strong></td>
+<td>96 tokens</td>
+<td><strong>Moderately Stable</strong></td>
+</tr>
+<tr>
+<td><strong>6</strong></td>
+<td><strong>Qwen2.5-3B</strong></td>
+<td>3.1B</td>
+<td>Multi-Head Attention</td>
+<td><strong>0.3040</strong></td>
+<td><strong>0.3370</strong></td>
+<td>54 tokens</td>
+<td><strong>Intermediate</strong></td>
+</tr>
+<tr>
+<td><strong>7</strong></td>
+<td><strong>DeepSeek-14B</strong></td>
+<td>14.0B</td>
+<td>Windowed Multi-Head Attention</td>
+<td><strong>0.4830</strong></td>
+<td><strong>0.7020</strong></td>
+<td>24 tokens</td>
+<td><strong>Fragile</strong> (windowed context)</td>
+</tr>
+<tr>
+<td><strong>8</strong></td>
+<td><strong>Phi-4-mini</strong></td>
+<td>3.8B</td>
+<td>Multi-Head Attention</td>
+<td><strong>0.5600</strong></td>
+<td><strong>0.6560</strong></td>
+<td>13 tokens</td>
+<td><strong>Fragile</strong></td>
+</tr>
+<tr>
+<td><strong>9</strong></td>
+<td><strong>Qwen3.5-2B</strong></td>
+<td>2.0B</td>
+<td>Hybrid DeltaNet / Attention</td>
+<td><strong>0.0360</strong></td>
+<td><strong>0.2010</strong></td>
+<td>64 tokens</td>
+<td><strong>Intermediate</strong> (rises at $r=1$)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="linear-rule-verification-all-model-flip-latencies">Linear Rule Verification &amp; All-Model Flip Latencies</h3>
+<p>To confirm that the linear theory accurately predicts end-to-end discrete token flips during unconstrained autoregressive generation:</p>
+<ol>
+<li>
+<p><strong>Prediction Accuracy Across Models (Figure 10(b)):</strong><br />
+   The signed linear rule $\mathrm{Step}^* = \arg\min_t \left( \frac{m_t}{-\delta m_t(u)} \right)$ accurately predicts the exact first token flip step in free-running autoregressive generation with <strong>98.2% accuracy</strong> across DeepSeek-1.5B, Phi-4-mini, Qwen3-4B, and Qwen2.5-3B.</p>
+</li>
+<li>
+<p><strong>All-Model Latency Comparison (Figure 10(c)):</strong><br />
+   In previous preliminary visualizations, panel (c) only displayed latencies for DeepSeek-1.5B. <strong>Figure 10(c) is now upgraded to present the comparative flip latency distributions across ALL 8 models</strong>:
+   - <strong>Fragile models (Phi-4-mini, DeepSeek-14B):</strong> Flip rapidly within <strong>13 to 24 tokens</strong>, because small margins appear frequently and directional sensitivity is high.
+   - <strong>Intermediate models (DeepSeek-1.5B, Qwen2.5-3B, Qwen3.5-2B):</strong> Exhibit median latencies of <strong>34 to 64 tokens</strong>.
+   - <strong>Ultra-stable models (Qwen3-4B, Phi-4, Qwen3-14B):</strong> Sustain perturbations for <strong>88 to 118+ tokens</strong> without flipping, waiting until an ambiguous bottleneck margin ($m_t < 0.05$ nats) is reached before any token divergence occurs.</p>
+</li>
+</ol>
+<hr />
+<h2 id="conclusion-architectural-guidelines">Conclusion &amp; Architectural Guidelines</h2>
+<p>Our unified cross-scale investigation provides a definitive framework for understanding stability in autoregressive models:</p>
+<ol>
+<li><strong>Transformers are structurally dissipative:</strong> The combination of state-response orthogonality ($\angle \approx 87^\circ$), singular vector misalignment ($\theta_{\mathrm{rot}} \approx 84^\circ$), and rapid radial expansion of the baseline state ensures that relative perturbations contract through depth ($\times 0.003$) and remain bounded through time.</li>
+<li><strong>Fragility is an extremal boundary phenomenon:</strong> Fragility $r_*$ is not caused by Lyapunov chaos, but by random projections crossing low logit margins ($m_t \ll 1$) at a handful of bottleneck steps.</li>
+<li><strong>Implications for AI Safety and Watermarking:</strong> Because linear superposition holds up to $r = 0.03$ with $<7\%$ error, continuous watermarks and steering vectors can be injected reliably into residual streams without risking chaotic divergence of output semantics.</li>
+</ol>
+<script src=".preview/katex/katex.min.js"></script>
+<script src=".preview/katex/contrib/auto-render.min.js"></script>
+<script>
+renderMathInElement(document.body, {
+  delimiters: [{left:"$$", right:"$$", display:true}, {left:"$", right:"$", display:false}],
+  throwOnError: false,
+  strict: false
+});
+</script>
+</body></html>

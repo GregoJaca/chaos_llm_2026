@@ -1,0 +1,32 @@
+{
+  "run": "results_big/phi4/a1_inter_w0",
+  "tokens": [
+    219,
+    277,
+    53,
+    100,
+    200
+  ],
+  "layers": [
+    0,
+    6,
+    12,
+    18,
+    24,
+    30,
+    36,
+    39
+  ],
+  "full_layers": [
+    0,
+    10,
+    20,
+    30,
+    39
+  ],
+  "n_layers": 40,
+  "model": "/home/grego/LLM/models/phi-4",
+  "dtype": "float32",
+  "window": 0,
+  "elapsed_sec": 176.9
+}
