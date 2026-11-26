@@ -32,6 +32,7 @@ SCRIPTS = [
     "pack_softloop2.py",
     "pack_loop_feedback.py",
     "pack_loop_metrics.py",
+    "pack_loop_finitetime.py",
     "pack_misc.py",
     "pack_live_rates.py",
     "pack_rank_entropy2.py",
