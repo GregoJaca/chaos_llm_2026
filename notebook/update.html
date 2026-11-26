@@ -43,7 +43,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  update.md &nbsp;&middot;&nbsp; built 2026-11-26 20:11:13 &nbsp;&middot;&nbsp;
+  update.md &nbsp;&middot;&nbsp; built 2026-11-26 20:19:16 &nbsp;&middot;&nbsp;
   <a href="update.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="update.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="unified.html">unified</a> &middot; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="new.html">new</a> &middot; <a href="notebook.html">notebook</a>
@@ -52,7 +52,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 <p><strong>Date:</strong> 26 November 2026<br />
 <strong>What this is:</strong> every figure you said you liked, every figure you asked to improve, and the new analyses, all recomputed from the raw <code>.npz</code> files. The old <code>unified.md</code> figures are also replaced in place (with a warning banner) so <code>unified.pdf</code> now shows measured plots.</p>
 <p><strong>How to rebuild everything:</strong> <code>python analysis_update/run_all.py</code>. It regenerates every figure in <code>update_figures/</code> and writes the number files in <code>analysis_update/</code>. There is no hard-coded numerical data in the plotting scripts; every array is read from <code>results/</code> or <code>results_big_small/</code>.</p>
-<p><strong>Status of the long campaign (2026-11-26 23:20 CET, still running).</strong> Two 36–48 h queues are generating the long-horizon looping data that this version only partially has (the closed-vs-replay figures currently use 600-step orbits except DeepSeek-1.5B, which already has 3000 steps):</p>
+<p><strong>Status of the long campaign (2026-11-27 00:15 CET, still running).</strong> Two 36–48 h queues are generating the long-horizon looping data that this version only partially has. Completed at the time of writing: <strong>DeepSeek-1.5B 3000 steps</strong> ($T=1$ loop), <strong>Qwen2.5-3B 3000</strong>, <strong>Qwen3-14B / DeepSeek-14B / Qwen3.5-9B 1600</strong>; Qwen3-4B, Phi-4-mini, Phi-4 and the small controls are running. The closed-vs-replay figures already use the longest available orbit, and the 14B panels in F0c/F19b are from the new runs.</p>
 <ul>
 <li><strong>x11</strong>: 8 small models, 3000 steps, <code>T=1</code> loop+replay, <code>T=2</code>, CRN/independent sampling, 1000-token teacher-forced, <code>T=0.5</code>.</li>
 <li><strong>Spark</strong>: Qwen3-14B, DeepSeek-14B, Qwen3.5-9B, Phi-4 at fp16, 1600 steps, same rounds with 800-token teacher-forced.</li>

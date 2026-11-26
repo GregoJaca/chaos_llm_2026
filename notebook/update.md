@@ -5,7 +5,7 @@
 
 **How to rebuild everything:** `python analysis_update/run_all.py`. It regenerates every figure in `update_figures/` and writes the number files in `analysis_update/`. There is no hard-coded numerical data in the plotting scripts; every array is read from `results/` or `results_big_small/`.
 
-**Status of the long campaign (2026-11-26 23:20 CET, still running).** Two 36–48 h queues are generating the long-horizon looping data that this version only partially has (the closed-vs-replay figures currently use 600-step orbits except DeepSeek-1.5B, which already has 3000 steps):
+**Status of the long campaign (2026-11-27 00:15 CET, still running).** Two 36–48 h queues are generating the long-horizon looping data that this version only partially has. Completed at the time of writing: **DeepSeek-1.5B 3000 steps** ($T=1$ loop), **Qwen2.5-3B 3000**, **Qwen3-14B / DeepSeek-14B / Qwen3.5-9B 1600**; Qwen3-4B, Phi-4-mini, Phi-4 and the small controls are running. The closed-vs-replay figures already use the longest available orbit, and the 14B panels in F0c/F19b are from the new runs.
 
 - **x11**: 8 small models, 3000 steps, `T=1` loop+replay, `T=2`, CRN/independent sampling, 1000-token teacher-forced, `T=0.5`.
 - **Spark**: Qwen3-14B, DeepSeek-14B, Qwen3.5-9B, Phi-4 at fp16, 1600 steps, same rounds with 800-token teacher-forced.
