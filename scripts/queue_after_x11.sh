@@ -12,6 +12,7 @@ PY0=python3
 PY=~/LLM/venv_tf/bin/python
 
 STEPS=3000
+BIGSTEPS=1600
 
 while pgrep -f queue_long_x11.sh > /dev/null; do
   echo "waiting for the main x11 queue $(date)"
@@ -40,10 +41,10 @@ DS=~/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B
 Q34=~/LLM/models--Qwen--Qwen3-4B-Instruct-2507
 
 # (a) 32-direction loops: percentiles for the headline figure
-loop results/longloop/ds15w32/T1.0/loop "$DS" $PY0 float32 0.03 7,14,21,27 $STEPS 32 @prompts.txt
-replay results/longloop/ds15w32/T1.0/replay "$DS" $PY0 float32 0.03 7,14,21,27 $STEPS 32 results/longloop/ds15w32/T1.0/loop
-loop results/longloop/qwen34w32/T1.0/loop "$Q34" $PY float16 0.03 9,18,27,35 $STEPS 32 @prompts.txt
-replay results/longloop/qwen34w32/T1.0/replay "$Q34" $PY float16 0.03 9,18,27,35 $STEPS 32 results/longloop/qwen34w32/T1.0/loop
+loop results/longloop/ds15w32/T1.0/loop "$DS" $PY0 float16 0.03 7,14,21,27 $BIGSTEPS 32 @prompts.txt
+replay results/longloop/ds15w32/T1.0/replay "$DS" $PY0 float16 0.03 7,14,21,27 $BIGSTEPS 32 results/longloop/ds15w32/T1.0/loop
+loop results/longloop/qwen34w32/T1.0/loop "$Q34" $PY float16 0.03 9,18,27,35 $BIGSTEPS 32 @prompts.txt
+replay results/longloop/qwen34w32/T1.0/replay "$Q34" $PY float16 0.03 9,18,27,35 $BIGSTEPS 32 results/longloop/qwen34w32/T1.0/loop
 
 # (b) prompt replication (prompts 2 and 3 of prompts_more.txt)
 for p in 2 3; do

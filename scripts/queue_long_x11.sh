@@ -18,13 +18,13 @@ STEPS=${STEPS:-3000}
 
 declare -A MODEL PYV DT RL LL
 MODEL[ds15]=~/LLM/models--deepseek-ai--DeepSeek-R1-Distill-Qwen-1.5B; PYV[ds15]=$PY0; DT[ds15]=float32; RL[ds15]=0.03; LL[ds15]=7,14,21,27
-MODEL[qwen25]=~/LLM/models--Qwen--Qwen2.5-3B-Instruct; PYV[qwen25]=$PY; DT[qwen25]=float32; RL[qwen25]=0.03; LL[qwen25]=9,18,27,35
+MODEL[qwen25]=~/LLM/models--Qwen--Qwen2.5-3B-Instruct; PYV[qwen25]=$PY; DT[qwen25]=float16; RL[qwen25]=0.03; LL[qwen25]=9,18,27,35
 MODEL[qwen34]=~/LLM/models--Qwen--Qwen3-4B-Instruct-2507; PYV[qwen34]=$PY; DT[qwen34]=float16; RL[qwen34]=0.03; LL[qwen34]=9,18,27,35
 MODEL[phi]=~/LLM/models--microsoft--Phi-4-mini-instruct; PYV[phi]=$PY; DT[phi]=float16; RL[phi]=0.1; LL[phi]=8,16,24,31
 MODEL[mamba]=~/LLM/models--state-spaces--mamba-130m-hf; PYV[mamba]=$PY0; DT[mamba]=float32; RL[mamba]=0.03; LL[mamba]=6,12,18,23
 MODEL[pythia]=~/LLM/models--EleutherAI--pythia-410m; PYV[pythia]=$PY; DT[pythia]=float32; RL[pythia]=0.1; LL[pythia]=6,12,18,23
 MODEL[randqwen]=~/LLM/models--randqwen-g1.0; PYV[randqwen]=$PY0; DT[randqwen]=float32; RL[randqwen]=0.03; LL[randqwen]=7,14,21,27
-MODEL[qwen35]=~/LLM/models--Qwen--Qwen3.5-2B; PYV[qwen35]=$PY311; DT[qwen35]=float32; RL[qwen35]=0.03; LL[qwen35]=6,12,18,23
+MODEL[qwen35]=~/LLM/models--Qwen--Qwen3.5-2B; PYV[qwen35]=$PY311; DT[qwen35]=float16; RL[qwen35]=0.03; LL[qwen35]=6,12,18,23
 
 ORDER="ds15 qwen25 qwen34 qwen35 phi mamba pythia randqwen"
 

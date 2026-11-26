@@ -123,7 +123,9 @@ for m in MOD:
             nz = np.where(a[l] > 1e-7)[0]; fl.append(int(nz.max() + 1) if len(nz) else 300)
         Z.append(fl)
     Z = np.array(Z, float).T
-    ax.imshow(Z, aspect="auto", origin="lower", cmap="viridis")
+    im = ax.imshow(Z, aspect="auto", origin="lower", cmap="viridis")
+    cb = fig.colorbar(im, ax=ax, pad=0.02)
+    cb.set_label(r"flush step $t^*_\ell$ (tokens, capped at 300)", fontsize=7.4)
     break
 ax.set_xticks([0, 1, 2]); ax.set_xticklabels(["60", "100", "200"])
 ax.set_yticks(range(Z.shape[0])); ax.set_yticklabels(range(1, Z.shape[0] + 1), fontsize=7)

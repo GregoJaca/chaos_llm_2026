@@ -279,7 +279,7 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 ![Fig. E2](update_figures/pack_window_models.png)
 
-**Fig. E2 — flush vs layer, Qwen3-4B/Phi-4-mini.** (a) $t^*_\ell$ vs layer at $W=100$; (b) three windows; (c) $(\ell,W)$ heatmap. **Data:** `window4d/*/w*/a1.npz`, 11 layers, 6 directions, $r=0.1$, 300 tokens. **Read:** both models give the same arithmetic progression; the two models are identical to the token.
+**Fig. E2 — the same law on Qwen3-4B/Phi-4-mini, and why it cannot be resolved here.** (a) $t^*_\ell$ vs layer at $W=100$; (b) three windows; (c) the $(\ell,W)$ map, colour = $t^*_\ell$ (colourbar added). **Data:** `window4d/*/w*/a1.npz`, 11 saved layers, 6 directions, $r=0.1$, 300 generated tokens. **Read:** with $P=64$ and $p_{\rm last}=55$, the law predicts $t^*_1=W-9$ and $t^*_\ell=t^*_1+(\ell-1)(W-1)$; at $W=100$ that is already $t^*_2=190$ and $t^*_3=289$, so **every layer above the first hits the 300-token run length** — that is the flat top in (a)/(b) and the saturated cells in (c). Only the first layer and the smaller windows are measurable here, and they obey the law exactly. The two-model layer-resolved test is therefore done on DeepSeek-1.5B, where 106 windows and smaller $W$ keep $t^*_\ell$ inside the window (E1, E1b). **This panel set is kept for completeness; E1b is the figure to cite.**
 
 ![Fig. E3](update_figures/pack_window_agreement_fit.png)
 
