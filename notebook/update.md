@@ -135,6 +135,10 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. B4c — the late-depth rise on its own.** (a) Local gain $g_\ell$ after block 0, divided by the median of the middle half, for every model. (b) The ratio $g_{\rm last10\%}/g_{\rm middle}$. **Data:** same as B1. **Read:** the ratio is 1.00–1.11; the rise is small but consistent for 7 of 8 models (Phi-4 is flat). **Trivial/not:** a 2–11% effect is not a dramatic law; it is a real, small regularity, and it is what makes a global fit curve upward.
 
+![Fig. B4d](update_figures/pack_depth_k32_all.png)
+
+**Fig. B4d — direction-count check.** $\mathrm{cum}_\ell$ with $k=8$ (solid) and $k=32$ (dashed) tracked directions, median and IQR over tokens, for DeepSeek-1.5B, Qwen2.5-3B and Phi-4-mini. **Data:** `results/depth2/*` and new `results/update/depth_*_k32`. **Read:** the curves overlap within the token IQR; the direction count does not change the shape. **This is the distribution check you asked for.**
+
 ![Fig. B5](update_figures/pack_depth_relative.png)
 
 **Fig. B5 — relative response.** $\|\delta h_\ell\|/\|h_\ell\|$ at $t=50$, normalized at layer 1, against $\ell/(L-1)$ for all models; band = IQR over directions (small models). **Definition:** the numerator is the response norm, the denominator the baseline state norm; the ratio says whether the perturbation grows *relative to the state*. **Read:** only Phi-4-mini amplifies (×20); DeepSeek peaks at ×3 then declines; 14B models end at 0.33–0.43 of layer 1; Qwen3.5 is flat. **Data:** A1 fp32/fp16 as in the tier table; big models from the compact summaries.
@@ -298,7 +302,7 @@ Your understanding is correct. The precise definitions are:
 
 ![Fig. F9](update_figures/pack_sampling.png)
 
-**Fig. F9 — soft vs sampled feedback.** Response for soft feedback (red), common-random-number sampling (blue dashed) and independent sampling (green dashed) at $T=1$, five models. **Data:** `results/softloop_sample/*/{crn,ind}_T1.0`. **Read:** soft grows; CRN is flat at 1; independent separates at step 0. **Conclusion:** the instability is deterministic mean feedback, not sampled generation. **Qwen3-4B is absent** because no sampled-feedback run was saved for it; the empty panel is removed rather than shown blank.
+**Fig. F9 — soft vs sampled feedback.** Response for soft feedback (red), common-random-number sampling (blue dashed) and independent sampling (green dashed) at $T=1$, six models. **Data:** `results/softloop_sample/*/{crn,ind}_T1.0`; Qwen3-4B was generated in the new run. **Read:** soft grows; CRN is flat at 1; independent separates at step 0. **Conclusion:** the instability is deterministic mean feedback, not sampled generation.
 
 ![Fig. F10](update_figures/pack_rank_entropy_box.png)
 
@@ -484,8 +488,8 @@ These are the existing control figures; the scripts load the control `.npz` file
 | 5 | dense 14B runs | **queued** on Spark (`queue_spark_wait.sh`), waits for 66 GB free; Qwen3-14B first attempt hit OOM because colleagues took the memory |
 | 6 | DeepSeek dense window sweep, 106 windows | **done** (from existing `wspec`) |
 | 7 | nonnorm controls | **randQwen done** (`nonnorm_randqwen3`); Pythia path mismatch; Mamba not run |
-| 8 | depth probe with 32 directions | **done** for DeepSeek; Qwen2.5/Phi-4-mini **running** (`queue_extra.sh`) |
-| 9 | sampled feedback for Qwen3-4B (CRN/ind) | **running** (`queue_extra.sh`), fills the missing F9 panel |
+| 8 | depth probe with 32 directions | **done** for DeepSeek, Qwen2.5-3B, Phi-4-mini (`results/update/depth_*_k32`) |
+| 9 | sampled feedback for Qwen3-4B (CRN/ind) | **done**, `results/softloop_sample/qwen3_4b` |
 | 10 | exact $\Sigma_p$ validation (all vocab) | not run |
 | 11 | attention mass, correct window mask | **done**, DeepSeek W=50/100/200/4096 + Qwen2.5/Phi/rand W=100 |
 | 12 | closed-loop metric suite (M, FSLE, finite-time, spectrum, staircase, endpoint) | **done**, F2–F18 |

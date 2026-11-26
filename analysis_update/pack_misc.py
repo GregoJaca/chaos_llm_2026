@@ -5,8 +5,8 @@ from cache import *
 from style import plt, save
 
 # ---------------------------------------------------------------- sampling: soft / CRN / ind
-MODELS = ["DeepSeek-1.5B", "Qwen2.5-3B", "Phi-4-mini", "Mamba-130m", "Pythia-410m"]
-fig, axes = plt.subplots(1, 5, figsize=(18.0, 4.2))
+MODELS = ["DeepSeek-1.5B", "Qwen2.5-3B", "Qwen3-4B", "Phi-4-mini", "Mamba-130m", "Pythia-410m"]
+fig, axes = plt.subplots(2, 3, figsize=(14.4, 7.6))
 for ax, n in zip(axes.flat, MODELS):
     tag = {"DeepSeek-1.5B": "ds15", "Qwen2.5-3B": "qwen25_3b", "Qwen3-4B": "qwen3_4b",
            "Phi-4-mini": "phi4mini", "Mamba-130m": "mamba130", "Pythia-410m": "pythia410"}[n]

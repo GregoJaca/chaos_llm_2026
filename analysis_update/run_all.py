@@ -14,6 +14,7 @@ SCRIPTS = [
     "pack_depth2.py",
     "pack_depth_tailfit.py",
     "pack_depth_late_rise.py",
+    "pack_depth_k32_all.py",
     "pack_angles.py",
     "pack_angles2.py",
     "pack_rotation.py",
