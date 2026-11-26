@@ -5,6 +5,14 @@
 
 **How to rebuild everything:** `python analysis_update/run_all.py`. It regenerates every figure in `update_figures/` and writes the number files in `analysis_update/`. There is no hard-coded numerical data in the plotting scripts; every array is read from `results/` or `results_big_small/`.
 
+**Status of the long campaign (2026-11-26 23:20 CET, still running).** Two 36–48 h queues are generating the long-horizon looping data that this version only partially has (the closed-vs-replay figures currently use 600-step orbits except DeepSeek-1.5B, which already has 3000 steps):
+
+- **x11**: 8 small models, 3000 steps, `T=1` loop+replay, `T=2`, CRN/independent sampling, 1000-token teacher-forced, `T=0.5`.
+- **Spark**: Qwen3-14B, DeepSeek-14B, Qwen3.5-9B, Phi-4 at fp16, 1600 steps, same rounds with 800-token teacher-forced.
+- After those finish, a second waiter queue runs **32-direction** loops (percentile bands) and **multi-prompt** replication (the single most important missing measurement — everything here is one prompt).
+
+`analysis_update/sync_from_cluster.ps1` pulls the new data and `pack_loop_loglog_models.py` automatically switches to the longest orbit available, so the figures in §F sharpen on every re-run without editing code. The exact commands and current state are in `docs/HANDOFF.md`.
+
 **The precision tiers (read this first).** The old small-model A1 files are not all the same precision, and the difference is large:
 
 | tier | models | what is valid |
@@ -450,6 +458,10 @@ Your understanding is correct. The precise definitions are:
 ![Fig. F20](update_figures/pack_loop_intermittency.png)
 
 **Fig. F20 — the growth is bursty and gate-conditioned.** (a) Windowed live-gate density $P(m_t<1)$ (window 50) — the gates open in bursts, and after the lock-in of F19 the density stays at 0. (b) Mean one-step log growth $\Delta\log a_t$, split by gate state: every trained model grows only while the gate is open (red, +0.02 to +0.15 nats/step) and *contracts* while it is closed (blue, −0.01 to −0.05 nats/step); Pythia is the extreme case (−0.5 nats/step when closed). (c) Concentration of the total log growth: the top 5% of steps produce 26–73% of the growth for the trained models (Phi-4-mini 73%), versus ~14% for randQwen and the 5% diagonal of a constant-rate exponential. **Read:** the staircase is not a plotting artefact; a handful of gate-opening events do most of the work, and between them the response decays.
+
+![Fig. F21](update_figures/pack_loop_temperature.png)
+
+**Fig. F21 — the instability is a threshold in softness, not a smooth function of $T$.** DeepSeek-1.5B, $r=0.03$, fp32, 11 temperatures, 600 steps; (a) $L(t)=\log(a_{\rm closed}/a_{\rm replay})$; (b) $L$ at $t=300$ against $T$, log $x$. **Read:** at the greedy limit ($T=10^{-9}$, grey square) the closed loop *is* ordinary autoregressive generation while the replay is teacher forcing, and $L=0.0$ — the two coincide within the floor. At **every** temperature above $T=0.05$, $L=3.8$–$10.4$ nats, with no systematic trend in $T$ (the dip at $T=0.1$ and at $T=2$ is orbit-to-orbit variability: one orbit per $T$). **Interpretation:** what matters is that the feedback is a *distribution* at all, not how soft it is. A one-hot limit removes the instability entirely; a barely-soft loop ($T=0.05$, top-2 mass $\approx1$) already has the full effect. This is the cleanest evidence that the mechanism is the readout→embedding path rather than sampling noise. **Why only one model here:** the probe radius differs across models (0.03 vs 0.1) and at $T\to0$ the response is dominated by discrete token flips, which depend on the radius, so a cross-model $T\to0$ comparison would be confounded.
 
 
 ![Fig. F11](update_figures/legacy_d2pipe.png)

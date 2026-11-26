@@ -43,6 +43,7 @@ SCRIPTS = [
     "pack_loop_layers.py",
     "pack_loop_intermittency.py",
     "pack_loop_selfreg.py",
+    "pack_loop_temperature.py",
     "pack_layer_gain.py",
     "pack_rank_entropy2.py",
     "pack_relative_controls.py",
