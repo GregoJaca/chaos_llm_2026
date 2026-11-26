@@ -165,7 +165,7 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 ![Fig. C5](update_figures/pack_rstar_dense2.png)
 
-**Fig. C5 — comparable fragility.** (a) $r_*$ against probe radius, sparse (dashed) and dense (solid), 95% bootstrap band over directions; (b) dense $r_*$ distributions at $r=0.03$. **Data:** 128 dense directions, radii 0.03/0.1/0.3. **Read:** dense $r_*$ is radius-independent (DeepSeek 0.37, Qwen3.5 0.36, Qwen2.5 0.58); sparse $r_*$ moves with the probe radius. **This is the number to compare across models.** The dense distributions are broad and overlap; the medians differ by less than a factor 2.
+**Fig. C5 — comparable fragility.** (a) $r_*$ against probe radius, sparse (dashed) and dense (solid), 95% bootstrap band over directions; (b) dense $r_*$ distributions at $r=0.03$. **Data:** 128 dense directions, radii 0.03/0.1/0.3; Phi-4 dense from the Spark run (64 dirs, 4 radii). **Read:** dense $r_*$ is radius-independent: DeepSeek 0.37, Qwen3.5 0.36, Qwen2.5 0.58, Phi-4 1.21–1.28. Sparse $r_*$ moves with the probe radius. **This is the number to compare across models.** The dense distributions are broad and overlap; the medians differ by less than a factor 2 among the small models, and Phi-4 is about 2× more robust than Qwen2.5.
 
 ---
 

@@ -43,7 +43,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  update.md &nbsp;&middot;&nbsp; built 2026-11-26 17:32:18 &nbsp;&middot;&nbsp;
+  update.md &nbsp;&middot;&nbsp; built 2026-11-26 17:38:44 &nbsp;&middot;&nbsp;
   <a href="update.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="update.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="unified.html">unified</a> &middot; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="new.html">new</a> &middot; <a href="notebook.html">notebook</a>
@@ -356,7 +356,7 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 <p><img alt="Fig. C4" src="update_figures/pack_dense_slopes.png" /></p>
 <p><strong>Fig. C4 — sparse vs dense directions: the correct reading.</strong> Absolute response $\|\delta h_{50,L}\|$ against $r$ for sparse simplex (dashed) and dense Gaussian (solid) directions, with IQR bands over directions. <strong>Data:</strong> fp32 runs <code>results/update/fp32_*</code> (sparse, 8 radii) and <code>results/update/dense_*</code> (dense, 3 radii, 128 dirs). <strong>Read:</strong> both ensembles are linear ($\beta\approx1$) over $r=0.03$–$0.3$; dense is a constant factor 3–10× <em>higher</em> at the same $r$. The sparse curve is not saturating in this interval; my earlier claim that it was came from comparing the old fp16 sparse runs to the new fp32 dense runs. Below $r\approx10^{-3}$ the sparse response hits the fp32 subtraction floor. <strong>Consequence:</strong> direction sparsity changes the <em>scale</em> of the response, not the exponent; the old $r_*$ values at $r=0.1$ are still probe-dependent because $r_*$ depends on $\delta m$, not $\delta h$.</p>
 <p><img alt="Fig. C5" src="update_figures/pack_rstar_dense2.png" /></p>
-<p><strong>Fig. C5 — comparable fragility.</strong> (a) $r_*$ against probe radius, sparse (dashed) and dense (solid), 95% bootstrap band over directions; (b) dense $r_*$ distributions at $r=0.03$. <strong>Data:</strong> 128 dense directions, radii 0.03/0.1/0.3. <strong>Read:</strong> dense $r_*$ is radius-independent (DeepSeek 0.37, Qwen3.5 0.36, Qwen2.5 0.58); sparse $r_*$ moves with the probe radius. <strong>This is the number to compare across models.</strong> The dense distributions are broad and overlap; the medians differ by less than a factor 2.</p>
+<p><strong>Fig. C5 — comparable fragility.</strong> (a) $r_*$ against probe radius, sparse (dashed) and dense (solid), 95% bootstrap band over directions; (b) dense $r_*$ distributions at $r=0.03$. <strong>Data:</strong> 128 dense directions, radii 0.03/0.1/0.3; Phi-4 dense from the Spark run (64 dirs, 4 radii). <strong>Read:</strong> dense $r_*$ is radius-independent: DeepSeek 0.37, Qwen3.5 0.36, Qwen2.5 0.58, Phi-4 1.21–1.28. Sparse $r_*$ moves with the probe radius. <strong>This is the number to compare across models.</strong> The dense distributions are broad and overlap; the medians differ by less than a factor 2 among the small models, and Phi-4 is about 2× more robust than Qwen2.5.</p>
 <hr />
 <h1 id="d-time-dynamics">D. Time dynamics</h1>
 <p><img alt="Fig. D1" src="update_figures/pack_time_all_models.png" /></p>
