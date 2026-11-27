@@ -205,7 +205,7 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 ![Fig. D3b](update_figures/pack_time_layers_controls.png)
 
-**Fig. D3b — layer-resolved response with controls.** Three layers (excluding layer 0), every LLM and control. **Data:** same as D1b. **Read:** the ordering of the layers is the same in the controls: deep layers retain more; no layer grows exponentially. **Use:** this is the requested “one plot for different layers, with controls”.
+**Fig. D3b — layer-resolved response with controls.** Three layers (excluding layer 0), every LLM and control. **Data:** A1 runs from `results/rstar/<model>/p1` — **these are all $W=100$ runs with 300 generated tokens**, $r=0.1$, 512 directions, and layers include the first block, the middle and the last. **Read:** in every trained model the deep layer retains more of the perturbation than the shallow ones, and the ordering is the same in the controls (Mamba deeper > shallow; the random transformer is flat). **Careful:** because $W=100$, the shallow layers hit the window flush at $t^*_\ell$ inside the plotted range — that is the staircase in D3c and E4, not a model property. **The closed-loop analogue of this figure is F2d.**
 
 ![Fig. D3c](update_figures/pack_time_all_layers.png)
 
@@ -293,6 +293,13 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 **Fig. E4b — any head still attending.** Fraction of heads with prompt attention $>10^{-4}$ vs $t$, DeepSeek, four windows. **Read:** a small number of heads keep a trace of the prompt longer than the mean suggests; for $W=4096$ some heads still attend at $t=200$. **Why this does not contradict the formula:** the formula is about the response at layer 1 becoming exactly zero when no *perturbed* token is in the window; it is not a statement about the total prompt-attention mass.
 
+![Fig. E5](update_figures/pack_window_staircase.png)
+
+**Fig. E5 — the "drop every ~100 tokens" is the window law, not a new phenomenon.** For each small model, $\log_{10}\|\delta h\|$ over the whole (token, layer) plane, at $W=100$ (all the A1 runs used $W=100$). Green dashed lines: the predicted flush $t^*_\ell=W-P+p_{\rm last}+(\ell-1)(W-1)$ for layers 1–3. Bottom-left panel: the same measurement with $W=4096$, where no staircase appears. **Read:** the staircase is present in **every** model with a $W=100$ run and its steps land on the predicted $t^*_\ell$ to within a token or two. **Answer to your question: no, this does not invalidate the formula — this *is* the formula.** It is easier to see in DeepSeek-1.5B and Phi-4-mini because their response stays above the numerical floor long enough for the ladder to be visible; in the other small models the perturbation has decayed below the floor before layer 2/3 flushes. The 14B runs used no window ($W=0$/4096), which is why Qwen3-14B/DeepSeek-14B show vertical stripes (token-to-token variation) instead of steps. **Qwen3.5-2B:** its all-layer $W=100$ run is queued (its fp16 path crashes in cuDNN, so it runs in fp32).
+
+**On $\delta h_t/\delta h_1$ versus $\delta h_t/\delta h_0$.** $\delta h_0$ is the perturbation *at the token embedding*, and for teacher-forced/replay runs it is **exactly zero for every generated token** (measured: all entries of `dh_norm` at layer 0 are 0.0 for all radii, directions and tokens). The new token's embedding is a vocabulary lookup, identical in the perturbed and reference rows; the perturbation can only enter through attention, i.e. at block 1. So $\|\delta h_t\|/\|\delta h_0\|$ is $0/0$; $\delta h_1$ is the only meaningful reference, and it is exactly where the perturbation first appears. In the **closed loop** this changes: the fed embedding is a mixture of the perturbed logits, so $\delta h$ at layer 0 is *nonzero* (measured $\approx10^{-4}$–$10^{-3}$ relative). That difference is the mechanism, and the dedicated layer-0 runs are queued.
+
+
 ---
 
 # F. The soft loop: definitions, controls, and the result
@@ -362,18 +369,18 @@ Note the axes are independent: *what is fed* (expected embedding vs token), *whe
 
 | model | directions | steps | $L_\infty$ (nats) | $\tau$ (steps) | $R^2$ | $\times$ at end |
 |---|---|---|---|---|---|---|
-| Mamba-130m | 8 | 3000 | 11.3 | 32 | 0.41 | 12 400 |
-| DeepSeek-1.5B | 16 | 3000 | 7.8 | 56 | 0.92 | 2 400 |
-| DeepSeek-14B | 8 | 1600 | 6.0 | 209 | 0.77 | 220 |
-| Qwen3-14B | 8 | 1600 | 6.5 | 228 | 0.77 | 600 |
-| Phi-4 | 8 | 1600 | 6.7 | 255 | 0.77 | 530 |
-| Phi-4-mini | 8 | 3000 | 5.3 | 60 | 0.69 | 173 |
-| Pythia-410m | 8 | 3000 | 6.4 | 357 | 0.48 | 85 |
-| Qwen3-4B | 16 | 3000 | 4.8 | 17 | 0.46 | 76 |
-| Qwen3.5-9B | 40 | 1600 | 2.4 | 2 | 0.02 | 35 |
-| randQwen | 8 | 3000 | 3.8 | 1480 | 1.00 | 13 |
-| Qwen2.5-3B | 16 | 3000 | 1.3 | 5 | 0.06 | 15 |
-| Qwen3.5-2B | – | – | – | – | – | (fp16 cuDNN failure; fp32 run queued) |
+| Mamba-130m | 16 | 3000 | 11.1 | 46 | 0.40 | 100\,261 |
+| DeepSeek-1.5B | 16 | 3000 | 8.0 | 62 | 0.85 | 3\,440 |
+| DeepSeek-14B | 8 | 1600 | 6.0 | 209 | 0.77 | 336 |
+| Qwen3-14B | 8 | 1600 | 6.5 | 228 | 0.77 | 589 |
+| Phi-4 | 8 | 1600 | 6.7 | 255 | 0.77 | 521 |
+| Phi-4-mini | 24 | 3000 | 5.3 | 66 | 0.75 | 205 |
+| Pythia-410m | 24 | 3000 | 6.4 | 331 | 0.49 | 180 |
+| Qwen3-4B | 8 | 3000 | 4.8 | 17 | 0.46 | 119 |
+| Qwen3.5-9B | 40 | 1600 | 3.7 | 244 | -0.08 | 45 |
+| randQwen | 24 | 3000 | 3.7 | 1428 | 0.99 | 24 |
+| Qwen2.5-3B | 16 | 3000 | 2.3 | 473 | 0.38 | 15 |
+| Qwen3.5-2B | – | – | – | – | – | (no matched pair yet) |
 
 The $R^2$ column matters: for Qwen2.5-3B, Qwen3-4B and Qwen3.5-9B the growth is *not* a clean saturating exponential (they jump in a few steps), so $L_\infty$ and $\tau$ are only indicative there.
 

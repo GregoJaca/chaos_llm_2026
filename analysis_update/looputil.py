@@ -21,7 +21,7 @@ TAGS = {
 }
 LEGACY = {"Qwen2.5-3B": "qwen25_3b", "Qwen3-4B": "qwen3_4b", "Qwen3.5-2B": "qwen3_5",
           "Phi-4-mini": "phi4mini", "Mamba-130m": "mamba130", "Pythia-410m": "pythia410"}
-ROOTS = ["results/longloop_v3", "results/longloop", "results/softloop"]
+ROOTS = ["results/longloop_v3b", "results/longloop_v3", "results/longloop", "results/softloop"]
 
 
 def model_tags(name):
@@ -124,9 +124,21 @@ def gather(name, T="T1.0", layer=-1, layer_num=None):
         acs.append(ac[ok]); ars.append(ar[ok]); used.append(pl)
     if not acs:
         return None, None, []
-    L = min(a.shape[1] for a in acs)
-    return (np.concatenate([a[:, :L] for a in acs], 0),
-            np.concatenate([a[:, :L] for a in ars], 0), used)
+    L = max(a.shape[1] for a in acs)
+    def pad(a):
+        out = np.full((a.shape[0], L), np.nan)
+        out[:, :a.shape[1]] = a
+        return out
+    return (np.concatenate([pad(a) for a in acs], 0),
+            np.concatenate([pad(a) for a in ars], 0), used)
+
+
+def nanmedian_iqr(x, axis=0):
+    with np.errstate(all="ignore"):
+        med = np.nanmedian(x, axis=axis)
+        lo = np.nanpercentile(x, 25, axis=axis)
+        hi = np.nanpercentile(x, 75, axis=axis)
+    return med, (lo, hi)
 
 
 def median_iqr(x, axis=0):

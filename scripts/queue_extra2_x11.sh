@@ -14,7 +14,7 @@ PY0=python3
 PY=~/LLM/venv_tf/bin/python
 PY311=~/LLM/venv311/bin/python
 
-while pgrep -f queue_v3_x11.sh > /dev/null; do echo "wait v3 $(date)"; sleep 300; done
+while pgrep -f queue_v3b_x11.sh > /dev/null; do echo "wait v3b $(date)"; sleep 300; done
 while pgrep -f queue_topk_x11.sh > /dev/null; do echo "wait topk $(date)"; sleep 300; done
 
 sl () { # out model py dtype dirs steps layers win mode loopdir

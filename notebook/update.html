@@ -43,7 +43,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  update.md &nbsp;&middot;&nbsp; built 2026-11-27 19:38:18 &nbsp;&middot;&nbsp;
+  update.md &nbsp;&middot;&nbsp; built 2026-11-27 20:08:32 &nbsp;&middot;&nbsp;
   <a href="update.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="update.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="unified.html">unified</a> &middot; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="new.html">new</a> &middot; <a href="notebook.html">notebook</a>
@@ -379,7 +379,7 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 <p><img alt="Fig. D3" src="update_figures/pack_time_by_layer.png" /></p>
 <p><strong>Fig. D3 — first/middle/last layer.</strong> Same as D1 at the first, middle and last saved layer. <strong>Read:</strong> in DeepSeek the shallow layers flush first and the deep layers persist; in Qwen/Phi the layers move together.</p>
 <p><img alt="Fig. D3b" src="update_figures/pack_time_layers_controls.png" /></p>
-<p><strong>Fig. D3b — layer-resolved response with controls.</strong> Three layers (excluding layer 0), every LLM and control. <strong>Data:</strong> same as D1b. <strong>Read:</strong> the ordering of the layers is the same in the controls: deep layers retain more; no layer grows exponentially. <strong>Use:</strong> this is the requested “one plot for different layers, with controls”.</p>
+<p><strong>Fig. D3b — layer-resolved response with controls.</strong> Three layers (excluding layer 0), every LLM and control. <strong>Data:</strong> A1 runs from <code>results/rstar/&lt;model&gt;/p1</code> — <strong>these are all $W=100$ runs with 300 generated tokens</strong>, $r=0.1$, 512 directions, and layers include the first block, the middle and the last. <strong>Read:</strong> in every trained model the deep layer retains more of the perturbation than the shallow ones, and the ordering is the same in the controls (Mamba deeper &gt; shallow; the random transformer is flat). <strong>Careful:</strong> because $W=100$, the shallow layers hit the window flush at $t^*_\ell$ inside the plotted range — that is the staircase in D3c and E4, not a model property. <strong>The closed-loop analogue of this figure is F2d.</strong></p>
 <p><img alt="Fig. D3c" src="update_figures/pack_time_all_layers.png" /></p>
 <p><strong>Fig. D3c — all saved layers, three examples.</strong> Response vs time for every saved layer of DeepSeek-1.5B, Qwen3-4B and randQwen; colour = layer (colourbar). <strong>Data:</strong> A1/control summaries, $r=0.1$, 300 tokens. <strong>Read:</strong> the shallow layers decay fastest and the deep layers plateau; every layer overlaps in randQwen. No layer grows. <strong>Each model has its own panel below (D3d–D3n).</strong></p>
 <p><img alt="Fig. D3d" src="update_figures/pack_time_layers_DeepSeek_15B.png" /></p>
@@ -422,6 +422,9 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 <p><strong>Fig. E4 — measured attention mass on the prompt.</strong> (a) DeepSeek, four windows, median over heads (band = IQR over heads); (b) $W=100$, four models. <strong>Data:</strong> <code>run_attention_frac.py</code> with the <strong>correct 4-D window mask</strong>, 200 generated tokens, layers 0/7/14/21/27. <strong>Read:</strong> at $t=0$ the mass is high (0.9); it decays as the model shifts to generated tokens. For $W=100$ it drops sharply at $t\approx99$, when the <strong>last prompt token (position 64, perturbed or not)</strong> leaves the window. The response flush is earlier, at $t^*_1=p_{\rm last}+W-P=43+100-65=78$, because only the <em>perturbed</em> prompt positions (up to $p_{\rm last}=43$) matter. With $W=4096$ there is no mask cut; the mass decays gradually and never reaches zero in 200 tokens. <strong>This is the real version of the old schematic “attention weight fraction” panel, and it resolves the apparent contradiction with the window formula.</strong></p>
 <p><img alt="Fig. E4b" src="update_figures/pack_attention_heads.png" /></p>
 <p><strong>Fig. E4b — any head still attending.</strong> Fraction of heads with prompt attention $>10^{-4}$ vs $t$, DeepSeek, four windows. <strong>Read:</strong> a small number of heads keep a trace of the prompt longer than the mean suggests; for $W=4096$ some heads still attend at $t=200$. <strong>Why this does not contradict the formula:</strong> the formula is about the response at layer 1 becoming exactly zero when no <em>perturbed</em> token is in the window; it is not a statement about the total prompt-attention mass.</p>
+<p><img alt="Fig. E5" src="update_figures/pack_window_staircase.png" /></p>
+<p><strong>Fig. E5 — the "drop every ~100 tokens" is the window law, not a new phenomenon.</strong> For each small model, $\log_{10}\|\delta h\|$ over the whole (token, layer) plane, at $W=100$ (all the A1 runs used $W=100$). Green dashed lines: the predicted flush $t^*_\ell=W-P+p_{\rm last}+(\ell-1)(W-1)$ for layers 1–3. Bottom-left panel: the same measurement with $W=4096$, where no staircase appears. <strong>Read:</strong> the staircase is present in <strong>every</strong> model with a $W=100$ run and its steps land on the predicted $t^*_\ell$ to within a token or two. <strong>Answer to your question: no, this does not invalidate the formula — this <em>is</em> the formula.</strong> It is easier to see in DeepSeek-1.5B and Phi-4-mini because their response stays above the numerical floor long enough for the ladder to be visible; in the other small models the perturbation has decayed below the floor before layer 2/3 flushes. The 14B runs used no window ($W=0$/4096), which is why Qwen3-14B/DeepSeek-14B show vertical stripes (token-to-token variation) instead of steps. <strong>Qwen3.5-2B:</strong> its all-layer $W=100$ run is queued (its fp16 path crashes in cuDNN, so it runs in fp32).</p>
+<p><strong>On $\delta h_t/\delta h_1$ versus $\delta h_t/\delta h_0$.</strong> $\delta h_0$ is the perturbation <em>at the token embedding</em>, and for teacher-forced/replay runs it is <strong>exactly zero for every generated token</strong> (measured: all entries of <code>dh_norm</code> at layer 0 are 0.0 for all radii, directions and tokens). The new token's embedding is a vocabulary lookup, identical in the perturbed and reference rows; the perturbation can only enter through attention, i.e. at block 1. So $\|\delta h_t\|/\|\delta h_0\|$ is $0/0$; $\delta h_1$ is the only meaningful reference, and it is exactly where the perturbation first appears. In the <strong>closed loop</strong> this changes: the fed embedding is a mixture of the perturbed logits, so $\delta h$ at layer 0 is <em>nonzero</em> (measured $\approx10^{-4}$–$10^{-3}$ relative). That difference is the mechanism, and the dedicated layer-0 runs are queued.</p>
 <hr />
 <h1 id="f-the-soft-loop-definitions-controls-and-the-result">F. The soft loop: definitions, controls, and the result</h1>
 <p>This section is written to be unambiguous. Every mode below is the <em>same</em> forward pass with the <em>same</em> weights, batch layout and prompt; they differ only in <strong>what is fed in at the next position</strong>.</p>
@@ -537,21 +540,21 @@ for t in 0 .. T-1:
 <tbody>
 <tr>
 <td>Mamba-130m</td>
-<td>8</td>
+<td>16</td>
 <td>3000</td>
-<td>11.3</td>
-<td>32</td>
-<td>0.41</td>
-<td>12 400</td>
+<td>11.1</td>
+<td>46</td>
+<td>0.40</td>
+<td>100\,261</td>
 </tr>
 <tr>
 <td>DeepSeek-1.5B</td>
 <td>16</td>
 <td>3000</td>
-<td>7.8</td>
-<td>56</td>
-<td>0.92</td>
-<td>2 400</td>
+<td>8.0</td>
+<td>62</td>
+<td>0.85</td>
+<td>3\,440</td>
 </tr>
 <tr>
 <td>DeepSeek-14B</td>
@@ -560,7 +563,7 @@ for t in 0 .. T-1:
 <td>6.0</td>
 <td>209</td>
 <td>0.77</td>
-<td>220</td>
+<td>336</td>
 </tr>
 <tr>
 <td>Qwen3-14B</td>
@@ -569,7 +572,7 @@ for t in 0 .. T-1:
 <td>6.5</td>
 <td>228</td>
 <td>0.77</td>
-<td>600</td>
+<td>589</td>
 </tr>
 <tr>
 <td>Phi-4</td>
@@ -578,60 +581,60 @@ for t in 0 .. T-1:
 <td>6.7</td>
 <td>255</td>
 <td>0.77</td>
-<td>530</td>
+<td>521</td>
 </tr>
 <tr>
 <td>Phi-4-mini</td>
-<td>8</td>
+<td>24</td>
 <td>3000</td>
 <td>5.3</td>
-<td>60</td>
-<td>0.69</td>
-<td>173</td>
+<td>66</td>
+<td>0.75</td>
+<td>205</td>
 </tr>
 <tr>
 <td>Pythia-410m</td>
-<td>8</td>
+<td>24</td>
 <td>3000</td>
 <td>6.4</td>
-<td>357</td>
-<td>0.48</td>
-<td>85</td>
+<td>331</td>
+<td>0.49</td>
+<td>180</td>
 </tr>
 <tr>
 <td>Qwen3-4B</td>
-<td>16</td>
+<td>8</td>
 <td>3000</td>
 <td>4.8</td>
 <td>17</td>
 <td>0.46</td>
-<td>76</td>
+<td>119</td>
 </tr>
 <tr>
 <td>Qwen3.5-9B</td>
 <td>40</td>
 <td>1600</td>
-<td>2.4</td>
-<td>2</td>
-<td>0.02</td>
-<td>35</td>
+<td>3.7</td>
+<td>244</td>
+<td>-0.08</td>
+<td>45</td>
 </tr>
 <tr>
 <td>randQwen</td>
-<td>8</td>
+<td>24</td>
 <td>3000</td>
-<td>3.8</td>
-<td>1480</td>
-<td>1.00</td>
-<td>13</td>
+<td>3.7</td>
+<td>1428</td>
+<td>0.99</td>
+<td>24</td>
 </tr>
 <tr>
 <td>Qwen2.5-3B</td>
 <td>16</td>
 <td>3000</td>
-<td>1.3</td>
-<td>5</td>
-<td>0.06</td>
+<td>2.3</td>
+<td>473</td>
+<td>0.38</td>
 <td>15</td>
 </tr>
 <tr>
@@ -641,7 +644,7 @@ for t in 0 .. T-1:
 <td>–</td>
 <td>–</td>
 <td>–</td>
-<td>(fp16 cuDNN failure; fp32 run queued)</td>
+<td>(no matched pair yet)</td>
 </tr>
 </tbody>
 </table>

@@ -26,7 +26,7 @@ def fit_pair(name, T):
     if ac is None or ac.shape[1] < 50:
         return None
     Ld = np.log(np.maximum(ac, 1e-30)) - np.log(np.maximum(ar, 1e-30))
-    m = np.median(Ld, axis=0)
+    m = np.nanmedian(Ld, axis=0)
     t = np.arange(len(m))
     try:
         popt, _ = curve_fit(sat, t[1:], m[1:], p0=[max(m[-1], 0.5), max(len(t) / 5, 5)],
@@ -37,7 +37,7 @@ def fit_pair(name, T):
     r2 = 1 - np.sum((m[1:] - pred) ** 2) / np.sum((m[1:] - m[1:].mean()) ** 2)
     k0 = int(0.8 * len(m))
     return dict(Linf=float(popt[0]), tau=float(popt[1]), r2=float(r2),
-                Lend=float(np.median(m[k0:])), n=int(ac.shape[0]), steps=int(len(m)))
+                Lend=float(np.nanmedian(m[k0:])), n=int(ac.shape[0]), steps=int(len(m)))
 
 
 rows = {}

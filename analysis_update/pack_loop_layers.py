@@ -42,10 +42,10 @@ for ax, name in zip(axes.flat, MODELS):
             Lends.append(np.nan); continue
         t = np.arange(ac.shape[1])
         Ld = np.log(np.maximum(ac, 1e-30)) - np.log(np.maximum(ar, 1e-30))
-        m = np.median(Ld, axis=0)
+        m = np.nanmedian(Ld, axis=0)
         ax.plot(t[1:], m[1:], color=cm[i], lw=1.3, label=f"layer {l}")
         k0 = int(0.8 * len(t))
-        Lends.append(float(np.median(Ld[:, k0:])))
+        Lends.append(float(np.nanmedian(Ld[:, k0:])))
     ax.axhline(0, color="k", lw=0.8)
     ax.set_xlabel("step $t$", fontsize=7.2)
     ax.set_ylabel(r"$\log(a_{\rm closed}/a_{\rm replay})$", fontsize=7.2)
@@ -92,7 +92,7 @@ for ax, name in zip(axes, sel):
         if ac is None or len(used) == 0:
             continue
         t = np.arange(ac.shape[1])
-        mc = np.median(ac, axis=0); mr = np.median(ar, axis=0)
+        mc = np.nanmedian(ac, axis=0); mr = np.nanmedian(ar, axis=0)
         ax.plot(t[1:], mc[1:], color=cols[j % 3], lw=1.3, label=f"closed, L{l}")
         ax.plot(t[1:], mr[1:], color=cols[j % 3], lw=0.9, ls="--", alpha=0.7)
     ax.axhline(1, color="k", ls=":", lw=0.8)
