@@ -571,7 +571,8 @@ The $R^2$ column matters: for Qwen2.5-3B, Qwen3-4B and Qwen3.5-9B the growth is 
 
 ![Fig. F16](update_figures/pack_loop_fsle.png)
 
-**Fig. F16 — finite-scale growth rate (FSLE).** For thresholds $S=2,4,8,16,32,64$, the first-passage time $t_S$ and the rate $\log S/t_S$, closed vs replay, at $T=1$. **Data:** same as F13. **Read:** the closed loop reaches larger $S$ in finite time; replay does not. The curves are not straight lines, so the growth is not a single exponential; the rate decreases with $S$ in several models.
+**Fig. F16 — finite-scale growth rate (FSLE).** $S$ is the factor by which the response has grown relative to $t=1$ ($S=2$ means "twice its initial value"); $t_S$ is the first step at which the response of that direction reaches $S$, and the plotted rate is $\log S/t_S$, i.e. the average growth rate over $[1,t_S]$. **Data:** per-direction curves from `looputil.gather`, $T=1$; the dot is the median over directions that reach $S$, and **hollow markers are thresholds reached by fewer than 30% of the directions** (the honest way to show incomplete data — the earlier version silently dropped them, which is why some panels looked empty). **Read:** every model now has a full curve, including Qwen3-4B; the closed loop reaches larger $S$ much faster than the replay; the curves are not straight, so the growth is not a single exponential, and the rate *decreases* with $S$ in most models (the response accelerates then stalls).
+
 
 ![Fig. F17](update_figures/pack_loop_staircase.png)
 

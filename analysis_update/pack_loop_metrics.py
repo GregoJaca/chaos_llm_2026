@@ -2,6 +2,7 @@ import os, sys, json
 import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cache import *
+from looputil import gather
 from style import plt, save
 
 MODELS = ["DeepSeek-1.5B", "Qwen2.5-3B", "Qwen3-4B", "Phi-4-mini",
@@ -94,26 +95,43 @@ fig.tight_layout(rect=(0, 0, 1, 0.95))
 save(fig, "pack_loop_metric_T.png")
 
 # ---------------------------------------------------------------- FSLE
+# S is the factor by which the response has grown relative to t=1
+# (S = 2 means "twice its initial value").  t_S is the first step at which the
+# response reaches S; the FSLE is log(S)/t_S, i.e. an average growth rate over
+# the interval [1, t_S].  Per-direction: for each threshold we use the median
+# t_S over the directions that reach it and mark hollow the thresholds reached by
+# fewer than 30% of the directions (the honest way to show incomplete data).
 fig, axes = plt.subplots(2, 4, figsize=(16.0, 7.0))
 for ax, n in zip(axes.flat, MODELS):
     for mode, c, lab in [("loop", "#d62728", "closed"), ("replay", "#1f77b4", "replay")]:
-        z = get(n, 1.0, mode)
-        if z is None:
+        ac, ar, _u = gather(n, "T1.0")
+        a = ac if mode == "loop" else ar
+        if a is None:
             continue
-        a = np.median(arr(z), axis=0); a = a / a[1]
-        S = np.array([2, 4, 8, 16, 32, 64])
-        t = []
-        for s in S:
-            idx = np.where(a > s)[0]
-            t.append(idx[0] if len(idx) else np.nan)
-        t = np.array(t, float)
-        ax.plot(np.log(S), np.log(S) / t, "o-", color=c, label=lab)
-    ax.set_xlabel(r"$\log S$", fontsize=7.4)
-    ax.set_ylabel(r"$\log S / t_S$", fontsize=7.4)
+        S = np.array([2.0, 4.0, 8.0, 16.0, 32.0, 64.0])
+        med, frac = [], []
+        for sv in S:
+            ts = []
+            for d in range(a.shape[0]):
+                idx = np.where(a[d] > sv)[0]
+                if len(idx):
+                    ts.append(idx[0])
+            med.append(np.median(ts) if ts else np.nan)
+            frac.append(len(ts) / a.shape[0])
+        med = np.array(med, float); frac = np.array(frac)
+        ok = np.isfinite(med) & (med > 0)
+        rr = np.log(S[ok]) / med[ok]
+        ax.plot(np.log(S[ok]), rr, "-", color=c, lw=1.2, label=lab)
+        solid = ok & (frac >= 0.3)
+        hollow = ok & (frac < 0.3)
+        ax.plot(np.log(S[solid]), rr[frac[ok] >= 0.3], "o", color=c, ms=4)
+        ax.plot(np.log(S[hollow]), rr[frac[ok] < 0.3], "o", mfc="none", mec=c, ms=5)
+    ax.set_xlabel(r"$\log S$  ($S$ = response / value at $t=1$)", fontsize=7.2)
+    ax.set_ylabel(r"$\log S / t_S$  (nats/step)", fontsize=7.2)
     ax.set_title(n, fontsize=8.4)
     ax.legend(fontsize=6.0); ax.grid(alpha=0.3)
-fig.suptitle("Finite-scale growth rate: threshold $S$ vs first-passage time $t_S$", fontsize=11.2)
-fig.tight_layout(rect=(0, 0, 1, 0.95))
+fig.suptitle("Finite-scale growth rate: $t_S$ = first step reaching $S\\times$ the initial response (hollow = <30% of directions reach $S$)", fontsize=10.6)
+fig.tight_layout(rect=(0, 0, 1, 0.94))
 save(fig, "pack_loop_fsle.png")
 
 # ---------------------------------------------------------------- staircase

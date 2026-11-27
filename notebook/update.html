@@ -43,7 +43,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  update.md &nbsp;&middot;&nbsp; built 2026-11-27 20:27:01 &nbsp;&middot;&nbsp;
+  update.md &nbsp;&middot;&nbsp; built 2026-11-27 20:34:58 &nbsp;&middot;&nbsp;
   <a href="update.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="update.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="unified.html">unified</a> &middot; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="new.html">new</a> &middot; <a href="notebook.html">notebook</a>
@@ -932,7 +932,7 @@ for t in 0 .. T-1:
 <p><img alt="Fig. F15" src="update_figures/pack_loop_metric_T.png" /></p>
 <p><strong>Fig. F15 — mean log amplification vs temperature.</strong> $M=\langle\log(a_t/a_1)\rangle_t$, closed loop (solid) and replay (dashed), per model. <strong>Data:</strong> <code>results/softloop*</code>, all temperatures, 600 steps. <strong>Read:</strong> closed $M$ is positive almost everywhere; replay is near zero or negative. The dependence on $T$ is orbit-specific, not monotonic; the robust statement is the closed/replay gap.</p>
 <p><img alt="Fig. F16" src="update_figures/pack_loop_fsle.png" /></p>
-<p><strong>Fig. F16 — finite-scale growth rate (FSLE).</strong> For thresholds $S=2,4,8,16,32,64$, the first-passage time $t_S$ and the rate $\log S/t_S$, closed vs replay, at $T=1$. <strong>Data:</strong> same as F13. <strong>Read:</strong> the closed loop reaches larger $S$ in finite time; replay does not. The curves are not straight lines, so the growth is not a single exponential; the rate decreases with $S$ in several models.</p>
+<p><strong>Fig. F16 — finite-scale growth rate (FSLE).</strong> $S$ is the factor by which the response has grown relative to $t=1$ ($S=2$ means "twice its initial value"); $t_S$ is the first step at which the response of that direction reaches $S$, and the plotted rate is $\log S/t_S$, i.e. the average growth rate over $[1,t_S]$. <strong>Data:</strong> per-direction curves from <code>looputil.gather</code>, $T=1$; the dot is the median over directions that reach $S$, and <strong>hollow markers are thresholds reached by fewer than 30% of the directions</strong> (the honest way to show incomplete data — the earlier version silently dropped them, which is why some panels looked empty). <strong>Read:</strong> every model now has a full curve, including Qwen3-4B; the closed loop reaches larger $S$ much faster than the replay; the curves are not straight, so the growth is not a single exponential, and the rate <em>decreases</em> with $S$ in most models (the response accelerates then stalls).</p>
 <p><img alt="Fig. F17" src="update_figures/pack_loop_staircase.png" /></p>
 <p><strong>Fig. F17 — the staircase.</strong> (a) One-step log increments $\Delta\log a_t$ for the closed loop, $T=1$; (b) autocorrelation of the increments. <strong>Read:</strong> the increments are spiky and correlated; growth happens in bursts at gates, not as a constant drift. <strong>This is the quantitative form of “staircase, not exponential”.</strong></p>
 <p><img alt="Fig. F18" src="update_figures/pack_loop_endpoint.png" /></p>
