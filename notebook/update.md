@@ -127,9 +127,74 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 # B. Depth
 
+
+## B.0 Three questions, three metrics — which one answers what
+
+The earlier drafts of this document (and, frankly, the literature) mix up three different quantities. They are all computed for the same token $t$ and layer $\ell$, and they answer different questions.
+
+| quantity | definition | what it is | the question it answers | figures |
+|---|---|---|---|---|
+| **absolute** perturbation | $A_\ell=\|\delta h_\ell\|$ | norm of (perturbed $-$ reference) hidden state | how big is the perturbation in the model's own units? | B6, D3, E1 |
+| **state** norm | $S_\ell=\|h_\ell\|$ | norm of the reference hidden state | how big is the signal the next layer reads? | B0 (b) |
+| **relative** perturbation | $R_\ell=A_\ell/S_\ell$ | perturbation as a fraction of the state | **does the perturbation become more or less significant?** | B0b, B5, B5b, B7 |
+| **linearised** gain | $\mathrm{cum}_\ell=\log\sigma_1(J_\ell\cdots J_0)$ | singular-value growth of the block-Jacobian product at one position | is the stack linearly unstable, and which block does the work? | B1, B4b-B4d |
+| **local** gain | $g_\ell=\|J_\ell v\|$ | per-block gain of a tracked direction | which single block amplifies? | B1b, B1c |
+
+The three finite-radius quantities are related by an identity that resolves the apparent contradictions:
+
+$$R_\ell/R_1 \;=\; \frac{A_\ell/A_1}{S_\ell/S_1}.$$
+
+**The absolute response grows with depth mostly because the residual stream grows.** In every model $S_L/S_1=2.5$-$266$: the state itself gets bigger as the token moves up, and $A_\ell$ inherits that growth. Only after dividing it out does the answer about "significance" appear.
+
+![Fig. B0](update_figures/pack_depth_story.png)
+
+**Fig. B0 — the three metrics on the same two models ($t=50$, $r=0.1$).** (a) $A_\ell=\|\delta h_\ell\|$; (b) $S_\ell=\|h_\ell\|$; (c) $R_\ell=A_\ell/S_\ell$; (d) the linearised gain $\mathrm{cum}_\ell$ (solid) and the running sum of the local gains $\sum\log g_\ell$ (dashed). **Read:** DeepSeek-1.5B: $A$ grows $\times53$, $S$ grows $\times23$, so $R$ grows only $\times2.3$ and *non-monotonically* (it peaks in the middle and comes back down). Qwen3-14B: $A$ grows $\times44$ but $S$ grows $\times133$, so $R$ **falls** to $0.33$: the perturbation loses ground relative to the state. **This is the resolution of "block 0 does most of the amplification" versus "response grows with depth":** both are statements about $A$ (or about $\mathrm{cum}$), not about $R$.
+
+![Fig. B0b](update_figures/pack_depth_relative_all.png)
+
+**Fig. B0b — the answer, all models.** (a) $R_\ell/R_1$ against normalized depth, all 8 LLMs and the 3 controls, $t=50$; (b) the net change $R_L/R_1$ (bar = median over tokens 2-60, whiskers = 10-90%). **Read:** ten of thirteen models stay inside a factor 0.35-4; **the three 14B models lose ground** (0.33-0.43) and only **Phi-4-mini** genuinely amplifies ($\times43$ at $t=50$, median $\times16$ over tokens). The random transformer is flat/slightly rising (1.5), Mamba 1.2, Pythia 0.6. **So a perturbation does not become more significant as it goes through the layers: it is roughly conserved relative to the state, and in the largest models it decays.** The absolute numbers in B6 look like amplification only because the residual stream grows.
+
+Exact numbers ($t=50$, $r=0.1$; `pack_depth_relative_all.json`):
+
+| model | $R_L/R_1$ | $A_L/A_1$ | $S_L/S_1$ |
+|---|---|---|---|
+| Phi-4-mini | **42.9** | 1880 | 43.8 |
+| Qwen2.5-3B | 4.0 | 84 | 21 |
+| DeepSeek-1.5B | 2.3 | 53 | 23 |
+| randQwen (control) | 1.55 | 3.0 | 1.9 |
+| Mamba-130m (control) | 1.17 | 17.5 | 14.9 |
+| Qwen3-4B | 1.5 | 115 | 76 |
+| Qwen3.5-2B | 1.5 | 13 | 8.9 |
+| Pythia-410m (control) | 0.61 | 1.5 | 2.5 |
+| DeepSeek-14B | 0.43 | 8.5 | 20 |
+| Phi-4 | 0.35 | 94 | 266 |
+| Qwen3-14B | 0.33 | 44 | 133 |
+
+**How $\mathrm{cum}_\ell$ and $g_\ell$ fit together.** $g_\ell$ is the gain of *one block*; $\mathrm{cum}_\ell=\sum_{\ell'=0}^{\ell}\log g_{\ell'}$ along the tracked, re-orthonormalised frame, so $\mathrm{cum}$ is the running sum of the local gains (the two curves in panel (d) lie on top of each other). What does *not* hold is multiplying the per-block **maxima**: each block's optimal direction rotates (Fig. C3), so $\prod_\ell\sigma_{\max}(J_\ell)$ overestimates the real product by orders of magnitude. $\mathrm{cum}_\ell$ is the honest linearised object: the stack is mildly expansive ($\times4$-$\times50$), **block 0 does 50-90% of the work**, and each later block contributes $\approx1.0$-$1.1$.
+
+**Vertical versus horizontal propagation — what each measurement contains.** A perturbation at layer $\ell$, token $t$ arrives from two places: (i) the same token at layer $\ell-1$ ("vertical", through the block), and (ii) earlier tokens $t'<t$ ("horizontal", through attention). The two probes separate them:
+
+* the **depth probe** (B1, B4b-B4d) differentiates block $\ell$ at position $t$ with the attention keys/values of earlier positions captured and held fixed (the block is called with the exact kwargs of the reference forward pass). So $J_\ell$ is $\partial h_{\ell,t}/\partial h_{\ell-1,t}$ with the rest of the sequence frozen: **$\mathrm{cum}_\ell$ and $g_\ell$ measure the vertical path only**;
+* the **finite-radius probe** (B0, B0b, B5, D3) compares a perturbed and a reference forward over the whole sequence, so it contains **both** paths; the horizontal part grows with $t$ (more perturbed tokens to attend to) and is what the window cuts off (E5).
+
+That is why the two families are neither contradictory nor interchangeable, and it is the main methodological caveat of the depth analysis: to isolate the horizontal part you would have to perturb only the current position and leave the past untouched, which none of these runs do.
+
+**Which figure to cite for "how are perturbations propagated across layers"?**
+
+1. **B0b/B5** if the question is *does the perturbation become more or less significant* — the relative response;
+2. **B6** if the question is *how large does it get in absolute terms* — but say that most of that is the residual-stream norm;
+3. **B1** if the question is *is the layer stack linearly unstable* — the tangent map, an upper bound over directions;
+4. **B7** if the question is *where in (token, layer) the perturbation actually lives*.
+
+![Fig. B7](update_figures/pack_depth_ladder.png)
+
+**Fig. B7 — the (token, layer) plane.** $\log_{10}R_\ell(t)$ for four models, all 300 generated tokens, every saved layer. **Read:** the relative perturbation is roughly constant along a column (a given token) and along a row (a given layer), except for the window staircase in the bottom rows (E5). There is no layer where it is preferentially created or destroyed; the structure is in $t$ (the window) and in the model scale, not in the depth.
+
+## B.1 The figures behind the numbers
+
 ![Fig. B1](update_figures/pack_depth_all.png)
 
-**Fig. B1 — the real depth gain.** (a) $\mathrm{cum}_\ell=\log\sigma_1(J_\ell\cdots J_1)$ against normalized depth, median over 8–16 probe tokens and 8 directions; band = IQR over tokens. (b) Local gain $g_\ell=\langle\|J_\ell v_i\|\rangle_i$ against block. (c) $g$ in block 0, middle half, last 10%. **Data:** `run_depth2.py`/`run_depth_big.py`, Jacobian–vector products at one position, $k=8$; no perturbation radius. **Read:** product gain is $\times3.7$–$\times28$; block 0 is $3$–$17\times$; later blocks $0.98$–$1.13$. Block 0 contributes 85% of the log gain in DeepSeek-1.5B but only 2% in Phi-4. **Trivial/not:** the old “stretched decay” was $1/\ell$ by construction; the new numbers are the measured product.
+**Fig. B1 — the linearised depth gain (tangent map).** (a) $\mathrm{cum}_\ell=\log\sigma_1(J_\ell\cdots J_1)$ against normalized depth, median over 8–16 probe tokens and 8 directions; band = IQR over tokens. (b) Local gain $g_\ell=\langle\|J_\ell v_i\|\rangle_i$ against block. (c) $g$ in block 0, middle half, last 10%. **Data:** `run_depth2.py`/`run_depth_big.py`, Jacobian–vector products at one position, $k=8$; no perturbation radius. **Read:** product gain is $\times4$–$\times50$; block 0 alone is $\times3$–$\times17$ (50–90% of the log gain); later blocks are $0.98$–$1.13$ each. **This is the linearised statement; for significance use B0b.** **Trivial/not:** the old “stretched decay” was $1/\ell$ by construction; the new numbers are the measured product.
 
 ![Fig. B4](update_figures/pack_depth_multitoken.png)
 
@@ -149,15 +214,15 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 
 ![Fig. B5](update_figures/pack_depth_relative.png)
 
-**Fig. B5 — relative response.** $\|\delta h_\ell\|/\|h_\ell\|$ at $t=50$, normalized at layer 1, against $\ell/(L-1)$ for all models; band = IQR over directions (small models). **Definition:** the numerator is the response norm, the denominator the baseline state norm; the ratio says whether the perturbation grows *relative to the state*. **Read:** only Phi-4-mini amplifies (×20); DeepSeek peaks at ×3 then declines; 14B models end at 0.33–0.43 of layer 1; Qwen3.5 is flat. **Data:** A1 fp32/fp16 as in the tier table; big models from the compact summaries.
+**Fig. B5 — relative response (original version; superseded by B0b and B5b).** $\|\delta h_\ell\|/\|h_\ell\|$ at $t=50$, normalized at layer 1, against $\ell/(L-1)$ for all models; band = IQR over directions (small models). **Definition:** the numerator is the response norm, the denominator the baseline state norm; the ratio says whether the perturbation grows *relative to the state*. **Read:** only Phi-4-mini amplifies (×20); DeepSeek peaks at ×3 then declines; 14B models end at 0.33–0.43 of layer 1; Qwen3.5 is flat. **Data:** A1 fp32/fp16 as in the tier table; big models from the compact summaries.
 
-![Fig. B5b](update_figures/pack_relative_controls.png)
+![Fig. B5b](update_figures/pack_depth_relative_grid.png)
 
-**Fig. B5b — the same with controls.** Relative response vs depth for every LLM and Mamba/Pythia/random, band = IQR over directions where available. **Data:** control A1 files (`results/ctrl/*/a1i_txt`), $r=0.1$, $t=50$, last saved layer; compact summaries in `results_big_small/ctrl_*.npz`. **Read:** Mamba and Pythia also stay within a factor 2 of 1; the random control is high and noisy. The relative response is not a transformer-specific signature; only Phi-4-mini clearly amplifies.
+**Fig. B5b — every model with its own IQR band (the fixed version of B5: 14B bands and controls added).** $R_\ell/R_1$ vs depth, one panel per model, band = IQR over directions at $t=50$; the three controls are hatched. **Data:** A1 compact summaries, $r=0.1$; 14B models sampled at 9–14 layers; controls from `results_big_small/ctrl_*.npz`. **Read:** DeepSeek-1.5B peaks at $\times3$ in the middle and returns to $\times2.3$; Qwen3-4B is flat; the 14B models fall monotonically; Phi-4-mini is the only one that climbs by an order of magnitude; Mamba 1.2 and randQwen 1.5 are inside the trained-model range, Pythia 0.6 below it.
 
 ![Fig. B6](update_figures/pack_layer_gain.png)
 
-**Fig. B6 — does the response grow with depth? (your observation, quantified, with controls).** (a) $\|\delta h_\ell\|$ at $t=50$ normalized first to the layer-1 response and then to the middle-layer response, against normalized depth, for all 8 LLMs and the 3 controls; (b) last/middle ratio. **Data:** A1 compact summaries, $r=0.1$; 14B models are sampled at 9–14 layers. **Read:** every trained model rises by a factor **3.5–14** from mid to last layer (DeepSeek-1.5B 3.5, DS-14B 4.2, Qwen2.5 6.7, Qwen3-4B 7.1, Qwen3.5-2B 7.3, Qwen3-14B 11.7, Phi-4-mini 11.0, Mamba 14.3). The random transformer is flat (**1.7**) and Pythia is nearly flat (**1.2**). **Interpretation:** the late-depth amplification of the *prompt* perturbation is a property of the trained weights, not of the architecture — a randomly initialised transformer of the same shape does not have it, and Mamba (no attention) does. **Caveat:** the layer-1 response is small, so the first points of the normalized profile are noisy; the last/middle ratio in (b) is the robust number.
+**Fig. B6 — the absolute response grows with depth in every trained model (but read B0b first).** (a) $\|\delta h_\ell\|$ at $t=50$ normalised first to the layer-1 response and then to the middle-layer response, against normalized depth, for all 8 LLMs and the 3 controls; (b) last/middle ratio. **Data:** A1 compact summaries, $r=0.1$; 14B models sampled at 9–14 layers. **Read:** every trained model rises by a factor **3.5–14** from mid to last layer (DeepSeek-1.5B 3.5, DS-14B 4.2, Qwen2.5 6.7, Qwen3-4B 7.1, Qwen3.5-2B 7.3, Qwen3-14B 11.7, Phi-4-mini 11.0, Mamba 14.3); the random transformer is flat (**1.7**) and Pythia nearly so (**1.2**). **Interpretation:** *this is magnitude, not significance.* The same models have $S_L/S_1=2.5$–$266$ (B0b), so most of this growth is the residual stream getting bigger; after dividing it out, the 14B models actually lose relative ground. The claim that survives is: **the absolute late-depth amplification is a property of the trained weights** (a randomly initialised transformer of the same shape does not have it, and Mamba, with no attention, does). **Caveat:** the layer-1 response is small, so the first points of the normalised profile are noisy; the last/middle ratio in (b) is the robust number.
 
 ---
 
