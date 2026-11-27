@@ -43,7 +43,7 @@ img, table, pre, .katex-display { break-inside: avoid; page-break-inside: avoid;
 </style>
 </head><body>
 <header class="banner">
-  update.md &nbsp;&middot;&nbsp; built 2026-11-26 20:19:16 &nbsp;&middot;&nbsp;
+  update.md &nbsp;&middot;&nbsp; built 2026-11-27 19:38:18 &nbsp;&middot;&nbsp;
   <a href="update.pdf">PDF</a> &nbsp;&middot;&nbsp;
   <a href="update.md">Markdown</a> &nbsp;&middot;&nbsp;
   <a href="./">all documents</a> &nbsp;&middot;&nbsp; <a href="unified.html">unified</a> &middot; <a href="controls.html">controls</a> &middot; <a href="master.html">master</a> &middot; <a href="veto.html">veto</a> &middot; <a href="new.html">new</a> &middot; <a href="notebook.html">notebook</a>
@@ -423,209 +423,367 @@ That is the gate law. The measured content is $G_t$ (the pair geometry), not the
 <p><img alt="Fig. E4b" src="update_figures/pack_attention_heads.png" /></p>
 <p><strong>Fig. E4b — any head still attending.</strong> Fraction of heads with prompt attention $>10^{-4}$ vs $t$, DeepSeek, four windows. <strong>Read:</strong> a small number of heads keep a trace of the prompt longer than the mean suggests; for $W=4096$ some heads still attend at $t=200$. <strong>Why this does not contradict the formula:</strong> the formula is about the response at layer 1 becoming exactly zero when no <em>perturbed</em> token is in the window; it is not a statement about the total prompt-attention mass.</p>
 <hr />
-<h1 id="f-soft-loop-and-the-gate-law">F. Soft loop and the gate law</h1>
-<p><img alt="Fig. F0" src="update_figures/pack_master_summary.png" /></p>
-<p><strong>Fig. F0 — the four central soft-loop results.</strong> (a) Soft-loop response vs step at five temperatures (DeepSeek-1.5B, 600 steps, 8 directions, $r=0.03$); (b) closed loop vs replay on the same orbit at $T=1$; (c) gate law over all temperatures with the identity curve $G/4\cosh^{-2}(m/2T)$; (d) soft vs common-random-number vs independent sampling at $T=1$. <strong>Read:</strong> temperature changes the growth (a); the network alone is flat (b); the readout follows the identity (c); only mean feedback and independent sampling destabilise (d). This is the one-page version of the section.</p>
-<p><img alt="Fig. F0b" src="update_figures/pack_master_loglog.png" /></p>
-<p><strong>Fig. F0b — the log–log version of (b) and (d).</strong> Same data, both axes logarithmic. <strong>Read:</strong> the closed loop is not a straight line in log–log; it is a staircase with long flat stretches and jumps. Replay is a slow decay. This is why a single exponential rate is a poor summary.</p>
-<p><img alt="Fig. F0c" src="update_figures/pack_loop_loglog_all.png" /></p>
-<p><strong>Fig. F0c — closed loop vs replay, log–log, every model.</strong> 5-step rolling median over directions, $T=1$, longest orbit available per model (600–3000 steps; the 1600–3000 step runs are landing on the cluster and the figure regenerates from them automatically via <code>analysis_update/pack_loop_loglog_models.py</code>). <strong>Read:</strong> the closed loop climbs $10^2$–$10^4$ and <em>saturates</em>; the replay decays to 0.03–1. No model shows a straight line over the whole range — the growth is a staircase of gate events. Mamba grows the most ($\times10^4$) despite having no attention; the two 14B models and Qwen3.5-9B have 1600-step orbits and no long replay yet, so only their closed curves are shown. <strong>Pairing rule:</strong> the ratio $\log(a_{\rm closed}/a_{\rm replay})$ is always computed from a <em>matched</em> loop/replay pair recorded in the same directory (same orbit, same dtype), so the right-hand panels stop at the shorter of the two; the left-hand panels always show the longest loop.</p>
-<p><img alt="Fig. F0d" src="update_figures/pack_loop_loglog_ds15.png" /></p>
-<p><strong>Fig. F0d — DeepSeek-1.5B.</strong> (a) Response, closed vs replay, log–log; thin = raw median over 8 directions, thick = 5-step rolling median, band = IQR over directions. (b) $\log(a_{\rm closed}/a_{\rm replay})$, grey = raw, green = smoothed, dashed = saturating fit $y_0+(L_\infty-y_0)(1-e^{-t/\tau})$. <strong>Read:</strong> the ratio saturates at $L_\infty=7.8$ nats ($\times2\,400$) with $\tau\approx60$ steps and $R^2=0.96$. This is the cleanest statement of the loop instability: a <em>finite</em> amplification that saturates, not exponential growth.</p>
-<p><img alt="Fig. F0e" src="update_figures/pack_loop_loglog_qwen25_3b.png" /></p>
-<p><strong>Fig. F0e — Qwen2.5-3B.</strong> The closed loop grows by only $\times4$ and the ratio is noisy ($L_{\rm end}=1.0$, poor fit). <strong>Read:</strong> this model locks into confident repetition quickly, so the closed loop and the replay end up in similar states; the loop has little room to amplify.</p>
-<p><img alt="Fig. F0f" src="update_figures/pack_loop_loglog_qwen3_4b.png" /></p>
-<p><strong>Fig. F0f — Qwen3-4B.</strong> Steady staircase growth ($\times5$), ratio rising linearly over 600 steps ($\lambda_{\rm fb}=0.004$ nats/step, the fit has not saturated).</p>
-<p><img alt="Fig. F0g" src="update_figures/pack_loop_loglog_qwen3_5.png" /></p>
-<p><strong>Fig. F0g — Qwen3.5-2B.</strong> The largest growth among the small transformer LLMs ($\times300$) with a pronounced jump at $t\approx12$; no replay orbit was saved for this model, so only the closed loop is shown.</p>
-<p><img alt="Fig. F0h" src="update_figures/pack_loop_loglog_qwen35_9b.png" /></p>
-<p><strong>Fig. F0h — Qwen3.5-9B.</strong> Closed loop $\times35$; the replay itself grows to $\times3$ and then decays, so the <em>ratio</em> is non-monotone. This is the case where the network alone is not perfectly neutral.</p>
-<p><img alt="Fig. F0i" src="update_figures/pack_loop_loglog_phi4mini.png" /></p>
-<p><strong>Fig. F0i — Phi-4-mini.</strong> Closed loop $\times130$, ratio saturating at 5.2 nats with $\tau\approx70$ ($R^2=0.85$); the replay decays to 0.8.</p>
-<p><img alt="Fig. F0j" src="update_figures/pack_loop_loglog_mamba130.png" /></p>
-<p><strong>Fig. F0j — Mamba-130m.</strong> The strongest amplification of all ($\times1\,800$; 9.6 nats, $\tau\approx35$ steps). <strong>Why this matters:</strong> the loop instability is <em>not</em> an attention artefact — a state-space model with no attention at all amplifies just as strongly when its own expected embedding is fed back.</p>
-<p><img alt="Fig. F0k" src="update_figures/pack_loop_loglog_pythia410.png" /></p>
-<p><strong>Fig. F0k — Pythia-410m.</strong> $\times44$ ($L_{\rm end}=4.4$, slow rise $\tau\approx190$). The early part is flat for 20 steps: the perturbation has to cross the first gate.</p>
-<p><img alt="Fig. F0l" src="update_figures/pack_loop_loglog_randqwen.png" /></p>
-<p><strong>Fig. F0l — the random transformer.</strong> Closed loop $\times3.3$, the smallest of all models, with an almost perfect saturating fit ($R^2=0.99$, $\tau\approx670$). <strong>Read:</strong> a random transformer <em>does</em> amplify when its own expectation is fed back, but 2–3 orders of magnitude less than a trained model at the same radius. The trained readout — not the architecture — is what makes the loop unstable.</p>
-<p><img alt="Fig. F0m" src="update_figures/pack_loop_saturation.png" /></p>
-<p><strong>Fig. F0m — the same comparison as one number.</strong> (a) $L_{\rm end}=\log(a_{\rm closed}/a_{\rm replay})$ at the end of the run, with the equivalent linear factor; (b) $L_{\rm end}$ vs the rise time $\tau$ of the saturating fit. <strong>Read:</strong> the ordering is Mamba ($\times12\,000$) $>$ DeepSeek-1.5B ($\times2\,400$) $>$ Phi-4-mini ($\times173$) $>$ Pythia ($\times85$) $>$ Qwen3-4B ($\times10$) $>$ randQwen ($\times4$) $>$ Qwen2.5 ($\times3$). <strong>Caveat:</strong> $L_{\rm end}$ is horizon-limited; with the 1600–3000 step runs it will be recomputed, and the poor-fit points ($\times$) should only be read as lower bounds.</p>
-<p><strong>Scoreboard ($T=1$, one orbit per model).</strong> Every number below is in <code>analysis_update/pack_loop_loglog_models.json</code>, <code>pack_loop_intermittency.json</code>, <code>pack_loop_temperature.json</code>.</p>
+<h1 id="f-the-soft-loop-definitions-controls-and-the-result">F. The soft loop: definitions, controls, and the result</h1>
+<p>This section is written to be unambiguous. Every mode below is the <em>same</em> forward pass with the <em>same</em> weights, batch layout and prompt; they differ only in <strong>what is fed in at the next position</strong>.</p>
+<h2 id="f1-the-algorithm-in-full">F.1 The algorithm, in full</h2>
+<p>One run processes a batch of $K+1$ rows in parallel:</p>
+<ul>
+<li><strong>row 0</strong> is the <em>reference</em>: the prompt is unperturbed.</li>
+<li><strong>rows $1\ldots K$</strong> are $K$ independent perturbation <em>directions</em>: each row has the same prompt with a different sparse perturbation of norm $r$ added to the prompt embeddings ($K$ = 8 in the 2026‑11 campaign, 256 in the v3 campaign).</li>
+</ul>
+<p>A <strong>step</strong> is one generated position, i.e. one forward pass that produces the logits for the next token. There is no separate notion of "layer steps"; layers are inside the forward pass.</p>
+<pre><code>E_prompt = embed(prompt_ids)                      # (P, d)
+E_rows   = E_prompt.repeat(K+1, 1, 1)
+E_rows[1:] += r * direction_k                     # perturb rows 1..K only
+
+fed[0] = last prompt embedding                    # start of the generated sequence
+for t in 0 .. T-1:
+    z      = model(fed[0..t])[:, -1, :]           # (K+1, V)  logits at position t
+    p      = softmax(z / T)                       # (K+1, V)
+    e_ref[t] = fed[0][t]                          # what row 0 actually received
+    fed[t+1] = RULE(p, e_ref[t], t)               # &lt;-- the ONLY difference between modes
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>mode</th>
+<th><code>RULE</code>: what every row feeds at the next position</th>
+<th>what it is</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>soft</strong> (closed loop)</td>
+<td>$e = \sum_v p_k(v)\,E_v$ — row $k$ feeds <strong>its own</strong> expected embedding</td>
+<td>mean feedback from its own distribution</td>
+</tr>
+<tr>
+<td><strong>replay</strong> (network only)</td>
+<td>$e = e_{\rm ref}[t]$ — the recorded input of row 0</td>
+<td>the feedback is removed; only the prompt perturbation remains</td>
+</tr>
+<tr>
+<td><strong>CRN</strong></td>
+<td>sample one token $v^\*$ from $p_0$ (the <strong>reference</strong> row), feed $E_{v^\*}$ to <strong>every</strong> row</td>
+<td>hard token, sampling noise identical across rows</td>
+</tr>
+<tr>
+<td><strong>independent</strong></td>
+<td>each row samples its own token $v_k\sim p_k$, feeds $E_{v_k}$</td>
+<td>ordinary sampled generation</td>
+</tr>
+<tr>
+<td><strong>teacher forcing (A1)</strong></td>
+<td>hard token ids from a greedy run, fixed in advance</td>
+<td>no feedback, no sampling at all</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What "readout" means.</strong> The readout is the map from the last hidden state to the vocabulary: $z=W_U\,\mathrm{norm}(h_L)+b$ (the unembedding). "The instability lives in the readout" means: the <em>hidden</em> perturbation $\delta h_L$ is harmless by itself; it matters because it changes $z$, hence $p$, hence (in the soft loop) the vector $e$ that is fed at the next position. The readout is the <em>gate</em> through which a hidden perturbation re-enters the input stream. "Gate open" ($m_t<T$, with $m_t$ the top1$-$top2 logit margin) means $\mathrm{softmax}$ is sensitive to that change; "gate closed" ($m_t\gg T$) means the same logit change barely moves $p$.</p>
+<p><strong>What each control removes, and what it therefore licenses you to conclude:</strong></p>
+<table>
+<thead>
+<tr>
+<th>comparison</th>
+<th>difference</th>
+<th>if the loop grows and this does not, you learn</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>soft vs <strong>replay</strong></td>
+<td>where the fed vector comes from (own distribution vs frozen reference)</td>
+<td>the growth needs the perturbation to reach the readout <em>and</em> to change the input; the network alone is innocent</td>
+</tr>
+<tr>
+<td>soft vs <strong>CRN</strong></td>
+<td>mean feedback vs one hard token shared by all rows</td>
+<td>the growth is not caused by the <em>sampling</em> of a token; it needs the <em>mean</em> (the full distribution)</td>
+</tr>
+<tr>
+<td><strong>CRN</strong> vs <strong>independent</strong></td>
+<td>shared vs per-row sampling noise</td>
+<td>whether sampling noise alone can separate rows (it can, but only to $O(1)$, not $10^2$)</td>
+</tr>
+<tr>
+<td>soft vs <strong>teacher forcing</strong></td>
+<td>closed feedback vs a fixed greedy token stream</td>
+<td>the same contrast as replay, but with hard tokens at every $T$ — this is the standard "autoregressive generation" baseline</td>
+</tr>
+</tbody>
+</table>
+<p>Note the axes are independent: <em>what is fed</em> (expected embedding vs token), <em>where it comes from</em> (own row vs reference), and <em>how it is chosen</em> (mean vs sampled). The closed soft loop is the only cell that has <strong>all three</strong> of: own row, expected embedding, deterministic mean.</p>
+<p><strong>Do we compare against non-looped autoregressive / teacher-forced generation?</strong> Yes — that is the whole D series: A1 feeds the model a <em>fixed</em> greedy token stream (teacher forcing) and perturbs only the prompt; it never loops. Replay is its soft-token analogue. The claim "autoregressive and teacher-forced generation do not amplify" is exactly those runs; the loop runs are the contrast.</p>
+<p><img alt="Fig. F1" src="update_figures/pack_softloop_closed_all.png" /></p>
+<p><strong>Fig. F1 — the closed loop vs the replay, all temperatures (old 200-step version, kept).</strong> Response for the soft loop (solid) and the replay (dashed), colour = temperature. <strong>Read:</strong> closed loops grow by $10^2$–$10^4$; replays stay at 1 or decay. <strong>Superseded by F2 below</strong> (3000 steps, matched pairs, per-direction bands).</p>
+<h2 id="f2-the-result-the-loop-amplifies-the-network-alone-does-not">F.2 The result: the loop amplifies, the network alone does not</h2>
+<p><img alt="Fig. F2" src="update_figures/pack_loop_all.png" /></p>
+<p><strong>Fig. F2 — closed loop vs replay, every model, $T=1$, 1600–3000 steps.</strong> Median over directions (solid = closed, dashed = replay), band = IQR over directions, log–log. <strong>Data:</strong> <code>results/longloop/*</code> (8 dirs) plus <code>results/longloop_v3/*</code> (256 dirs, arriving); the code pools every matched loop/replay pair and reports how many directions it used. <strong>Read:</strong> the closed loop rises by $10^1$–$10^4$ and <em>saturates</em>; the replay decays to $0.03$–$1$. Every trained model does this; the random control does it too, but 2–3 orders of magnitude less and without saturation inside the run. <strong>Note the first point is exactly 1</strong> — both curves are normalised at $t=1$, so the earlier apparent offset was a smoothing artefact and is fixed (no smoothing is applied here).</p>
+<p><img alt="Fig. F2b" src="update_figures/pack_loop_ds15.png" /></p>
+<p><strong>Fig. F2b — one model in full: DeepSeek-1.5B.</strong> Left: response, closed vs replay, with IQR over directions. Right: the feedback gain $L(t)=\log(a_{\rm closed}/a_{\rm replay})$, computed <strong>per direction</strong> and then summarised (green = median, band = IQR over directions), with the fit $L(t)=L_\infty(1-e^{-t/\tau})$. <strong>Read:</strong> $L$ starts at exactly 0 (both curves are 1 at $t=1$), rises with $\tau\approx56$ steps, and saturates at $L_\infty=7.8$ nats ($\times2400$). <strong>About the fit:</strong> there is no free offset $y_0$ — it is 0 by construction, and allowing it only absorbs the first few points. The estimated parameters are $L_\infty$ (how much) and $\tau$ (how fast); $R^2$ is reported.</p>
+<p><em>The same figure for every model</em> — the per-model versions are <code>pack_loop_&lt;tag&gt;.png</code> in <code>update_figures/</code>: DeepSeek-1.5B (above), Qwen2.5-3B, Qwen3-4B, Qwen3.5-2B, Qwen3.5-9B, Phi-4-mini, DeepSeek-14B, Qwen3-14B, Phi-4, Mamba-130m, Pythia-410m, randQwen. They all have the log-ratio panel now (the earlier missing panels were a directory-matching bug, fixed by pairing each loop with the replay from the <em>same</em> directory).</p>
 <table>
 <thead>
 <tr>
 <th>model</th>
-<th>steps (loop/replay)</th>
-<th>growth closed</th>
-<th>growth replay</th>
-<th>$L_{\rm end}$ (nats)</th>
-<th>$\times$</th>
-<th>$\tau$ (fit $R^2$)</th>
-<th>top-5% share of growth</th>
+<th>directions</th>
+<th>steps</th>
+<th>$L_\infty$ (nats)</th>
+<th>$\tau$ (steps)</th>
+<th>$R^2$</th>
+<th>$\times$ at end</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Mamba-130m</td>
-<td>600 / 600</td>
-<td>1769</td>
+<td>8</td>
+<td>3000</td>
+<td>11.3</td>
+<td>32</td>
 <td>0.41</td>
-<td>9.4</td>
 <td>12 400</td>
-<td>35 (0.79)</td>
-<td>27%</td>
 </tr>
 <tr>
 <td>DeepSeek-1.5B</td>
-<td><strong>3000</strong> / 600</td>
-<td>790</td>
-<td>0.29</td>
+<td>16</td>
+<td>3000</td>
 <td>7.8</td>
+<td>56</td>
+<td>0.92</td>
 <td>2 400</td>
-<td>50 (0.95)</td>
-<td>26%</td>
+</tr>
+<tr>
+<td>DeepSeek-14B</td>
+<td>8</td>
+<td>1600</td>
+<td>6.0</td>
+<td>209</td>
+<td>0.77</td>
+<td>220</td>
+</tr>
+<tr>
+<td>Qwen3-14B</td>
+<td>8</td>
+<td>1600</td>
+<td>6.5</td>
+<td>228</td>
+<td>0.77</td>
+<td>600</td>
+</tr>
+<tr>
+<td>Phi-4</td>
+<td>8</td>
+<td>1600</td>
+<td>6.7</td>
+<td>255</td>
+<td>0.77</td>
+<td>530</td>
 </tr>
 <tr>
 <td>Phi-4-mini</td>
-<td>600 / 600</td>
-<td>130</td>
-<td>0.78</td>
-<td>5.2</td>
+<td>8</td>
+<td>3000</td>
+<td>5.3</td>
+<td>60</td>
+<td>0.69</td>
 <td>173</td>
-<td>70 (0.85)</td>
-<td>73%</td>
 </tr>
 <tr>
 <td>Pythia-410m</td>
-<td>600 / 600</td>
-<td>44</td>
-<td>0.35</td>
-<td>4.4</td>
+<td>8</td>
+<td>3000</td>
+<td>6.4</td>
+<td>357</td>
+<td>0.48</td>
 <td>85</td>
-<td>186 (0.71)</td>
-<td>36%</td>
 </tr>
 <tr>
 <td>Qwen3-4B</td>
-<td>600 / 600</td>
-<td>5.3</td>
-<td>0.57</td>
-<td>2.4</td>
-<td>10</td>
-<td>n/a (0.74)</td>
-<td>—</td>
+<td>16</td>
+<td>3000</td>
+<td>4.8</td>
+<td>17</td>
+<td>0.46</td>
+<td>76</td>
 </tr>
 <tr>
 <td>Qwen3.5-9B</td>
-<td>600 / 600</td>
+<td>40</td>
+<td>1600</td>
+<td>2.4</td>
+<td>2</td>
+<td>0.02</td>
 <td>35</td>
-<td>3.1</td>
-<td>2.2</td>
-<td>9</td>
-<td>n/a (0.03)</td>
-<td>49%</td>
 </tr>
 <tr>
 <td>randQwen</td>
-<td>600 / 600</td>
-<td>3.3</td>
-<td>0.86</td>
-<td>1.3</td>
-<td>3.5</td>
-<td>669 (0.99)</td>
-<td>14%</td>
+<td>8</td>
+<td>3000</td>
+<td>3.8</td>
+<td>1480</td>
+<td>1.00</td>
+<td>13</td>
 </tr>
 <tr>
 <td>Qwen2.5-3B</td>
-<td>600 / 600</td>
-<td>4.3</td>
+<td>16</td>
+<td>3000</td>
 <td>1.3</td>
-<td>0.9</td>
-<td>2.6</td>
-<td>n/a (0.33)</td>
-<td>30%</td>
+<td>5</td>
+<td>0.06</td>
+<td>15</td>
 </tr>
 <tr>
 <td>Qwen3.5-2B</td>
-<td>600 / –</td>
-<td>297</td>
 <td>–</td>
 <td>–</td>
-<td>297</td>
 <td>–</td>
-<td>56%</td>
+<td>–</td>
+<td>–</td>
+<td>(fp16 cuDNN failure; fp32 run queued)</td>
 </tr>
 </tbody>
 </table>
-<p><code>n/a</code> means the saturating fit is not a good description ($R^2<0.85$) — for those models the growth is still rising at the end of the window, so $L_{\rm end}$ is a lower bound. The "top-5% share" is the fraction of the total positive log growth contributed by the 5% largest one-step increments (F20c); 5% would be a constant-rate exponential.</p>
-<h3 id="f0b-what-the-replay-teacher-trajectory-actually-is">F.0b What the replay teacher trajectory actually is</h3>
-<p><strong>The replay teacher is not ordinary autoregressive generation — it is the closed soft loop of the unperturbed prompt.</strong> In <code>run_softloop.py</code> row 0 of the batch is the unperturbed reference; in <code>--feedback soft</code> mode <em>every</em> row, including row 0, feeds back its own <code>softmax(z/T)</code> expected embedding. The <code>e_ref[t]</code> array that <code>--mode replay</code> later reads is therefore the reference row's <em>soft-loop</em> orbit, recorded step by step. Replay then feeds that frozen sequence to all rows, so the only difference from the closed loop is that the reference stops reacting to the perturbation.</p>
-<p>Consequences you should keep in mind:</p>
-<ul>
-<li>At $T\to0$ the soft loop reduces to greedy autoregressive generation (the expected embedding becomes the argmax token embedding), and the script verifies this: <code>T-&gt;0 CHECK</code> compares the loop's argmax stream against greedy tokens. So at very low $T$ the replay teacher <em>is</em> the greedy trajectory; at $T=1$–$2$ it is not — it is a "soft greedy" path whose tokens are mixtures.</li>
-<li>The replay control therefore removes <em>two</em> things relative to the closed loop: the perturbation's effect on the readout and, through it, the perturbation's effect on the input stream. That is exactly what a control should do, but it means replay is not the same object as teacher forcing on hard tokens (the <code>longtf</code> runs), where the token stream is the greedy one at any $T$.</li>
-<li>Because the teacher orbit itself depends on $T$, a replay run must be paired with the loop run at the same $T$; we always pass <code>--replay-file &lt;loop&gt;/softloop.npz</code>.</li>
-</ul>
-<h3 id="f0-what-soft-closed-loop-replay-crn-and-independent-mean">F.0 What “soft”, “closed loop”, “replay”, “CRN” and “independent” mean</h3>
-<p>Your understanding is correct. The precise definitions are:</p>
-<ul>
-<li><strong>Soft loop (closed loop).</strong> At step $t$ the model computes logits $z_t$, turns them into $p_t=\mathrm{softmax}(z_t/T)$, forms the expected embedding $e_t=\sum_v p_t(v)E_v$, and feeds $e_t$ back as the next input. The context grows by one soft token per step. The perturbation is in the prompt (and in every subsequent state through the feedback).</li>
-<li><strong>Network-only replay.</strong> The model is run on the <em>recorded</em> soft-token orbit $e_1,\dots,e_T$ of the reference (unperturbed) run. Only the perturbed prompt differs; the feedback is removed. This is a control: it measures what the network alone does to the perturbation, with the readout held fixed.</li>
-<li><strong>Teacher forcing (greedy corpus).</strong> The model is fed the <em>recorded token ids</em> of the unperturbed greedy run; the perturbation is only in the prompt embeddings. This is the $T\to0$ limit of the replay, with hard tokens instead of expected embeddings.</li>
-<li><strong>CRN sampling.</strong> At each step a token is sampled from $p_t$ of the reference row, and that <em>same</em> token is fed to every perturbed row (common random numbers). The sampling noise is identical across rows, so any growth is state dynamics.</li>
-<li><strong>Independent sampling.</strong> Each row samples its own token. The rows separate at step 0 because the noise differs; this is ordinary sampled generation.</li>
-</ul>
-<p>“Soft” means <em>expected embedding</em>; a “hard” loop would feed the argmax token (greedy) or a sampled token. Greedy is the $T\to0$ limit; sampled is the <code>sample_crn</code>/<code>sample_ind</code> cases. The closed loop is the most interesting because it is the only one where the perturbation can reach the readout and change the <em>distribution</em> that is fed back. Replay and teacher forcing are controls that remove that path; CRN is a control for sampling noise.</p>
-<p><img alt="Fig. F1" src="update_figures/pack_softloop_closed_all.png" /></p>
-<p><strong>Fig. F1 — closed loop vs replay, every model.</strong> Response $\|\delta h_t\|/\|\delta h_1\|$ for the soft loop (solid) and the network-only replay (dashed), colour = temperature, 200 steps. <strong>Data:</strong> <code>results/softloop/*/T*/</code> and <code>replay/</code>, 8–32 directions, $r=0.03$–$0.3$. <strong>Read:</strong> closed loops grow by $10^2$–$10^4$; replays stay at 1 or decay. Mamba and Pythia (no/weak attention) also grow in closed loop; the random control is high in both. <strong>The clean result:</strong> the network is contractive/marginal; the feedback/readout is the instability.</p>
-<p><img alt="Fig. F2" src="update_figures/pack_loop_metric_M.png" /></p>
-<p><strong>Fig. F2 — mean log amplification, the non-arbitrary version.</strong> $M=\langle \log(a_t/a_1)\rangle_t$ over the run, median over directions, at $T=1$; bars are closed loop, replay, CRN sampling and independent sampling. <strong>Data:</strong> <code>results/softloop*</code>, 600 steps, 8–32 directions; CRN/ind from <code>results/softloop_sample</code>. <strong>Read:</strong> closed loop has $M=1$–$7$ nats; replay and CRN are at 0 or negative; independent sampling is near 0. <strong>Why this is better than “growth at step 100”:</strong> it integrates the whole trajectory, so it does not depend on a chosen step. <strong>Caveat:</strong> $M$ is still horizon-dependent; the run length is fixed at 600, and we report it.</p>
-<p><img alt="Fig. F2b" src="update_figures/pack_loop_feedback.png" /></p>
-<p><strong>Fig. F2b — the feedback exponent.</strong> (a) $\lambda_{\rm fb}=\mathrm{d}\log(a_{\rm closed}/a_{\rm replay})/\mathrm{d}t$ per model at $T=1$ (median and IQR over directions). (b) The ratio $a_{\rm closed}/a_{\rm replay}$ vs $t$. <strong>Data:</strong> same orbit in both runs. <strong>Read:</strong> $\lambda_{\rm fb}=0.002$–$0.006$ nats/step for most models, negative for Qwen2.5/Qwen3.5; the ratio still grows because replay decays while the closed loop stays flat or grows. <strong>Interpretation:</strong> the loop instability is not a clean exponential; it is a staircase of gate events on top of a slowly growing ratio. This is why a single “Lyapunov exponent” is not the right summary.</p>
-<p><img alt="Fig. F3b" src="update_figures/pack_live_density_sorted.png" /></p>
-<p><strong>Fig. F3b — live-gate density across models.</strong> Density $P(m_t<T)$ vs $T$, sorted by $T$ (the lowest-temperature point is not connected to the highest). <strong>Data:</strong> <code>results/softloop*</code>, 300–600 steps, 8–32 directions, one orbit per $({\rm model},T)$. <strong>Read:</strong> the density is 0 below $T\approx0.2$ and $\approx1$ above $T\approx2$; the rise is at $T\approx1$ for trained models and at $T\approx0.13$ for the random control. <strong>Why the old panel (b) is deleted:</strong> horizon vs density does not collapse across models; the same density gives a 10× different horizon, and a two-parameter fit gives $R^2=0.20$. Density alone is not the order parameter.</p>
-<p><img alt="Fig. F3c" src="update_figures/pack_live_density_fit.png" /></p>
-<p><strong>Fig. F3c — the gate density is a margin distribution.</strong> (a) $P(m_t<T)$ vs $T$ on linear axes; (b) median margin $\bar m$ vs $T$ on log axes; (c) the pooled margin distribution per model (bar = IQR, thin line = 5–95%, dot = median). <strong>Data:</strong> same as F3b, all temperatures pooled. <strong>Read:</strong> the "gate-opening temperature" is just the median margin in temperature units, and the median margin separates the control from every trained model by an order of magnitude: <strong>randQwen 0.11 nats</strong> vs 1.5 (Qwen2.5), 1.6 (Qwen3.5-9B), 1.8 (DeepSeek-1.5B), 1.9 (Phi-4-mini), 3.1 (Qwen3-4B), 3.5 (Qwen3.5-2B), 6.1 (Mamba, Pythia). <strong>About fitting:</strong> a Hill fit $aT^b/(c^b+T^b)$ is degenerate here — $b$ pins at any upper bound (4.999) because the curve is a sharp threshold, so the fit parameters are not meaningful and I report the non-parametric $T_{10}$, $T_{50}$, $T_{90}$ instead (<code>pack_live_density_fit.json</code>). The curve is also <em>not monotone in $T$</em>: each $T$ has its own orbit, and at some temperatures the loop locks into a confident repetition (large margins, low density). That is physics, not a plotting artefact, and it is why the density should not be treated as a thermodynamic curve.</p>
-<p><img alt="Fig. F4" src="update_figures/pack_gate_law_loglog.png" /></p>
-<p><strong>Fig. F4 — gate law, log–log and slopes.</strong> (a) $\sigma_{\max}(\Sigma_p)$ against $m_t/T$ for all models, log–log; (b) fitted slope for $m_t/T>1$, with $G_{\rm eff}$ and $R^2$. <strong>Data:</strong> 4–11 temperatures per model, 8–32 directions. <strong>Read:</strong> slopes $-0.90$ to $-0.99$ for every trained model; the random control is $-0.83$ and Pythia $-0.90$, visibly off the identity. <strong>Trivial/not:</strong> the slope is the softmax identity; the measured content is the collapse and $G_{\rm eff}$.</p>
-<p><img alt="Fig. F4b" src="update_figures/pack_gate_linlog.png" /></p>
-<p><strong>Fig. F4b — the same in lin–log.</strong> (a) Data in linear $m/T$ and log $\sigma$; the dashed curve is the identity with $G=2$. (b) Median distance from the identity for $m/T>1$. <strong>Read:</strong> DeepSeek/Qwen2.5/Qwen3.5/Phi-mini/Pythia/randQwen are <em>below</em> the identity at large $m/T$; Mamba and Qwen3-4B are closest. The identity is a conditional two-token model, not a universal curve; the robust measurement is the tail slope, not the amplitude.</p>
-<p><img alt="Fig. F5" src="update_figures/pack_gate_law_per_model.png" /></p>
-<p><strong>Fig. F5 — per-model fit, including the random control.</strong> Data (dots), tail fit (black), identity curve $G/4\cosh^{-2}(m/2T)$ (red), and for randQwen the fit restricted to $m/T>3$ (red dashed). <strong>Read:</strong> the random control's tail fit is $-1.01$ with $R^2=0.99$; the earlier “the control breaks the law” came from fitting through the flat $m/T<1$ region. <strong>This is the fixed fit you asked for.</strong> The identity curve, not a straight line, is what matches the full range; it matches better for Mamba/Qwen3-4B than for DeepSeek/Qwen2.5.</p>
-<p><img alt="Fig. F5b" src="update_figures/pack_gate_linlog_per_model.png" /></p>
-<p><strong>Fig. F5b — per-model lin–log version.</strong> Same data and fits on linear $m/T$ axes. <strong>Read:</strong> the identity (red) is above the data for most models at large $m/T$; the tail slope (black) is the better description. For randQwen and Pythia the identity is visibly worse, consistent with a distribution that is not two-token.</p>
-<p><img alt="Fig. F7" src="update_figures/pack_gate_geometry.png" /></p>
-<p><strong>Fig. F7 — pair geometry $G_t$.</strong> (a) Violin of $G_t=\|E_i-E_j\|\|W_i-W_j\|$ per model; (b) $G_t$ vs margin. <strong>Data:</strong> <code>results/softloop_gates/*/gates.npz</code>, 300 steps per orbit. <strong>Read:</strong> $G_t$ is a per-model constant to ±40%; Phi/Mamba are 25–100× larger; the random control is degenerate. <strong>Not trivial:</strong> the per-model constant is what makes Phi's gates strong.</p>
-<p><img alt="Fig. F8" src="update_figures/pack_loop_rates_by_model.png" /></p>
-<p><strong>Fig. F8 — network rate vs loop rate, per model.</strong> (a) $\lambda_{\rm net}$ (replay) per model: box = IQR, dots = temperatures; (b) $\lambda_{\rm sep}$ (closed loop). <strong>Data:</strong> all temperatures, 300–600 steps. <strong>Read:</strong> every $\lambda_{\rm net}$ is within about $\pm0.006$ and centred on 0; $\lambda_{\rm sep}$ is broad and often positive. <strong>Does this mean edge of chaos?</strong> No. A zero <em>conditional</em> rate means the network neither amplifies nor contracts along a fixed token stream; it is the signature of marginal stability, not criticality. An edge-of-chaos claim would also need (i) a positive but near-zero <em>full</em> Lyapunov exponent of the autonomous dynamics, (ii) scale-free correlations or avalanche statistics, and (iii) a diverging correlation length. We have (i) only in the weak “no positive exponent” sense, and we have not measured (ii)/(iii). The honest statement is: <em>the token-conditioned network is neutral/contracting; the loop instability lives in the readout.</em></p>
-<p><img alt="Fig. F9" src="update_figures/pack_sampling.png" /></p>
-<p><strong>Fig. F9 — soft vs sampled feedback.</strong> Response for soft feedback (red), common-random-number sampling (blue dashed) and independent sampling (green dashed) at $T=1$, six models. <strong>Data:</strong> <code>results/softloop_sample/*/{crn,ind}_T1.0</code>; Qwen3-4B was generated in the new run. <strong>Read:</strong> soft grows; CRN is flat at 1; independent separates at step 0. <strong>Conclusion:</strong> the instability is deterministic mean feedback, not sampled generation.</p>
-<p><img alt="Fig. F10" src="update_figures/pack_rank_entropy_box.png" /></p>
-<p><strong>Fig. F10 — readout rank and entropy.</strong> Box = IQR, white dot = median, dots = individual steps. (a) Effective rank of $\Sigma_p$ over its top-16 singular values; (b) entropy of $\mathrm{softmax}(z)$ at $T=1$. <strong>Data:</strong> <code>sv_read</code>/<code>ent_ref</code> in <code>results/softloop*</code>, 300–600 steps. <strong>Read:</strong> trained models rank 1.0–1.1, random control 15.7; entropy 0.3–1.0 nat for trained models, 11.6 for the random control ($\log V$). <strong>Caveat:</strong> <code>ent_ref</code> is at $T=1$; “entropy vs $T$” is not a temperature effect. <strong>Why box+strip:</strong> the violin was hiding the multi-modality; this shows the actual spread.</p>
-<p><img alt="Fig. F11" src="update_figures/legacy_d2pipe.png" /></p>
-<p><strong>Fig. F11 — the D2 / TwoNN pipeline on the soft-loop state clouds.</strong> This is the existing real figure (it loads <code>results/figures/softloop/d2pipe_softloop.json</code>), included because you liked it. <strong>Read:</strong> the $T\to0$ and $T=1$ orbits are drifting repetition loops and are correctly flagged; the $T=0.5$ and $T=2$ orbits are aperiodic and have no scaling region. It is the same verdict as the greedy corpus: D2 is descriptive, not evidence.</p>
-<p><img alt="Fig. F13" src="update_figures/pack_loop_metric_T.png" /></p>
-<p><strong>Fig. F13 — mean log amplification vs temperature.</strong> $M=\langle\log(a_t/a_1)\rangle_t$, closed loop (solid) and replay (dashed), per model. <strong>Data:</strong> <code>results/softloop*</code>, all temperatures, 600 steps. <strong>Read:</strong> closed $M$ is positive almost everywhere; replay is near zero or negative. The dependence on $T$ is orbit-specific, not monotonic; the robust statement is the closed/replay gap.</p>
-<p><img alt="Fig. F14" src="update_figures/pack_loop_fsle.png" /></p>
-<p><strong>Fig. F14 — finite-scale growth rate (FSLE).</strong> For thresholds $S=2,4,8,16,32,64$, the first-passage time $t_S$ and the rate $\log S/t_S$, closed vs replay, at $T=1$. <strong>Data:</strong> same as F13. <strong>Read:</strong> the closed loop reaches larger $S$ in finite time; replay does not. The curves are not straight lines, so the growth is not a single exponential; the rate decreases with $S$ in several models.</p>
-<p><img alt="Fig. F15" src="update_figures/pack_loop_staircase.png" /></p>
-<p><strong>Fig. F15 — the staircase.</strong> (a) One-step log increments $\Delta\log a_t$ for the closed loop, $T=1$; (b) autocorrelation of the increments. <strong>Read:</strong> the increments are spiky and correlated; growth happens in bursts at gates, not as a constant drift. <strong>This is the quantitative form of “staircase, not exponential”.</strong></p>
-<p><img alt="Fig. F16" src="update_figures/pack_loop_endpoint.png" /></p>
-<p><strong>Fig. F16 — endpoint rates.</strong> Closed-loop endpoint rate vs replay endpoint rate, one point per model. <strong>Read:</strong> the points lie above the diagonal; the loop adds growth on top of whatever the network does. The absolute values are small, so this is a <em>qualitative</em> separation, consistent with F2/F2b.</p>
-<p><img alt="Fig. F17" src="update_figures/pack_loop_finitetime.png" /></p>
-<p><strong>Fig. F17 — finite-time exponent.</strong> $\Lambda(\tau)=\frac1\tau\log(a_{t+\tau}/a_t)$ vs $\tau$, closed (red) vs replay (blue), $T=1$. <strong>Data:</strong> <code>results/softloop*</code>, 600 steps. <strong>Read:</strong> the closed loop is positive at all $\tau$ for most models; replay is near zero or negative. The curves are not flat, so there is no single asymptotic exponent; the finite-time value is the meaningful object.</p>
-<p><img alt="Fig. F18" src="update_figures/pack_loop_spectrum.png" /></p>
-<p><strong>Fig. F18 — power spectrum of the log response.</strong> PSD of $\log a_t$ (quadratic trend removed), closed vs replay, $T=1$. <strong>Read:</strong> the closed loop has more low-frequency power (slow staircase), while replay is closer to a flat/noisy spectrum. <strong>Use:</strong> this is another way to show that the loop growth is a slow, structured process, not white noise.</p>
-<p><img alt="Fig. F19" src="update_figures/pack_loop_selfreg.png" /></p>
-<p><strong>Fig. F19 — why the growth stops: the loop self-regulates into confident repetition.</strong> Red, left axis: response $a_t$ of the closed loop (log). Blue, right axis: the reference row's margin $m_t$ (21-step median, log). Green shading: the live-gate region $m_t<1$, i.e. the steps on which the readout is soft enough for the perturbation to change the feedback distribution. <strong>Read:</strong> growth happens only inside the green region, and it stops precisely when the margin rises above 1 and stays there. DeepSeek-1.5B is the clearest case: the response climbs to $\times800$ over the first ~300 steps while the margin is $O(1)$, then the margin settles at ≈10 nats and the response is flat for 2700 more steps (only 2% of steps have $m_t<1$). Phi-4-mini and Mamba show the same lock-in after a single gate-opening episode (at $t\approx110$ and $t\approx40$–200). <strong>The exception is the random transformer</strong>, whose margins never exceed ≈0.3 nats: its gate is always open (100% of steps), it never locks in, and it is the only model whose growth looks exponential over the whole run (F0l). Qwen2.5-3B never locks in either and its response keeps wandering. <strong>Interpretation:</strong> the saturation $L_\infty$ in F0d–F0m is not an imposed cutoff — it is a <em>fixed point of the coupled system</em>: growth drives the trajectory toward high-confidence repetitive text, which closes the gates and switches growth off. This is a self-regulating mechanism, and it is why a single Lyapunov exponent does not describe the loop.</p>
-<p><img alt="Fig. F19b" src="update_figures/pack_loop_selfreg_big.png" /></p>
-<p><strong>Fig. F19b — the same at 14B, where it is a one-shot ratchet.</strong> DeepSeek-14B and Qwen3-14B, 1600-step orbits. <strong>Read:</strong> for the first ~200 steps the response is $O(1)$ with repeated spikes while the margin wanders around 1–30; at $t\approx200$ a single gate episode lifts the response to $200$–$350$, and it then stays there for the remaining 1400 steps even though the margin later dips below 1 again (green) many times. <strong>So the amplified state is not undone when the gate reopens</strong> — the loop has moved to a different self-consistent cycle and the perturbation rides at that cycle's amplitude. This is the phenomenology of a <strong>stable limit cycle</strong>: perturbation growth saturates at the cycle amplitude, and the "Lyapunov exponent" of the loop is zero on the cycle. It also explains why the 14B curves in F0c are so step-like compared with the 1.5B: fewer, larger gate events.</p>
-<p><img alt="Fig. F20" src="update_figures/pack_loop_intermittency.png" /></p>
-<p><strong>Fig. F20 — the growth is bursty and gate-conditioned.</strong> (a) Windowed live-gate density $P(m_t<1)$ (window 50) — the gates open in bursts, and after the lock-in of F19 the density stays at 0. (b) Mean one-step log growth $\Delta\log a_t$, split by gate state: every trained model grows only while the gate is open (red, +0.02 to +0.15 nats/step) and <em>contracts</em> while it is closed (blue, −0.01 to −0.05 nats/step); Pythia is the extreme case (−0.5 nats/step when closed). (c) Concentration of the total log growth: the top 5% of steps produce 26–73% of the growth for the trained models (Phi-4-mini 73%), versus ~14% for randQwen and the 5% diagonal of a constant-rate exponential. <strong>Read:</strong> the staircase is not a plotting artefact; a handful of gate-opening events do most of the work, and between them the response decays.</p>
-<p><img alt="Fig. F21" src="update_figures/pack_loop_temperature.png" /></p>
-<p><strong>Fig. F21 — the instability is a threshold in softness, not a smooth function of $T$.</strong> DeepSeek-1.5B, $r=0.03$, fp32, 11 temperatures, 600 steps; (a) $L(t)=\log(a_{\rm closed}/a_{\rm replay})$; (b) $L$ at $t=300$ against $T$, log $x$. <strong>Read:</strong> at the greedy limit ($T=10^{-9}$, grey square) the closed loop <em>is</em> ordinary autoregressive generation while the replay is teacher forcing, and $L=0.0$ — the two coincide within the floor. At <strong>every</strong> temperature above $T=0.05$, $L=3.8$–$10.4$ nats, with no systematic trend in $T$ (the dip at $T=0.1$ and at $T=2$ is orbit-to-orbit variability: one orbit per $T$). <strong>Interpretation:</strong> what matters is that the feedback is a <em>distribution</em> at all, not how soft it is. A one-hot limit removes the instability entirely; a barely-soft loop ($T=0.05$, top-2 mass $\approx1$) already has the full effect. This is the cleanest evidence that the mechanism is the readout→embedding path rather than sampling noise. <strong>Why only one model here:</strong> the probe radius differs across models (0.03 vs 0.1) and at $T\to0$ the response is dominated by discrete token flips, which depend on the radius, so a cross-model $T\to0$ comparison would be confounded.</p>
-<p><img alt="Fig. F11" src="update_figures/legacy_d2pipe.png" /></p>
+<p>The $R^2$ column matters: for Qwen2.5-3B, Qwen3-4B and Qwen3.5-9B the growth is <em>not</em> a clean saturating exponential (they jump in a few steps), so $L_\infty$ and $\tau$ are only indicative there.</p>
+<p><img alt="Fig. F2c" src="update_figures/pack_loop_layers.png" /></p>
+<p><strong>Fig. F2c — the same gain, layer by layer.</strong> $L(t)$ computed at each saved layer (first, middle, last, plus intermediates). <strong>Read:</strong> for the transformer LLMs the curves <strong>lie on top of each other</strong> — the feedback amplification is <em>depth-independent</em>. That is what you expect if the perturbation is re-injected at the input of each step and then carried through the same stack: every layer sees the same injected offset. Mamba, Pythia and the random control are the exceptions (their layers separate). <strong>Consequence for the paper:</strong> the loop instability is a <em>token-level</em> effect, not a layer-level one; "where in the stack" is the wrong question for the loop (it is the right question for the prompt perturbation, §B).</p>
+<p><img alt="Fig. F2d" src="update_figures/pack_loop_time_layers.png" /></p>
+<p><strong>Fig. F2d — the closed-loop response at the first, middle and last saved layer (the loop analogue of D3b).</strong> Solid = closed loop, dashed = replay, colours = layers, $W=4096$. <strong>Read:</strong> same message as F2c: all layers move together. Qwen3-4B and Phi-4-mini show a brief overshoot at the earliest layer, then collapse onto the common curve.</p>
+<h2 id="f3-why-it-saturates-gates-and-what-the-loop-ends-up-generating">F.3 Why it saturates: gates, and what the loop ends up generating</h2>
+<p><img alt="Fig. F3" src="update_figures/pack_loop_selfreg.png" /></p>
+<p><strong>Fig. F3 — the gate picture (no shading now).</strong> Red, left axis: response $a_t$; blue, right axis: the reference row's top1$-$top2 margin $m_t$ (21-step median), $T=1$. <strong>Read:</strong> growth happens while $m_t\lesssim T$; when the margin rises above $T$ and stays there, the growth stops. DeepSeek-1.5B: rises for ~300 steps, then the margin sits at ≈10 nats and $a_t$ is flat for 2700 steps. Phi-4-mini and Mamba lock in after a single episode. <strong>The random control never locks in</strong> (margin 0.09 nats), which is why it is the only model whose gain keeps growing over the whole 3000 steps. <strong>Important caveat:</strong> the gate state predicts <em>when growth happens</em>, but it does not undo growth that already happened — see F3b.</p>
+<p><img alt="Fig. F3b" src="update_figures/pack_loop_selfreg_big.png" /></p>
+<p><strong>Fig. F3b — the same at 14B.</strong> <strong>Read:</strong> a single gate episode at $t\approx200$ lifts the response to $\times200$–$350$ and it stays there for the remaining 1400 steps, even though the margin later falls below $T$ many times. So the amplified state is not undone when the gate reopens; the orbit has moved to a different self-consistent trajectory and the perturbation rides at that trajectory's amplitude. I previously called this a "one-shot ratchet"; plain language: <strong>the loop switches to a different regime and stays there.</strong></p>
+<p><img alt="Fig. F4" src="update_figures/pack_loop_repetition.png" /></p>
+<p><strong>Fig. F4 — what the loop generates once it saturates.</strong> (a) exact token period of the reference orbit over the last 300 steps ($p=1$ = the same token forever, "none" = no period ≤ 24); (b) $\|e_t-e_{t-\Delta}\|$ vs lag — dips at $\Delta=p$ are cycles; (c) number of distinct tokens in the last 300 steps, with the median margin. <strong>Data:</strong> <code>top1_ref</code> and <code>e_ref</code> saved by <code>run_softloop.py</code>; decoded with each model's tokenizer (<code>results/loop_repetition_tokens.json</code>). <strong>Read:</strong></p>
+<table>
+<thead>
+<tr>
+<th>model</th>
+<th>period</th>
+<th>what it repeats (decoded)</th>
+<th>distinct tokens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qwen2.5-3B</td>
+<td>1 (fixed point)</td>
+<td><code>" propulsion"</code> ×100</td>
+<td>1</td>
+</tr>
+<tr>
+<td>randQwen</td>
+<td>1 (fixed point)</td>
+<td><code>"orse"</code> ×100</td>
+<td>1</td>
+</tr>
+<tr>
+<td>Mamba-130m</td>
+<td>3</td>
+<td><code>"\nA\n"</code></td>
+<td>2</td>
+</tr>
+<tr>
+<td>Phi-4</td>
+<td>2</td>
+<td><code>"acja uw"</code></td>
+<td>2</td>
+</tr>
+<tr>
+<td>Qwen3.5-9B</td>
+<td>2</td>
+<td><code>":\n\n"</code></td>
+<td>2</td>
+</tr>
+<tr>
+<td>Phi-4-mini</td>
+<td>none ≤24</td>
+<td>repeats a 40-token paragraph: <em>"…The current propulsion systems for interstellar travel are still in development, but they have the potential to revolutionize our understanding of the universe…"</em></td>
+<td>26</td>
+</tr>
+<tr>
+<td>DeepSeek-1.5B</td>
+<td>none ≤24</td>
+<td>re-writes the prompt's instruction: <em>"…in terms of safety, technological, and other factors. Also, if you can, include a discussion of the potential benefits of each propulsion system…"</em></td>
+<td>27</td>
+</tr>
+<tr>
+<td>Qwen3-4B</td>
+<td>none</td>
+<td><strong>keeps writing coherent text</strong>: <em>"4. <strong>Communication and Control</strong> — 20-year round-trip to Proxima → no real-time control…"</em></td>
+<td>163</td>
+</tr>
+<tr>
+<td>DeepSeek-14B</td>
+<td>none</td>
+<td>coherent-ish markdown summary, mildly degenerate</td>
+<td>160</td>
+</tr>
+<tr>
+<td>Qwen3-14B</td>
+<td>none</td>
+<td>semi-coherent, drifting</td>
+<td>147</td>
+</tr>
+<tr>
+<td>Pythia-410m</td>
+<td>none</td>
+<td>newlines and punctuation</td>
+<td>12</td>
+</tr>
+</tbody>
+</table>
+<p><strong>So "the loop saturates because it repeats" is only half true.</strong> Seven of eleven models collapse to a token fixed point or a short cycle ($p\le3$); the others keep producing text (Qwen3-4B even coherent text) while the <em>gain</em> still saturates. The saturation is therefore not caused by literal repetition; both are consequences of the orbit landing on a self-consistent trajectory. <strong>If you want one sentence for the paper:</strong> the closed loop is a dissipative system that converges to an attracting orbit (often a token cycle); the perturbation saturates at the size of the offset between the perturbed and reference orbits on that attractor.</p>
+<p><img alt="Fig. F5" src="update_figures/pack_loop_sampling_modes.png" /></p>
+<p><strong>Fig. F5 — mean feedback vs sampled feedback, 3000 steps.</strong> Soft (mean, red), CRN (same sampled token for every row, blue), independent (green). <strong>Read:</strong> soft grows by $10^1$–$10^4$; CRN stays at or below 1 (0.03–1.3); independent stays within 0.8–6. <strong>Conclusion:</strong> the instability is produced by the <em>mean</em> feedback — by feeding the full distribution back — not by the fact that a token is sampled. CRN is the clean control: every row receives the <em>identical</em> token stream, so any difference between rows is pure state dynamics, and there is none.</p>
+<p><img alt="Fig. F5b" src="update_figures/pack_loop_sampling_bars.png" /></p>
+<p><strong>Fig. F5b — the same as end-of-run bars.</strong> Soft 13–6215×, CRN 0.03–1.3×, independent 0.8–6×. Note that independent sampling does separate rows somewhat (up to $\times6$ for Qwen3-4B) — ordinary sampled generation is not perfectly stable — but it is 2–3 orders of magnitude below the mean-feedback effect.</p>
+<h2 id="f4-temperature-and-window">F.4 Temperature and window</h2>
+<p><img alt="Fig. F6" src="update_figures/pack_loop_tau_T.png" /></p>
+<p><strong>Fig. F6 — does $L_\infty$ or $\tau$ depend on $T$ or $W$?</strong> (a) $L_\infty$ vs $T$; (b) $\tau$ vs $T$; (c) $L_\infty$ vs attention window $W$ (from the W-sweep runs). <strong>Read:</strong> $L_\infty$ is roughly flat from $T=0.5$ to $1$ for most models but <strong>drops at $T=2$</strong> for several (Phi-4-mini 5.3→0.6, Mamba 11.2→0.4, Qwen3-4B 4.8→1.1, randQwen 4.0→0.35), consistent with the gate strength $\sigma_{\max}\propto1/T$ at fixed margin. $\tau$ is not monotone in $T$. The window dependence is the weakest of the three (the prompt is 63 tokens; $W$ only matters after $t\gtrsim W$).</p>
+<p><strong>Correction to an earlier claim.</strong> The previous version said "any soft feedback gives the same gain; greed does not" (old F21). That was based on a tail statistic at 600 steps for one model. With matched pairs and a proper fit, the picture is: $T\to0$ gives $L=0$ (the loop becomes greedy and equals teacher forcing), and for $T\ge0.5$ the gain is <strong>model-dependent in $T$</strong>, with a clear decline at $T=2$ for about half the models. The DeepSeek-1.5B statement (8.9 / 7.8 / 6.0 nats at $T=0.5/1/2$) survives; the generalisation does not.</p>
+<p><img alt="Fig. F7" src="update_figures/pack_loop_metric_M.png" /></p>
+<p><strong>Fig. F7 — mean log amplification.</strong> $M=\langle\log(a_t/a_1)\rangle_t$ over the whole run, median over directions, at $T=1$; bars are closed loop, replay, CRN and independent. <strong>Data:</strong> <code>results/softloop*</code> / <code>results/longloop*</code>, 300-3000 steps. <strong>Read:</strong> the closed loop has $M=1$-$7$ nats; replay and CRN sit at 0 or below; independent sampling is near 0. <strong>It integrates the whole trajectory</strong>, so it does not depend on where the curve saturates, but it is still horizon-dependent.</p>
+<p><img alt="Fig. F7b" src="update_figures/pack_loop_feedback.png" /></p>
+<p><strong>Fig. F7b — the feedback exponent.</strong> (a) $\lambda_{\rm fb}=\mathrm{d}\log(a_{\rm closed}/a_{\rm replay})/\mathrm{d}t$ per model at $T=1$ (median and IQR over directions). (b) The ratio $a_{\rm closed}/a_{\rm replay}$ vs $t$. <strong>Data:</strong> same orbit in both runs. <strong>Read:</strong> $\lambda_{\rm fb}=0.002$–$0.006$ nats/step for most models, negative for Qwen2.5/Qwen3.5; the ratio still grows because replay decays while the closed loop stays flat or grows. <strong>Interpretation:</strong> the loop instability is not a clean exponential; it is a staircase of gate events on top of a slowly growing ratio. This is why a single “Lyapunov exponent” is not the right summary.</p>
+<p><img alt="Fig. F8b" src="update_figures/pack_live_density_sorted.png" /></p>
+<p><strong>Fig. F8b — live-gate density across models.</strong> Density $P(m_t<T)$ vs $T$, sorted by $T$ (the lowest-temperature point is not connected to the highest). <strong>Data:</strong> <code>results/softloop*</code>, 300–600 steps, 8–32 directions, one orbit per $({\rm model},T)$. <strong>Read:</strong> the density is 0 below $T\approx0.2$ and $\approx1$ above $T\approx2$; the rise is at $T\approx1$ for trained models and at $T\approx0.13$ for the random control. <strong>Why the old panel (b) is deleted:</strong> horizon vs density does not collapse across models; the same density gives a 10× different horizon, and a two-parameter fit gives $R^2=0.20$. Density alone is not the order parameter.</p>
+<p><img alt="Fig. F8c" src="update_figures/pack_live_density_fit.png" /></p>
+<p><strong>Fig. F8c — the gate density is a margin distribution.</strong> (a) $P(m_t<T)$ vs $T$ on linear axes; (b) median margin $\bar m$ vs $T$ on log axes; (c) the pooled margin distribution per model (bar = IQR, thin line = 5–95%, dot = median). <strong>Data:</strong> same as F3b, all temperatures pooled. <strong>Read:</strong> the "gate-opening temperature" is just the median margin in temperature units, and the median margin separates the control from every trained model by an order of magnitude: <strong>randQwen 0.11 nats</strong> vs 1.5 (Qwen2.5), 1.6 (Qwen3.5-9B), 1.8 (DeepSeek-1.5B), 1.9 (Phi-4-mini), 3.1 (Qwen3-4B), 3.5 (Qwen3.5-2B), 6.1 (Mamba, Pythia). <strong>About fitting:</strong> a Hill fit $aT^b/(c^b+T^b)$ is degenerate here — $b$ pins at any upper bound (4.999) because the curve is a sharp threshold, so the fit parameters are not meaningful and I report the non-parametric $T_{10}$, $T_{50}$, $T_{90}$ instead (<code>pack_live_density_fit.json</code>). The curve is also <em>not monotone in $T$</em>: each $T$ has its own orbit, and at some temperatures the loop locks into a confident repetition (large margins, low density). That is physics, not a plotting artefact, and it is why the density should not be treated as a thermodynamic curve.</p>
+<p><img alt="Fig. F9b" src="update_figures/pack_gate_linlog.png" /></p>
+<p><strong>Fig. F9b — the same in lin–log.</strong> (a) Data in linear $m/T$ and log $\sigma$; the dashed curve is the identity with $G=2$. (b) Median distance from the identity for $m/T>1$. <strong>Read:</strong> DeepSeek/Qwen2.5/Qwen3.5/Phi-mini/Pythia/randQwen are <em>below</em> the identity at large $m/T$; Mamba and Qwen3-4B are closest. The identity is a conditional two-token model, not a universal curve; the robust measurement is the tail slope, not the amplitude.</p>
+<p><img alt="Fig. F9d" src="update_figures/pack_gate_linlog_per_model.png" /></p>
+<p><strong>Fig. F9d — per-model lin–log version.</strong> Same data and fits on linear $m/T$ axes. <strong>Read:</strong> the identity (red) is above the data for most models at large $m/T$; the tail slope (black) is the better description. For randQwen and Pythia the identity is visibly worse, consistent with a distribution that is not two-token.</p>
+<p><img alt="Fig. F9" src="update_figures/pack_gate_law_loglog.png" /></p>
+<p><strong>Fig. F9 — gate law, log–log and slopes.</strong> (a) $\sigma_{\max}(\Sigma_p)$ against $m_t/T$ for all models, log–log; (b) fitted slope for $m_t/T>1$, with $G_{\rm eff}$ and $R^2$. <strong>Data:</strong> 4–11 temperatures per model, 8–32 directions. <strong>Read:</strong> slopes $-0.90$ to $-0.99$ for every trained model; the random control is $-0.83$ and Pythia $-0.90$, visibly off the identity. <strong>Trivial/not:</strong> the slope is the softmax identity; the measured content is the collapse and $G_{\rm eff}$.</p>
+<p><img alt="Fig. F9c" src="update_figures/pack_gate_law_per_model.png" /></p>
+<p><strong>Fig. F9c — per-model fit, including the random control.</strong> Data (dots), tail fit (black), identity curve $G/4\cosh^{-2}(m/2T)$ (red), and for randQwen the fit restricted to $m/T>3$ (red dashed). <strong>Read:</strong> the random control's tail fit is $-1.01$ with $R^2=0.99$; the earlier “the control breaks the law” came from fitting through the flat $m/T<1$ region. <strong>This is the fixed fit you asked for.</strong> The identity curve, not a straight line, is what matches the full range; it matches better for Mamba/Qwen3-4B than for DeepSeek/Qwen2.5.</p>
+<p><img alt="Fig. F10" src="update_figures/pack_gate_geometry.png" /></p>
+<p><strong>Fig. F10 — pair geometry $G_t$.</strong> (a) Violin of $G_t=\|E_i-E_j\|\|W_i-W_j\|$ per model; (b) $G_t$ vs margin. <strong>Data:</strong> <code>results/softloop_gates/*/gates.npz</code>, 300 steps per orbit. <strong>Read:</strong> $G_t$ is a per-model constant to ±40%; Phi/Mamba are 25–100× larger; the random control is degenerate. <strong>Not trivial:</strong> the per-model constant is what makes Phi's gates strong.</p>
+<p><img alt="Fig. F11" src="update_figures/pack_loop_rates_by_model.png" /></p>
+<p><strong>Fig. F11 — network rate vs loop rate, per model.</strong> (a) $\lambda_{\rm net}$ (replay) per model: box = IQR, dots = temperatures; (b) $\lambda_{\rm sep}$ (closed loop). <strong>Data:</strong> all temperatures, 300–600 steps. <strong>Read:</strong> every $\lambda_{\rm net}$ is within about $\pm0.006$ and centred on 0; $\lambda_{\rm sep}$ is broad and often positive. <strong>Does this mean edge of chaos?</strong> No. A zero <em>conditional</em> rate means the network neither amplifies nor contracts along a fixed token stream; it is the signature of marginal stability, not criticality. An edge-of-chaos claim would also need (i) a positive but near-zero <em>full</em> Lyapunov exponent of the autonomous dynamics, (ii) scale-free correlations or avalanche statistics, and (iii) a diverging correlation length. We have (i) only in the weak “no positive exponent” sense, and we have not measured (ii)/(iii). The honest statement is: <em>the token-conditioned network is neutral/contracting; the loop instability lives in the readout.</em></p>
+<p><img alt="Fig. F12" src="update_figures/pack_sampling.png" /></p>
+<p><strong>Fig. F12 — soft vs sampled feedback.</strong> Response for soft feedback (red), common-random-number sampling (blue dashed) and independent sampling (green dashed) at $T=1$, six models. <strong>Data:</strong> <code>results/softloop_sample/*/{crn,ind}_T1.0</code>; Qwen3-4B was generated in the new run. <strong>Read:</strong> soft grows; CRN is flat at 1; independent separates at step 0. <strong>Conclusion:</strong> the instability is deterministic mean feedback, not sampled generation.</p>
+<p><img alt="Fig. F13" src="update_figures/pack_rank_entropy_box.png" /></p>
+<p><strong>Fig. F13 — readout rank and entropy.</strong> Box = IQR, white dot = median, dots = individual steps. (a) Effective rank of $\Sigma_p$ over its top-16 singular values; (b) entropy of $\mathrm{softmax}(z)$ at $T=1$. <strong>Data:</strong> <code>sv_read</code>/<code>ent_ref</code> in <code>results/softloop*</code>, 300–600 steps. <strong>Read:</strong> trained models rank 1.0–1.1, random control 15.7; entropy 0.3–1.0 nat for trained models, 11.6 for the random control ($\log V$). <strong>Caveat:</strong> <code>ent_ref</code> is at $T=1$; “entropy vs $T$” is not a temperature effect. <strong>Why box+strip:</strong> the violin was hiding the multi-modality; this shows the actual spread.</p>
+<p><img alt="Fig. F14" src="update_figures/legacy_d2pipe.png" /></p>
 <hr />
+<p><img alt="Fig. F15" src="update_figures/pack_loop_metric_T.png" /></p>
+<p><strong>Fig. F15 — mean log amplification vs temperature.</strong> $M=\langle\log(a_t/a_1)\rangle_t$, closed loop (solid) and replay (dashed), per model. <strong>Data:</strong> <code>results/softloop*</code>, all temperatures, 600 steps. <strong>Read:</strong> closed $M$ is positive almost everywhere; replay is near zero or negative. The dependence on $T$ is orbit-specific, not monotonic; the robust statement is the closed/replay gap.</p>
+<p><img alt="Fig. F16" src="update_figures/pack_loop_fsle.png" /></p>
+<p><strong>Fig. F16 — finite-scale growth rate (FSLE).</strong> For thresholds $S=2,4,8,16,32,64$, the first-passage time $t_S$ and the rate $\log S/t_S$, closed vs replay, at $T=1$. <strong>Data:</strong> same as F13. <strong>Read:</strong> the closed loop reaches larger $S$ in finite time; replay does not. The curves are not straight lines, so the growth is not a single exponential; the rate decreases with $S$ in several models.</p>
+<p><img alt="Fig. F17" src="update_figures/pack_loop_staircase.png" /></p>
+<p><strong>Fig. F17 — the staircase.</strong> (a) One-step log increments $\Delta\log a_t$ for the closed loop, $T=1$; (b) autocorrelation of the increments. <strong>Read:</strong> the increments are spiky and correlated; growth happens in bursts at gates, not as a constant drift. <strong>This is the quantitative form of “staircase, not exponential”.</strong></p>
+<p><img alt="Fig. F18" src="update_figures/pack_loop_endpoint.png" /></p>
+<p><strong>Fig. F18 — endpoint rates.</strong> Closed-loop endpoint rate vs replay endpoint rate, one point per model. <strong>Read:</strong> the points lie above the diagonal; the loop adds growth on top of whatever the network does. The absolute values are small, so this is a <em>qualitative</em> separation, consistent with F2/F2b.</p>
+<p><img alt="Fig. F19" src="update_figures/pack_loop_finitetime.png" /></p>
+<p><strong>Fig. F19 — finite-time exponent.</strong> $\Lambda(\tau)=\frac1\tau\log(a_{t+\tau}/a_t)$ vs $\tau$, closed (red) vs replay (blue), $T=1$. <strong>Data:</strong> <code>results/softloop*</code>, 600 steps. <strong>Read:</strong> the closed loop is positive at all $\tau$ for most models; replay is near zero or negative. The curves are not flat, so there is no single asymptotic exponent; the finite-time value is the meaningful object.</p>
+<p><img alt="Fig. F20" src="update_figures/pack_loop_spectrum.png" /></p>
+<p><strong>Fig. F20 — power spectrum of the log response.</strong> PSD of $\log a_t$ (quadratic trend removed), closed vs replay, $T=1$. <strong>Read:</strong> the closed loop has more low-frequency power (slow staircase), while replay is closer to a flat/noisy spectrum. <strong>Use:</strong> this is another way to show that the loop growth is a slow, structured process, not white noise.</p>
+<p><img alt="Fig. F21" src="update_figures/pack_loop_intermittency.png" /></p>
+<p><strong>Fig. F21 — the growth is bursty and gate-conditioned.</strong> (a) Windowed live-gate density $P(m_t<1)$ (window 50) — the gates open in bursts, and after the lock-in of F19 the density stays at 0. (b) Mean one-step log growth $\Delta\log a_t$, split by gate state: every trained model grows only while the gate is open (red, +0.02 to +0.15 nats/step) and <em>contracts</em> while it is closed (blue, −0.01 to −0.05 nats/step); Pythia is the extreme case (−0.5 nats/step when closed). (c) Concentration of the total log growth: the top 5% of steps produce 26–73% of the growth for the trained models (Phi-4-mini 73%), versus ~14% for randQwen and the 5% diagonal of a constant-rate exponential. <strong>Read:</strong> the staircase is not a plotting artefact; a handful of gate-opening events do most of the work, and between them the response decays.</p>
 <h1 id="g-linearity-and-precision">G. Linearity and precision</h1>
 <p><img alt="Fig. G1" src="update_figures/pack_linearity_precision.png" /></p>
 <p><strong>Fig. G1 — precision and probe radius.</strong> (a) $\|\delta h_{50,L}\|$ vs $r$ for fp32 and fp16 runs of the same/nearby models; (b) local exponent $\beta={\rm d}\log\|\delta h\|/{\rm d}\log r$; (c) $r_*$ estimated at different probe radii. <strong>Read:</strong> fp16 has a constant floor (0.5–4) independent of $r$; fp32 scales with $\beta\to1$ for $r\lesssim10^{-2}$; $r_*$ is only stable at small probe radius. <strong>This is the figure that invalidates the old absolute comparisons.</strong> <strong>Data:</strong> new fp32 runs <code>results/update/fp32_*</code>, old fp16 runs <code>a1r_*</code>, DeepSeek 12-radius <code>w100_layers</code>.</p>
@@ -927,6 +1085,23 @@ python analysis_update/run_all.py                   # everything, then copy to n
 <p><strong>Earlier K — window departure.</strong> Superseded by E1/E1b (exact formula).</p>
 <p><img alt="Earlier L" src="update_figures/fig_angle_and_rotation.png" /></p>
 <p><strong>Earlier L — angle/rotation.</strong> Superseded by C1/C2/C3 (controls added).</p>
+<h2 id="n3-loop-figures-from-the-previous-revision-superseded-kept-as-requested">N3. Loop figures from the previous revision (superseded, kept as requested)</h2>
+<p>These were the loop figures in the last PDF. Every one of them is recomputed <em>in
+place</em> by the new scripts, so the numbers here are the older 600-step / 8-direction
+version. Kept because you asked not to delete figures; the live versions are
+F2-F21 above.</p>
+<p><img alt="Old F0" src="update_figures/pack_master_summary.png" /></p>
+<p><strong>Old F0 — the four-panel summary (600 steps, DeepSeek-1.5B).</strong> Superseded by F2 (all models) and F5 (sampling).</p>
+<p><img alt="Old F0b" src="update_figures/pack_master_loglog.png" /></p>
+<p><strong>Old F0b — log-log closed vs replay for one model.</strong> Superseded by F2/F2b.</p>
+<p><img alt="Old F0c" src="update_figures/pack_loop_loglog_all.png" /></p>
+<p><strong>Old F0c — the first all-models log-log grid.</strong> Superseded by F2, which uses per-direction ratios and matched pairs.</p>
+<p><img alt="Old F0m" src="update_figures/pack_loop_saturation.png" /></p>
+<p><strong>Old F0m — the saturation summary.</strong> The $L_\infty$/$\tau$ table in F2 is now computed per direction with the fixed-offset fit.</p>
+<p><img alt="Old F21" src="update_figures/pack_loop_temperature.png" /></p>
+<p><strong>Old F21 — temperature threshold for one model.</strong> Superseded by F6, which shows the model dependence (the claim "any soft feedback gives the same gain" was too strong).</p>
+<p><img alt="Old selfreg" src="update_figures/pack_loop_selfreg.png" /></p>
+<p><strong>Old selfreg — self-regulation with green shading.</strong> Kept, but the shading was removed in F3 as you asked.</p>
 <h1 id="n2-limitations">N2. Limitations</h1>
 <ul>
 <li>Qwen3-4B/Phi-4-mini absolute responses are fp16-floor-dominated; only discrete flips and relative shapes are valid.</li>

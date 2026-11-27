@@ -1,0 +1,21 @@
+{
+  "model": "/u0/grego/LLM/models--randqwen-g1.0",
+  "prompt_len": 65,
+  "steps": 3000,
+  "temp": 2.0,
+  "mode": "loop",
+  "feedback": "soft",
+  "window": 4096,
+  "dirs": 8,
+  "r": 0.03,
+  "seed": 69,
+  "sample_seed": 7,
+  "layers": [
+    7,
+    14,
+    21,
+    27
+  ],
+  "tied": false,
+  "wall_s": 824.4
+}

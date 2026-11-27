@@ -1,0 +1,21 @@
+{
+  "model": "/u0/grego/LLM/models--EleutherAI--pythia-410m",
+  "prompt_len": 67,
+  "steps": 3000,
+  "temp": 0.5,
+  "mode": "loop",
+  "feedback": "soft",
+  "window": 4096,
+  "dirs": 8,
+  "r": 0.1,
+  "seed": 69,
+  "sample_seed": 7,
+  "layers": [
+    6,
+    12,
+    18,
+    23
+  ],
+  "tied": true,
+  "wall_s": 510.9
+}

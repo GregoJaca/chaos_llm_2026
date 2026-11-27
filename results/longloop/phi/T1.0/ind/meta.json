@@ -1,0 +1,21 @@
+{
+  "model": "/u0/grego/LLM/models--microsoft--Phi-4-mini-instruct/snapshots/cfbefacb99257ffa30c83adab238a50856ac3083",
+  "prompt_len": 64,
+  "steps": 3000,
+  "temp": 1.0,
+  "mode": "loop",
+  "feedback": "sample_ind",
+  "window": 4096,
+  "dirs": 8,
+  "r": 0.1,
+  "seed": 69,
+  "sample_seed": 7,
+  "layers": [
+    8,
+    16,
+    24,
+    31
+  ],
+  "tied": true,
+  "wall_s": 1768.7
+}

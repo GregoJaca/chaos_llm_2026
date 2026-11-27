@@ -1,0 +1,21 @@
+{
+  "model": "/u0/grego/LLM/models--state-spaces--mamba-130m-hf",
+  "prompt_len": 67,
+  "steps": 3000,
+  "temp": 1.0,
+  "mode": "loop",
+  "feedback": "sample_ind",
+  "window": 4096,
+  "dirs": 8,
+  "r": 0.03,
+  "seed": 69,
+  "sample_seed": 7,
+  "layers": [
+    6,
+    12,
+    18,
+    23
+  ],
+  "tied": true,
+  "wall_s": 423.3
+}

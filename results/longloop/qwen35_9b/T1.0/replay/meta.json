@@ -1,0 +1,21 @@
+{
+  "model": "/home/grego/LLM/models/Qwen3.5-9B",
+  "prompt_len": 64,
+  "steps": 1600,
+  "temp": 1.0,
+  "mode": "replay",
+  "feedback": "soft",
+  "window": 4096,
+  "dirs": 8,
+  "r": 0.1,
+  "seed": 69,
+  "sample_seed": 7,
+  "layers": [
+    8,
+    16,
+    24,
+    31
+  ],
+  "tied": false,
+  "wall_s": 982.5
+}

@@ -1,0 +1,21 @@
+{
+  "model": "/home/grego/LLM/models/phi-4",
+  "prompt_len": 64,
+  "steps": 1600,
+  "temp": 2.0,
+  "mode": "loop",
+  "feedback": "soft",
+  "window": 4096,
+  "dirs": 8,
+  "r": 0.1,
+  "seed": 69,
+  "sample_seed": 7,
+  "layers": [
+    10,
+    20,
+    30,
+    39
+  ],
+  "tied": false,
+  "wall_s": 1366.1
+}

@@ -1,0 +1,15 @@
+import numpy as np, os, sys
+sys.path.insert(0, "analysis_update")
+from cache import HERE
+z = np.load(os.path.join(HERE, "results/depth2/deepseek/depth.npz"), allow_pickle=True)
+lam = z["lam"].astype(float)          # (tok, layer, k)
+g = z["local_gain"].astype(float)     # (tok, layer)
+print("lam[0,:,0]:", np.round(lam[0, :, 0], 3))
+print("g[0,:]    :", np.round(g[0, :], 3))
+print("prod lam  :", np.cumprod(lam[0, :, 0])[[0, 5, -1]])
+print("cumsum log:", np.cumsum(np.log(lam[0, :, 0]))[[0, 5, -1]])
+print("lam*(i+1) :", (lam[0, :, 0] * (np.arange(28) + 1))[[0, 5, -1]])
+print("median lam per layer:", np.round(np.median(lam[:, :, 0], axis=0), 3))
+print("median g per layer  :", np.round(np.median(g, axis=0), 3))
+print("sum log median lam:", np.log(np.median(lam[:, :, 0], axis=0)).sum())
+print("total prod of median lam:", np.exp(np.log(np.median(lam[:, :, 0], axis=0)).sum()))

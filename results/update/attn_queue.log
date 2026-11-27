@@ -1,0 +1,117 @@
+=== attn ds15 W=50 Thu Nov 26 20:31:21 CET 2026
+Sliding Window Attention is enabled but not implemented for `eager`; unexpected results may be encountered.
+/usr/local/lib/python3.9/site-packages/transformers/generation/configuration_utils.py:628: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.6` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+  warnings.warn(
+/usr/local/lib/python3.9/site-packages/transformers/generation/configuration_utils.py:633: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.95` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+  warnings.warn(
+`eos_token_id` should consist of positive integers, but is tensor([-1], device='cuda:0'). Your generation will not stop until the maximum length is reached. Depending on other flags, it may even crash.
+saved results/update/attn_ds15_w50 (5, 135)
+=== attn ds15 W=100 Thu Nov 26 20:31:51 CET 2026
+Sliding Window Attention is enabled but not implemented for `eager`; unexpected results may be encountered.
+/usr/local/lib/python3.9/site-packages/transformers/generation/configuration_utils.py:628: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.6` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+  warnings.warn(
+/usr/local/lib/python3.9/site-packages/transformers/generation/configuration_utils.py:633: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.95` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+  warnings.warn(
+`eos_token_id` should consist of positive integers, but is tensor([-1], device='cuda:0'). Your generation will not stop until the maximum length is reached. Depending on other flags, it may even crash.
+saved results/update/attn_ds15_w100 (5, 135)
+=== attn ds15 W=200 Thu Nov 26 20:32:17 CET 2026
+Sliding Window Attention is enabled but not implemented for `eager`; unexpected results may be encountered.
+/usr/local/lib/python3.9/site-packages/transformers/generation/configuration_utils.py:628: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.6` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+  warnings.warn(
+/usr/local/lib/python3.9/site-packages/transformers/generation/configuration_utils.py:633: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.95` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+  warnings.warn(
+`eos_token_id` should consist of positive integers, but is tensor([-1], device='cuda:0'). Your generation will not stop until the maximum length is reached. Depending on other flags, it may even crash.
+saved results/update/attn_ds15_w200 (5, 135)
+=== attn ds15 W=4096 Thu Nov 26 20:32:48 CET 2026
+Sliding Window Attention is enabled but not implemented for `eager`; unexpected results may be encountered.
+/usr/local/lib/python3.9/site-packages/transformers/generation/configuration_utils.py:628: UserWarning: `do_sample` is set to `False`. However, `temperature` is set to `0.6` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `temperature`.
+  warnings.warn(
+/usr/local/lib/python3.9/site-packages/transformers/generation/configuration_utils.py:633: UserWarning: `do_sample` is set to `False`. However, `top_p` is set to `0.95` -- this flag is only used in sample-based generation modes. You should set `do_sample=True` or unset `top_p`.
+  warnings.warn(
+`eos_token_id` should consist of positive integers, but is tensor([-1], device='cuda:0'). Your generation will not stop until the maximum length is reached. Depending on other flags, it may even crash.
+saved results/update/attn_ds15_w4096 (5, 135)
+=== attn qwen25 W=100 Thu Nov 26 20:33:17 CET 2026
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:04<00:04,  4.09s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:06<00:00,  3.20s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:06<00:00,  3.33s/it]
+Traceback (most recent call last):
+  File "/usr/lib64/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib64/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/home/grego/LLM/chaos_llm_2026/src/chaos_llm/run_attention_frac.py", line 61, in <module>
+    main()
+  File "/home/grego/LLM/chaos_llm_2026/src/chaos_llm/run_attention_frac.py", line 25, in main
+    model, tok, path = load_model(args.model, attn="eager", dtype=args.dtype)
+  File "/home/grego/LLM/chaos_llm_2026/src/chaos_llm/protocol.py", line 67, in load_model
+    m = AutoModelForCausalLM.from_pretrained(
+  File "/u0/grego/LLM/venv_tf/lib64/python3.9/site-packages/transformers/modeling_utils.py", line 4276, in cuda
+    return super().cuda(*args, **kwargs)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1050, in cuda
+    return self._apply(lambda t: t.cuda(device))
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 900, in _apply
+    module._apply(fn)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 900, in _apply
+    module._apply(fn)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 900, in _apply
+    module._apply(fn)
+  [Previous line repeated 2 more times]
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 927, in _apply
+    param_applied = fn(param)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1050, in <lambda>
+    return self._apply(lambda t: t.cuda(device))
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 14.56 GiB of which 18.75 MiB is free. Process 1138029 has 7.24 GiB memory in use. Including non-PyTorch memory, this process has 7.31 GiB memory in use. Of the allocated memory 7.21 GiB is allocated by PyTorch, and 2.46 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+FAILED qwen25 100
+=== attn phi W=100 Thu Nov 26 20:33:46 CET 2026
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:02<00:02,  2.40s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.89s/it]Loading checkpoint shards: 100%|██████████| 2/2 [00:03<00:00,  1.97s/it]
+`eos_token_id` should consist of positive integers, but is tensor([-1], device='cuda:0'). Your generation will not stop until the maximum length is reached. Depending on other flags, it may even crash.
+Traceback (most recent call last):
+  File "/usr/lib64/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/usr/lib64/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/home/grego/LLM/chaos_llm_2026/src/chaos_llm/run_attention_frac.py", line 61, in <module>
+    main()
+  File "/home/grego/LLM/chaos_llm_2026/src/chaos_llm/run_attention_frac.py", line 41, in main
+    out = model(inputs_embeds=E, attention_mask=mask, output_attentions=True, use_cache=False)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/u0/grego/LLM/venv_tf/lib64/python3.9/site-packages/transformers/utils/generic.py", line 918, in wrapper
+    output = func(self, *args, **kwargs)
+  File "/u0/grego/LLM/venv_tf/lib64/python3.9/site-packages/transformers/models/phi3/modeling_phi3.py", line 465, in forward
+    outputs: BaseModelOutputWithPast = self.model(
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/u0/grego/LLM/venv_tf/lib64/python3.9/site-packages/transformers/utils/generic.py", line 1072, in wrapper
+    outputs = func(self, *args, **kwargs)
+  File "/u0/grego/LLM/venv_tf/lib64/python3.9/site-packages/transformers/models/phi3/modeling_phi3.py", line 401, in forward
+    hidden_states = decoder_layer(
+  File "/u0/grego/LLM/venv_tf/lib64/python3.9/site-packages/transformers/modeling_layers.py", line 94, in __call__
+    return super().__call__(*args, **kwargs)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/u0/grego/LLM/venv_tf/lib64/python3.9/site-packages/transformers/utils/deprecation.py", line 172, in wrapped_func
+    return func(*args, **kwargs)
+  File "/u0/grego/LLM/venv_tf/lib64/python3.9/site-packages/transformers/models/phi3/modeling_phi3.py", line 277, in forward
+    hidden_states = self.mlp(hidden_states)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/usr/local/lib64/python3.9/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/u0/grego/LLM/venv_tf/lib64/python3.9/site-packages/transformers/models/phi3/modeling_phi3.py", line 63, in forward
+    up_states = up_states * self.activation_fn(gate)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 14.56 GiB of which 8.75 MiB is free. Process 1138029 has 7.22 GiB memory in use. Including non-PyTorch memory, this process has 7.34 GiB memory in use. Of the allocated memory 7.20 GiB is allocated by PyTorch, and 8.03 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)
+FAILED phi 100
+=== attn randqwen W=100 Thu Nov 26 20:34:29 CET 2026
+The tokenizer you are loading from '/u0/grego/LLM/models--randqwen-g1.0' with an incorrect regex pattern: https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503/discussions/84#69121093e8b480e709447d5e. This will lead to incorrect tokenization. You should set the `fix_mistral_regex=True` flag when loading this tokenizer to fix this issue.
+`torch_dtype` is deprecated! Use `dtype` instead!
+Loading checkpoint shards:   0%|          | 0/2 [00:00<?, ?it/s]Loading checkpoint shards:  50%|█████     | 1/2 [00:00<00:00,  8.12it/s]Loading checkpoint shards: 100%|██████████| 2/2 [00:00<00:00, 13.39it/s]
+`eos_token_id` should consist of positive integers, but is tensor([-1], device='cuda:0'). Your generation will not stop until the maximum length is reached. Depending on other flags, it may even crash.
+saved results/update/attn_randqwen_w100 (5, 135)
+ATTN QUEUE DONE Thu Nov 26 20:34:58 CET 2026
