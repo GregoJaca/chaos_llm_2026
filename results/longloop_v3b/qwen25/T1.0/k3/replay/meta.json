@@ -1,0 +1,21 @@
+{
+  "model": "/u0/grego/LLM/models--Qwen--Qwen2.5-3B-Instruct",
+  "prompt_len": 64,
+  "steps": 800,
+  "temp": 1.0,
+  "mode": "replay",
+  "feedback": "soft",
+  "window": 4096,
+  "dirs": 32,
+  "r": 0.03,
+  "seed": 1103,
+  "sample_seed": 7,
+  "layers": [
+    9,
+    18,
+    27,
+    35
+  ],
+  "tied": true,
+  "wall_s": 329.7
+}

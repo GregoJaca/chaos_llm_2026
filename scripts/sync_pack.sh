@@ -7,6 +7,8 @@ cd ~/LLM/chaos_llm_2026 || exit 1
 LIST=/tmp/chaos_list.txt
 : > "$LIST"
 add () { for f in $1; do [ -e "$f" ] && printf '%s\n' "$f" >> "$LIST"; done; }
+add "results/longloop_v3b"
+add "results/longloop_v3b_prompt"
 add "results/longloop_prompt"
 add "results/longtf"
 add "results/long_a1"

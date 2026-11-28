@@ -435,20 +435,20 @@ Note the axes are independent: *what is fed* (expected embedding vs token), *whe
 
 | model | directions | steps | $L_\infty$ (nats) | $\tau$ (steps) | $R^2$ | $\times$ at end |
 |---|---|---|---|---|---|---|
-| Mamba-130m | 16 | 3000 | 11.1 | 46 | 0.40 | 100\,261 |
-| DeepSeek-1.5B | 16 | 3000 | 8.0 | 62 | 0.85 | 3\,440 |
+| Mamba-130m | 8 | 3000 | 11.3 | 32 | 0.41 | 100\,261 |
+| DeepSeek-1.5B | 128 | 800 | 5.3 | 16 | 0.86 | 212 |
 | DeepSeek-14B | 8 | 1600 | 6.0 | 209 | 0.77 | 336 |
 | Qwen3-14B | 8 | 1600 | 6.5 | 228 | 0.77 | 589 |
 | Phi-4 | 8 | 1600 | 6.7 | 255 | 0.77 | 521 |
-| Phi-4-mini | 24 | 3000 | 5.3 | 66 | 0.75 | 205 |
-| Pythia-410m | 24 | 3000 | 6.4 | 331 | 0.49 | 180 |
+| Phi-4-mini | 8 | 3000 | 5.3 | 60 | 0.69 | 205 |
+| Pythia-410m | 8 | 3000 | 6.4 | 357 | 0.48 | 180 |
 | Qwen3-4B | 8 | 3000 | 4.8 | 17 | 0.46 | 119 |
-| Qwen3.5-9B | 40 | 1600 | 3.7 | 244 | -0.08 | 45 |
-| randQwen | 24 | 3000 | 3.7 | 1428 | 0.99 | 24 |
-| Qwen2.5-3B | 16 | 3000 | 2.3 | 473 | 0.38 | 15 |
-| Qwen3.5-2B | – | – | – | – | – | (no matched pair yet) |
+| Qwen3.5-9B | 8 | 1600 | 3.8 | 3 | 0.03 | 45 |
+| randQwen | 8 | 3000 | 3.8 | 1480 | 1.00 | 24 |
+| Qwen2.5-3B | 96 | 800 | 0.8 | 2 | 0.00 | 2 |
+| Qwen3.5-2B | – | – | – | – | – | (fp16 crash; fp32 queued) |
 
-The $R^2$ column matters: for Qwen2.5-3B, Qwen3-4B and Qwen3.5-9B the growth is *not* a clean saturating exponential (they jump in a few steps), so $L_\infty$ and $\tau$ are only indicative there.
+The $R^2$ column matters: for Qwen2.5-3B, Qwen3-4B and Qwen3.5-9B the growth is *not* a clean saturating exponential (they jump in a few steps), so $L_\infty$ and $\tau$ are only indicative there. **Which orbit the numbers come from:** the code uses the campaign root with the most directions among those with at least 800 steps (shown in the "steps" column), and never mixes roots, because different roots differ in dtype (fp16 vs fp32) and horizon and their orbits are different realisations. This is why DeepSeek-1.5B now reads 5.3 nats from 128 fp16 directions at 800 steps instead of 8.1 nats from 8 fp32 directions at 3000 steps: the direction-to-direction spread is large, and the 8-direction value was a lucky sample. More directions were the right fix.
 
 ![Fig. F2c](update_figures/pack_loop_layers.png)
 

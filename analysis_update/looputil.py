@@ -36,6 +36,10 @@ def find_dirs(tag_list, T="T1.0"):
                 if os.path.exists(os.path.join(d, "loop", "softloop.npz")) or \
                    os.path.exists(os.path.join(d, "softloop.npz")):
                     out.append(d)
+                # one level deeper: chunked campaigns store k1/, k2/, ...
+                for sub in glob.glob(os.path.join(d, "*")):
+                    if os.path.exists(os.path.join(sub, "loop", "softloop.npz")):
+                        out.append(sub)
     return sorted(set(out))
 
 
@@ -88,14 +92,46 @@ def pairs(name, T="T1.0", require_layers=False):
     return out
 
 
-def gather(name, T="T1.0", layer=-1, layer_num=None):
+def gather(name, T="T1.0", layer=-1, layer_num=None, prefer_root=None):
     """pooled per-direction curves (a_closed, a_replay), both normalised at t=1.
 
-    layer_num: use that *layer number* (from meta.json) in every pair; pairs
-    that did not save that layer are skipped.  layer=-1 means "last saved layer".
+    Pairs are pooled **only within one campaign root**, because different roots
+    differ in dtype and horizon (fp16/800 steps vs fp32/3000 steps) and their
+    orbits are not the same realisation.  We pick the root with the most
+    directions (or `prefer_root` when given).
     """
-    acs, ars, used = [], [], []
+    by_root = {}
     for pl, pr in pairs(name, T):
+        parts = pl.replace("\\", "/").split("/")
+        root = parts[parts.index("results") + 1] if "results" in parts else "?"
+        by_root.setdefault(root, []).append((pl, pr))
+
+    def total(pairs_):
+        n, s = 0, 0
+        for pl, pr in pairs_:
+            try:
+                z = np.load(pl, allow_pickle=True)["dh"]
+                n += z.shape[0]
+                s = max(s, z.shape[-1])
+            except Exception:
+                pass
+        return n, s
+
+    stats = {r: total(v) for r, v in by_root.items()}
+    # never fall back to the 600-step legacy campaign for the main curves: keep
+    # roots with a horizon of at least 800 steps, then take the most directions.
+    good = {r: st for r, st in stats.items() if st[1] >= 800}
+    if not good:
+        good = stats
+    if prefer_root and prefer_root in good:
+        chosen = prefer_root
+    elif good:
+        chosen = max(good, key=lambda r: (good[r][0], good[r][1]))
+    else:
+        return None, None, []
+
+    acs, ars, used = [], [], []
+    for pl, pr in by_root[chosen]:
         zc = np.load(pl, allow_pickle=True)
         zr = np.load(pr, allow_pickle=True)
         lay = meta_layers_of(pl) or []
@@ -131,14 +167,6 @@ def gather(name, T="T1.0", layer=-1, layer_num=None):
         return out
     return (np.concatenate([pad(a) for a in acs], 0),
             np.concatenate([pad(a) for a in ars], 0), used)
-
-
-def nanmedian_iqr(x, axis=0):
-    with np.errstate(all="ignore"):
-        med = np.nanmedian(x, axis=axis)
-        lo = np.nanpercentile(x, 25, axis=axis)
-        hi = np.nanpercentile(x, 75, axis=axis)
-    return med, (lo, hi)
 
 
 def median_iqr(x, axis=0):

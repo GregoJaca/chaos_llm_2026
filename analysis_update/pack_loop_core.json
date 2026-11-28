@@ -1,30 +1,33 @@
 {
  "DeepSeek-1.5B": {
-  "n_dirs": 16,
-  "steps": 3000,
-  "growth_closed": 790.0833803016092,
-  "growth_replay": 0.2046671628151598,
-  "L_inf": 8.034754445376644,
-  "tau": 61.94495061185427,
-  "sat_r2": 0.8451905194670291,
-  "L_end": 8.143226481340681,
+  "n_dirs": 128,
+  "steps": 800,
+  "growth_closed": 142.42326469465087,
+  "growth_replay": 0.6606651444193667,
+  "L_inf": 5.253401500147609,
+  "tau": 16.018285069198477,
+  "sat_r2": 0.8616055314342785,
+  "L_end": 5.356225108874881,
   "params": [
-   "\\results/longloop\\ds15\\T1.0\\loop\\softloop.npz",
-   "\\results/softloop\\ds15\\T1.0\\softloop.npz"
+   "\\results/longloop_v3b\\ds15\\T1.0\\k1\\loop\\softloop.npz",
+   "\\results/longloop_v3b\\ds15\\T1.0\\k2\\loop\\softloop.npz",
+   "\\results/longloop_v3b\\ds15\\T1.0\\k3\\loop\\softloop.npz",
+   "\\results/longloop_v3b\\ds15\\T1.0\\k4\\loop\\softloop.npz"
   ]
  },
  "Qwen2.5-3B": {
-  "n_dirs": 16,
-  "steps": 3000,
-  "growth_closed": 14.805228776957737,
-  "growth_replay": 0.699574080667343,
-  "L_inf": 2.33913232464987,
-  "tau": 473.12342124979676,
-  "sat_r2": 0.3848943505513023,
-  "L_end": 2.70995431358106,
+  "n_dirs": 96,
+  "steps": 800,
+  "growth_closed": 5.736211180124224,
+  "growth_replay": 2.779137072945808,
+  "L_inf": 0.8042978661023125,
+  "tau": 1.9162013190954206,
+  "sat_r2": 0.003516547678642068,
+  "L_end": 0.7808101367770899,
   "params": [
-   "\\results/longloop\\qwen25\\T1.0\\loop\\softloop.npz",
-   "\\results/softloop\\qwen25_3b\\T1.0\\softloop.npz"
+   "\\results/longloop_v3b\\qwen25\\T1.0\\k1\\loop\\softloop.npz",
+   "\\results/longloop_v3b\\qwen25\\T1.0\\k2\\loop\\softloop.npz",
+   "\\results/longloop_v3b\\qwen25\\T1.0\\k3\\loop\\softloop.npz"
   ]
  },
  "Qwen3-4B": {
@@ -41,31 +44,29 @@
   ]
  },
  "Qwen3.5-9B": {
-  "n_dirs": 40,
+  "n_dirs": 8,
   "steps": 1600,
   "growth_closed": 98.24518943883031,
   "growth_replay": 9.356460325065239,
-  "L_inf": 3.6817879968592937,
-  "tau": 243.78929254786524,
-  "sat_r2": -0.07902564058142936,
+  "L_inf": 3.818780763517954,
+  "tau": 3.260549563545682,
+  "sat_r2": 0.025909101564797865,
   "L_end": 3.8006400706847088,
   "params": [
-   "\\results/longloop\\qwen35_9b\\T1.0\\loop\\softloop.npz",
-   "\\results/softloop\\qwen35_9b\\T1.0\\softloop.npz"
+   "\\results/longloop\\qwen35_9b\\T1.0\\loop\\softloop.npz"
   ]
  },
  "Phi-4-mini": {
-  "n_dirs": 24,
+  "n_dirs": 8,
   "steps": 3000,
   "growth_closed": 127.7593966129366,
   "growth_replay": 0.7743659983087949,
-  "L_inf": 5.3002733244972084,
-  "tau": 66.33082847070553,
-  "sat_r2": 0.7543563246526191,
+  "L_inf": 5.302388346136592,
+  "tau": 60.04432314998029,
+  "sat_r2": 0.6943840093637487,
   "L_end": 5.32535869368213,
   "params": [
-   "\\results/longloop\\phi\\T1.0\\loop\\softloop.npz",
-   "\\results/softloop\\phi4mini\\T1.0\\softloop.npz"
+   "\\results/longloop\\phi\\T1.0\\loop\\softloop.npz"
   ]
  },
  "DeepSeek-14B": {
@@ -108,45 +109,42 @@
   ]
  },
  "Mamba-130m": {
-  "n_dirs": 16,
+  "n_dirs": 8,
   "steps": 3000,
   "growth_closed": 6215.034034358118,
   "growth_replay": 0.09191909989512093,
-  "L_inf": 11.126919735566586,
-  "tau": 45.72112387957501,
-  "sat_r2": 0.39551516619653004,
+  "L_inf": 11.251627934367194,
+  "tau": 31.920019770225355,
+  "sat_r2": 0.41085074393284815,
   "L_end": 11.515532114749671,
   "params": [
-   "\\results/longloop\\mamba\\T1.0\\loop\\softloop.npz",
-   "\\results/softloop\\mamba130\\T1.0\\softloop.npz"
+   "\\results/longloop\\mamba\\T1.0\\loop\\softloop.npz"
   ]
  },
  "Pythia-410m": {
-  "n_dirs": 24,
+  "n_dirs": 8,
   "steps": 3000,
   "growth_closed": 26.295560015928714,
   "growth_replay": 0.9089883359445347,
-  "L_inf": 6.382687229785473,
-  "tau": 330.88180755143986,
-  "sat_r2": 0.49465675693687017,
+  "L_inf": 6.399754120212028,
+  "tau": 356.80397805058385,
+  "sat_r2": 0.48094001847707524,
   "L_end": 5.191122399869932,
   "params": [
-   "\\results/longloop\\pythia\\T1.0\\loop\\softloop.npz",
-   "\\results/softloop\\pythia410\\T1.0\\softloop.npz"
+   "\\results/longloop\\pythia\\T1.0\\loop\\softloop.npz"
   ]
  },
  "randQwen": {
-  "n_dirs": 24,
+  "n_dirs": 8,
   "steps": 3000,
   "growth_closed": 13.194347602406168,
   "growth_replay": 0.48047088082163125,
-  "L_inf": 3.73994344019132,
-  "tau": 1428.3975852425,
-  "sat_r2": 0.9938745428849091,
+  "L_inf": 3.7972694737241244,
+  "tau": 1480.3603403847585,
+  "sat_r2": 0.9971253222948356,
   "L_end": 3.173511547999648,
   "params": [
-   "\\results/longloop\\randqwen\\T1.0\\loop\\softloop.npz",
-   "\\results/softloop\\randqwen\\T1.0\\softloop.npz"
+   "\\results/longloop\\randqwen\\T1.0\\loop\\softloop.npz"
   ]
  }
 }
